@@ -2,6 +2,14 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-03 — Frontend Batch 1 (parent PWA)
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | 13 | New CF-21…CF-28 (Phase 2 copy and badges on Phase 1 screens; per-group fees; P06 tip; card methods; refund line; "Message teacher"; one text for two reviews; "No seats" vs "Waitlist only"). | Found while building P01–P10 |
+| 2 | frontend/screen-log.md | Rows for P01–P10, the mock provider page and the Account tab. | Batch 1 |
+| 3 | frontend/token-audit.md | Batch 1 off-token values and how they were snapped; raster logo note. | Batch 1 |
+
 ## 2026-10-03 — Walking skeleton, Part 1 (local services and database)
 
 | # | File | What changed | Why |
