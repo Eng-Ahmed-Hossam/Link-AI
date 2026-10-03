@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
-import { Account } from '@/parent/screens/Account';
+import { P03Results } from '@/parent/screens/P03Results';
 
 import { getT, parseLocale } from '@/i18n';
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
-  return { title: getT(parseLocale((await params).lang))('parent.account.metaTitle') };
+  return { title: getT(parseLocale((await params).lang))('parent.results.metaTitle') };
 }
 
 export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
@@ -12,7 +12,7 @@ export default async function Page({ params }: { params: Promise<{ lang: string 
   parseLocale(p.lang);
   return (
     <Suspense>
-      <Account />
+      <P03Results />
     </Suspense>
   );
 }

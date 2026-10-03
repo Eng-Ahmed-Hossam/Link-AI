@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { CalendarDays, Building2, DoorOpen, Star, UserCog, Wallet } from 'lucide-react';
 import { SideNav, type SideNavSection } from '@link/ui';
 import { createTranslator, type Locale } from '@link/i18n';
-import { flags } from './flags';
+import { useFlag } from './flags';
 import { LangSwitch } from './LangSwitch';
 
 /** Desktop owner shell. Phase 1: Marketplace items + Staff. Follow-up items stay behind `flags.followUpNav`. */
@@ -63,8 +63,9 @@ export function CentreShell({
       ],
     },
   ];
-  // Phase 2 follow-up navigation is deliberately absent unless the flag is on.
-  void flags.followUpNav;
+  // Phase 2 follow-up navigation (Today, Follow-ups, …) arrives in Batch 6 behind this flag.
+  const followUpNav = useFlag('followup.owner_nav');
+  void followUpNav;
 
   const activeId =
     sections.flatMap((s) => s.items).find((i) => pathname.startsWith(i.href))?.id ?? 'profile';

@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { dirOf, locales } from '@link/i18n';
 import { LinkProvider } from '@link/ui';
 import { Providers } from '@/providers';
+import { I18nProvider } from '@/i18n-client';
 import { getT, parseLocale } from '@/i18n';
 import '../globals.css';
 
@@ -37,7 +38,9 @@ export default async function RootLayout({
           {t('common.skipToContent')}
         </a>
         <LinkProvider locale={locale}>
-          <Providers locale={locale}>{children}</Providers>
+          <I18nProvider locale={locale}>
+            <Providers locale={locale}>{children}</Providers>
+          </I18nProvider>
         </LinkProvider>
       </body>
     </html>

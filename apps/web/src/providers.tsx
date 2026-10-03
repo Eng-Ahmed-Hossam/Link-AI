@@ -2,9 +2,12 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MockBadge } from '@link/ui';
+import { setApiLocale } from '@link/api-client';
+import { MockBadge, ToastProvider } from '@link/ui';
 import type { Locale } from '@link/i18n';
 import { createTranslator } from '@link/i18n';
+import { SessionProvider } from './session';
+import { DevPanel } from './DevPanel';
 
 const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS !== 'false';
 
@@ -13,12 +16,18 @@ let started: Promise<unknown> | null = null;
 const startOnce = () =>
   (started ??= import('@link/mocks/browser').then(({ startMocks }) => startMocks()));
 
-/** TanStack Query + the MSW browser worker. The badge shows whenever mocks are on. */
+/** TanStack Query, session, toasts and the MSW browser worker. The badge shows whenever mocks are on. */
 export function Providers({ locale, children }: { locale: Locale; children: ReactNode }) {
   const [client] = useState(
-    () => new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
+      }),
   );
   const [ready, setReady] = useState(!USE_MOCKS);
+  const t = createTranslator(locale);
+  // API calls carry the page language (Accept-Language, 07 §1).
+  setApiLocale(locale);
 
   useEffect(() => {
     if (!USE_MOCKS) return;
@@ -33,8 +42,17 @@ export function Providers({ locale, children }: { locale: Locale; children: Reac
 
   return (
     <QueryClientProvider client={client}>
-      {ready ? children : null}
-      {USE_MOCKS ? <MockBadge label={createTranslator(locale)('common.mockBadge')} /> : null}
+      <SessionProvider>
+        <ToastProvider label={t('common.notifications')}>
+          {ready ? children : null}
+          {USE_MOCKS ? (
+            <>
+              <MockBadge label={t('common.mockBadge')} />
+              <DevPanel />
+            </>
+          ) : null}
+        </ToastProvider>
+      </SessionProvider>
     </QueryClientProvider>
   );
 }

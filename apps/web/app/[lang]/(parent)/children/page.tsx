@@ -1,12 +1,20 @@
-import { EmptyState } from '@link/ui';
+import { Suspense } from 'react';
+import { P09Children } from '@/parent/screens/P09Children';
+import { RequireParent } from '@/parent/RequireParent';
 import { getT, parseLocale } from '@/i18n';
 
-export default async function ChildrenPage({ params }: { params: Promise<{ lang: string }> }) {
-  const t = getT(parseLocale((await params).lang));
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
+  return { title: getT(parseLocale((await params).lang))('parent.children.metaTitle') };
+}
+
+export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
+  const p = await params;
+  parseLocale(p.lang);
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-title">{t('parent.nav.children')}</h1>
-      <EmptyState title={t('states.empty.title')} body={t('parent.shell.placeholder')} />
-    </div>
+    <Suspense>
+      <RequireParent>
+        <P09Children />
+      </RequireParent>
+    </Suspense>
   );
 }

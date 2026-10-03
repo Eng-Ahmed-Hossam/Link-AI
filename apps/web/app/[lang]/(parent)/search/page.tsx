@@ -1,13 +1,18 @@
-import { TeacherList } from '@/TeacherList';
+import { Suspense } from 'react';
+import { P02SearchHome } from '@/parent/screens/P02SearchHome';
+
 import { getT, parseLocale } from '@/i18n';
 
-export default async function SearchPage({ params }: { params: Promise<{ lang: string }> }) {
-  const locale = parseLocale((await params).lang);
-  const t = getT(locale);
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
+  return { title: getT(parseLocale((await params).lang))('parent.search.metaTitle') };
+}
+
+export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
+  const p = await params;
+  parseLocale(p.lang);
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-title">{t('parent.shell.title')}</h1>
-      <TeacherList locale={locale} />
-    </div>
+    <Suspense>
+      <P02SearchHome />
+    </Suspense>
   );
 }
