@@ -23,7 +23,10 @@
     "db:status": "node scripts/db.mjs status",
     "db:seed": "node scripts/db.mjs seed",
     "env:check": "node scripts/env-check.mjs",
-    "test:e2e": "pnpm --filter @link/web test:e2e"
+    "test:e2e": "pnpm --filter @link/web test:e2e",
+    "mock:server": "pnpm --filter @link/mocks mock:server",
+    "scenario:demo-followup": "node scripts/demo-scenario.mjs",
+    "demo": "node scripts/demo.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
