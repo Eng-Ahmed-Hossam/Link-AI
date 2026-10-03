@@ -16,9 +16,11 @@ import { color } from '@link/tokens';
 import { startMocks } from '@link/mocks/native';
 import { setApiBaseUrl } from '@link/api-client';
 import { LocaleProvider, useLocale } from '@/locale';
+import { API_BASE_URL, API_MODE } from '@/api-mode';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-const USE_MOCKS = process.env.EXPO_PUBLIC_USE_MOCKS !== 'false';
+const USE_IN_APP_MOCKS = API_MODE === 'mock';
+setApiBaseUrl(API_BASE_URL);
 
 function Shell() {
   const { locale, t } = useLocale();
@@ -28,7 +30,7 @@ function Shell() {
     >
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.bg } }} />
-      {USE_MOCKS ? <MockBadge locale={locale} label={t('common.mockBadge')} /> : null}
+      {API_MODE !== 'live' ? <MockBadge locale={locale} label={t('common.mockBadge')} /> : null}
     </View>
   );
 }
@@ -42,12 +44,11 @@ export default function RootLayout() {
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
   });
-  const [mocksReady, setMocksReady] = useState(!USE_MOCKS);
+  const [mocksReady, setMocksReady] = useState(!USE_IN_APP_MOCKS);
 
   useEffect(() => {
-    if (!USE_MOCKS) return;
+    if (!USE_IN_APP_MOCKS) return;
     try {
-      setApiBaseUrl('http://mock.link.test');
       startMocks();
     } catch (e) {
       // If mocks cannot start, keep the app usable.
