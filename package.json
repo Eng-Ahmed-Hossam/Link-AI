@@ -15,7 +15,14 @@
     "i18n:check": "node packages/i18n/scripts/check-keys.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "storybook": "pnpm --filter @link/ui storybook"
+    "storybook": "pnpm --filter @link/ui storybook",
+    "dev:infra": "node scripts/dev-infra.mjs",
+    "dev:reset": "node scripts/dev-reset.mjs",
+    "db:migrate": "node scripts/db.mjs migrate",
+    "db:rollback": "node scripts/db.mjs rollback",
+    "db:status": "node scripts/db.mjs status",
+    "db:seed": "node scripts/db.mjs seed",
+    "env:check": "node scripts/env-check.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
