@@ -8,7 +8,8 @@
     "start": "next start -p 3000",
     "typecheck": "tsc -p .",
     "lint": "eslint .",
-    "msw:init": "msw init public --no-save"
+    "msw:init": "msw init public --no-save",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
