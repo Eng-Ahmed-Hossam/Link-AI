@@ -7,15 +7,19 @@
     ".": "./src/index.ts",
     "./browser": "./src/browser.ts",
     "./native": "./src/native.ts",
-    "./fixtures": "./src/data.ts"
+    "./fixtures": "./src/data.ts",
+    "./server": "./src/server.ts"
   },
   "scripts": {
     "typecheck": "tsc -p .",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "mock:server": "tsx src/server.ts"
   },
   "devDependencies": {
     "@link/config": "workspace:*",
+    "@types/node": "^24.19.1",
+    "tsx": "^4.23.15",
     "vitest": "^5.0.3"
   },
   "dependencies": {
