@@ -4,7 +4,8 @@ import { cn } from '../cn';
 export interface BottomNavItem {
   id: string;
   label: string;
-  icon: ReactNode;
+  /** Optional: the parent PWA tab bar in Figma is text-only. */
+  icon?: ReactNode;
   href: string;
 }
 
@@ -23,37 +24,35 @@ export interface BottomNavProps {
   renderLink?: (item: BottomNavItem, props: BottomNavLinkProps) => ReactNode;
 }
 
+/**
+ * Floating tab bar (Figma P02 "Tab bar"): a card with equal tabs; the active tab is a blueSoft
+ * pill with blueText label and `aria-current="page"`, and is bold, so it is not colour alone.
+ */
 export function BottomNav({ items, activeId, label, renderLink }: BottomNavProps) {
   return (
-    <nav aria-label={label} className="sticky bottom-0 z-10 border-t border-border bg-white">
-      <ul className="mx-auto flex max-w-xl">
+    <nav aria-label={label} className="rounded-16 border border-border bg-white p-1.5 shadow-card">
+      <ul className="flex gap-1">
         {items.map((item) => {
           const active = item.id === activeId;
           const props: BottomNavLinkProps = {
             className: cn(
-              'flex min-h-14 flex-1 flex-col items-center justify-center gap-1 px-2 text-caption',
-              active ? 'font-semibold text-navy' : 'text-muted',
+              'flex min-h-11 flex-1 flex-col items-center justify-center gap-1 rounded-12 px-2 py-3 text-label',
+              active ? 'bg-blueSoft text-blueText' : 'text-muted hover:bg-soft',
             ),
             'aria-current': active ? 'page' : undefined,
             children: (
               <>
-                {/* Blue marks the active state as a shape, never as text colour. */}
-                <span
-                  className={cn(
-                    'flex h-7 w-12 items-center justify-center rounded-full [&>svg]:size-5',
-                    active && 'bg-blueSoft',
-                  )}
-                >
-                  <span aria-hidden className="contents">
+                {item.icon ? (
+                  <span aria-hidden className="[&>svg]:size-5">
                     {item.icon}
                   </span>
-                </span>
+                ) : null}
                 <span>{item.label}</span>
               </>
             ),
           };
           return (
-            <li key={item.id} className="flex-1">
+            <li key={item.id} className="flex flex-1">
               {renderLink ? renderLink(item, props) : <a href={item.href} {...props} />}
             </li>
           );

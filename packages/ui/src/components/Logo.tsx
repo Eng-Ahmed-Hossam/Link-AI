@@ -35,7 +35,12 @@ export function Logo({ variant = 'lockup-light', size, label = 'Link', className
   }
   const orb = size ?? 32;
   return (
-    <span role="img" aria-label={label} dir="ltr" className={cn('inline-flex items-center gap-2', className)}>
+    <span
+      role="img"
+      aria-label={label}
+      dir="ltr"
+      className={cn('inline-flex items-center gap-2', className)}
+    >
       <img src={src(markUrl)} width={orb} height={orb} alt="" className="shrink-0 rounded-full" />
       {/* Wordmark: Plus Jakarta Sans Bold 24, −2% tracking. A logotype, so the blue fill is allowed. */}
       <span
