@@ -34,7 +34,7 @@
   --elevation-raised: 0 2px 6px #0A18240F, 0 24px 48px -8px #0A18241F;
   --font-ar: "Cairo", "Plus Jakarta Sans", system-ui, sans-serif;
   --font-en: "Plus Jakarta Sans", "Cairo", system-ui, sans-serif;
-  --font-ui: var(--font-ar);
+  --font-ui-stack: var(--font-ar);
   --text-display-size: 32px;
   --text-display-weight: 700;
   --text-display-leading: 1.55;
@@ -58,7 +58,7 @@
   --text-caption-leading: 1.55;
 }
 :root[lang='en'] {
-  --font-ui: var(--font-en);
+  --font-ui-stack: var(--font-en);
   --text-display-size: 32px;
   --text-display-weight: 700;
   --text-display-leading: 1.45;

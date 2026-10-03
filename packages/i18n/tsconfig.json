@@ -1,0 +1,5 @@
+{
+  "extends": "@link/config/tsconfig.react.json",
+  "compilerOptions": { "resolveJsonModule": true },
+  "include": ["src"]
+}

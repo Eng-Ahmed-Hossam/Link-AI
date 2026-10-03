@@ -3,5 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "files": ["tsconfig.base.json", "tsconfig.react.json", "eslint.mjs"],
-  "exports": { "./eslint": "./eslint.mjs" }
+  "exports": {
+    "./eslint": "./eslint.mjs",
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./tsconfig.react.json": "./tsconfig.react.json"
+  }
 }

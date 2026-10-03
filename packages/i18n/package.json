@@ -1,0 +1,23 @@
+{
+  "name": "@link/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./messages/*": "./messages/*"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "i18n:check": "node scripts/check-keys.mjs"
+  },
+  "devDependencies": {
+    "@link/config": "workspace:*",
+    "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "intl-messageformat": "^12.1.2"
+  }
+}
