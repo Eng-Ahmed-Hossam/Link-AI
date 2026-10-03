@@ -204,7 +204,7 @@ export const FormControls: S = {
           {t('parent.pay.sharePhone', { teacher: 'Ms Salma', centre: 'Al Nour' })}
         </Checkbox>
         <Textarea
-          label={t('parent.feedback.textLabel')}
+          label={t('parent.feedback.textAboutTeacher', { name: 'Ms Salma' })}
           value={text}
           maxLength={600}
           onChange={(e) => setText(e.target.value)}

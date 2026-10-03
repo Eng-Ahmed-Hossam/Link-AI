@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -35,8 +35,9 @@ type Target = 'centre' | 'teacher';
 
 /**
  * P10 · Leave feedback (MKT-REV-01). Verified parent after the first session only (BR-REV-01).
- * Centre and teacher are rated separately; one review per rated target (BR-REV-02).
- * PLACEHOLDER: Figma has one text box for both; we send the same text with each review (open question).
+ * CF-27 (closed): each target has its own text, because centre and teacher reviews are moderated
+ * (L02), replied to (C04) and reported separately. Teacher first, then the centre with its comment
+ * collapsed. One POST /v1/reviews per rated target (BR-REV-02); the visibility applies to both.
  */
 export function P10Feedback({ id }: { id: string }) {
   const { locale, t } = useI18n();
@@ -44,7 +45,8 @@ export function P10Feedback({ id }: { id: string }) {
   const q = useEnrolment(id);
   const [stars, setStars] = useState<Record<Target, number>>({ centre: 0, teacher: 0 });
   const [tags, setTags] = useState<Record<Target, ReviewTag[]>>({ centre: [], teacher: [] });
-  const [body, setBody] = useState('');
+  const [body, setBody] = useState<Record<Target, string>>({ centre: '', teacher: '' });
+  const [centreTextOpen, setCentreTextOpen] = useState(false);
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,33 +104,18 @@ export function P10Feedback({ id }: { id: string }) {
               }
             />
           );
+
         const childFirst = e.student.displayName.split(' ')[0] ?? '';
         const weeks = Math.max(
           1,
           Math.floor((Date.now() - new Date(e.firstSession.startsAt).getTime()) / (7 * 86400000)),
         );
-        const targets: {
-          key: Target;
-          title: string;
-          tags: ReviewTag[];
-          avatar: React.ReactNode;
-        }[] = [
-          {
-            key: 'centre',
-            title: t('parent.feedback.theCentre', { name: e.group.centre.name }),
-            tags: CENTRE_TAGS,
-            avatar: <Avatar name={e.group.centre.name} tone="navy" size="sm" square />,
-          },
-          {
-            key: 'teacher',
-            title: e.group.teacher.displayName,
-            tags: TEACHER_TAGS,
-            avatar: <Avatar name={e.group.teacher.displayName} size="sm" />,
-          },
-        ];
+        const teacherName = e.group.teacher.displayName;
+        const centreName = e.group.centre.name;
+        const counter = (n: number, max: number) => t('common.counter', { n, max });
 
         async function submit() {
-          const rated = targets.filter((x) => stars[x.key] > 0);
+          const rated = (['teacher', 'centre'] as const).filter((k) => stars[k] > 0);
           if (!rated.length) {
             setError(t('parent.feedback.needStars'));
             return;
@@ -137,17 +124,17 @@ export function P10Feedback({ id }: { id: string }) {
           setError(null);
           try {
             let held = false;
-            for (const x of rated) {
+            for (const k of rated) {
               const r = await api.createReview(
                 {
                   enrolmentId: e.id,
-                  targetType: x.key,
-                  stars: stars[x.key],
-                  tags: tags[x.key],
-                  body: body.trim(),
+                  targetType: k,
+                  stars: stars[k],
+                  tags: tags[k],
+                  body: body[k].trim(),
                   visibility,
                 },
-                keys.current[x.key],
+                keys.current[k],
               );
               held ||= r.status === 'held';
             }
@@ -166,6 +153,38 @@ export function P10Feedback({ id }: { id: string }) {
           }
         }
 
+        const ratingBlock = (k: Target, title: string, tagList: ReviewTag[], avatar: ReactNode) => (
+          <>
+            <div className="flex items-center gap-3">
+              {avatar}
+              <h2 className="min-w-0 flex-1 text-label text-navy">
+                <bdi>{title}</bdi>
+              </h2>
+            </div>
+            <StarInput
+              label={t('parent.feedback.rate', { name: title })}
+              value={stars[k]}
+              onValueChange={(v) => setStars((s) => ({ ...s, [k]: v }))}
+              starLabel={(n) => t('parent.review.stars', { count: n })}
+            />
+            <div
+              role="group"
+              aria-label={t('parent.feedback.tagsLabel')}
+              className="flex flex-wrap gap-2"
+            >
+              {tagList.map((tag) => (
+                <FilterChip
+                  key={tag}
+                  pressed={tags[k].includes(tag)}
+                  onPressedChange={(on) => toggleTag(k, tag, on)}
+                >
+                  {t(`parent.tag.${tag}`)}
+                </FilterChip>
+              ))}
+            </div>
+          </>
+        );
+
         return (
           <>
             <PageTitle
@@ -173,54 +192,60 @@ export function P10Feedback({ id }: { id: string }) {
               title={t('parent.feedback.title')}
               subtitle={t('parent.feedback.subtitle', {
                 subject: e.group.subject.name,
-                teacher: e.group.teacher.displayName,
-                centre: e.group.centre.name,
+                teacher: teacherName,
+                centre: centreName,
                 weeks: formatNumber(weeks, locale),
                 count: weeks,
               })}
             />
-            {targets.map((x) => (
-              <Card key={x.key} className="flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  {x.avatar}
-                  <h2 className="min-w-0 flex-1 text-label text-navy">
-                    <bdi>{x.title}</bdi>
-                  </h2>
-                </div>
-                <StarInput
-                  label={t('parent.feedback.rate', { name: x.title })}
-                  value={stars[x.key]}
-                  onValueChange={(v) => setStars((s) => ({ ...s, [x.key]: v }))}
-                  starLabel={(n) => t('parent.review.stars', { count: n })}
-                />
-                <div
-                  role="group"
-                  aria-label={t('parent.feedback.tagsLabel')}
-                  className="flex flex-wrap gap-2"
-                >
-                  {x.tags.map((tag) => (
-                    <FilterChip
-                      key={tag}
-                      pressed={tags[x.key].includes(tag)}
-                      onPressedChange={(on) => toggleTag(x.key, tag, on)}
-                    >
-                      {t(`parent.tag.${tag}`)}
-                    </FilterChip>
-                  ))}
-                </div>
-              </Card>
-            ))}
 
-            <Textarea
-              label={t('parent.feedback.textLabel')}
-              value={body}
-              maxLength={MAX}
-              onChange={(ev) => setBody(ev.target.value)}
-              placeholder={t('parent.feedback.textPlaceholder')}
-              counter={(n, max) =>
-                t('common.counter', { n: formatNumber(n, locale), max: formatNumber(max, locale) })
-              }
-            />
+            {/* 1. The teacher: rating + optional text. */}
+            <Card className="flex flex-col gap-3">
+              {ratingBlock(
+                'teacher',
+                teacherName,
+                TEACHER_TAGS,
+                <Avatar name={teacherName} size="sm" />,
+              )}
+              <Textarea
+                label={t('parent.feedback.textAboutTeacher', { name: teacherName })}
+                value={body.teacher}
+                maxLength={MAX}
+                onChange={(ev) => setBody((b) => ({ ...b, teacher: ev.target.value }))}
+                placeholder={t('parent.feedback.textPlaceholder')}
+                counter={counter}
+              />
+            </Card>
+
+            {/* 2. The centre: rating + optional text, collapsed by default. */}
+            <Card className="flex flex-col gap-3">
+              {ratingBlock(
+                'centre',
+                t('parent.feedback.theCentre', { name: centreName }),
+                CENTRE_TAGS,
+                <Avatar name={centreName} tone="navy" size="sm" square />,
+              )}
+              {centreTextOpen ? (
+                <Textarea
+                  label={t('parent.feedback.textAboutCentre', { name: centreName })}
+                  value={body.centre}
+                  maxLength={MAX}
+                  onChange={(ev) => setBody((b) => ({ ...b, centre: ev.target.value }))}
+                  placeholder={t('parent.feedback.textPlaceholder')}
+                  counter={counter}
+                  autoFocus
+                />
+              ) : (
+                <button
+                  type="button"
+                  aria-expanded={false}
+                  onClick={() => setCentreTextOpen(true)}
+                  className="inline-flex min-h-11 items-center self-start text-label text-blueText"
+                >
+                  + {t('parent.feedback.addCentreComment')}
+                </button>
+              )}
+            </Card>
 
             <h2 className="text-label text-navy">{t('parent.feedback.whoSees')}</h2>
             <RadioCards
@@ -237,8 +262,8 @@ export function P10Feedback({ id }: { id: string }) {
                   value: 'private',
                   title: t('parent.feedback.private'),
                   description: t('parent.feedback.privateDesc', {
-                    teacher: e.group.teacher.displayName,
-                    centre: e.group.centre.name,
+                    teacher: teacherName,
+                    centre: centreName,
                   }),
                 },
               ]}
