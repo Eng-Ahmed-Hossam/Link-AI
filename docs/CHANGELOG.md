@@ -2,6 +2,12 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-03 — Shared demo mock server
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | 14 | API modes `mock` \| `mock-server` \| `live`; Demo controls env; `pnpm mock:server`, `pnpm scenario:demo-followup`, `pnpm demo`; §5.1 the demo scenario. | Demo Day: one shared mock state across apps |
+
 ## 2026-10-03 — Batch 1 sign-off fix-ups
 
 | # | File | What changed | Why |
