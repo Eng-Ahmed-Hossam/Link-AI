@@ -4,12 +4,17 @@
 import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
 
-const OUT = 'docs/frontend/screenshots/batch-0';
+// `--stories <prefix> <outdir>`: only Storybook stories whose id starts with <prefix>.
+const storiesOnly = process.argv.includes('--stories');
+const prefix = storiesOnly ? process.argv[process.argv.indexOf('--stories') + 1] : '';
+const OUT = storiesOnly
+  ? process.argv[process.argv.indexOf('--stories') + 2]
+  : 'docs/frontend/screenshots/batch-0';
 mkdirSync(OUT, { recursive: true });
 
 const stories = await (await fetch('http://localhost:6006/index.json')).json();
 const storyIds = Object.values(stories.entries)
-  .filter((e) => e.type === 'story')
+  .filter((e) => e.type === 'story' && e.id.startsWith(prefix))
   .map((e) => e.id);
 
 const shells = [
@@ -66,7 +71,7 @@ for (const lang of ['ar', 'en']) {
   }
   await ctx.close();
 
-  for (const s of shells) {
+  for (const s of storiesOnly ? [] : shells) {
     const c = await browser.newContext({ viewport: { width: s.width, height: s.height } });
     const p = await c.newPage();
     if (s.teacher) {

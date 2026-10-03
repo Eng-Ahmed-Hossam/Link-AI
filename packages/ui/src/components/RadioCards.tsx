@@ -51,7 +51,7 @@ export function RadioCards({
       aria-label={label}
       value={value}
       onValueChange={onValueChange}
-      className={cn('flex flex-col', layout === 'cards' ? 'gap-3' : 'gap-0', className)}
+      className={cn('relative flex flex-col', layout === 'cards' ? 'gap-3' : 'gap-0', className)}
     >
       {options.map((o) => (
         <RadioGroup.Item

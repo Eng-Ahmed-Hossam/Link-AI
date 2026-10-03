@@ -22,10 +22,14 @@
     font-size: var(--text-body-size);
     line-height: var(--text-body-leading);
     -webkit-text-size-adjust: 100%;
+    overflow-x: clip;
   }
   body {
     background: var(--color-bg);
     margin: 0;
+    /* Radix radio/checkbox render a hidden native input shifted by -100% (translateX). In RTL that
+       lands outside the viewport and makes the page scroll sideways; html and body clip it. */
+    overflow-x: clip;
   }
   :focus-visible {
     outline: 2px solid var(--color-blueText);

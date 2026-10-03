@@ -641,7 +641,7 @@ function tick(now = Date.now()) {
         e.lastPaymentFailed = false;
         e.holdExpiresAt = null;
         const reviewOn =
-          s.settings.reviewEachEnrolment[groupFx(e.groupId).teacherId] ??
+          mockSettings().reviewEachEnrolment[groupFx(e.groupId).teacherId] ??
           teacherFx(groupFx(e.groupId).teacherId).reviewEachEnrolment;
         e.status = reviewOn ? 'awaiting_teacher' : 'confirmed';
         if (e.plan !== 'per_session')
@@ -683,8 +683,7 @@ function enrolmentDto(e: EnrolmentRow, lang: Lang, viewerId: string): Enrolment 
     firstSession: { id: first.id, startsAt: first.startsAt },
     phoneShared: e.phoneShared,
     teacherReviewsEnrolments:
-      load().settings.reviewEachEnrolment[g.teacherId] ??
-      teacherFx(g.teacherId).reviewEachEnrolment,
+      mockSettings().reviewEachEnrolment[g.teacherId] ?? teacherFx(g.teacherId).reviewEachEnrolment,
     renewsOn:
       e.plan === 'monthly_recurring' &&
       !e.planCancelled &&
