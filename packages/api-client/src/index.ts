@@ -31,8 +31,27 @@ import type {
   WaitlistEntry,
   Page,
 } from './types';
+import type {
+  CaseAttempt,
+  Correction,
+  CorrectionBody,
+  FollowupCase,
+  Note,
+  NoteTag,
+  ParentMessage,
+  RosterRow,
+  SaveRecordBody,
+  SessionRecord,
+  StudentDetail,
+  TeacherGroup,
+  TeacherToday,
+  VoiceExtraction,
+  VoiceNote,
+} from './followup';
 
 export * from './types';
+export * from './followup';
+export * from './demo';
 
 export class ApiError extends Error {
   constructor(public readonly problem: ProblemDetails) {
@@ -52,6 +71,23 @@ const config = { baseUrl: '', locale: 'ar' as 'ar' | 'en', token: null as string
 export const setApiBaseUrl = (url: string) => {
   config.baseUrl = url.replace(/\/$/, '');
 };
+/** Absolute URL for a path on the current API (mock routes such as `/__mock/*` included). */
+export const apiUrl = (path: string) => `${config.baseUrl}${path}`;
+
+/**
+ * Where API calls go (docs/14):
+ * - `mock`: in-process MSW (browser worker, or the fetch wrapper on native); state per device.
+ * - `mock-server`: the same handlers over HTTP (`pnpm mock:server`); one shared state for all apps.
+ * - `live`: core-api.
+ * `useMocks = "false"` (the older switch) means `live`.
+ */
+export type ApiMode = 'mock' | 'mock-server' | 'live';
+export const MOCK_SERVER_URL = 'http://localhost:4010';
+export function resolveApiMode(mode: string | undefined, useMocks?: string): ApiMode {
+  if (mode === 'mock' || mode === 'mock-server' || mode === 'live') return mode;
+  return useMocks === 'false' ? 'live' : 'mock';
+}
+
 export const setApiLocale = (locale: 'ar' | 'en') => {
   config.locale = locale;
 };
@@ -170,6 +206,67 @@ export const api = {
   createReview: (body: CreateReviewBody, idempotencyKey: string) =>
     request<ReviewCreated>('POST', '/v1/reviews', { body, idempotencyKey }),
 };
+
+/** Phase 2 follow-up endpoints (docs/07 §3; draft shapes in ./followup). */
+export const fuApi = {
+  teacherToday: () => request<TeacherToday>('GET', '/v1/teachers/me/today'),
+  teacherGroups: () => request<TeacherGroup[]>('GET', '/v1/teachers/me/groups'),
+  roster: (groupId: string) => request<RosterRow[]>('GET', `/v1/groups/${groupId}/roster`),
+  records: (groupId: string) =>
+    request<SessionRecord[]>('GET', `/v1/groups/${groupId}/session-records`),
+  openRecord: (groupId: string, groupSessionId: string, idempotencyKey?: string) =>
+    request<SessionRecord>('POST', `/v1/groups/${groupId}/session-records`, {
+      body: { groupSessionId },
+      idempotencyKey,
+    }),
+  record: (id: string) => request<SessionRecord>('GET', `/v1/session-records/${id}`),
+  saveDraft: (id: string, body: SaveRecordBody) =>
+    request<SessionRecord>('PATCH', `/v1/session-records/${id}`, { body }),
+  /** Approval 1. Keep the key across retries: a retry never creates a second record (FUP-REC-07). */
+  confirmRecord: (id: string, idempotencyKey: string) =>
+    request<SessionRecord>('POST', `/v1/session-records/${id}/confirm`, { idempotencyKey }),
+  correct: (entryId: string, body: CorrectionBody) =>
+    request<Correction>('POST', `/v1/record-entries/${entryId}/corrections`, { body }),
+  createVoiceNote: (body: { sessionRecordId: string; durationS: number }, idempotencyKey: string) =>
+    request<VoiceNote>('POST', '/v1/voice-notes', { body, idempotencyKey }),
+  voiceUploaded: (id: string) => request<VoiceNote>('POST', `/v1/voice-notes/${id}/uploaded`),
+  /** `{ status: 'transcribing' }` (HTTP 202) until the extraction is ready. */
+  extraction: (voiceNoteId: string) =>
+    request<VoiceExtraction | { status: 'transcribing' }>(
+      'GET',
+      `/v1/voice-notes/${voiceNoteId}/extraction`,
+    ),
+  resolveIdentity: (extractionId: string, itemId: string, studentId: string) =>
+    request<VoiceExtraction>('POST', `/v1/voice-extractions/${extractionId}/resolve-identity`, {
+      body: { itemId, studentId },
+    }),
+  student: (id: string) => request<StudentDetail>('GET', `/v1/students/${id}`),
+  addNote: (studentId: string, body: { groupId: string; tag: NoteTag; body: string }) =>
+    request<Note>('POST', `/v1/students/${studentId}/notes`, { body }),
+  suggestNote: (noteId: string) => request<Note>('POST', `/v1/notes/${noteId}/suggest-for-parent`),
+  cases: () => request<Page<FollowupCase>>('GET', '/v1/cases'),
+  case: (id: string) => request<FollowupCase>('GET', `/v1/cases/${id}`),
+  addAttempt: (
+    id: string,
+    body: Pick<CaseAttempt, 'channel' | 'result'> &
+      Partial<Pick<CaseAttempt, 'learned' | 'nextAction' | 'followUpOn'>> & { keepOpen?: boolean },
+  ) => request<FollowupCase>('POST', `/v1/cases/${id}/attempts`, { body }),
+  dismissCase: (id: string, reason: string) =>
+    request<FollowupCase>('POST', `/v1/cases/${id}/dismiss`, { body: { reason } }),
+  reopenCase: (id: string) => request<FollowupCase>('POST', `/v1/cases/${id}/reopen`),
+  messages: () => request<Page<ParentMessage>>('GET', '/v1/messages'),
+  message: (id: string) => request<ParentMessage>('GET', `/v1/messages/${id}`),
+  draftMessage: (caseId: string, tone?: ParentMessage['tone']) =>
+    request<ParentMessage>('POST', '/v1/messages/drafts', { body: { caseId, tone } }),
+  editMessage: (id: string, body: { text?: string; tone?: ParentMessage['tone'] }) =>
+    request<ParentMessage>('PATCH', `/v1/messages/${id}`, { body }),
+  approveMessage: (id: string, body: { checked: boolean; channel?: 'whatsapp' | 'sms' }) =>
+    request<ParentMessage>('POST', `/v1/messages/${id}/approve`, { body }),
+};
+
+export const isExtractionReady = (
+  x: VoiceExtraction | { status: 'transcribing' },
+): x is VoiceExtraction => 'items' in x;
 
 export const queryKeys = {
   me: ['me'] as const,

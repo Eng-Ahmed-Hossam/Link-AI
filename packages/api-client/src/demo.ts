@@ -1,0 +1,72 @@
+/**
+ * Demo controls client (dev only). Talks to `/__demo/*`, which exists only in the mock handlers
+ * (`mock` and `mock-server` API modes). Apps render the controls only when APP_ENV=local and the
+ * demo flag are set, and never in production builds.
+ */
+import { apiUrl } from './index';
+
+export interface DemoSnapshot {
+  demo: {
+    offline: boolean;
+    phase2: boolean;
+    sttDown: boolean;
+    confirmFault: 'before_commit' | 'after_commit' | null;
+  };
+  counters: { confirmCalls: number; confirmCommits: number };
+  records: { confirmed: number; drafts: string[] };
+  signals: {
+    id: string;
+    rule: string;
+    ruleVersion: number;
+    student: string;
+    status: string;
+    caseId: string | null;
+    explanation: string;
+    evidence: { recordId: string; sessionDate: string }[];
+  }[];
+  cases: { id: string; student: string; assignee: string; status: string; dueOn: string }[];
+  messages: {
+    id: string;
+    student: string;
+    status: string;
+    channel: string | null;
+    replies: number;
+  }[];
+}
+
+async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
+  const res = await fetch(apiUrl(path), {
+    method,
+    headers: body === undefined ? {} : { 'content-type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((json as { detail?: string }).detail ?? `HTTP ${res.status}`);
+  return json as T;
+}
+
+export const demoApi = {
+  state: () => call<DemoSnapshot>('GET', '/__demo/state'),
+  reset: () => call<{ ok: true }>('POST', '/__demo/reset', { scenario: 'demo-followup' }),
+  settings: (patch: Partial<DemoSnapshot['demo']>) =>
+    call<DemoSnapshot['demo']>('POST', '/__demo/settings', patch),
+  /** Mock provider event: Queued → Sent → Delivered, or → Failed. */
+  provider: (outcome: 'advance' | 'fail', messageId?: string) =>
+    call<{ id: string; status: string }>('POST', '/__demo/provider', { outcome, messageId }),
+  /** Delivers the parent reply "عندها درس تاني الأربع" (or another body). */
+  reply: (body?: string, messageId?: string) =>
+    call<{ messageId: string; caseId: string | null }>('POST', '/__demo/reply', {
+      body,
+      messageId,
+    }),
+};
+
+/** Flags that the demo "Phase 2" switch turns on together (docs/05 §5 keys). */
+export const PHASE2_FLAGS = [
+  'followup.owner_nav',
+  'followup.records',
+  'followup.voice_notes',
+  'followup.whatsapp_updates',
+  'parent.updates_feed',
+  'teacher.recorded_badge',
+] as const;
