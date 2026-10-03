@@ -2,6 +2,16 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-03 — Batch 1 sign-off fix-ups
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | 13 | CF-27 closed: separate review text per target on P10. | Batch 1 sign-off |
+| 2 | 13, 11, 02 | CF-28 closed: no "No seats" state; pins and cards show "Waitlist only" (11 §3 map pins row, MKT-DSC-03 AC1). | Batch 1 sign-off; BR-ENR-10 |
+| 3 | 13 | OD-49 added: vector source for the logo orb (raster until design supplies one; wordmark outlined under OFL). | Logo fix-up |
+| 4 | 07 | New §2a "Proposed — from frontend Batch 1": shapes for `PATCH /v1/me`, `PUT /v1/me/consents`, `groupsForChild`, `schoolYear.shortName`, search `totals`, `ratingDistribution`, and the enrolment fields `teacherReviewsEnrolments`, `lastPaymentFailed`, `firstSessionStarted`, `canReview`. Not in OpenAPI yet. | The parent PWA mocks need them |
+| 5 | frontend/plan.md | The Figma-to-code prompt saved as the frontend plan, with a header listing the decisions that override it. | Keep the brief in the repo |
+
 ## 2026-10-03 — Frontend Batch 1 (parent PWA)
 
 | # | File | What changed | Why |

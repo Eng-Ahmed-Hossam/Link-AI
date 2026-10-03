@@ -97,6 +97,7 @@ Font stacks: Arabic UI `"Cairo", "Plus Jakarta Sans", system-ui, sans-serif`. En
 | Timeline | A03, A10, A17, L03 | Append-only history |
 | Pipeline / kanban | C06, L01 | Stages as columns |
 | Week grid | C03, C05, J02 | Day × hour; Taken / Free / Booked states |
+| Map pins (`MapView`) | P03, J01 | Two states: teacher count (seats open), or **"Waitlist only"** (amber dot + text) when every matching group is full. No "No seats" state: a full group always accepts a waitlist (BR-ENR-10), and a centre with no matching group is not in the results (CF-28). The map is never mirrored in RTL. Provider: OD-46 |
 | Charts | AN01 (bars vs class average), AN02 (trend lines), AN07 (heatmap) | Follow `dataviz` rules; heatmap cells show numbers to teachers and owners only |
 
 ## 4. States — "operational honesty"

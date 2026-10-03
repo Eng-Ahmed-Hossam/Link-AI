@@ -192,7 +192,7 @@ As a parent, I want to say what my child needs help with, so that I see suitable
 - AC3: Shows the total ("12 centres • 31 Maths teachers within 5 km").
 
 ### MKT-DSC-03 · Map and list · P03
-- AC1: Toggle between map and list. Pins show the teacher count, or "No seats" / "Waitlist only".
+- AC1: Toggle between map and list. Pins show the teacher count, or "Waitlist only" when every matching group is full (BR-ENR-10: a full group always accepts a waitlist). There is no "No seats" state; a centre with no matching group does not appear in the results (CF-28).
 - AC2: Moving the map re-runs the search for the new area.
 
 ### MKT-DSC-04 · Centre page · P04

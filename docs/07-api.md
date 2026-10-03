@@ -280,6 +280,77 @@ Every ops call is audited, including reads of personal data.
 
 ---
 
+## 2a. Proposed — from frontend Batch 1
+
+**Status: proposed, not agreed.** The parent PWA (P01–P10) is built on mocks that need these shapes. Nothing here is in OpenAPI yet; the draft TypeScript types in `packages/api-client/src/types.ts` match this section exactly and carry `PLACEHOLDER (<screen>)` comments. The backend team accepts, changes or rejects each row before E1/E7 starts; then OpenAPI is written and the draft types are replaced by generated ones.
+
+### P-1. `PATCH /v1/me` (MKT-ACC-03)
+Request (every field optional; at least one):
+```json
+{ "name": "Hassan Mahmoud", "language": "ar" }
+```
+Response `200`: the `Me` object.
+```json
+{ "id": "usr_…", "name": "Hassan Mahmoud", "language": "ar", "roles": ["parent"] }
+```
+Errors: `422 validation_failed` (name empty or over 80 characters; language not `ar`/`en`).
+
+### P-2. `PUT /v1/me/consents` (BR-DAT-03)
+One consent per call. Appends a `consent_events` row with `source: "settings"` (or the source named by the screen); never cached.
+```json
+{ "kind": "whatsapp_updates", "granted": true, "version": "wa-2026-10", "studentId": "stu_…" }
+```
+`kind` is one of the `consent_events.kind` values in [06](06-data-model.md). `studentId` is optional context. `version` is the text version the person saw.
+Response `200`: the current state of every consent for this person.
+```json
+{ "data": [ { "kind": "whatsapp_updates", "studentId": "stu_…", "granted": true, "version": "wa-2026-10", "at": "2026-10-03T09:12:00Z" } ] }
+```
+`GET /v1/me/consents` returns the same shape. Errors: `422 validation_failed`; `403 forbidden` for a `studentId` the caller is not a guardian of.
+
+### P-3. Groups for one child on a centre profile (P04, MKT-DSC-04)
+`GET /v1/centres/by-slug/{slug}?schoolYearId&subjectId` (and `/v1/centres/{id}?…`) adds `groupsForChild` when either filter is given: the published groups at this centre that match the child's school year and the searched subject, newest session first.
+```json
+{ "id": "ctr_…", "slug": "al-nour", "…": "…", "groupsForChild": [ { "…": "GroupSummary, as GET /v1/groups/{id}" } ] }
+```
+Without filters, `groupsForChild` is `[]`. Alternative the backend may prefer: `GET /v1/centres/{id}/groups?schoolYearId&subjectId` returning `Page<GroupSummary>`.
+
+### P-4. `schoolYear.shortName` (P02 chips)
+Every `SchoolYearRef` (in `/v1/curricula`, children, groups, enrolments) gains `shortName` for chips and cards, localised per `Accept-Language`.
+```json
+{ "id": "sy_…", "code": "nat-sec-2", "name": "Secondary 2", "shortName": "Sec 2" }
+```
+Needs a `short_name_ar` / `short_name_en` pair on `school_years` ([06](06-data-model.md)).
+
+### P-5. Search totals (P03, MKT-DSC-02 AC3)
+`GET /v1/search/centres` adds `totals` to the page: counts over the **whole** result set (not the page), for "12 centres • 31 Maths teachers within 5 km".
+```json
+{ "data": [ "…CentreCard" ], "nextCursor": "…", "totals": { "centres": 12, "teachers": 31 } }
+```
+
+### P-6. Rating distribution (P04)
+Centre and teacher profiles add `ratingDistribution`: published public reviews per star, all five stars always present, from `review_stats`.
+```json
+{ "rating": { "avg": "4.7", "count": 128 }, "ratingDistribution": [ { "stars": 5, "count": 101 }, { "stars": 4, "count": 20 }, { "stars": 3, "count": 5 }, { "stars": 2, "count": 1 }, { "stars": 1, "count": 1 } ] }
+```
+
+### P-7. Enrolment fields the parent screens need (P07–P10)
+`GET /v1/enrolments/{id}` and `GET /v1/me/enrolments` add:
+
+| Field | Type | Meaning | Rule |
+|---|---|---|---|
+| `teacherReviewsEnrolments` | boolean | The teacher's `settings.reviewEachEnrolment` (OD-08) at reservation time, so P08 shows the "teacher confirms" step | MKT-ENR-10 |
+| `lastPaymentFailed` | boolean | The latest payment attempt failed while the hold is still live; P08 offers "Try again" with a new Idempotency-Key | BR-ENR-05 |
+| `firstSessionStarted` | boolean | `now ≥ starts_at` of the first covered session | BR-REV-01 |
+| `canReview` | boolean | Verified parent, first session started, and no review for this target this term | BR-REV-01, BR-REV-02 |
+| `holdExpiresAt` | timestamp \| null | Set only while `pending_payment` | BR-ENR-01 |
+| `fawry` | `{reference, expiresAt}` \| null | The open Fawry reference, if the method is Fawry | MKT-ENR-04 |
+| `refund` | `Refund` \| null | The latest refund, shown apart from the status | MKT-ENR-08 |
+
+```json
+{ "id": "enr_…", "status": "pending_payment", "teacherReviewsEnrolments": false, "lastPaymentFailed": true, "firstSessionStarted": false, "canReview": false, "holdExpiresAt": "2026-10-03T09:27:00Z", "fawry": null, "refund": null }
+```
+`canReview` is computed per enrolment for the pair (teacher, centre): P10 posts one `POST /v1/reviews` per rated target, each with its own text (CF-27), and `409 already_reviewed` covers a target already reviewed this term.
+
 ## 3. Later phases (outline only)
 
 | Area | Endpoints (Phase) |
