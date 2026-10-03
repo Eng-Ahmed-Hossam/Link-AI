@@ -1,0 +1,22 @@
+{
+  "name": "@link/ui-native",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@link/config": "workspace:*",
+    "@types/react": "^19.3.0"
+  },
+  "dependencies": {
+    "@link/tokens": "workspace:*",
+    "react": "^19.3.0",
+    "react-native": "0.86.3"
+  }
+}

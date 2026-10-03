@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Link",
+    "slug": "link-teacher",
+    "scheme": "link-teacher",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": ["expo-router", "expo-font"],
+    "experiments": { "typedRoutes": true },
+    "android": { "package": "app.link.teacher" },
+    "web": { "bundler": "metro", "output": "single" }
+  }
+}
