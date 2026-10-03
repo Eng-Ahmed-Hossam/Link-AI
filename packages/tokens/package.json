@@ -1,0 +1,19 @@
+{
+  "name": "@link/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./tokens.css"
+  },
+  "scripts": {
+    "build": "node scripts/build-css.ts",
+    "typecheck": "tsc -p .",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@link/config": "workspace:*",
+    "@types/node": "^26.6.4"
+  }
+}

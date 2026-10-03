@@ -1,0 +1,8 @@
+node_modules
+.next
+.turbo
+dist
+storybook-static
+docs
+pnpm-lock.yaml
+*.woff2
