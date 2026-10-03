@@ -2,6 +2,14 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-03 — Walking skeleton, Part 1 (local services and database)
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | adr/ADR-0006 | New ADR: dbmate (SQL-first migrations), Kysely query layer, roles and credentials, Moto as the local AWS stand-in, Postgres image base, configurable host ports. | No doc chose these; LocalStack now needs an account token |
+| 2 | 14 | Quick start; §1 pins Node 24 and pnpm 12.8.1; §2 service table matches `infra/local` (`aws-local` replaces `localstack`, `oidc-stub` marked not built); §3 adds the local-infra names and `env:check`; §4 lists what the seed contains so far; §5 marks each command real or planned; Windows troubleshooting. | Make the plan match reality |
+| 3 | 06 | `confirmed` on every `ref` table (14 §4 already required it); subjects' same-curriculum check is a composite FK; `outbox_events` gains `partition_key`, `created_at`, `last_error` and its grants; `feature_flags.scope_id` is the all-zero UUID for global flags. | Found while writing migrations 0001–0003 |
+
 ## 2026-10-03 — Frontend Batch 0
 
 | # | File | What changed | Why |

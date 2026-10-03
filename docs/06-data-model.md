@@ -117,6 +117,7 @@ RLS: `SELF`, `OPS`.
 | name_en, name_ar | text | |
 | position | int | Display order |
 | active | boolean | |
+| confirmed | boolean | `false` until OD-07 is decided **(added)** — every `ref` table carries it (docs/14 §4) |
 
 ### school_years (added)
 | Field | Type | Notes |
@@ -138,6 +139,7 @@ Unique `(curriculum_id, code)`.
 | code | text | e.g. `T1` |
 | name_en, name_ar | text | |
 | starts_on, ends_on | date | `CHECK (ends_on > starts_on)` |
+| confirmed | boolean | `false` until OD-07 is decided **(added)** |
 
 Unique `(academic_year, code)`.
 
@@ -150,8 +152,9 @@ Unique `(academic_year, code)`.
 | code | text | e.g. `MATH` |
 | name_en, name_ar | text | ERD: `name` |
 | active | boolean | |
+| confirmed | boolean | `false` until OD-07 is decided **(added)** |
 
-Unique `(curriculum_id, school_year_id, code)`. Check: the school year belongs to the same curriculum.
+Unique `(curriculum_id, school_year_id, code)`. Check: the school year belongs to the same curriculum — enforced by a composite FK `(curriculum_id, school_year_id) → school_years (curriculum_id, id)`.
 
 ### topic_templates / topic_template_nodes (added, Phase 3)
 | Table | Fields |
@@ -914,10 +917,10 @@ Indexes: `(centre_id, occurred_at DESC)`, `(object_type, object_ref, occurred_at
 ### platform tables (added)
 | Table | Fields | Notes |
 |---|---|---|
-| outbox_events | id (event ID), aggregate_type, aggregate_id, type, version, payload jsonb, centre_id, trace_id, published_at, attempts | Partial index `(created_at) WHERE published_at IS NULL` |
+| outbox_events | id (event ID), aggregate_type, aggregate_id, type, version, payload jsonb (the full envelope), centre_id, partition_key, trace_id, created_at, published_at, attempts, last_error | Partial index `(created_at) WHERE published_at IS NULL`. `app_user` may only INSERT (same transaction as the business write); the relay (`app_worker`) reads and marks rows |
 | inbox_events | consumer, event_id, processed_at | PK `(consumer, event_id)` |
 | idempotency_keys | user_id, key, method_path, request_hash, response_code, response_body, expires_at | PK `(user_id, key)`. Durable copy for money endpoints; Redis `idem:{key}` serves the rest |
-| feature_flags | key, scope_type (`global` \| `centre` \| `teacher`), scope_id, enabled, config jsonb, updated_by | PK `(key, scope_type, scope_id)` |
+| feature_flags | key, scope_type (`global` \| `centre` \| `teacher`), scope_id, enabled, config jsonb, updated_by | PK `(key, scope_type, scope_id)`. `scope_id` is the all-zero UUID for global flags, so the key never holds NULL |
 | ai_usage | id, centre_id, teacher_id, feature, provider, model, input_units, output_units, audio_seconds, cost_micros, cost_currency, latency_ms, trace_id | Cost per centre |
 
 ---

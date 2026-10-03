@@ -1,6 +1,17 @@
 # 14 · Development environment
 
-How to run Link locally, which settings it reads, which seed data it ships with, and which outside accounts each milestone needs. **No code exists yet**: names and commands below are the agreed targets. Make them real in E0 (see [12-backlog-phase1.md](12-backlog-phase1.md)).
+How to run Link locally, which settings it reads, which seed data it ships with, and which outside accounts each milestone needs. The local services, migrations, seed and env files are **real** (walking skeleton, Part 1). Commands still marked *planned* in §5 arrive with the stories named there ([12-backlog-phase1.md](12-backlog-phase1.md)).
+
+**Quick start (Windows, macOS, Linux):** install Docker Desktop (WSL2 backend on Windows), Node 24+, pnpm 12 (`npm install -g --allow-scripts=pnpm pnpm@12.8.1`), Python 3.12 and uv. Then:
+
+```bash
+pnpm install
+cp .env.example .env.local     # fill in local values (any random strings for passwords and secrets)
+pnpm dev:infra                 # build + start §2 and wait until every service is healthy
+pnpm db:migrate && pnpm db:seed
+```
+
+`pnpm dev:reset` drops the local volumes and does all of the above again (asks first).
 
 > **Synthetic data only.** `dev` and `staging` never hold real personal data. Real data arrives only in production (E14-04), after OD-26 is decided. Consented real voice notes for E15 follow the same rule for vendors outside Egypt.
 
@@ -10,28 +21,28 @@ How to run Link locally, which settings it reads, which seed data it ships with,
 
 | Tool | Version (pin in `.tool-versions`) | For |
 |---|---|---|
-| Node.js | current LTS | core-api, web, ops, teacher app |
-| pnpm | 9.x | Workspaces (ADR-0004) |
+| Node.js | 24 LTS (`engines: >=24`) | core-api, web, ops, teacher app; repo scripts |
+| pnpm | 12.8.1 (`packageManager` in `package.json`) | Workspaces (ADR-0004) |
 | Python | 3.12 | ai-service |
 | uv | latest | Python dependencies, `ruff`, `pytest`, `mypy` |
 | Docker + Docker Compose | current | Local services (§2) |
 | Expo CLI / EAS CLI | current | Teacher app builds |
 | Terraform | pinned in `infra/` | Cloud environments |
 
-## 2. Local services (`docker compose up`)
+## 2. Local services (`pnpm dev:infra`)
 
-The compose file lives in `infra/local/docker-compose.yml`.
+The compose file lives in `infra/local/docker-compose.yml` (project name `link`). `pnpm dev:infra` runs `docker compose up -d --build --wait` with `--env-file .env.local`. Every service has a healthcheck. Databases use named volumes (`pg-data`, `redis-state-data`); nothing bind-mounts `node_modules`. Host ports can be changed in `.env.local` (`POSTGRES_HOST_PORT`, `REDIS_CACHE_HOST_PORT`, …) — e.g. set `POSTGRES_HOST_PORT=5433` when a native PostgreSQL already uses 5432.
 
 | Service | Image / build | Port | Notes |
 |---|---|---|---|
-| `postgres` | PostgreSQL 16 + PostGIS + pgvector (custom image in `infra/local/postgres/`) | 5432 | Extensions created by migrations: `postgis`, `vector`, `btree_gist` ([06](06-data-model.md) §0). Roles `app_user`, `app_worker`, `app_ops`, `app_migrator`. |
+| `postgres` | PostgreSQL 16 + pgvector + PostGIS 3 (custom image in `infra/local/postgres/`, based on `pgvector/pgvector:pg16`) | 5432 | Database `link`. The init script creates `app_migrator` (owner) and the extensions `postgis`, `vector`, `btree_gist` ([06](06-data-model.md) §0); migration 0001 creates the schemas and the roles `app_user`, `app_worker`, `app_ops` (ADR-0006). |
 | `redis-cache` | Redis 7, `maxmemory-policy allkeys-lru` | 6379 | Cache-aside reads ([05](05-architecture.md) §5) |
 | `redis-state` | Redis 7, `maxmemory-policy noeviction`, AOF on | 6380 | OTP, seat holds, idempotency, rate limits, locks |
-| `localstack` | LocalStack | 4566 | S3 (voice, media, exports buckets), SQS/SNS (events + DLQs), KMS (field-encryption and storage keys), Secrets Manager |
-| `sms-sink` | Small HTTP fake behind the `SmsSender` adapter | 8090 | Captures every SMS (OTP codes, invites); browse them at `http://localhost:8090` |
-| `mail-sink` | Mailpit | 8025 | Captures email |
-| `fake-pay` | Fake provider behind the `PaymentProvider` and `PayoutProvider` adapters | 8091 | Hosted-checkout page, Fawry reference, signed webhooks, settlement reports — for tests without a sandbox. Provider value `fake`, never allowed in prod ([06](06-data-model.md) `payments.provider`) |
-| `oidc-stub` | Local OpenID Connect provider (mock IdP) | 8092 | Ops console SSO for local and test runs (`OPS_OIDC_ISSUER` points here). Pre-loaded with the ops seed users (§4). Never used outside `local`/`dev` |
+| `aws-local` | Moto server (custom image in `infra/local/aws/`) — **replaces LocalStack**, which now needs an account token (ADR-0006) | 4566 | S3 (voice, media, exports buckets), SNS topic + one SQS queue and DLQ per consumer group (`notifications`, `platform-demo`), KMS aliases `storage` and `fields`, Secrets Manager. In memory: recreated on every start |
+| `sms-sink` | Small HTTP fake behind the `SmsSender` adapter (`infra/local/fakes/sms-sink`) | 8090 | Captures every SMS (OTP codes, invites); browse them at `http://localhost:8090`. API: `POST /messages`, `GET /api/messages` |
+| `mail-sink` | Mailpit | 8025 (UI), 1025 (SMTP) | Captures email |
+| `fake-pay` | Fake provider behind the `PaymentProvider` and `PayoutProvider` adapters (`infra/local/fakes/fake-pay`) | 8091 | **Now:** hosted-checkout page (no card fields; it simulates success or failure) and signed webhooks (`x-fake-pay-signature: sha256=<HMAC>` with `PAYMENT_WEBHOOK_SECRET`; `POST /v1/test-webhook` sends one). **With E8-03:** Fawry reference, refunds, payouts, settlement reports. Provider value `fake`, never allowed in prod ([06](06-data-model.md) `payments.provider`) |
+| `oidc-stub` | Local OpenID Connect provider (mock IdP) — **not built yet** (E1-06) | 8092 | Ops console SSO for local and test runs (`OPS_OIDC_ISSUER` points here). Pre-loaded with the ops seed users (§4). Never used outside `local`/`dev`. Until then the ops console uses a stub sign-in page |
 
 The real provider sandboxes (§5) are used from `staging` and in contract tests.
 
@@ -59,7 +70,7 @@ Names and purpose only. **Never commit values.** `.env.example` lists every name
 | `DATABASE_REPLICA_URL` | Read replica (search, reports) |
 | `REDIS_CACHE_URL` | Cache instance |
 | `REDIS_STATE_URL` | State instance |
-| `S3_ENDPOINT`, `S3_REGION` | Object storage (LocalStack locally) |
+| `S3_ENDPOINT`, `S3_REGION` | Object storage (`aws-local` locally) |
 | `S3_BUCKET_VOICE`, `S3_BUCKET_MEDIA`, `S3_BUCKET_EXPORTS` | Buckets |
 | `KMS_KEY_STORAGE`, `KMS_KEY_FIELDS` | Storage encryption key; field-level (envelope) encryption key |
 | `HMAC_KEY_LOOKUP` | Key for phone and contact HMAC lookup columns |
@@ -97,6 +108,12 @@ Names and purpose only. **Never commit values.** `.env.example` lists every name
 | `NEXT_PUBLIC_POSTHOG_KEY` | Product analytics |
 | `EXPO_PUBLIC_API_BASE_URL` | core-api base URL for the teacher app |
 | `EXPO_PUBLIC_SENTRY_DSN` | Teacher app error reporting |
+| `NEXT_PUBLIC_USE_MOCKS`, `EXPO_PUBLIC_USE_MOCKS` | `true` (default) serves MSW mock data; replaced by `*_API_MODE` (`mock` \| `live`) in the walking skeleton Part 2 |
+
+### Local infrastructure only
+`.env.example` also lists the names `infra/local/docker-compose.yml` and the repo scripts read: `POSTGRES_PASSWORD` (container superuser, never used by apps), `APP_MIGRATOR_PASSWORD`, `APP_USER_PASSWORD` / `APP_WORKER_PASSWORD` / `APP_OPS_PASSWORD` (set on the roles by `pnpm db:migrate`, local only), the `*_HOST_PORT` overrides, `SMS_SINK_URL`, `FAKE_PAY_URL`, `FAKE_PAY_WEBHOOK_URL`, and dummy `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` for `aws-local`.
+
+`pnpm env:check` fails when code (TS, JS, Python, the compose file) reads a name that `.env.example` does not list.
 
 ## 4. Seed data (`pnpm db:seed`)
 
@@ -106,28 +123,40 @@ Names and purpose only. **Never commit values.** `.env.example` lists every name
 | One district | One governorate + area (designs use Maadi, Cairo) with a few fictional centres, halls, open slots, teachers, groups and sessions | `sample` — fictional names only (OD-06) |
 | Commission rules | Global defaults: `rent_fee` 5%, `booking_commission` 5% | Defaults (OD-01, OD-02) |
 | Feature flags | Phase 2–3 features off; landing-page Phase 2 sections hidden (OD-48) | — |
-| Users | One user per app role — parent, teacher, centre owner, staff — with fake phone numbers whose OTPs land in `sms-sink` | `sample` |
+| Users | One user per app role — parent, teacher, centre owner, staff — with fake phone numbers whose OTPs land in `sms-sink`. Also a second centre owner (centre B) for the cross-tenant tests | `sample` |
 | Ops users | Two `link_ops` users, one with the "agent" bundle and one with the "finance" bundle (OD-37). They sign in to the ops console through the local **`oidc-stub`** (SSO), never with phone OTP (MKT-OPS-08) | `sample` |
 
 The seed never contains a real person's data.
 
-## 5. Commands (placeholders until code exists)
+**Built so far (Part 1):** reference data (4 curricula, 31 school years — Nile years wait for OD-07 —, 2 terms of 2026/27, 8 subjects); 2 Maadi centres (Al Nour, verified; Dar El Elm, pending) with 3 halls; 3 teachers with subjects; 9 users and their role assignments; both commission defaults; 10 Phase 2–3 flags, all off. Open slots, groups and sessions arrive with their tables (E5, E6). Seed IDs are fixed and readable (`00000000-0000-7000-8000-a00000000001` = centre 1), so the seed is idempotent. Phone numbers are placeholders in `+2010000000NN`; they only ever reach `sms-sink`.
 
-| Command | What it does |
-|---|---|
-| `pnpm install` | Install workspace dependencies |
-| `docker compose -f infra/local/docker-compose.yml up -d` | Start local services (§2) |
-| `pnpm db:migrate` / `pnpm db:seed` | Apply migrations / load seed data |
-| `pnpm dev` | Run api, workers, gateway, web, ops and the teacher app locally |
-| `pnpm lint` | ESLint + Prettier; `ruff` for ai-service |
-| `pnpm typecheck` | `tsc`; `mypy` for ai-service |
-| `pnpm test` | Unit + integration tests |
-| `pnpm test:rls` | Cross-tenant suite: a user of centre A gets `404` for centre B on every endpoint (10 §2) |
-| `pnpm test:money` | Ledger property tests (INV-01, INV-15) + golden tests for worked examples A–I + seat tests (08 §9) |
-| `pnpm openapi:check` | OpenAPI drift check; regenerates `packages/api-client` |
-| `pnpm events:check` | Event-contract (schema registry) compatibility check |
-| `pnpm i18n:check` | Missing AR/EN keys fail (RTL-11) |
-| `pnpm ai:eval` | Run the eval harness against the gold set (E15-02) |
+## 5. Commands
+
+All commands are Node scripts, so they run the same in PowerShell, cmd and bash. Status: **real** = works now; *planned* = arrives with the story named.
+
+| Command | What it does | Status |
+|---|---|---|
+| `pnpm install` | Install workspace dependencies | real |
+| `pnpm dev:infra` | `docker compose up -d --build --wait` for §2; fails fast if Docker is not running | real |
+| `pnpm dev:reset` | Drop the local volumes, start §2, migrate and seed (asks first; `--yes` skips) | real |
+| `pnpm db:migrate` / `db:rollback` / `db:status` | dbmate, as `app_migrator` (ADR-0006); `db:migrate` also sets local role passwords | real |
+| `pnpm db:seed` | Load the §4 sample data (refused when `APP_ENV=prod`) | real |
+| `pnpm env:check` | Fail if code reads an env name missing from `.env.example` | real |
+| `pnpm dev` | Run api, workers, gateway, ai-service, web, ops and the teacher app locally | *planned* (Part 2) |
+| `pnpm lint` | ESLint + RTL check; `ruff` for ai-service | real (TS); *planned* (Python) |
+| `pnpm typecheck` | `tsc`; `mypy` for ai-service | real (TS); *planned* (Python) |
+| `pnpm test` | Unit + integration tests | real (frontend packages) |
+| `pnpm test:rls` | Cross-tenant suite: a user of centre A gets `404` for centre B on every endpoint (10 §2) | *planned* (Part 2) |
+| `pnpm test:money` | Ledger property tests (INV-01, INV-15) + golden tests for worked examples A–I + seat tests (08 §9) | *planned* (E8-01) |
+| `pnpm openapi:check` | OpenAPI drift check; regenerates `packages/api-client` | *planned* (Part 2) |
+| `pnpm events:check` | Event-contract (schema registry) compatibility check | *planned* (Part 2) |
+| `pnpm i18n:check` | Missing AR/EN keys fail (RTL-11) | real |
+| `pnpm ai:eval` | Run the eval harness against the gold set (E15-02) | *planned* (placeholder in Part 2) |
+
+### Troubleshooting (Windows)
+- **Port already in use** (often a native PostgreSQL on 5432): set `POSTGRES_HOST_PORT=5433` (or the matching `*_HOST_PORT`) in `.env.local` and use the same port in the `DATABASE_URL*` values.
+- **pnpm installed with npm but Turborepo says `pnpm` is not recognised:** reinstall with `npm install -g --allow-scripts=pnpm pnpm@12.8.1`.
+- **Docker not running:** `pnpm dev:infra` stops with a message; start Docker Desktop (WSL2 backend).
 
 ## 6. Outside accounts and sandboxes
 
