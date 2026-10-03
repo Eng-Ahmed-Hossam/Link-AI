@@ -107,6 +107,8 @@ interface State {
     holdSeconds: number;
     scenario: Scenario;
     reviewEachEnrolment: Record<string, boolean>;
+    /** How long the mock webhook takes to land ("Confirming…"). Tests can lengthen it. */
+    webhookDelayMs?: number;
   };
   seq: number;
 }
@@ -888,7 +890,11 @@ export function completeMockPayment(paymentId: string, result: 'succeeded' | 'fa
   if (!p) throw new MockProblem(404, 'not_found', 'Payment not found.');
   p.status = result;
   const e = s.enrolments.find((x) => x.id === p.enrolmentId)!;
-  e.pendingWebhook = { result, dueAt: Date.now() + WEBHOOK_DELAY_MS, method: p.method };
+  e.pendingWebhook = {
+    result,
+    dueAt: Date.now() + (mockSettings().webhookDelayMs ?? WEBHOOK_DELAY_MS),
+    method: p.method,
+  };
   save();
   return { enrolmentId: e.id };
 }
@@ -897,7 +903,11 @@ export function payFawryAtOutlet(enrolmentId: string) {
   const s = load();
   const e = s.enrolments.find((x) => x.id === enrolmentId);
   if (!e || e.method !== 'fawry') throw new MockProblem(404, 'not_found', 'No Fawry reference.');
-  e.pendingWebhook = { result: 'succeeded', dueAt: Date.now() + WEBHOOK_DELAY_MS, method: 'fawry' };
+  e.pendingWebhook = {
+    result: 'succeeded',
+    dueAt: Date.now() + (mockSettings().webhookDelayMs ?? WEBHOOK_DELAY_MS),
+    method: 'fawry',
+  };
   save();
 }
 
