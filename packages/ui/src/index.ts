@@ -11,3 +11,4 @@ export * from './components/states';
 export * from './components/MockBadge';
 export * from './components/SideNav';
 export * from './components/LanguageSwitch';
+export * from './components/Logo';
