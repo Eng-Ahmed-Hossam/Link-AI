@@ -17,6 +17,8 @@ export async function prepare(
       scenario?: string;
       holdSeconds?: number;
       reviewEachEnrolment?: Record<string, boolean>;
+      /** Slower mock webhook, to see the transient "Confirming…" state. */
+      webhookDelayMs?: number;
     };
     flags?: Record<string, boolean>;
     childId?: string;

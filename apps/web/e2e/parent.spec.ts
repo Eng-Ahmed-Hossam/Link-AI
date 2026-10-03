@@ -397,7 +397,8 @@ test.describe('P07 Reserve & pay', () => {
 test.describe('P08 Place reserved', () => {
   for (const lang of LANGS) {
     test(`card: Confirming… then Place reserved, axe, screenshots (${lang})`, async ({ page }) => {
-      await prepare(page, { signedIn: true });
+      // A slower mock webhook so the transient "Confirming…" state is reliably on screen.
+      await prepare(page, { signedIn: true, overrides: { webhookDelayMs: 6000 } });
       await reserveByCard(page, lang);
       await page.waitForURL(/mock-checkout/);
       await ready(page);
@@ -463,7 +464,7 @@ test.describe('P08 Place reserved', () => {
   }) => {
     await prepare(page, {
       signedIn: true,
-      overrides: { reviewEachEnrolment: { 'tch-salma': true } },
+      overrides: { reviewEachEnrolment: { 'tch-salma': true }, webhookDelayMs: 6000 },
     });
     await reserveByCard(page, 'en');
     await page.waitForURL(/mock-checkout/);
@@ -563,21 +564,61 @@ test.describe('P10 Leave feedback', () => {
     });
   }
 
-  test('MKT-REV-01: separate ratings, ≤ 600 characters, public or private, then thanks', async ({
+  test('MKT-REV-01 / CF-27: teacher first, separate texts (600 each), public or private', async ({
     page,
   }) => {
     await prepare(page, { signedIn: true });
     await page.goto('/en/enrolments/enr-mariam-phys/feedback');
     await ready(page);
-    await expect(page.getByRole('radiogroup', { name: /Rate The centre/ })).toBeVisible();
-    await expect(page.getByRole('radiogroup', { name: /Rate Mr Ahmed Samy/ })).toBeVisible();
-    await expect(page.getByRole('textbox')).toHaveAttribute('maxlength', '600');
+    const groups = page.getByRole('radiogroup', { name: /^Rate / });
+    await expect(groups.nth(0)).toHaveAccessibleName(/Rate Mr Ahmed Samy/);
+    await expect(groups.nth(1)).toHaveAccessibleName(/Rate The centre/);
+    // The centre comment is collapsed by default.
+    await expect(page.getByRole('textbox')).toHaveCount(1);
+    await page.getByRole('button', { name: /Add a comment about the centre/ }).click();
+    const teacherText = page.getByRole('textbox', { name: /About Mr Ahmed Samy/ });
+    const centreText = page.getByRole('textbox', { name: /About Al Nour Centre/ });
+    await expect(teacherText).toHaveAttribute('maxlength', '600');
+    await expect(centreText).toHaveAttribute('maxlength', '600');
+    await teacherText.fill('Explains every step.');
+    await centreText.fill('Parking is hard at 5 PM.');
+    await expect(page.getByText('20 / 600')).toBeVisible();
+    await expect(page.getByText('24 / 600')).toBeVisible();
     await expect(page.getByRole('radio', { name: /Post publicly/ })).toBeVisible();
     await expect(page.getByRole('radio', { name: /Send privately/ })).toBeVisible();
-    await page.getByRole('radio', { name: '5 stars out of 5' }).first().click();
+    await groups.nth(0).getByRole('radio', { name: '5 stars out of 5' }).click();
+    await groups.nth(1).getByRole('radio', { name: '4 stars out of 5' }).click();
+    await shot(page, 'P10-feedback-filled', 'en');
     await page.getByRole('button', { name: 'Submit feedback' }).click();
     await expect(page.getByRole('heading', { name: 'Thank you' })).toBeVisible();
+    // Each target got its own review with its own text.
+    const reviews = await page.evaluate(
+      () => JSON.parse(localStorage.getItem('link.mock.db.v1')!).reviews,
+    );
+    expect(
+      reviews.map((r: { targetType: string; body: string }) => [r.targetType, r.body]),
+    ).toEqual([
+      ['teacher', 'Explains every step.'],
+      ['centre', 'Parking is hard at 5 PM.'],
+    ]);
     await shot(page, 'P10-thanks', 'en');
+  });
+
+  test('CF-27: a centre review without text is allowed', async ({ page }) => {
+    await prepare(page, { signedIn: true });
+    await page.goto('/en/enrolments/enr-mariam-phys/feedback');
+    await ready(page);
+    await page
+      .getByRole('radiogroup', { name: /Rate The centre/ })
+      .getByRole('radio', { name: '3 stars out of 5' })
+      .click();
+    await page.getByRole('button', { name: 'Submit feedback' }).click();
+    await expect(page.getByRole('heading', { name: 'Thank you' })).toBeVisible();
+    const reviews = await page.evaluate(
+      () => JSON.parse(localStorage.getItem('link.mock.db.v1')!).reviews,
+    );
+    expect(reviews).toHaveLength(1);
+    expect(reviews[0]).toMatchObject({ targetType: 'centre', stars: 3, body: '' });
   });
 
   test('BR-REV-01: before the first session, feedback is not open', async ({ page }) => {
