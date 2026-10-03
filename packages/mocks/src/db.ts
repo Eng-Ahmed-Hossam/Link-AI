@@ -204,8 +204,18 @@ export function resetMockDb() {
   save();
 }
 
-export function mockSettings() {
-  return load().settings;
+/** Tests and the dev panel can preset settings before the app loads (localStorage `link.mock.overrides`). */
+function overrides(): Partial<State['settings']> {
+  if (!hasStorage()) return {};
+  try {
+    return JSON.parse(localStorage.getItem('link.mock.overrides') ?? '{}');
+  } catch {
+    return {};
+  }
+}
+
+export function mockSettings(): State['settings'] {
+  return { ...load().settings, ...overrides() };
 }
 export function setMockSettings(patch: Partial<State['settings']>) {
   const s = load();
@@ -801,7 +811,7 @@ export function createEnrolment(
     status: 'pending_payment',
     method: null,
     pricePt: body.paymentPlan === 'per_session' ? g.sessionFeePt : g.monthlyFeePt, // snapshot (OD-39)
-    holdExpiresAt: new Date(Date.now() + s.settings.holdSeconds * 1000).toISOString(),
+    holdExpiresAt: new Date(Date.now() + mockSettings().holdSeconds * 1000).toISOString(),
     sessionIds: covered,
     firstSessionId: firstId,
     phoneShared: body.sharePhone,
