@@ -1,0 +1,25 @@
+{
+  "name": "@link/mocks",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./browser": "./src/browser.ts",
+    "./native": "./src/native.ts",
+    "./fixtures": "./src/fixtures.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@link/config": "workspace:*",
+    "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "@link/api-client": "workspace:*",
+    "msw": "^3.0.1"
+  }
+}

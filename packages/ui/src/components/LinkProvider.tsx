@@ -1,3 +1,5 @@
+'use client';
+
 import type { ReactNode } from 'react';
 import { DirectionProvider } from '@radix-ui/react-direction';
 import { dirOf, type Locale } from '@link/i18n';
