@@ -1,0 +1,122 @@
+# Local services for Link (docs/14 §2). Start with `pnpm dev:infra` (waits until all are healthy).
+# Values come from the repo-root `.env.local` (the scripts pass `--env-file ../../.env.local`).
+# Windows: Docker Desktop with the WSL2 backend. Databases use named volumes; nothing bind-mounts node_modules.
+name: link
+
+services:
+  postgres:
+    build: ./postgres
+    image: link/postgres:16-postgis-pgvector
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.local}
+      APP_MIGRATOR_PASSWORD: ${APP_MIGRATOR_PASSWORD:?set APP_MIGRATOR_PASSWORD in .env.local}
+    ports:
+      - '${POSTGRES_HOST_PORT:-5432}:5432'
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d link']
+      interval: 3s
+      timeout: 3s
+      retries: 40
+      start_period: 10s
+
+  redis-cache:
+    image: redis:7-alpine
+    command:
+      ['redis-server', '--maxmemory', '256mb', '--maxmemory-policy', 'allkeys-lru', '--save', '']
+    ports:
+      - '${REDIS_CACHE_HOST_PORT:-6379}:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis-state:
+    image: redis:7-alpine
+    command:
+      [
+        'redis-server',
+        '--maxmemory-policy',
+        'noeviction',
+        '--appendonly',
+        'yes',
+        '--appendfsync',
+        'everysec',
+      ]
+    ports:
+      - '${REDIS_STATE_HOST_PORT:-6380}:6379'
+    volumes:
+      - redis-state-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # docs/14 names this `localstack`; LocalStack now needs an account token, so Moto stands in (ADR-0006).
+  aws-local:
+    build: ./aws
+    image: link/aws-local:moto
+    environment:
+      AWS_REGION: ${S3_REGION:-eu-central-1}
+    ports:
+      - '${AWS_LOCAL_HOST_PORT:-4566}:4566'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'test -f /tmp/link-ready && curl -fsS http://localhost:4566/moto-api/ > /dev/null',
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+      start_period: 5s
+
+  sms-sink:
+    build:
+      context: ./fakes
+      args: { FAKE: sms-sink }
+    image: link/sms-sink:local
+    ports:
+      - '${SMS_SINK_HOST_PORT:-8090}:8090'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8090/health']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  mail-sink:
+    image: axllent/mailpit:latest
+    ports:
+      - '${MAIL_SINK_HOST_PORT:-8025}:8025'
+      - '${MAIL_SINK_SMTP_HOST_PORT:-1025}:1025'
+    healthcheck:
+      test: ['CMD', '/mailpit', 'readyz']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  fake-pay:
+    build:
+      context: ./fakes
+      args: { FAKE: fake-pay }
+    image: link/fake-pay:local
+    environment:
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:?set PAYMENT_WEBHOOK_SECRET in .env.local}
+      FAKE_PAY_PUBLIC_URL: http://localhost:${FAKE_PAY_HOST_PORT:-8091}
+      # core-api runs on the host; host.docker.internal reaches it from Docker Desktop.
+      FAKE_PAY_WEBHOOK_URL: ${FAKE_PAY_WEBHOOK_URL:-}
+    ports:
+      - '${FAKE_PAY_HOST_PORT:-8091}:8091'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8091/health']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pg-data:
+  redis-state-data:
