@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createTranslator, formatMoney, normalizeDigits, normalizeEgyptPhone, formatCountdown } from './index';
+import {
+  createTranslator,
+  formatMoney,
+  normalizeDigits,
+  normalizeEgyptPhone,
+  formatCountdown,
+} from './index';
 
 describe('RTL-06 money (BR-MNY piasters)', () => {
   it('formats whole amounts without .00', () => {

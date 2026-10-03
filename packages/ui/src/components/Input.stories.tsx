@@ -31,7 +31,13 @@ export const WithError: StoryObj<typeof Input> = {
     const t = tFor(ctx.globals);
     return (
       <div className="max-w-sm">
-        <Input label={t('auth.phone.label')} prefix="+20" ltr defaultValue="12345" error={t('auth.otp.invalid', { remaining: 4 })} />
+        <Input
+          label={t('auth.phone.label')}
+          prefix="+20"
+          ltr
+          defaultValue="12345"
+          error={t('auth.otp.invalid', { remaining: 4 })}
+        />
       </div>
     );
   },

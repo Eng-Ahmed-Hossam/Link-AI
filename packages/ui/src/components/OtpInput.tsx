@@ -21,7 +21,16 @@ export interface OtpInputProps {
  * Six-digit code. Always an LTR isolate (codes read left to right in both languages, RTL-04).
  * Accepts Arabic-Indic digits and normalises them to Western digits.
  */
-export function OtpInput({ value, onChange, length = 6, label, digitLabel, error, disabled, onComplete }: OtpInputProps) {
+export function OtpInput({
+  value,
+  onChange,
+  length = 6,
+  label,
+  digitLabel,
+  error,
+  disabled,
+  onComplete,
+}: OtpInputProps) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
   const commit = (next: string) => {

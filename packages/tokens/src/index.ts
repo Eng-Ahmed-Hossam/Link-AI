@@ -30,7 +30,17 @@ export const semantic = {
   error: { fg: color.red, bg: color.redSoft },
 } as const;
 
-export const space = { 4: 4, 8: 8, 12: 12, 16: 16, 20: 20, 24: 24, 32: 32, 40: 40, 48: 48 } as const;
+export const space = {
+  4: 4,
+  8: 8,
+  12: 12,
+  16: 16,
+  20: 20,
+  24: 24,
+  32: 32,
+  40: 40,
+  48: 48,
+} as const;
 export const radius = { 8: 8, 12: 12, 16: 16, 24: 24 } as const;
 
 /** CSS box-shadow strings (web). `shadow` has RN-friendly equivalents below. */
@@ -44,10 +54,34 @@ export const elevation = {
 
 /** React Native shadow props (approximate: RN has no spread or multi-shadow). */
 export const elevationNative = {
-  subtle: { shadowColor: color.navy, shadowOpacity: 0.05, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
-  card: { shadowColor: color.navy, shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
-  glow: { shadowColor: color.blue, shadowOpacity: 0.28, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
-  raised: { shadowColor: color.navy, shadowOpacity: 0.12, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 8 },
+  subtle: {
+    shadowColor: color.navy,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  card: {
+    shadowColor: color.navy,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  glow: {
+    shadowColor: color.blue,
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+  raised: {
+    shadowColor: color.navy,
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
+  },
 } as const;
 
 export type Locale = 'ar' | 'en';
@@ -82,4 +116,14 @@ export const text = { en: build('en'), ar: build('ar') } as const;
 /** Minimum touch target in mobile apps (pt). */
 export const touchTarget = 44;
 
-export const tokens = { color, semantic, space, radius, elevation, elevationNative, fontFamily, text, touchTarget };
+export const tokens = {
+  color,
+  semantic,
+  space,
+  radius,
+  elevation,
+  elevationNative,
+  fontFamily,
+  text,
+  touchTarget,
+};

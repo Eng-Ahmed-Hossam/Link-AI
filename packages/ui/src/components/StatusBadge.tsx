@@ -23,7 +23,13 @@ export function StatusBadge({
 }) {
   const t = tones[tone];
   return (
-    <span className={cn('inline-flex items-center gap-2 rounded-8 px-3 py-1 text-caption font-semibold', t.box, className)}>
+    <span
+      className={cn(
+        'inline-flex items-center gap-2 rounded-8 px-3 py-1 text-caption font-semibold',
+        t.box,
+        className,
+      )}
+    >
       <span aria-hidden className={cn('size-2 shrink-0 rounded-full', t.dot)} />
       <span>{children}</span>
     </span>

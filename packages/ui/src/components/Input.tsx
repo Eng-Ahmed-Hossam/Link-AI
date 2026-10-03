@@ -16,8 +16,9 @@ export function Input({ label, help, error, ltr, prefix, id, className, ...rest 
   const auto = useId();
   const inputId = id ?? auto;
   const describedBy =
-    [help && !error ? `${inputId}-help` : null, error ? `${inputId}-error` : null].filter(Boolean).join(' ') ||
-    undefined;
+    [help && !error ? `${inputId}-help` : null, error ? `${inputId}-error` : null]
+      .filter(Boolean)
+      .join(' ') || undefined;
   return (
     <div className={cn('flex flex-col gap-2', className)}>
       <label htmlFor={inputId} className="text-label text-navy">

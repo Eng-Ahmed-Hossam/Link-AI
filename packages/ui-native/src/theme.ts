@@ -8,7 +8,11 @@ export { color, touchTarget };
  */
 const families = {
   ar: { 400: 'Cairo_400Regular', 600: 'Cairo_600SemiBold', 700: 'Cairo_700Bold' },
-  en: { 400: 'PlusJakartaSans_400Regular', 600: 'PlusJakartaSans_600SemiBold', 700: 'PlusJakartaSans_700Bold' },
+  en: {
+    400: 'PlusJakartaSans_400Regular',
+    600: 'PlusJakartaSans_600SemiBold',
+    700: 'PlusJakartaSans_700Bold',
+  },
 } as const;
 
 /** Figma text style `Link/EN/*` or `Link/AR/*` as a React Native text style (Arabic is 155% line height). */

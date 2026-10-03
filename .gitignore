@@ -10,3 +10,9 @@ node_modules
 dist
 *.tsbuildinfo
 .DS_Store
+.playwright-mcp
+.expo-web.log
+.web.log
+.ops.log
+.sb.log
+nohup.out

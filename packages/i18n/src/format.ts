@@ -18,7 +18,9 @@ export function formatNumber(value: number, locale: Locale): string {
 }
 
 export function formatPercent(fraction: number, locale: Locale): string {
-  return new Intl.NumberFormat(INTL[locale], { style: 'percent', maximumFractionDigits: 0 }).format(fraction);
+  return new Intl.NumberFormat(INTL[locale], { style: 'percent', maximumFractionDigits: 0 }).format(
+    fraction,
+  );
 }
 
 export function formatDate(
@@ -26,7 +28,9 @@ export function formatDate(
   locale: Locale,
   options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', weekday: 'short' },
 ): string {
-  return new Intl.DateTimeFormat(INTL[locale], { timeZone: TIME_ZONE, ...options }).format(new Date(date));
+  return new Intl.DateTimeFormat(INTL[locale], { timeZone: TIME_ZONE, ...options }).format(
+    new Date(date),
+  );
 }
 
 export function formatTime(date: Date | string | number, locale: Locale): string {

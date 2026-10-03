@@ -14,7 +14,12 @@ export function OpsShell({ locale, children }: { locale: Locale; children: React
   const pathname = usePathname() ?? '';
   const items = [
     { id: 'centres', label: t('ops.nav.centres'), icon: <Building2 />, href: `/${locale}/centres` },
-    { id: 'reviews', label: t('ops.nav.reviews'), icon: <ShieldCheck />, href: `/${locale}/reviews` },
+    {
+      id: 'reviews',
+      label: t('ops.nav.reviews'),
+      icon: <ShieldCheck />,
+      href: `/${locale}/reviews`,
+    },
     { id: 'refunds', label: t('ops.nav.refunds'), icon: <Receipt />, href: `/${locale}/refunds` },
   ];
   const activeId = items.find((i) => pathname.startsWith(i.href))?.id ?? 'centres';

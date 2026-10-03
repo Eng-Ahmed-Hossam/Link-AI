@@ -1,4 +1,6 @@
 import { Tabs } from 'expo-router';
+import { DoorOpen, Users, Wallet } from 'lucide-react-native';
+import { color } from '@link/tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabBar } from '@link/ui-native';
 import { useLocale } from '@/locale';
@@ -12,15 +14,23 @@ export default function TabsLayout() {
     rooms: t('teacher.tabs.rooms'),
     earnings: t('teacher.tabs.earnings'),
   };
+  const icons: Record<string, typeof Users> = { index: Users, rooms: DoorOpen, earnings: Wallet };
   return (
     <Tabs
-      screenOptions={{ headerShown: false }}
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: color.bg } }}
       tabBar={({ state, navigation }) => (
         <TabBar
           locale={locale}
           bottomInset={insets.bottom}
           activeId={state.routes[state.index]?.name ?? 'index'}
-          items={state.routes.map((r) => ({ id: r.name, label: labels[r.name] ?? r.name }))}
+          items={state.routes.map((r) => {
+            const Icon = icons[r.name] ?? Users;
+            return {
+              id: r.name,
+              label: labels[r.name] ?? r.name,
+              icon: <Icon size={20} color={color.navy} />,
+            };
+          })}
           onSelect={(id) => navigation.navigate(id)}
         />
       )}

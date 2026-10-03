@@ -97,6 +97,7 @@ The kickoff prompt is the source of truth. Each row says what we build. Status: 
 | CF-17 | Diagram 08 draws all three readable rules (score decline, low participation, same concern 3 times) inside the trend worker. | Diagram 08 vs [05](05-architecture.md) §4 | The followup module evaluates every rule that reads records. The trend worker only updates baselines and emits `signal.candidate` for `score_decline_class_adjusted`. Keep open until diagram 08 is redrawn. | open |
 | CF-18 | Diagram 07 draws the audit log as an event consumer. | Diagram 07 vs [05](05-architecture.md) §2 rule 6 | Audit rows are written in the same transaction as the change. If audit moves to its own service later, it consumes outbox events instead. | open |
 | CF-19 | The landing page leads with AI follow-up, shows Phase 2–3 features, and says teachers "rent rooms by the session". The prompt says the marketplace is the business and Phase 1 ships no follow-up; teachers rent weekly hall slots. | Landing page `68:616` vs prompt §1, §4 | OD-48. Copy says "weekly hall slots". | open |
+| CF-20 | Figma has a fourth effect style, `Link/Elevation/Raised` (`0 2 6 #0A18240F, 0 24 48 -8 #0A18241F`, seen on P01). Doc 11 §1 lists only Subtle, Card and Glow. | Figma P01 `39:260` vs [11](11-design-system.md) §1 | Frontend adds it as `elevation.raised` in `packages/tokens`; doc 11 needs a row. Also unverified in Figma: `space/8`, `space/48`, `radius/8`, `radius/24`, `Link/AR/Title`, EN Metric (not bound in any frame the MCP read). See `docs/frontend/token-audit.md`. | open |
 
 ---
 

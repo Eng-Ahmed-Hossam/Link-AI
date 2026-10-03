@@ -22,12 +22,17 @@ export function TextField({ locale, label, help, error, ltr, ...rest }: TextFiel
           textStyle(locale, 'body'),
           styles.input,
           error ? { borderColor: color.red } : null,
-          ltr ? { writingDirection: 'ltr', textAlign: locale === 'ar' ? 'right' : 'left' } : { textAlign: 'auto' },
+          ltr
+            ? { writingDirection: 'ltr', textAlign: locale === 'ar' ? 'right' : 'left' }
+            : { textAlign: 'auto' },
         ]}
         {...rest}
       />
       {error ? (
-        <Text accessibilityRole="alert" style={[textStyle(locale, 'caption'), { color: color.red }]}>
+        <Text
+          accessibilityRole="alert"
+          style={[textStyle(locale, 'caption'), { color: color.red }]}
+        >
           {error}
         </Text>
       ) : help ? (

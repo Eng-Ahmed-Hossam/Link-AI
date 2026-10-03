@@ -22,11 +22,14 @@ for (const k of Object.keys(en)) {
   const a = [...args(en[k])].sort().join();
   const b = [...args(ar[k])].sort().join();
   if (a !== b) errors.push(`placeholder mismatch in ${k}: en {${a}} vs ar {${b}}`);
-  if (/plural/.test(en[k]) && !/few|many/.test(ar[k])) errors.push(`ar plural missing few/many forms: ${k}`);
+  if (/plural/.test(en[k]) && !/few|many/.test(ar[k]))
+    errors.push(`ar plural missing few/many forms: ${k}`);
 }
 
 if (errors.length) {
   console.error(`i18n check failed (${errors.length}):\n  ` + errors.join('\n  '));
   process.exit(1);
 }
-console.log(`i18n check: ${Object.keys(en).length} keys, EN and AR match; ${proposed.length - 1} AR strings flagged for copywriter review.`);
+console.log(
+  `i18n check: ${Object.keys(en).length} keys, EN and AR match; ${proposed.length - 1} AR strings flagged for copywriter review.`,
+);

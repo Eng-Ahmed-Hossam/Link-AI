@@ -21,6 +21,7 @@
     "@eslint/js": "^10.0.1",
     "@link/config": "workspace:*",
     "eslint": "^10.11.0",
+    "playwright": "^1.63.0",
     "prettier": "^3",
     "turbo": "^2",
     "typescript": "^5",

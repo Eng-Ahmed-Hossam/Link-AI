@@ -8,13 +8,23 @@ import '../globals.css';
 
 export const generateStaticParams = () => locales.map((lang) => ({ lang }));
 
-export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
   const locale = parseLocale((await params).lang);
   return { title: getT(locale)('common.appName') };
 }
 
 /** `<html lang dir>` is set on the server from the URL (RTL-01). */
-export default async function RootLayout({ children, params }: { children: ReactNode; params: Promise<{ lang: string }> }) {
+export default async function RootLayout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ lang: string }>;
+}) {
   const locale = parseLocale((await params).lang);
   const t = getT(locale);
   return (

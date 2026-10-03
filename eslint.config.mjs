@@ -1,2 +1,2 @@
-import config from "@link/config/eslint";
+import config from '@link/config/eslint';
 export default config;

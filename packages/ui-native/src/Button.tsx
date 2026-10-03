@@ -12,7 +12,14 @@ export interface ButtonProps extends Omit<PressableProps, 'children' | 'style'> 
 }
 
 /** Primary / Secondary / Quiet / Disabled (11 §3). Touch target is at least 44 pt. */
-export function Button({ locale, label, variant = 'primary', danger, disabled, ...rest }: ButtonProps) {
+export function Button({
+  locale,
+  label,
+  variant = 'primary',
+  danger,
+  disabled,
+  ...rest
+}: ButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"

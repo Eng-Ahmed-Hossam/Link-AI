@@ -34,7 +34,16 @@ export interface SideNavProps {
   className?: string;
 }
 
-export function SideNav({ sections, activeId, label, tone = 'light', header, footer, renderLink, className }: SideNavProps) {
+export function SideNav({
+  sections,
+  activeId,
+  label,
+  tone = 'light',
+  header,
+  footer,
+  renderLink,
+  className,
+}: SideNavProps) {
   const dark = tone === 'dark';
   return (
     <nav
@@ -49,7 +58,12 @@ export function SideNav({ sections, activeId, label, tone = 'light', header, foo
       {sections.map((section) => (
         <div key={section.id} className="flex flex-col gap-1">
           {section.label ? (
-            <p className={cn('px-3 pb-1 text-caption font-semibold', dark ? 'text-white/70' : 'text-muted')}>
+            <p
+              className={cn(
+                'px-3 pb-1 text-caption font-semibold',
+                dark ? 'text-white/70' : 'text-muted',
+              )}
+            >
               {section.label}
             </p>
           ) : null}
@@ -80,7 +94,9 @@ export function SideNav({ sections, activeId, label, tone = 'light', header, foo
                 ),
               };
               return (
-                <li key={item.id}>{renderLink ? renderLink(item, props) : <a href={item.href} {...props} />}</li>
+                <li key={item.id}>
+                  {renderLink ? renderLink(item, props) : <a href={item.href} {...props} />}
+                </li>
               );
             })}
           </ul>

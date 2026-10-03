@@ -41,7 +41,9 @@ export function TeacherList({ locale }: { locale: Locale }) {
                   : t('common.seatsLeft', { count: teacher.seatState === 'few' ? 2 : 8 })}
               </StatusBadge>
               {teacher.fromSessionFee ? (
-                <span className="text-label">{formatMoney(teacher.fromSessionFee.amountPt, locale)}</span>
+                <span className="text-label">
+                  {formatMoney(teacher.fromSessionFee.amountPt, locale)}
+                </span>
               ) : null}
             </div>
           </Card>

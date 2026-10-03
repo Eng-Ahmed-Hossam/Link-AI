@@ -8,7 +8,13 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   return { title: getT(parseLocale((await params).lang))('ops.signIn.title') };
 }
 
-export default async function RootLayout({ children, params }: { children: ReactNode; params: Promise<{ lang: string }> }) {
+export default async function RootLayout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ lang: string }>;
+}) {
   const locale = parseLocale((await params).lang);
   return (
     <html lang={locale} dir={dirOf(locale)}>

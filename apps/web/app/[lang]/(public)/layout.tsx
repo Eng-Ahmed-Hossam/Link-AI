@@ -2,7 +2,13 @@ import type { ReactNode } from 'react';
 import { parseLocale } from '@/i18n';
 import { LangSwitch } from '@/LangSwitch';
 
-export default async function PublicLayout({ children, params }: { children: ReactNode; params: Promise<{ lang: string }> }) {
+export default async function PublicLayout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ lang: string }>;
+}) {
   const locale = parseLocale((await params).lang);
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col">

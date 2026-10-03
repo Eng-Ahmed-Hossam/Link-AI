@@ -15,7 +15,9 @@ export function Placeholder({ title }: { title: string }) {
       </Text>
       <View style={styles.card}>
         <StatusBadge locale={locale} tone="neutral" label={t('common.status.neutral')} />
-        <Text style={[textStyle(locale, 'body'), { color: color.muted }]}>{t('teacher.shell.placeholder')}</Text>
+        <Text style={[textStyle(locale, 'body'), { color: color.muted }]}>
+          {t('teacher.shell.placeholder')}
+        </Text>
       </View>
       <View style={styles.row}>
         <Button

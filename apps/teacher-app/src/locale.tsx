@@ -1,7 +1,22 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import { DevSettings, I18nManager, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createTranslator, defaultLocale, dirOf, isLocale, type Locale, type Translate } from '@link/i18n';
+import {
+  createTranslator,
+  defaultLocale,
+  dirOf,
+  isLocale,
+  type Locale,
+  type Translate,
+} from '@link/i18n';
 
 interface LocaleValue {
   locale: Locale;
@@ -50,7 +65,10 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(KEY, l).catch(() => {});
   }, []);
 
-  const value = useMemo(() => ({ locale, t: createTranslator(locale), setLocale }), [locale, setLocale]);
+  const value = useMemo(
+    () => ({ locale, t: createTranslator(locale), setLocale }),
+    [locale, setLocale],
+  );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

@@ -17,11 +17,20 @@ const base =
 const variants: Record<ButtonVariant, string> = {
   primary:
     'bg-blue text-navy shadow-glow hover:brightness-95 disabled:bg-soft disabled:text-muted disabled:shadow-none disabled:brightness-100',
-  secondary: 'bg-white text-navy border border-border hover:bg-soft disabled:bg-soft disabled:text-muted',
-  quiet: 'bg-transparent text-blueText hover:bg-blueSoft disabled:text-muted disabled:hover:bg-transparent',
+  secondary:
+    'bg-white text-navy border border-border hover:bg-soft disabled:bg-soft disabled:text-muted',
+  quiet:
+    'bg-transparent text-blueText hover:bg-blueSoft disabled:text-muted disabled:hover:bg-transparent',
 };
 
-export function Button({ variant = 'primary', danger, block, className, type = 'button', ...rest }: ButtonProps) {
+export function Button({
+  variant = 'primary',
+  danger,
+  block,
+  className,
+  type = 'button',
+  ...rest
+}: ButtonProps) {
   return (
     <button
       type={type}

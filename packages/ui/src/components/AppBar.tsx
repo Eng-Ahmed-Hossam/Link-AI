@@ -14,7 +14,10 @@ export interface AppBarProps {
 export function AppBar({ title, onBack, backLabel, trailing, className }: AppBarProps) {
   return (
     <header
-      className={cn('sticky top-0 z-10 flex min-h-14 items-center gap-2 border-b border-border bg-white px-2', className)}
+      className={cn(
+        'sticky top-0 z-10 flex min-h-14 items-center gap-2 border-b border-border bg-white px-2',
+        className,
+      )}
     >
       {onBack ? (
         <button

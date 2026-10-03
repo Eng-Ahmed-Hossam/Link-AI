@@ -14,8 +14,18 @@ export function ParentShell({ locale, children }: { locale: Locale; children: Re
   const pathname = usePathname() ?? '';
   const items = [
     { id: 'search', label: t('parent.nav.search'), icon: <Search />, href: `/${locale}/search` },
-    { id: 'children', label: t('parent.nav.children'), icon: <Baby />, href: `/${locale}/children` },
-    { id: 'account', label: t('parent.nav.account'), icon: <UserRound />, href: `/${locale}/account` },
+    {
+      id: 'children',
+      label: t('parent.nav.children'),
+      icon: <Baby />,
+      href: `/${locale}/children`,
+    },
+    {
+      id: 'account',
+      label: t('parent.nav.account'),
+      icon: <UserRound />,
+      href: `/${locale}/account`,
+    },
   ];
   const activeId = items.find((i) => pathname.startsWith(i.href))?.id ?? 'search';
   return (

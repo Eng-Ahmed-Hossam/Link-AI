@@ -35,9 +35,14 @@ export function TabBar({ locale, items, activeId, onSelect, bottomInset = 0 }: T
             onPress={() => onSelect(item.id)}
             style={styles.tab}
           >
-            <View style={[styles.pill, active && { backgroundColor: color.blueSoft }]}>{item.icon}</View>
+            <View style={[styles.pill, active && { backgroundColor: color.blueSoft }]}>
+              {item.icon}
+            </View>
             <Text
-              style={[textStyle(locale, active ? 'label' : 'caption'), { color: active ? color.navy : color.muted }]}
+              style={[
+                textStyle(locale, active ? 'label' : 'caption'),
+                { color: active ? color.navy : color.muted },
+              ]}
             >
               {item.label}
             </Text>
@@ -49,7 +54,25 @@ export function TabBar({ locale, items, activeId, onSelect, bottomInset = 0 }: T
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: 'row', backgroundColor: color.white, borderTopWidth: 1, borderTopColor: color.border },
-  tab: { flex: 1, minHeight: touchTarget + 12, alignItems: 'center', justifyContent: 'center', gap: space[4], paddingVertical: space[8] },
-  pill: { minWidth: 48, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  bar: {
+    flexDirection: 'row',
+    backgroundColor: color.white,
+    borderTopWidth: 1,
+    borderTopColor: color.border,
+  },
+  tab: {
+    flex: 1,
+    minHeight: touchTarget + 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space[4],
+    paddingVertical: space[8],
+  },
+  pill: {
+    minWidth: 48,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

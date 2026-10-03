@@ -13,12 +13,25 @@ const tones: Record<StatusTone, { fg: string; bg: string }> = {
 };
 
 /** A dot AND text, never colour alone (11 §6). */
-export function StatusBadge({ locale, tone = 'neutral', label }: { locale: Locale; tone?: StatusTone; label: string }) {
+export function StatusBadge({
+  locale,
+  tone = 'neutral',
+  label,
+}: {
+  locale: Locale;
+  tone?: StatusTone;
+  label: string;
+}) {
   const t = tones[tone];
   return (
     <View style={[styles.box, { backgroundColor: t.bg }]}>
       <View style={[styles.dot, { backgroundColor: t.fg }]} />
-      <Text style={[textStyle(locale, 'caption'), { color: t.fg, fontFamily: textStyle(locale, 'label').fontFamily }]}>
+      <Text
+        style={[
+          textStyle(locale, 'caption'),
+          { color: t.fg, fontFamily: textStyle(locale, 'label').fontFamily },
+        ]}
+      >
         {label}
       </Text>
     </View>

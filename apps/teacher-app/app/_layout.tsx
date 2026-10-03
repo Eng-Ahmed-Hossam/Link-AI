@@ -14,6 +14,7 @@ import {
 import { MockBadge } from '@link/ui-native';
 import { color } from '@link/tokens';
 import { startMocks } from '@link/mocks/native';
+import { setApiBaseUrl } from '@link/api-client';
 import { LocaleProvider, useLocale } from '@/locale';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -22,9 +23,11 @@ const USE_MOCKS = process.env.EXPO_PUBLIC_USE_MOCKS !== 'false';
 function Shell() {
   const { locale, t } = useLocale();
   return (
-    <View style={{ flex: 1, backgroundColor: color.bg, direction: locale === 'ar' ? 'rtl' : 'ltr' }}>
+    <View
+      style={{ flex: 1, backgroundColor: color.bg, direction: locale === 'ar' ? 'rtl' : 'ltr' }}
+    >
       <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.bg } }} />
       {USE_MOCKS ? <MockBadge locale={locale} label={t('common.mockBadge')} /> : null}
     </View>
   );
@@ -44,9 +47,10 @@ export default function RootLayout() {
   useEffect(() => {
     if (!USE_MOCKS) return;
     try {
+      setApiBaseUrl('http://mock.link.test');
       startMocks();
     } catch (e) {
-      // MSW 3 has no native entry; if it cannot start we keep the app usable.
+      // If mocks cannot start, keep the app usable.
       console.warn('Mock server failed to start', e);
     }
     setMocksReady(true);

@@ -2,6 +2,14 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-03 — Frontend Batch 0
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | 13 | New CF-20: Figma `Link/Elevation/Raised` is not in doc 11 §1; six tokens unverified in Figma. | Token audit (`docs/frontend/token-audit.md`) |
+| 2 | adr/ADR-0005 | New ADR "Frontend stack", including the CLAUDE.md gate waiver for frontend work. | Batch 0 |
+| 3 | frontend/ | New `screen-log.md`, `token-audit.md`, `README.md`. | Batch 0 |
+
 ## 2026-10-03 — Round 2 fix-up
 
 | # | File | What changed | Why |

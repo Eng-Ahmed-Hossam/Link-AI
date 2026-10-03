@@ -2,10 +2,20 @@
   "name": "@link/config",
   "version": "0.0.0",
   "private": true,
-  "files": ["tsconfig.base.json", "tsconfig.react.json", "eslint.mjs"],
+  "files": [
+    "tsconfig.base.json",
+    "tsconfig.react.json",
+    "eslint.mjs"
+  ],
   "exports": {
     "./eslint": "./eslint.mjs",
     "./tsconfig.base.json": "./tsconfig.base.json",
     "./tsconfig.react.json": "./tsconfig.react.json"
+  },
+  "dependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "globals": "^17.13.0",
+    "typescript-eslint": "^8.71.0"
   }
 }

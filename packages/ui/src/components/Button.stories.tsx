@@ -23,7 +23,5 @@ const row = (ctx: { globals: Record<string, unknown> }) => {
 
 export const AllVariants: S = { render: (_a, ctx) => row(ctx) };
 export const Block: S = {
-  render: (_a, ctx) => (
-    <Button block>{tFor(ctx.globals)('common.continue')}</Button>
-  ),
+  render: (_a, ctx) => <Button block>{tFor(ctx.globals)('common.continue')}</Button>,
 };

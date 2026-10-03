@@ -13,7 +13,11 @@ const SECTIONS = {
 } as const;
 
 /** Placeholder for C02–C07 and A16 until Batch 2. */
-export default async function CentreSectionPage({ params }: { params: Promise<{ lang: string; section: string }> }) {
+export default async function CentreSectionPage({
+  params,
+}: {
+  params: Promise<{ lang: string; section: string }>;
+}) {
   const { lang, section } = await params;
   if (!(section in SECTIONS)) notFound();
   const t = getT(parseLocale(lang));
