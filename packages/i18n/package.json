@@ -18,6 +18,7 @@
     "vitest": "^5.0.3"
   },
   "dependencies": {
+    "@formatjs/icu-messageformat-parser": "^3.5.20",
     "intl-messageformat": "^12.1.2"
   }
 }

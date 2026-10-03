@@ -1,6 +1,7 @@
 // RTL-11: fail on missing translation keys (EN <-> AR), mismatched ICU placeholders,
 // and stale entries in the "proposed" review list.
 import { readFileSync } from 'node:fs';
+import { parse, TYPE } from '@formatjs/icu-messageformat-parser';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -15,8 +16,32 @@ for (const k of Object.keys(en)) if (!(k in ar)) errors.push(`missing in ar: ${k
 for (const k of Object.keys(ar)) if (!(k in en)) errors.push(`missing in en: ${k}`);
 for (const k of proposed) if (!(k in ar)) errors.push(`proposed list names unknown key: ${k}`);
 
-// Top-level argument names ({name}, {count, plural, …}) must match between languages.
-const args = (s) => new Set([...s.matchAll(/\{(\w+)(?=[,}])/g)].map((m) => m[1]));
+// Argument names (at any depth) must match between languages. Parsed with the ICU parser,
+// so plural option bodies such as `one {centre}` are not mistaken for arguments.
+function args(msg) {
+  const out = new Set();
+  const walk = (els) => {
+    for (const el of els) {
+      if (
+        el.type === TYPE.argument ||
+        el.type === TYPE.number ||
+        el.type === TYPE.date ||
+        el.type === TYPE.time
+      )
+        out.add(el.value);
+      if (el.type === TYPE.plural || el.type === TYPE.select) {
+        out.add(el.value);
+        for (const o of Object.values(el.options)) walk(o.value);
+      }
+    }
+  };
+  try {
+    walk(parse(msg));
+  } catch (e) {
+    errors.push(`ICU syntax error: ${e.message} in "${msg}"`);
+  }
+  return out;
+}
 for (const k of Object.keys(en)) {
   if (!(k in ar)) continue;
   const a = [...args(en[k])].sort().join();

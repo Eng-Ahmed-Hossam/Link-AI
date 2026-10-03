@@ -7,7 +7,7 @@
     ".": "./src/index.ts",
     "./browser": "./src/browser.ts",
     "./native": "./src/native.ts",
-    "./fixtures": "./src/fixtures.ts"
+    "./fixtures": "./src/data.ts"
   },
   "scripts": {
     "typecheck": "tsc -p .",
@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@link/api-client": "workspace:*",
+    "@link/i18n": "workspace:*",
     "msw": "^3.0.1"
   }
 }

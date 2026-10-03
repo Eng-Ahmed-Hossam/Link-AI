@@ -1,2 +1,3 @@
 export { handlers, MOCK_OTP } from './handlers';
-export * from './fixtures';
+export { resetMockDb, mockSettings, setMockSettings, type Scenario } from './db';
+export * as fixtures from './data';

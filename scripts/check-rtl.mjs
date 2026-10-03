@@ -17,7 +17,8 @@ const EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.mdx']);
 
 const RULES = [
   [
-    /(?<![\w-])-?(?:ml|mr|pl|pr|left|right|scroll-ml|scroll-mr|scroll-pl|scroll-pr)-[\w[\]./%-]+/,
+    // `(?!to-)` skips prose such as "right-to-left".
+    /(?<![\w-])-?(?:ml|mr|pl|pr|left|right|scroll-ml|scroll-mr|scroll-pl|scroll-pr)-(?!to-)[\w[\]./%-]+/,
     'Tailwind physical utility (use ms/me/ps/pe/start/end)',
   ],
   [
