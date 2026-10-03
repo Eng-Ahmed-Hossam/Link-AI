@@ -54,6 +54,41 @@ export interface Me {
   roles: Role[];
 }
 
+/** PATCH /v1/me (07 §2a P-1). PLACEHOLDER (Account). */
+export interface UpdateMeBody {
+  name?: string;
+  language?: 'ar' | 'en';
+}
+
+/** `consent_events.kind` (06). */
+export type ConsentKind =
+  | 'terms'
+  | 'privacy'
+  | 'child_data_processing'
+  | 'share_phone_with_teacher'
+  | 'whatsapp_updates'
+  | 'sms_updates'
+  | 'focus_plans'
+  | 'ai_training_use';
+
+/** PUT /v1/me/consents (07 §2a P-2). PLACEHOLDER (Account). */
+export interface PutConsentBody {
+  kind: ConsentKind;
+  granted: boolean;
+  /** Text version the person saw. */
+  version: string;
+  studentId?: string;
+}
+
+/** Current state: the latest consent_events row per (person, student, kind). Never cached. */
+export interface ConsentState {
+  kind: ConsentKind;
+  studentId: string | null;
+  granted: boolean;
+  version: string;
+  at: string;
+}
+
 export interface CurriculumRef {
   id: string;
   code: Curriculum;
@@ -87,7 +122,8 @@ export interface RatingSummary {
 }
 
 /** Seat availability shown on pins and cards (P02, P03, P06). */
-export type SeatState = 'open' | 'waitlist' | 'full';
+/** CF-28 (closed): every full group accepts a waitlist, so there is no "No seats" state in Phase 1. */
+export type SeatState = 'open' | 'waitlist';
 
 export interface CentreCard {
   id: string;

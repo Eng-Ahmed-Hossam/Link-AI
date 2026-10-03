@@ -6,6 +6,7 @@ import { useMutation, useQuery, type UseQueryOptions } from '@tanstack/react-que
 import type {
   CentreProfile,
   CheckoutResult,
+  ConsentState,
   Child,
   CreateEnrolmentBody,
   CreateReviewBody,
@@ -16,6 +17,7 @@ import type {
   OtpRequestResult,
   OtpVerifyResult,
   PaymentMethod,
+  PutConsentBody,
   ProblemDetails,
   ReviewCreated,
   Role,
@@ -25,6 +27,7 @@ import type {
   SubjectRef,
   TeacherCard,
   TeacherProfile,
+  UpdateMeBody,
   WaitlistEntry,
   Page,
 } from './types';
@@ -118,6 +121,11 @@ export const api = {
     request<OtpVerifyResult>('POST', '/v1/auth/otp/verify', { body: { phone: phoneE164, code } }),
   me: () => request<Me>('GET', '/v1/me'),
   addRole: (role: Role) => request<Me>('POST', '/v1/me/roles', { body: { role } }),
+  updateMe: (body: UpdateMeBody, idempotencyKey: string) =>
+    request<Me>('PATCH', '/v1/me', { body, idempotencyKey }),
+  consents: () => request<{ data: ConsentState[] }>('GET', '/v1/me/consents'),
+  putConsent: (body: PutConsentBody, idempotencyKey: string) =>
+    request<{ data: ConsentState[] }>('PUT', '/v1/me/consents', { body, idempotencyKey }),
   children: () => request<Page<Child>>('GET', '/v1/me/children'),
   addChild: (body: { displayName: string; curriculumId: string; schoolYearId: string }) =>
     request<Child>('POST', '/v1/me/children', { body }),
