@@ -21,7 +21,8 @@ describe('RTL-08 plurals', () => {
   const ar = createTranslator('ar');
   const en = createTranslator('en');
   it('uses all six Arabic forms', () => {
-    expect(ar('common.seatsLeft', { count: 0 })).toContain('لا توجد');
+    // CF-28: zero seats means "Waitlist only", never "No seats".
+    expect(ar('common.seatsLeft', { count: 0 })).toBe('قائمة انتظار فقط');
     expect(ar('common.seatsLeft', { count: 1 })).toContain('مكان واحد');
     expect(ar('common.seatsLeft', { count: 2 })).toContain('مكانان');
     expect(ar('common.seatsLeft', { count: 3 })).toContain('أماكن');

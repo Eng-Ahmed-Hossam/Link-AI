@@ -178,7 +178,6 @@
   "parent.results.clear",
   "parent.results.mapLabel",
   "parent.results.pinWaitlist",
-  "parent.results.pinNoSeats",
   "parent.results.teachersCount",
   "parent.results.subjectTeachers",
   "parent.results.from",
@@ -379,7 +378,6 @@
   "parent.feedback.theCentre",
   "parent.feedback.rate",
   "parent.feedback.tagsLabel",
-  "parent.feedback.textLabel",
   "parent.feedback.textPlaceholder",
   "parent.feedback.whoSees",
   "parent.feedback.public",
@@ -406,5 +404,8 @@
   "parent.child.year",
   "parent.child.required",
   "parent.child.consent",
-  "parent.child.save"
+  "parent.child.save",
+  "parent.feedback.textAboutTeacher",
+  "parent.feedback.textAboutCentre",
+  "parent.feedback.addCentreComment"
 ]

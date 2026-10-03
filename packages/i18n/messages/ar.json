@@ -13,7 +13,7 @@
   "common.mockBadge": "بيانات تجريبية",
   "common.skipToContent": "تخطَّ إلى المحتوى",
   "common.stepOf": "الخطوة {current, number} من {total, number}",
-  "common.seatsLeft": "{count, plural, =0 {لا توجد أماكن متبقية} one {متبقٍّ مكان واحد} two {متبقٍّ مكانان} few {متبقٍّ # أماكن} many {متبقٍّ # مكانًا} other {متبقٍّ # مكان}}",
+  "common.seatsLeft": "{count, plural, =0 {قائمة انتظار فقط} one {متبقٍّ مكان واحد} two {متبقٍّ مكانان} few {متبقٍّ # أماكن} many {متبقٍّ # مكانًا} other {متبقٍّ # مكان}}",
   "common.status.info": "معلومة",
   "common.status.warning": "تنبيه",
   "common.status.success": "تم",
@@ -180,7 +180,6 @@
   "parent.results.clear": "مسح الفلاتر",
   "parent.results.mapLabel": "خريطة فيها {count, plural, =0 {لا توجد مراكز} one {مركز واحد} two {مركزان} few {# مراكز} many {# مركزًا} other {# مركز}}",
   "parent.results.pinWaitlist": "قائمة انتظار فقط",
-  "parent.results.pinNoSeats": "لا أماكن",
   "parent.results.teachersCount": "{count, plural, =0 {لا يوجد معلّمون} one {معلّم واحد} two {معلّمان} few {# معلّمين} many {# معلّمًا} other {# معلّم}}",
   "parent.results.subjectTeachers": "{count, plural, =0 {لا يوجد معلّمو {subject}} one {معلّم {subject} واحد} two {معلّما {subject}} few {# معلّمي {subject}} many {# معلّمًا لـ{subject}} other {# معلّم {subject}}}",
   "parent.results.from": "من {fee} للحصة",
@@ -381,7 +380,6 @@
   "parent.feedback.theCentre": "المركز — {name}",
   "parent.feedback.rate": "قيّم {name}",
   "parent.feedback.tagsLabel": "ما الذي لفت انتباهك",
-  "parent.feedback.textLabel": "رأيك بكلماتك (اختياري)",
   "parent.feedback.textPlaceholder": "ما الذي يجب أن يعرفه أولياء الأمور الآخرون؟",
   "parent.feedback.whoSees": "مين يشوف ده؟",
   "parent.feedback.public": "نشر للعامة",
@@ -408,5 +406,8 @@
   "parent.child.year": "الصف الدراسي",
   "parent.child.required": "الاسم والمنهج والصف مطلوبون.",
   "parent.child.consent": "بإضافة ابنك توافق على أن يستخدم Link اسمه وصفّه للبحث عن مجموعاته وإدارتها (إشعار الخصوصية).",
-  "parent.child.save": "حفظ"
+  "parent.child.save": "حفظ",
+  "parent.feedback.textAboutTeacher": "عن {name} (اختياري)",
+  "parent.feedback.textAboutCentre": "عن {name} (اختياري)",
+  "parent.feedback.addCentreComment": "أضف تعليقًا عن المركز"
 }
