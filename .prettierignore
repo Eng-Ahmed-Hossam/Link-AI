@@ -6,3 +6,10 @@ storybook-static
 docs
 pnpm-lock.yaml
 *.woff2
+
+# Generated
+packages/tokens/theme.css
+packages/tokens/tokens.css
+packages/ui/src/brand/wordmark.ts
+packages/ui-native/src/brand/wordmark.ts
+apps/web/next-env.d.ts
