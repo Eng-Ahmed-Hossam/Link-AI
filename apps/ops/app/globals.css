@@ -1,0 +1,4 @@
+@import '@link/ui/styles.css';
+
+/* Tailwind must scan the shared component package for class names. */
+@source '../../../packages/ui/src';
