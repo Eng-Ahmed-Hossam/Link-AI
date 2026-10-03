@@ -169,11 +169,9 @@ export function P03Results() {
                   label:
                     c.seatState === 'waitlist'
                       ? t('parent.results.pinWaitlist')
-                      : c.seatState === 'full'
-                        ? t('parent.results.pinNoSeats')
-                        : selected === c.id
-                          ? `${c.name} • ${t('parent.results.teachersCount', { count: c.teacherCount })}`
-                          : t('parent.results.teachersCount', { count: c.teacherCount }),
+                      : selected === c.id
+                        ? `${c.name} • ${t('parent.results.teachersCount', { count: c.teacherCount })}`
+                        : t('parent.results.teachersCount', { count: c.teacherCount }),
                 }))}
               />
             ) : null}
@@ -243,9 +241,7 @@ export function P03Results() {
                         <StatusBadge tone={seatStateTone[c.seatState]}>
                           {c.seatState === 'open'
                             ? t('parent.results.seatsOpen')
-                            : c.seatState === 'waitlist'
-                              ? t('parent.results.pinWaitlist')
-                              : t('parent.results.pinNoSeats')}
+                            : t('parent.results.pinWaitlist')}
                         </StatusBadge>
                       </div>
                     </div>

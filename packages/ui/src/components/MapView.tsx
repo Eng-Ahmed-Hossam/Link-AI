@@ -6,8 +6,8 @@ export interface MapPin {
   lat: number;
   lng: number;
   label: string;
-  /** `open` (seats), `waitlist` (waitlist only), `full` (no seats). */
-  state: 'open' | 'waitlist' | 'full';
+  /** `open` (seats) or `waitlist` (every matching group is full; CF-28). */
+  state: 'open' | 'waitlist';
   selected?: boolean;
   onSelect?: () => void;
 }
@@ -22,11 +22,7 @@ export interface MapViewProps {
   children?: ReactNode;
 }
 
-const dot: Record<MapPin['state'], string> = {
-  open: 'bg-blue',
-  waitlist: 'bg-amber',
-  full: 'bg-muted',
-};
+const dot: Record<MapPin['state'], string> = { open: 'bg-blue', waitlist: 'bg-amber' };
 
 /**
  * MapView — development implementation (OD-46: provider not chosen). Plots pins from fixture

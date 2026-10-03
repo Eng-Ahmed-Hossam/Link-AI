@@ -66,7 +66,6 @@ export function seatsInfo(
 export const seatStateTone: Record<SeatState, StatusTone> = {
   open: 'success',
   waitlist: 'warning',
-  full: 'neutral',
 };
 
 /** The 8 enrolment states (08 §4) — each with its own label; refund status is separate. */
