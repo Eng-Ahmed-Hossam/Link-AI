@@ -116,7 +116,8 @@ interface State {
 // ── persistence ────────────────────────────────────────────────────────────────
 const hasStorage = () => {
   try {
-    return typeof localStorage !== 'undefined';
+    // Browser only. Node 24+ has an experimental global localStorage; the mock server and tests keep state in memory.
+    return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
   } catch {
     return false;
   }
@@ -131,7 +132,13 @@ function fresh(): State {
     reviews: [],
     waitlist: [],
     otp: {},
-    users: { [fx.PARENT_PHONE]: { id: fx.parent.id, name: null, roles: ['parent'] } },
+    users: {
+      [fx.PARENT_PHONE]: { id: fx.parent.id, name: null, roles: ['parent'] },
+      // Phase 2 demo staff (followup/data.ts): Ms Salma, the owner and Reception at Al Nour.
+      ...Object.fromEntries(
+        fx.staff.map((u) => [u.phone, { id: u.id, name: u.name.en, roles: [u.role] }]),
+      ),
+    },
     extraChildren: [],
     settings: { holdSeconds: HOLD_SECONDS_DEFAULT, scenario: 'default', reviewEachEnrolment: {} },
     seq: 20900,
@@ -253,9 +260,16 @@ function ratingFrom(dist: [number, number, number, number, number]): RatingSumma
 }
 
 /** Sessions of a group: from 5 weeks ago to 9 weeks ahead, on its weekdays (Cairo dates). */
+const sessionCache = new Map<
+  string,
+  { id: string; date: string; startsAt: string; endsAt: string }[]
+>();
 export function sessionsOf(groupId: string) {
   const g = groupFx(groupId);
   const today = cairoToday();
+  const cacheKey = `${groupId}|${today}`;
+  const hit = sessionCache.get(cacheKey);
+  if (hit) return hit;
   const out: { id: string; date: string; startsAt: string; endsAt: string }[] = [];
   for (let d = -35; d <= 63; d++) {
     const date = addDays(today, d);
@@ -268,6 +282,7 @@ export function sessionsOf(groupId: string) {
       });
     }
   }
+  sessionCache.set(cacheKey, out);
   return out;
 }
 

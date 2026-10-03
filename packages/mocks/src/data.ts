@@ -604,3 +604,37 @@ export const seedEnrolments: {
     startedDaysAgo: 28,
   },
 ];
+
+/** Sample staff accounts for the Phase 2 demo (sign in with code 123456). Fictional. */
+export const staff: {
+  id: string;
+  phone: string;
+  role: 'teacher' | 'centre_owner' | 'centre_staff';
+  name: L;
+  /** Centre role label for staff (A16). */
+  title: L;
+  teacherId?: string;
+}[] = [
+  {
+    id: 'usr-salma',
+    phone: '+201000000002',
+    role: 'teacher',
+    name: { en: 'Ms Salma Fathy', ar: 'أ. سلمى فتحي' },
+    title: { en: 'Teacher', ar: 'معلّمة' },
+    teacherId: 'tch-salma',
+  },
+  {
+    id: 'usr-owner',
+    phone: '+201000000003',
+    role: 'centre_owner',
+    name: { en: 'Tamer Fouad', ar: 'تامر فؤاد' },
+    title: { en: 'Owner', ar: 'المالك' },
+  },
+  {
+    id: 'usr-reception',
+    phone: '+201000000004',
+    role: 'centre_staff',
+    name: { en: 'Dina Adel', ar: 'دينا عادل' },
+    title: { en: 'Reception', ar: 'الاستقبال' },
+  },
+];

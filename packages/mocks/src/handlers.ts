@@ -1,82 +1,19 @@
-import { http, HttpResponse, delay, type HttpResponseResolver } from 'msw';
+import { http, HttpResponse, delay } from 'msw';
 import { normalizeEgyptPhone } from '@link/i18n';
 import * as db from './db';
 import * as fx from './data';
+import { authed, langOf, problem, withScenario } from './http';
+import { followupHandlers, demoHandlers } from './followup/handlers';
 
 /** Mock mode accepts this code for every phone number. */
 export const MOCK_OTP = '123456';
 const OTP_MAX_TRIES = 5; // MKT-ACC-01 AC2
 
-const langOf = (req: Request): db.Lang =>
-  req.headers.get('accept-language')?.startsWith('en') ? 'en' : 'ar';
-
-const problem = (
-  status: number,
-  code: string,
-  detail: string,
-  extra: Record<string, unknown> = {},
-) =>
-  HttpResponse.json(
-    {
-      type: `https://docs.link.eg/errors/${code.replace(/_/g, '-')}`,
-      title: detail,
-      status,
-      code,
-      detail,
-      requestId: `req_mock_${Date.now()}`,
-      ...extra,
-    },
-    { status, headers: { 'content-type': 'application/problem+json' } },
-  );
-
-/** Mock bearer tokens look like `mock.<userId>` — dev only, never valid against core-api. */
-const userIdOf = (req: Request) => {
-  const h = req.headers.get('authorization');
-  return h?.startsWith('Bearer mock.') ? h.slice('Bearer mock.'.length) : null;
-};
-
-/** Wrap a resolver with the dev-panel scenario (empty / error / offline / slow) for read endpoints. */
-const withScenario =
-  (resolver: HttpResponseResolver, empty: () => unknown): HttpResponseResolver =>
-  async (info) => {
-    const sc = db.mockSettings().scenario;
-    if (sc === 'offline') return HttpResponse.error();
-    if (sc === 'error')
-      return problem(503, 'service_unavailable', 'The service is not responding.');
-    if (sc === 'slow') await delay(4000);
-    else await delay(250);
-    if (sc === 'empty') return HttpResponse.json(empty() as Record<string, unknown>);
-    return resolver(info);
-  };
-
-const authed =
-  (
-    resolver: (args: {
-      request: Request;
-      params: Record<string, string>;
-      userId: string;
-      lang: db.Lang;
-    }) => Promise<Response> | Response,
-  ): HttpResponseResolver =>
-  async ({ request, params }) => {
-    const userId = userIdOf(request);
-    if (!userId) return problem(401, 'unauthenticated', 'Sign in to continue.');
-    try {
-      return await resolver({
-        request,
-        params: params as Record<string, string>,
-        userId,
-        lang: langOf(request),
-      });
-    } catch (e) {
-      if (e instanceof db.MockProblem) return problem(e.status, e.code, e.detail, e.extra);
-      throw e;
-    }
-  };
-
 const pageOf = <T>(data: T[]) => ({ data, nextCursor: null });
 
 export const handlers = [
+  // Demo controls first: the offline switch must short-circuit every API call.
+  ...demoHandlers,
   // ── Auth (MKT-ACC-01) ─────────────────────────────────────────────────────────
   http.post('*/v1/auth/otp/request', async ({ request }) => {
     const { phone } = (await request.json()) as { phone: string };
@@ -369,4 +306,5 @@ export const handlers = [
     db.payFawryAtOutlet(String(params.enrolmentId));
     return HttpResponse.json({ ok: true });
   }),
+  ...followupHandlers,
 ];

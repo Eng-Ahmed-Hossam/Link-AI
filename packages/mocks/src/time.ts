@@ -2,20 +2,21 @@
 const TZ = 'Africa/Cairo';
 
 /** Today's date in Cairo as YYYY-MM-DD. */
+const DAY_FMT = new Intl.DateTimeFormat('en-CA', {
+  timeZone: TZ,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+const OFFSET_FMT = new Intl.DateTimeFormat('en-US', { timeZone: TZ, timeZoneName: 'longOffset' });
+
 export function cairoToday(now = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: TZ,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
+  return DAY_FMT.format(now);
 }
 
 function offsetMinutes(at: Date): number {
   const name =
-    new Intl.DateTimeFormat('en-US', { timeZone: TZ, timeZoneName: 'longOffset' })
-      .formatToParts(at)
-      .find((p) => p.type === 'timeZoneName')?.value ?? 'GMT+02:00';
+    OFFSET_FMT.formatToParts(at).find((p) => p.type === 'timeZoneName')?.value ?? 'GMT+02:00';
   const m = /GMT([+-])(\d{2}):?(\d{2})?/.exec(name);
   if (!m) return 120;
   return (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3] ?? 0));
