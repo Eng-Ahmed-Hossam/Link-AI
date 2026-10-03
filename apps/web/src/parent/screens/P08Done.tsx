@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEnrolment, type Enrolment } from '@link/api-client';
+import { apiUrl, useEnrolment, type Enrolment } from '@link/api-client';
 import { formatCountdown } from '@link/i18n';
 import {
   Button,
@@ -309,7 +309,7 @@ function FawryPending({ e }: { e: Enrolment }) {
       {process.env.NODE_ENV !== 'production' ? (
         <Button
           variant="secondary"
-          onClick={() => fetch(`/__mock/fawry/${e.id}/pay`, { method: 'POST' })}
+          onClick={() => fetch(apiUrl(`/__mock/fawry/${e.id}/pay`), { method: 'POST' })}
           lang="en"
         >
           Simulate payment at a Fawry outlet (mock)

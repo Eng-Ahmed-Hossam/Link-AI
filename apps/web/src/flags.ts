@@ -1,6 +1,8 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import { PHASE2_FLAGS } from '@link/api-client';
+import { useDemoState } from './demo-state';
 
 /**
  * Feature flags. Keys match the seed (`platform.feature_flags`, docs/14 §4). Phase 2–3 items are
@@ -59,7 +61,14 @@ export function useFlags(): Record<FlagKey, boolean> {
     snapshot,
     () => '{}',
   );
-  return { ...FLAG_DEFAULTS, ...(JSON.parse(raw) as Partial<Record<FlagKey, boolean>>) };
+  // Demo controls (dev only) switch the Phase 2 flags for every app at once; local overrides still win.
+  const demo = useDemoState();
+  const phase2 = demo ? Object.fromEntries(PHASE2_FLAGS.map((k) => [k, demo.demo.phase2])) : {};
+  return {
+    ...FLAG_DEFAULTS,
+    ...phase2,
+    ...(JSON.parse(raw) as Partial<Record<FlagKey, boolean>>),
+  };
 }
 
 export const useFlag = (key: FlagKey) => useFlags()[key];

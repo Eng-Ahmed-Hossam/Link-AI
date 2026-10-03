@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiUrl } from '@link/api-client';
 import { formatMoney } from '@link/i18n';
 import { Button, Card, ErrorState, LoadingState } from '@link/ui';
 import { useI18n } from '../../i18n-client';
@@ -26,7 +27,7 @@ export function MockCheckout({ paymentId }: { paymentId: string }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    fetch(`/__mock/payments/${paymentId}`)
+    fetch(apiUrl(`/__mock/payments/${paymentId}`))
       .then((r) => (r.ok ? r.json() : null))
       .then(setP)
       .catch(() => setP(null));
@@ -34,7 +35,7 @@ export function MockCheckout({ paymentId }: { paymentId: string }) {
 
   async function complete(result: 'succeeded' | 'failed') {
     setBusy(true);
-    await fetch(`/__mock/payments/${paymentId}/complete`, {
+    await fetch(apiUrl(`/__mock/payments/${paymentId}/complete`), {
       method: 'POST',
       body: JSON.stringify({ result }),
     });
