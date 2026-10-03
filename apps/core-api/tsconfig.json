@@ -1,0 +1,5 @@
+{
+  "extends": "@link/config/tsconfig.base.json",
+  "compilerOptions": { "allowImportingTsExtensions": true, "types": ["node"] },
+  "include": ["src", "seeds", "test"]
+}

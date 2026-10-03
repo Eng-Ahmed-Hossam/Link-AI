@@ -1,0 +1,19 @@
+{
+  "name": "@link/core-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@link/config": "workspace:*",
+    "@types/node": "^26.6.4",
+    "@types/pg": "^8.23.1",
+    "dbmate": "^2.36.0"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  }
+}
