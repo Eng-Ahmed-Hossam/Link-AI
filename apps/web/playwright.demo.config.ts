@@ -25,6 +25,7 @@ export default defineConfig({
   },
   webServer: {
     command: 'node ../../scripts/demo.mjs',
+    env: { DEMO_AI: '0' }, // the suites use the fixtures: no speech-to-text service needed
     url: 'http://localhost:4010/__demo/state',
     reuseExistingServer: true,
     timeout: 300_000,

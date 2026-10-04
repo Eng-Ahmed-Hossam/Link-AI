@@ -5,7 +5,7 @@
 // Local only: APP_ENV=local is forced; no real provider is called. Ctrl+C stops everything.
 import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './lib/env.mjs';
 
@@ -91,16 +91,31 @@ if (busy.length) {
 // Real speech-to-text (Part B): if ai-service is installed (pnpm ai:models done), start it on
 // 127.0.0.1 with a fresh token. The presenter turns it on with Demo controls → "Speech-to-text";
 // until then the fixtures are used (and the e2e suites always reset to fixtures).
+// DEMO_AI=0 skips it (the e2e suites: they always use the fixtures). The model is loaded at start
+// only if the saved flags already have real speech-to-text on; otherwise on the first real note.
 const aiDir = join(ROOT, 'apps', 'ai-service');
 const aiReady =
+  process.env.DEMO_AI !== '0' &&
   existsSync(join(aiDir, '.venv')) &&
   existsSync(join(aiDir, '.models', 'large-v3-turbo', 'model.bin'));
 const aiToken = randomBytes(24).toString('base64url');
+let realSttSaved = false;
+try {
+  const flags = join(ROOT, 'packages', 'mocks', '.data', 'demo-flags.json');
+  realSttSaved = JSON.parse(readFileSync(flags, 'utf8')).realStt === true;
+} catch {
+  // no saved flags yet: fixtures
+}
 if (aiReady)
   start(
     'ai',
     ['--directory', aiDir, 'run', 'python', '-m', 'ai_service'],
-    { AI_SERVICE_TOKEN: aiToken, AI_SERVICE_HOST: '127.0.0.1', PYTHONUTF8: '1' },
+    {
+      AI_SERVICE_TOKEN: aiToken,
+      AI_SERVICE_HOST: '127.0.0.1',
+      AI_PRELOAD: realSttSaved ? '1' : '0',
+      PYTHONUTF8: '1',
+    },
     'uv',
   );
 

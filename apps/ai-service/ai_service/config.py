@@ -34,6 +34,8 @@ class Config:
     # The LLM step's share of it (all attempts together). On a CPU-only laptop speech-to-text takes
     # about 45 s for a 60-second note, so 90 s keeps the whole note well inside the limit.
     llm_budget_s: int = 90
+    # Load the Whisper model at start (the pilot), or on the first note (the demo, when fixtures are on).
+    preload: bool = True
     max_audio_bytes: int = 15_000_000
 
 
@@ -62,4 +64,5 @@ def load_config(env: dict[str, str] | None = None) -> Config:
         routing=routing,
         job_timeout_s=int(e.get("AI_JOB_TIMEOUT_S", "180")),
         llm_budget_s=int(e.get("AI_LLM_BUDGET_S", "90")),
+        preload=e.get("AI_PRELOAD", "1") != "0",
     )
