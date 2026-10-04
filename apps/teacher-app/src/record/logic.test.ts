@@ -37,6 +37,7 @@ const record: SessionRecord = {
   groupObservation: null,
   confirmedBy: null,
   confirmedAt: null,
+  createdAt: '2026-10-03T14:00:00Z',
   corrections: [],
   signals: [],
 };

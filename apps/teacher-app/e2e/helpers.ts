@@ -13,11 +13,12 @@ mkdirSync(WALK, { recursive: true });
 const post = (path: string, body: unknown = {}) =>
   fetch(`${MOCK}${path}`, { method: 'POST', body: JSON.stringify(body) });
 
-/** Fresh demo-followup scenario with the Phase 2 flag on (unless told otherwise). */
+/** Fresh demo-followup scenario with the MVP pilot flags (Phase 2 on, marketplace off) unless told otherwise. */
 export async function resetScenario(settings: Record<string, unknown> = {}) {
   await post('/__demo/reset');
   await post('/__demo/settings', {
     phase2: true,
+    marketplace: false,
     offline: false,
     sttDown: false,
     confirmFault: null,

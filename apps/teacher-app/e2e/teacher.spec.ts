@@ -344,7 +344,26 @@ test.describe('Flags and tabs', () => {
     await shot(page, 'T09-phase2-off.ar');
   });
 
-  test('CF-29: tabs Today · My groups · Rooms · Earnings with Phase 2 on', async ({ page }) => {
+  test('CF-29: Phase 2 only (MVP pilot) → Today · My groups · Records', async ({ page }) => {
+    await page.goto('/');
+    await expect(id(page, 'screen-today')).toBeVisible();
+    await expect(page.getByRole('tab')).toHaveText(['اليوم', 'مجموعاتي', 'السجلات']);
+    await page.getByRole('tab', { name: 'السجلات' }).click();
+    await expect(id(page, 'screen-t13')).toBeVisible();
+    await shot(page, 'T-tabs-phase2-only.ar');
+  });
+
+  test('CF-29: Phase 1 only → My groups · Rooms · Earnings', async ({ page }) => {
+    await setDemo({ phase2: false, marketplace: true });
+    await page.goto('/');
+    await expect(id(page, 'screen-t09')).toBeVisible();
+    await expect(page.getByRole('tab')).toHaveText(['مجموعاتي', 'القاعات', 'الأرباح']);
+  });
+
+  test('CF-29: both → Today · My groups · Rooms · Earnings; Records from My groups', async ({
+    page,
+  }) => {
+    await setDemo({ phase2: true, marketplace: true });
     await page.goto('/');
     await expect(id(page, 'screen-today')).toBeVisible();
     await expect(page.getByRole('tab')).toHaveText(['اليوم', 'مجموعاتي', 'القاعات', 'الأرباح']);
