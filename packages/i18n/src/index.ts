@@ -5,6 +5,7 @@ import { defaultLocale, fallbackLocale, type Locale } from './locale';
 
 export * from './locale';
 export * from './format';
+export * from './names';
 
 export type MessageKey = keyof typeof en;
 export type Values = Record<string, string | number | Date>;
