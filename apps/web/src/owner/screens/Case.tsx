@@ -8,6 +8,7 @@ import { ApiError, fuApi } from '@link/api-client';
 import { formatTime } from '@link/i18n';
 import { Button, Callout, Card, EvidenceList, StatusBadge, Textarea } from '@link/ui';
 import { useI18n } from '../../i18n-client';
+import { PILOT } from '../../api-mode';
 import { QueryState } from '../../parent/QueryState';
 import {
   OwnerPageHeader,
@@ -146,7 +147,11 @@ export function OwnerCase({ caseId }: { caseId: string }) {
                   </div>
                 </dl>
                 {caseMsgs.map((m) => {
-                  const ms = messageStatus(t, m.status);
+                  // Pilot: "sent by hand" is the most a hand-sent message can say (BR-APR-11).
+                  const ms =
+                    PILOT && m.sentManually
+                      ? { tone: 'success' as const, label: t('owner.pilot.sentShort') }
+                      : messageStatus(t, m.status);
                   return (
                     <Link
                       key={m.id}
@@ -167,6 +172,15 @@ export function OwnerCase({ caseId }: { caseId: string }) {
                     {t('owner.case.parentReplied', {
                       time: formatTime(replied.replies.at(-1)!.receivedAt, locale),
                     })}
+                  </Link>
+                ) : null}
+                {PILOT && !closed && caseMsgs.some((m) => m.sentManually) ? (
+                  <Link
+                    href={`${base}/follow-ups/${c.id}/outcome?method=whatsapp_manual&result=replied`}
+                    className="inline-flex min-h-11 items-center rounded-12 bg-blueSoft px-4 text-label text-blueText"
+                    data-testid="log-reply"
+                  >
+                    {t('owner.pilot.logReply')}
                   </Link>
                 ) : null}
                 {!closed ? (

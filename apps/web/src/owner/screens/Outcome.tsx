@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, fuApi, type CaseAttempt } from '@link/api-client';
 import { Button, Callout, Card, Checkbox, Input, Select, StatusBadge, Textarea } from '@link/ui';
 import { useI18n } from '../../i18n-client';
+import { PILOT } from '../../api-mode';
 import { QueryState } from '../../parent/QueryState';
 import { OwnerPageHeader, caseStatus, dayMonth, useCentre } from '../common';
 
@@ -20,10 +21,16 @@ export function OwnerOutcome({ caseId }: { caseId: string }) {
   const { base } = useCentre();
   const router = useRouter();
   const qc = useQueryClient();
-  const prefill = useSearchParams().get('learned') ?? '';
+  const params = useSearchParams();
+  const prefill = params.get('learned') ?? '';
   const q = useQuery({ queryKey: ['case', caseId, locale], queryFn: () => fuApi.case(caseId) });
-  const [channel, setChannel] = useState<CaseAttempt['channel'] | ''>('');
-  const [result, setResult] = useState<CaseAttempt['result'] | ''>('');
+  // Pilot "Log the guardian's reply" opens this form on the reply (method and result filled in).
+  const [channel, setChannel] = useState<CaseAttempt['channel'] | ''>(
+    (params.get('method') as CaseAttempt['channel'] | null) ?? '',
+  );
+  const [result, setResult] = useState<CaseAttempt['result'] | ''>(
+    (params.get('result') as CaseAttempt['result'] | null) ?? '',
+  );
   const [learned, setLearned] = useState(prefill);
   const [nextAction, setNextAction] = useState('');
   const [followUpOn, setFollowUpOn] = useState('');
@@ -77,7 +84,9 @@ export function OwnerOutcome({ caseId }: { caseId: string }) {
                 onChange={(e) => setChannel(e.target.value as CaseAttempt['channel'])}
                 options={[
                   { value: 'phone', label: t('owner.outcome.phone') },
-                  { value: 'whatsapp', label: t('owner.outcome.whatsapp') },
+                  PILOT
+                    ? { value: 'whatsapp_manual', label: t('owner.outcome.whatsappManual') }
+                    : { value: 'whatsapp', label: t('owner.outcome.whatsapp') },
                   { value: 'sms', label: t('owner.outcome.sms') },
                   { value: 'meeting', label: t('owner.outcome.meeting') },
                 ]}
@@ -159,6 +168,7 @@ export function OwnerOutcomeDone({ caseId }: { caseId: string }) {
   const channel: Record<CaseAttempt['channel'], string> = {
     phone: t('owner.outcome.phone'),
     whatsapp: t('owner.outcome.whatsapp'),
+    whatsapp_manual: t('owner.outcome.whatsappManual'),
     sms: t('owner.outcome.sms'),
     meeting: t('owner.outcome.meeting'),
   };

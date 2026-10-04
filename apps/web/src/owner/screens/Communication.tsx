@@ -24,7 +24,10 @@ export function OwnerCommunication() {
   const is: Record<Filter, (m: ParentMessage) => boolean> = {
     review: (m) => m.status === 'draft',
     approved: (m) => ['approved', 'queued', 'sent', 'delivered', 'read'].includes(m.status),
-    awaiting: (m) => ['sent', 'delivered', 'read'].includes(m.status) && m.replies.length === 0,
+    // Pilot: a hand-sent message is "awaiting" until staff log the reply as an outcome.
+    awaiting: (m) =>
+      (['sent', 'delivered', 'read'].includes(m.status) || !!m.sentManually) &&
+      m.replies.length === 0,
     issues: (m) => m.status === 'failed' || m.status === 'not_sendable',
   };
   const labels: Record<Filter, string> = {
@@ -59,7 +62,9 @@ export function OwnerCommunication() {
               </div>
               {rows.length ? (
                 rows.map((m) => {
-                  const st = messageStatus(t, m.status);
+                  const st = m.sentManually
+                    ? { tone: 'success' as const, label: t('owner.pilot.sentShort') }
+                    : messageStatus(t, m.status);
                   return (
                     <Card
                       key={m.id}

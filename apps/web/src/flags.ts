@@ -2,7 +2,8 @@
 
 import { useSyncExternalStore } from 'react';
 import { PHASE2_FLAGS } from '@link/api-client';
-import { useDemoState } from './demo-state';
+import { useDemoState } from '@demo';
+import { PILOT } from './api-mode';
 
 /**
  * Feature flags. Keys match the seed (`platform.feature_flags`, docs/14 §4). Phase 2–3 items are
@@ -12,6 +13,8 @@ import { useDemoState } from './demo-state';
 export const FLAG_DEFAULTS = {
   /** Phase 1 marketplace surfaces (owner nav marketplace items). On by default; the MVP pilot turns it off (CF-29). */
   'marketplace.enabled': true,
+  /** Ask Link (V03/V07). Its answers are fixtures until the AI service exists, so the pilot hides it. */
+  'followup.assistant': true,
   'followup.owner_nav': false,
   'followup.records': false,
   'followup.voice_notes': false,
@@ -71,11 +74,25 @@ export function useFlags(): Record<FlagKey, boolean> {
         'marketplace.enabled': demo.demo.marketplace !== false,
       }
     : {};
+  if (PILOT) return { ...FLAG_DEFAULTS, ...PILOT_FLAGS };
   return {
     ...FLAG_DEFAULTS,
     ...phase2,
     ...(JSON.parse(raw) as Partial<Record<FlagKey, boolean>>),
   };
 }
+
+/**
+ * The concierge pilot (docs/13): the follow-up loop only. No marketplace, no Ask Link, no voice
+ * notes until real speech-to-text lands (Part B), no parent app.
+ */
+const PILOT_FLAGS: Partial<Record<FlagKey, boolean>> = {
+  'marketplace.enabled': false,
+  'followup.assistant': false,
+  'followup.owner_nav': true,
+  'followup.records': true,
+  'followup.voice_notes': false,
+  'followup.whatsapp_updates': true,
+};
 
 export const useFlag = (key: FlagKey) => useFlags()[key];

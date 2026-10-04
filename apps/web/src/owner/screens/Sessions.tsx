@@ -2,10 +2,27 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { fuApi, ownerApi, type CentreSessionRow } from '@link/api-client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  ApiError,
+  fuApi,
+  ownerApi,
+  type CentreSessionRow,
+  type SessionRecord,
+} from '@link/api-client';
 import { formatTime } from '@link/i18n';
-import { Avatar, Callout, Card, EmptyState, FilterChip, StatusBadge } from '@link/ui';
+import {
+  Avatar,
+  Button,
+  Callout,
+  Card,
+  EmptyState,
+  FilterChip,
+  Select,
+  StatusBadge,
+  Textarea,
+} from '@link/ui';
+import { useSession } from '../../session';
 import { useI18n } from '../../i18n-client';
 import { QueryState } from '../../parent/QueryState';
 import { OwnerPageHeader, dateTime, dayMonth, num, useCentre } from '../common';
@@ -333,11 +350,103 @@ export function OwnerSessionRecord({ recordId }: { recordId: string }) {
                   )}
                   <p className="text-caption text-muted">{t('owner.record.originalKept')}</p>
                 </Card>
+                {r.status === 'confirmed' ? <AskTeacher record={r} /> : null}
               </div>
             </div>
           </>
         );
       }}
     </QueryState>
+  );
+}
+
+/**
+ * CF-34: corrections stay with the teacher. The owner asks — a note that appears on the teacher's
+ * Today and closes when the teacher adds a correction to this record (or marks it done).
+ */
+function AskTeacher({ record }: { record: SessionRecord }) {
+  const { locale, t } = useI18n();
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const owner = session?.roles.includes('centre_owner');
+  const [studentId, setStudentId] = useState('');
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const requests = record.correctionRequests ?? [];
+  if (!owner && !requests.length) return null;
+  return (
+    <Card className="flex flex-col gap-3" data-testid="ask-teacher">
+      <h2 className="text-heading text-navy">{t('owner.record.askTitle')}</h2>
+      {requests.map((q) => (
+        <div key={q.id} className="flex flex-col gap-1">
+          <p className="text-caption text-muted">
+            {dateTime(q.at, locale)} • {q.requestedBy.displayName}
+            {q.student ? ` • ${q.student.displayName}` : ''}
+          </p>
+          <p className="text-body text-navy">{q.text}</p>
+          <StatusBadge tone={q.status === 'open' ? 'warning' : 'success'} className="self-start">
+            {q.status === 'open' ? t('owner.record.askOpen') : t('owner.record.askDone')}
+          </StatusBadge>
+        </div>
+      ))}
+      {owner ? (
+        <>
+          <Select
+            label={t('owner.record.askStudent')}
+            placeholder={t('owner.record.askWholeRecord')}
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
+            options={record.entries.map((e) => ({
+              value: e.student.id,
+              label: e.student.displayName,
+            }))}
+          />
+          <Textarea
+            label={t('owner.record.askText')}
+            value={text}
+            maxLength={500}
+            onChange={(e) => setText(e.target.value)}
+            counter={(n, max) => t('common.counter', { n, max })}
+            data-testid="ask-text"
+          />
+          {error ? (
+            <Callout tone="error" role="alert">
+              {error}
+            </Callout>
+          ) : null}
+          <Button
+            className="self-start"
+            variant="secondary"
+            data-testid="ask-teacher-send"
+            disabled={busy || !text.trim()}
+            onClick={async () => {
+              setBusy(true);
+              setError(null);
+              try {
+                await ownerApi.requestCorrection(record.id, {
+                  studentId: studentId || null,
+                  text: text.trim(),
+                });
+                setText('');
+                setStudentId('');
+                await qc.invalidateQueries();
+              } catch (e) {
+                setError(
+                  e instanceof ApiError
+                    ? (e.problem.detail ?? t('states.error.body'))
+                    : t('states.error.body'),
+                );
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {t('owner.record.askSend')}
+          </Button>
+          <p className="text-caption text-muted">{t('owner.record.askNote')}</p>
+        </>
+      ) : null}
+    </Card>
   );
 }

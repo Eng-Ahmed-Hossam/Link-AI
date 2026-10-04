@@ -7,8 +7,7 @@ import { MockBadge, ToastProvider } from '@link/ui';
 import type { Locale } from '@link/i18n';
 import { createTranslator } from '@link/i18n';
 import { SessionProvider } from './session';
-import { DevPanel } from './DevPanel';
-import { DemoControls } from './DemoControls';
+import { DemoControls, DevPanel, startMocks } from '@demo';
 import { API_BASE_URL, API_MODE } from './api-mode';
 
 const USE_MSW = API_MODE === 'mock';
@@ -17,8 +16,7 @@ setApiBaseUrl(API_BASE_URL);
 
 // One worker per page load: React strict mode runs effects twice in dev.
 let started: Promise<unknown> | null = null;
-const startOnce = () =>
-  (started ??= import('@link/mocks/browser').then(({ startMocks }) => startMocks()));
+const startOnce = () => (started ??= startMocks());
 
 /** TanStack Query, session, toasts and the MSW browser worker. The badge shows whenever mock data is on. */
 export function Providers({ locale, children }: { locale: Locale; children: ReactNode }) {

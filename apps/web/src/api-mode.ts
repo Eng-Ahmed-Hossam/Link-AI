@@ -1,5 +1,11 @@
 import { MOCK_SERVER_URL, resolveApiMode } from '@link/api-client';
 
+/**
+ * Concierge pilot build (`pnpm pilot:build`, docs/13): the owner web served by the pilot server on
+ * the centre laptop. A compile-time constant, so pilot-only and demo-only code drop out of bundles.
+ */
+export const PILOT = process.env.NEXT_PUBLIC_LINK_MODE === 'pilot';
+
 /** `mock` (MSW in the browser) | `mock-server` (shared state over HTTP) | `live` (core-api). */
 export const API_MODE = resolveApiMode(
   process.env.NEXT_PUBLIC_API_MODE,

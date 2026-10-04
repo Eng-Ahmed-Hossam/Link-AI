@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { mockSettings, resetMockDb, setMockSettings, type Scenario } from '@link/mocks';
 import { Button, Sheet } from '@link/ui';
-import { FLAG_DEFAULTS, setFlagOverride, useFlags, type FlagKey } from './flags';
-import { useSession } from './session';
+import { FLAG_DEFAULTS, setFlagOverride, useFlags, type FlagKey } from '../flags';
+import { useSession } from '../session';
 
 /**
  * Dev-only panel (never rendered in production builds). English only on purpose: it is a tool for

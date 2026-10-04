@@ -10,6 +10,8 @@ import { useSession } from '../../session';
 import { useFlag } from '../../flags';
 import { QueryState } from '../../parent/QueryState';
 import { OwnerPageHeader, dateTime, num, useCentre } from '../common';
+import { PILOT } from '../../api-mode';
+import { PilotPeople } from './PilotPeople';
 
 /**
  * A16 · Staff & access (FUP-STF-01, 10 §1). Phase 2 role matrix: owner (full access, rules, staff),
@@ -26,6 +28,7 @@ export function OwnerStaff() {
   const q = useQuery({
     queryKey: ['staff', centreId, locale],
     queryFn: () => ownerApi.staff(centreId),
+    enabled: !PILOT,
   });
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<StaffMember['role'] | ''>('');
@@ -107,69 +110,74 @@ export function OwnerStaff() {
           ))}
         </div>
       ) : null}
-      <QueryState query={q}>
-        {(staff) => (
-          <Card padding="none" className="overflow-hidden">
-            <div className="flex items-center justify-between gap-3 p-5">
-              <h2 className="text-heading text-navy">
-                {t('owner.staff.count', { count: staff.length, n: num(staff.length, locale) })}
-              </h2>
-            </div>
-            <table className="w-full">
-              <thead className="bg-soft text-caption uppercase text-muted">
-                <tr>
-                  {[
-                    t('owner.staff.colName'),
-                    t('owner.staff.colRole'),
-                    t('owner.staff.colScope'),
-                    t('owner.staff.colLast'),
-                    t('owner.staff.colStatus'),
-                  ].map((h) => (
-                    <th key={h} scope="col" className="px-5 py-3 text-start font-semibold">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {staff.map((s) => (
-                  <tr key={s.user.id} className="border-t border-border">
-                    <td className="px-5 py-3">
-                      <span className="flex items-center gap-3 text-label">
-                        <Avatar name={s.user.displayName} size="sm" />
-                        <bdi>{s.user.displayName}</bdi>
-                      </span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <StatusBadge
-                        tone={
-                          s.role === 'owner'
-                            ? 'neutral'
-                            : s.role === 'reception'
-                              ? 'info'
-                              : 'success'
-                        }
-                      >
-                        {roleLabel(s.role)}
-                      </StatusBadge>
-                    </td>
-                    <td className="px-5 py-3 text-body">{s.scope}</td>
-                    <td className="px-5 py-3 text-body text-muted">
-                      {s.lastActiveAt ? dateTime(s.lastActiveAt, locale) : '—'}
-                    </td>
-                    <td className="px-5 py-3">
-                      <StatusBadge tone={s.status === 'active' ? 'success' : 'warning'}>
-                        {s.status === 'active' ? t('owner.staff.active') : t('owner.staff.pending')}
-                      </StatusBadge>
-                    </td>
+      {PILOT ? <PilotPeople /> : null}
+      {PILOT ? null : (
+        <QueryState query={q}>
+          {(staff) => (
+            <Card padding="none" className="overflow-hidden">
+              <div className="flex items-center justify-between gap-3 p-5">
+                <h2 className="text-heading text-navy">
+                  {t('owner.staff.count', { count: staff.length, n: num(staff.length, locale) })}
+                </h2>
+              </div>
+              <table className="w-full">
+                <thead className="bg-soft text-caption uppercase text-muted">
+                  <tr>
+                    {[
+                      t('owner.staff.colName'),
+                      t('owner.staff.colRole'),
+                      t('owner.staff.colScope'),
+                      t('owner.staff.colLast'),
+                      t('owner.staff.colStatus'),
+                    ].map((h) => (
+                      <th key={h} scope="col" className="px-5 py-3 text-start font-semibold">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-        )}
-      </QueryState>
-      {owner ? (
+                </thead>
+                <tbody>
+                  {staff.map((s) => (
+                    <tr key={s.user.id} className="border-t border-border">
+                      <td className="px-5 py-3">
+                        <span className="flex items-center gap-3 text-label">
+                          <Avatar name={s.user.displayName} size="sm" />
+                          <bdi>{s.user.displayName}</bdi>
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <StatusBadge
+                          tone={
+                            s.role === 'owner'
+                              ? 'neutral'
+                              : s.role === 'reception'
+                                ? 'info'
+                                : 'success'
+                          }
+                        >
+                          {roleLabel(s.role)}
+                        </StatusBadge>
+                      </td>
+                      <td className="px-5 py-3 text-body">{s.scope}</td>
+                      <td className="px-5 py-3 text-body text-muted">
+                        {s.lastActiveAt ? dateTime(s.lastActiveAt, locale) : '—'}
+                      </td>
+                      <td className="px-5 py-3">
+                        <StatusBadge tone={s.status === 'active' ? 'success' : 'warning'}>
+                          {s.status === 'active'
+                            ? t('owner.staff.active')
+                            : t('owner.staff.pending')}
+                        </StatusBadge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
+        </QueryState>
+      )}
+      {owner && !PILOT ? (
         <Card className="flex max-w-3xl flex-col gap-3">
           <h2 className="text-heading text-navy">{t('owner.staff.invite')}</h2>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -203,7 +211,7 @@ export function OwnerStaff() {
           <p className="text-caption text-muted">{t('owner.staff.inviteNote')}</p>
         </Card>
       ) : null}
-      <Callout tone="warning">{t('owner.staff.phonesPending')}</Callout>
+      {PILOT ? null : <Callout tone="warning">{t('owner.staff.phonesPending')}</Callout>}
     </>
   );
 }

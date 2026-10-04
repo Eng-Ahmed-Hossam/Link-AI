@@ -199,6 +199,11 @@ export function OwnerStudents() {
                         <td className="px-4 py-3">
                           {r.guardian.status === 'verified' ? (
                             <StatusBadge tone="success">{t('owner.students.verified')}</StatusBadge>
+                          ) : r.guardian.status === 'kept_by_centre' ? (
+                            // Pilot: Link holds only a label; the centre keeps the phone number.
+                            <span className="text-caption text-muted">
+                              <bdi>{r.guardian.name}</bdi> • {t('owner.pilot.phoneKept')}
+                            </span>
                           ) : (
                             <StatusBadge tone="warning">
                               {t('owner.students.missingPhone')}

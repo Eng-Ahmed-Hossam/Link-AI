@@ -133,6 +133,15 @@ function ChildEnrolments({
     (e) => !live.includes(e) && (e.refund || e.status === 'declined'),
   );
   const first = child.displayName.split(' ')[0] ?? '';
+  const marketplace = useFlag('marketplace.enabled');
+  // CF-39: with the marketplace off (the follow-up pilot), only the child's groups at the centre.
+  if (!marketplace)
+    return (
+      <>
+        <CentreGroups childId={child.id} />
+        {feedOn ? <UpdatesFeed childId={child.id} /> : null}
+      </>
+    );
   return (
     <>
       {[...live, ...recent].map((e) => (
@@ -431,3 +440,48 @@ function UpdatesFeed({ childId }: { childId: string }) {
     </section>
   );
 }
+
+/** CF-39: the child's follow-up groups at the centre (name, teacher, weekly time). */
+function CentreGroups({ childId }: { childId: string }) {
+  const { locale, t } = useI18n();
+  const q = useQuery({ queryKey: ['centre-groups', locale], queryFn: ownerApi.centreGroups });
+  return (
+    <QueryState query={q} loadingRows={1}>
+      {(all) => {
+        const mine = all.filter((g) => g.childId === childId);
+        if (!mine.length)
+          return <p className="text-body text-muted">{t('parent.children.noCentreGroup')}</p>;
+        return (
+          <>
+            {mine.map((g) => (
+              <Card
+                key={g.groupId}
+                className="flex flex-col gap-1"
+                data-testid={`centre-group-${g.groupId}`}
+              >
+                <p className="text-label text-navy">{g.groupName}</p>
+                <p className="text-caption text-muted">
+                  {g.centreName} • {g.teacher.displayName}
+                </p>
+                <p className="text-caption text-muted">
+                  {weekdays(g.weekdays, locale)} • {g.startTime}–{g.endTime}
+                </p>
+              </Card>
+            ))}
+          </>
+        );
+      }}
+    </QueryState>
+  );
+}
+
+const weekdays = (days: number[], locale: 'ar' | 'en') => {
+  const fmt = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-EG' : 'en-GB', {
+    weekday: 'long',
+    timeZone: 'UTC',
+  });
+  // 2024-01-01 was a Monday (ISO weekday 1).
+  return days
+    .map((d) => fmt.format(new Date(Date.UTC(2024, 0, d))))
+    .join(locale === 'ar' ? ' و' : ' & ');
+};

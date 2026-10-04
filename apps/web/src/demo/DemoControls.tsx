@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { demoApi } from '@link/api-client';
+import { demoApi } from '@link/api-client/demo';
 import { Button, Sheet } from '@link/ui';
-import { DEMO_CONTROLS } from './api-mode';
+import { DEMO_CONTROLS } from '../api-mode';
 import { refreshDemoState, useDemoState } from './demo-state';
 
 /**

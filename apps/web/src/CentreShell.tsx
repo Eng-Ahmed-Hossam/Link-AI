@@ -20,12 +20,13 @@ import {
 } from 'lucide-react';
 import { Logo, SideNav, StatusBadge, type SideNavSection } from '@link/ui';
 import { createTranslator, type Locale } from '@link/i18n';
-import { useMe } from '@link/api-client';
+import { useQuery } from '@tanstack/react-query';
+import { pilotApi, useMe } from '@link/api-client';
 import { RequireStaff } from './owner/common';
 import { AssistantPanel } from './owner/AssistantPanel';
 import { useFlag } from './flags';
 import { LangSwitch } from './LangSwitch';
-import { API_MODE } from './api-mode';
+import { API_MODE, PILOT } from './api-mode';
 import { useSession } from './session';
 
 /**
@@ -47,6 +48,10 @@ export function CentreShell({
   const pathname = usePathname() ?? '';
   const router = useRouter();
   const followUp = useFlag('followup.owner_nav');
+  const assistant = useFlag('followup.assistant') && followUp;
+  // Pilot: the centre's own name instead of the sample centre (A1).
+  const pilotInfo = useQuery({ queryKey: ['pilot-info'], queryFn: pilotApi.info, enabled: PILOT });
+  const centreName = PILOT ? (pilotInfo.data?.centreName ?? '') : t('owner.shell.centre');
   const marketplace = useFlag('marketplace.enabled');
   const { session, signOut } = useSession();
   const me = useMe({ enabled: !!session });
@@ -156,7 +161,9 @@ export function CentreShell({
             <div className="flex flex-col gap-4 px-3">
               <Logo variant="lockup-light" size={32} label={t('common.appName')} />
               <div className="rounded-12 border border-border bg-soft p-3">
-                <p className="text-label text-navy">{t('owner.shell.centre')}</p>
+                <p className="text-label text-navy">
+                  <bdi>{centreName}</bdi>
+                </p>
                 <p className="text-caption text-muted">{t('owner.shell.workspace')}</p>
               </div>
             </div>
@@ -184,12 +191,17 @@ export function CentreShell({
         />
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-white px-8 py-3">
-            <p className="text-caption uppercase text-muted">{t('owner.shell.breadcrumb')}</p>
+            <p className="text-caption uppercase text-muted">
+              {PILOT
+                ? t('owner.pilot.breadcrumb', { centre: centreName })
+                : t('owner.shell.breadcrumb')}
+            </p>
             <div className="flex items-center gap-3">
               {API_MODE !== 'live' ? (
                 <StatusBadge tone="neutral">{t('owner.shell.sampleData')}</StatusBadge>
               ) : null}
-              {followUp ? (
+              {PILOT ? <StatusBadge tone="info">{t('owner.pilot.badge')}</StatusBadge> : null}
+              {assistant ? (
                 <button
                   type="button"
                   data-testid="open-assistant"
@@ -208,7 +220,7 @@ export function CentreShell({
             {children}
           </main>
         </div>
-        {followUp ? <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} /> : null}
+        {assistant ? <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} /> : null}
       </div>
     </RequireStaff>
   );

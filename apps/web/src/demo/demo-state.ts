@@ -1,8 +1,8 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import { demoApi, type DemoSnapshot } from '@link/api-client';
-import { DEMO_CONTROLS } from './api-mode';
+import { demoApi, type DemoSnapshot } from '@link/api-client/demo';
+import { DEMO_CONTROLS } from '../api-mode';
 
 /**
  * Polls the mock backend's demo state while Demo controls are on, so every app (parent PWA, owner
