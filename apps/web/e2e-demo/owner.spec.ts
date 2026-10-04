@@ -490,3 +490,50 @@ test.describe('P09 feed (FUP-MSG-08)', () => {
     await setDemo({ phase2: true });
   });
 });
+
+test.describe('CF-39 / CF-34 (decided 2026-10-04)', () => {
+  test('CF-39: with the marketplace off, P09 shows only the child’s groups at the centre', async ({
+    page,
+  }) => {
+    await resetScenario();
+    await signIn(page, 'parent', 'en');
+    await page.goto('/en/children');
+    await expect(page.getByTestId('centre-group-grp-salma-ws')).toContainText(
+      'Secondary 2 · Maths',
+    );
+    await expect(page.getByTestId('centre-group-grp-salma-ws')).toContainText('Ms Salma Fathy');
+    await expect(page.getByText('Physics')).toHaveCount(0);
+    await axe(page);
+    await setDemo({ marketplace: true });
+    await page.reload();
+    await expect(page.getByTestId('centre-group-grp-salma-ws')).toHaveCount(0);
+    await setDemo({ marketplace: false });
+  });
+
+  test('CF-34: the owner asks the teacher to correct on A14; Reception sees it but cannot ask', async ({
+    browser,
+  }) => {
+    await resetScenario();
+    const rec = (await teacherConfirmsMariamAbsent()) as { id: string };
+    const owner = await (await browser.newContext({ baseURL: 'http://localhost:3000' })).newPage();
+    await signIn(owner, 'owner', 'en');
+    await owner.goto(`${C('en')}/sessions/${rec.id}`);
+    await owner.getByTestId('ask-text').fill('Please check Mariam: she may have come late.');
+    await owner.getByTestId('ask-teacher-send').click();
+    await expect(owner.getByTestId('ask-teacher')).toContainText('Waiting for the teacher');
+    await axe(owner);
+    const today = await (
+      await fetch('http://localhost:4010/v1/teachers/me/today', {
+        headers: { authorization: 'Bearer mock.usr-salma' },
+      })
+    ).json();
+    expect(today.correctionRequests).toHaveLength(1);
+    const reception = await (
+      await browser.newContext({ baseURL: 'http://localhost:3000' })
+    ).newPage();
+    await signIn(reception, 'reception', 'en');
+    await reception.goto(`${C('en')}/sessions/${rec.id}`);
+    await expect(reception.getByTestId('ask-teacher')).toContainText('Waiting for the teacher');
+    await expect(reception.getByTestId('ask-teacher-send')).toHaveCount(0);
+  });
+});
