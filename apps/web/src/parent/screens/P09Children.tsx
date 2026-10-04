@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  ownerApi,
   api,
   ApiError,
   queryKeys,
@@ -154,10 +155,7 @@ function ChildEnrolments({
           </Link>
         </div>
       ) : null}
-      {feedOn ? (
-        // Phase 2 feed (FUP): approved messages only. Built in Batch 6; nothing renders while the flag is off.
-        <p className="text-caption uppercase text-muted">{t('parent.children.updates')}</p>
-      ) : null}
+      {feedOn ? <UpdatesFeed childId={child.id} /> : null}
     </>
   );
 }
@@ -375,5 +373,61 @@ function ManageSheet({
         </p>
       ) : null}
     </Sheet>
+  );
+}
+
+/**
+ * P09 "Updates from the centre" (FUP-MSG-08, Phase 2): approved messages only. Confirmed attendance
+ * in the feed is a per-centre setting, off by default (OD-41), so it is not shown.
+ */
+function UpdatesFeed({ childId }: { childId: string }) {
+  const { locale, t } = useI18n();
+  const q = useQuery({
+    queryKey: ['parent-updates', locale],
+    queryFn: ownerApi.parentUpdates,
+    refetchInterval: 4000,
+  });
+  const items = (q.data?.data ?? []).filter((u) => u.studentId === childId);
+  return (
+    <section
+      aria-labelledby="updates-title"
+      className="flex flex-col gap-2"
+      data-testid="updates-feed"
+    >
+      <h2 id="updates-title" className="text-caption uppercase text-muted">
+        {t('parent.children.updates')}
+      </h2>
+      <QueryState query={q} loadingRows={1}>
+        {() =>
+          items.length ? (
+            <Card className="flex flex-col gap-4">
+              {items.map((u) => (
+                <div key={u.id} className="flex gap-3">
+                  <span
+                    aria-hidden
+                    className="mt-1 inline-flex size-8 shrink-0 items-center justify-center rounded-12 bg-blueSoft"
+                  >
+                    <span className="size-2 rounded-full bg-blueText" />
+                  </span>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-label text-navy">{t('parent.children.updateMessage')}</p>
+                    <p dir="rtl" lang="ar" className="text-body text-navy">
+                      {u.text}
+                    </p>
+                    <p className="text-caption text-muted">
+                      {u.from} • {formatDate(u.at, locale, { day: 'numeric', month: 'short' })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </Card>
+          ) : (
+            <p className="rounded-12 bg-soft px-4 py-3 text-caption text-muted">
+              {t('parent.children.noUpdates')}
+            </p>
+          )
+        }
+      </QueryState>
+    </section>
   );
 }
