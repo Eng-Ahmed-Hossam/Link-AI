@@ -1120,9 +1120,20 @@
   "teacher.pilot.notTeacher": "هذا التطبيق للمعلّمين. يدخل فريق المركز من لابتوب المركز.",
   "teacher.pilot.noTeachers": "لا يوجد معلّم يمكنه الدخول بعد. اطلب من المالك تحديد رمزك.",
   "teacher.pilot.typeInsteadTitle": "اكتب الملاحظة بدلًا من ذلك",
-  "teacher.pilot.typeInsteadBody": "تبدأ الملاحظات الصوتية عند تشغيل تحويل الكلام إلى نص على لابتوب المركز. اكتب الملاحظة بالأسفل؛ الحضور والدرجات تعمل باللمس.",
+  "teacher.pilot.typeInsteadBody": "الملاحظات الصوتية غير مفعّلة لك: تحتاج موافقتك الموقّعة وخدمة تحويل الكلام على لابتوب المركز. اكتب الملاحظة بالأسفل؛ الحضور والدرجات تعمل باللمس.",
   "teacher.pilot.correctionAsked": "يطلب {name} منك مراجعة سجل مؤكَّد",
   "teacher.pilot.openHistory": "افتح سجل الحصص",
   "teacher.pilot.markDone": "السجل صحيح — تم",
-  "teacher.pilot.headerContext": "{centre} • تجربة"
+  "teacher.pilot.headerContext": "{centre} • تجربة",
+  "teacher.voice.processingEta": "{count, plural, =0 {جارٍ معالجة ملاحظتك على لابتوب المركز…} one {جارٍ معالجة ملاحظتك على لابتوب المركز… باقٍ ثانية تقريبًا.} two {جارٍ معالجة ملاحظتك على لابتوب المركز… باقٍ ثانيتان تقريبًا.} few {جارٍ معالجة ملاحظتك على لابتوب المركز… باقٍ {n} ثوانٍ تقريبًا.} many {جارٍ معالجة ملاحظتك على لابتوب المركز… باقٍ {n} ثانية تقريبًا.} other {جارٍ معالجة ملاحظتك على لابتوب المركز… باقٍ {n} ثانية تقريبًا.}}",
+  "teacher.voice.failedTitle": "تعذّرت معالجة هذه الملاحظة",
+  "teacher.voice.failedBody": "التسجيل محفوظ. حاول مرة أخرى، أو اكتب الملاحظة بدلًا من ذلك.",
+  "teacher.voice.retry": "حاول مرة أخرى",
+  "owner.pilot.colVoice": "موافقة الصوت",
+  "owner.pilot.voiceSigned": "موقّعة",
+  "owner.pilot.voiceNone": "غير موقّعة",
+  "owner.pilot.voiceGrant": "الموافقة موقّعة",
+  "owner.pilot.voiceWithdraw": "سحب (يحذف التسجيلات)",
+  "owner.assistant.demoAnswer": "إجابة تجريبية (مكتوبة مسبقًا)",
+  "owner.assistant.realQuestion": "سؤالك كما سمعه تحويل الكلام المحلي"
 }

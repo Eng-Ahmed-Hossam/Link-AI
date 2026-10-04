@@ -1121,5 +1121,16 @@
   "teacher.pilot.correctionAsked",
   "teacher.pilot.openHistory",
   "teacher.pilot.markDone",
-  "teacher.pilot.headerContext"
+  "teacher.pilot.headerContext",
+  "teacher.voice.processingEta",
+  "teacher.voice.failedTitle",
+  "teacher.voice.failedBody",
+  "teacher.voice.retry",
+  "owner.pilot.colVoice",
+  "owner.pilot.voiceSigned",
+  "owner.pilot.voiceNone",
+  "owner.pilot.voiceGrant",
+  "owner.pilot.voiceWithdraw",
+  "owner.assistant.demoAnswer",
+  "owner.assistant.realQuestion"
 ]

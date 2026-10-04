@@ -1120,9 +1120,20 @@
   "teacher.pilot.notTeacher": "This app is for teachers. Staff sign in on the centre laptop.",
   "teacher.pilot.noTeachers": "No teacher can sign in yet. Ask the owner to set your PIN.",
   "teacher.pilot.typeInsteadTitle": "Type the note instead",
-  "teacher.pilot.typeInsteadBody": "Voice notes start once speech-to-text runs on the centre laptop. Type the note below; attendance and scores work by tap.",
+  "teacher.pilot.typeInsteadBody": "Voice notes are off for you: they need your signed consent and the speech service on the centre laptop. Type the note below; attendance and scores work by tap.",
   "teacher.pilot.correctionAsked": "{name} asks you to check a confirmed record",
   "teacher.pilot.openHistory": "Open records history",
   "teacher.pilot.markDone": "The record is right — mark done",
-  "teacher.pilot.headerContext": "{centre} • Pilot"
+  "teacher.pilot.headerContext": "{centre} • Pilot",
+  "teacher.voice.processingEta": "{count, plural, one {Processing your note on the centre laptop… about {n} second left.} other {Processing your note on the centre laptop… about {n} seconds left.}}",
+  "teacher.voice.failedTitle": "We couldn't process this note",
+  "teacher.voice.failedBody": "The recording is kept. Try again, or type the note instead.",
+  "teacher.voice.retry": "Try again",
+  "owner.pilot.colVoice": "Voice consent",
+  "owner.pilot.voiceSigned": "Signed",
+  "owner.pilot.voiceNone": "Not signed",
+  "owner.pilot.voiceGrant": "Consent signed",
+  "owner.pilot.voiceWithdraw": "Withdraw (deletes recordings)",
+  "owner.assistant.demoAnswer": "Demo answer (scripted)",
+  "owner.assistant.realQuestion": "Your question, as local speech-to-text heard it"
 }
