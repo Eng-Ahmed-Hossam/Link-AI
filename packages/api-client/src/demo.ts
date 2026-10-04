@@ -1,7 +1,8 @@
 /**
  * Demo controls client (dev only). Talks to `/__demo/*`, which exists only in the mock handlers
  * (`mock` and `mock-server` API modes). Apps render the controls only when APP_ENV=local and the
- * demo flag are set, and never in production builds.
+ * demo flag are set, and never in production builds. Imported only as `@link/api-client/demo`, so
+ * the main entry (and every pilot or production bundle) carries no `/__demo` call.
  */
 import { apiUrl } from './config';
 
@@ -65,12 +66,4 @@ export const demoApi = {
     }),
 };
 
-/** Flags that the demo "Phase 2" switch turns on together (docs/05 §5 keys). */
-export const PHASE2_FLAGS = [
-  'followup.owner_nav',
-  'followup.records',
-  'followup.voice_notes',
-  'followup.whatsapp_updates',
-  'parent.updates_feed',
-  'teacher.recorded_badge',
-] as const;
+export { PHASE2_FLAGS } from './flags';

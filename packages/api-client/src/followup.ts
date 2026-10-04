@@ -69,6 +69,23 @@ export interface SessionRecord {
   corrections: Correction[];
   /** Flags this record raised or added evidence to (A14). */
   signals: SignalSummary[];
+  /** CF-34: the owner's requests for the teacher to correct this record. */
+  correctionRequests: CorrectionRequest[];
+}
+
+/** CF-34: teachers correct confirmed records; the owner asks them to (A14 → teacher Today). */
+export interface CorrectionRequest {
+  id: string;
+  recordId: string;
+  groupId: string;
+  groupName: string;
+  sessionDate: string;
+  student: PersonRef | null;
+  text: string;
+  requestedBy: PersonRef;
+  at: string;
+  /** `done` when the teacher adds a correction to the record, or closes the request. */
+  status: 'open' | 'done';
 }
 
 export interface EntryInput {
@@ -164,6 +181,8 @@ export interface TeacherToday {
     sessionDate: string;
     recordId: string | null;
   }[];
+  /** Open requests from the owner to correct a confirmed record (CF-34). */
+  correctionRequests: CorrectionRequest[];
 }
 
 export interface Note {
@@ -280,7 +299,8 @@ export type CaseStatus =
 
 export interface CaseAttempt {
   id: string;
-  channel: 'phone' | 'whatsapp' | 'sms' | 'meeting';
+  /** `whatsapp_manual`: sent by staff from the centre's own WhatsApp (pilot, A6). */
+  channel: 'phone' | 'whatsapp' | 'whatsapp_manual' | 'sms' | 'meeting';
   result: 'reached' | 'no_answer' | 'wrong_number' | 'message_sent' | 'replied';
   learned: string | null;
   nextAction: string | null;
@@ -350,6 +370,11 @@ export interface ParentMessage {
   replies: InboundMessage[];
   /** Status history; changes only on provider events (BR-APR-11). */
   history: { status: DeliveryStatus; at: string }[];
+  /**
+   * Pilot (A6): staff sent the approved text from the centre's own WhatsApp. This is a contact
+   * attempt, not a delivery: the status stays `approved` (no provider receipt).
+   */
+  sentManually: { by: PersonRef; at: string } | null;
 }
 
 // ── Owner web (Batch 6) ─────────────────────────────────────────────────────────
@@ -382,7 +407,8 @@ export interface CentreStudentRow {
   followUp: { caseId: string; status: CaseStatus; overdue: boolean } | null;
   /** Latest teacher note — internal (BR-APR-13). */
   latestNote: { body: string; author: PersonRef; at: string } | null;
-  guardian: { status: 'verified' | 'missing_phone'; name: string | null };
+  /** `kept_by_centre`: pilot — Link holds only a label; the centre keeps the phone number. */
+  guardian: { status: 'verified' | 'missing_phone' | 'kept_by_centre'; name: string | null };
 }
 
 export interface CentreSessionRow {
@@ -427,7 +453,8 @@ export interface StaffMember {
   role: 'owner' | 'reception' | 'teacher';
   scope: string;
   lastActiveAt: string | null;
-  status: 'active' | 'invite_pending';
+  /** `removed`: pilot — access removed by the owner (kept so past actions stay attributed). */
+  status: 'active' | 'invite_pending' | 'removed';
 }
 
 export type ActivityKind = 'records' | 'followups' | 'messages' | 'corrections' | 'access';
@@ -478,3 +505,36 @@ export type AssistantEvent =
   | { type: 'list'; items: { label: string; detail: string; href: string | null }[] }
   | { type: 'needs_approval'; text: string }
   | { type: 'done' };
+
+// ── Pilot mode (docs/13 "Concierge pilot", apps/pilot) ───────────────────────────
+export interface PilotPerson {
+  id: string;
+  displayName: string;
+  role: 'owner' | 'reception' | 'teacher';
+}
+/** GET /v1/me in the pilot: the session's person and the pilot centre. */
+export interface PilotMe {
+  id: string;
+  name: string;
+  language: 'ar' | 'en';
+  roles: ('centre_owner' | 'centre_staff' | 'teacher')[];
+  centreId: string;
+}
+/** A16 in the pilot: people, their groups, and whether they have a PIN yet. */
+export interface PilotStaffRow extends PilotPerson {
+  active: boolean;
+  hasPin: boolean;
+  groups: { id: string; name: string }[];
+}
+
+/** CF-39: a child's follow-up group at the centre (P09 when the marketplace is off). */
+export interface CentreGroup {
+  childId: string;
+  groupId: string;
+  groupName: string;
+  centreName: string;
+  teacher: PersonRef;
+  weekdays: number[];
+  startTime: string;
+  endTime: string;
+}

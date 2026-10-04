@@ -33,7 +33,12 @@ import type {
 } from './types';
 import type {
   CaseAttempt,
+  CorrectionRequest,
+  CentreGroup,
   DeliveryStatus,
+  PilotMe,
+  PilotPerson,
+  PilotStaffRow,
   Correction,
   CorrectionBody,
   FollowupCase,
@@ -61,7 +66,7 @@ import type {
 
 export * from './types';
 export * from './followup';
-export * from './demo';
+export * from './flags';
 export { setApiBaseUrl, apiUrl } from './config';
 import { config } from './config';
 
@@ -270,6 +275,12 @@ export const fuApi = {
     request<ParentMessage>('PATCH', `/v1/messages/${id}`, { body }),
   approveMessage: (id: string, body: { checked: boolean; channel?: 'whatsapp' | 'sms' }) =>
     request<ParentMessage>('POST', `/v1/messages/${id}/approve`, { body }),
+  /** Pilot (A6): staff sent the approved text from the centre's own WhatsApp. */
+  markSentManually: (id: string) =>
+    request<ParentMessage>('POST', `/v1/messages/${id}/sent-manually`),
+  /** CF-34: the teacher closes an owner's request without a correction. */
+  closeCorrectionRequest: (id: string) =>
+    request<CorrectionRequest>('POST', `/v1/correction-requests/${id}/close`),
 };
 
 /** Owner web (Batch 6). Centre-scoped paths name the centre (07 §1). */
@@ -297,6 +308,13 @@ export const ownerApi = {
       `/v1/cases/${caseId}/seat-check`,
     ),
   parentUpdates: () => request<Page<ParentUpdate>>('GET', '/v1/me/updates'),
+  /** CF-39: P09 with the marketplace off — the child's groups at the centre. */
+  centreGroups: () => request<CentreGroup[]>('GET', '/v1/me/centre-groups'),
+  /** CF-34: A14 "Ask the teacher to correct" (owner only). */
+  requestCorrection: (recordId: string, body: { studentId?: string | null; text: string }) =>
+    request<CorrectionRequest>('POST', `/v1/session-records/${recordId}/correction-requests`, {
+      body,
+    }),
   briefing: () =>
     request<{
       text: string;
@@ -364,6 +382,32 @@ export const ownerApi = {
       }
     }
   },
+};
+
+/**
+ * Pilot mode (LINK_MODE=pilot): sign-in with a 6-digit PIN into a server-side session (httpOnly
+ * cookie, same origin), and the owner's people management (A16). No token is kept in the browser.
+ */
+export const pilotApi = {
+  info: () =>
+    request<{ mode: 'pilot'; centreName: string; startDate: string; endDate: string | null }>(
+      'GET',
+      '/v1/pilot/info',
+    ),
+  people: () => request<PilotPerson[]>('GET', '/v1/pilot/people'),
+  signIn: (userId: string, pin: string) =>
+    request<{ id: string; name: string; role: PilotPerson['role']; expiresAt: string }>(
+      'POST',
+      '/v1/pilot/sessions',
+      { body: { userId, pin } },
+    ),
+  signOut: () => request<void>('DELETE', '/v1/pilot/sessions/current'),
+  me: () => request<PilotMe>('GET', '/v1/me'),
+  users: () => request<PilotStaffRow[]>('GET', '/v1/pilot/users'),
+  addUser: (body: { name: string; role: PilotPerson['role']; groupIds?: string[] }) =>
+    request<{ user: PilotPerson; pin: string }>('POST', '/v1/pilot/users', { body }),
+  setPin: (userId: string) => request<{ pin: string }>('POST', `/v1/pilot/users/${userId}/pin`),
+  removeUser: (userId: string) => request<void>('DELETE', `/v1/pilot/users/${userId}`),
 };
 
 export const isExtractionReady = (
