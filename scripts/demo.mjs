@@ -9,25 +9,34 @@ import { ROOT } from './lib/env.mjs';
 const MOCK = 'http://localhost:4010';
 const common = { ...process.env, APP_ENV: 'local', FORCE_COLOR: '1' };
 const procs = [];
+const restarts = {};
+let stopping = false;
 
 function start(name, args, env) {
   const p = spawn('pnpm', args, { cwd: ROOT, env: { ...common, ...env }, shell: true });
   const tag = `[${name}]`.padEnd(8);
-  const out = (s) => (d) =>
+  const out = (stream) => (d) =>
     String(d)
       .split(/\r?\n/)
       .filter(Boolean)
-      .forEach((l) => s.write(`${tag}${l}\n`));
+      .forEach((l) => stream.write(`${tag}${l}\n`));
   p.stdout.on('data', out(process.stdout));
   p.stderr.on('data', out(process.stderr));
   p.on('exit', (code) => {
-    console.log(`${tag}exited (${code ?? 'signal'})`);
-    stopAll(code ?? 0);
+    if (stopping) return;
+    // A dev server can crash on its own (e.g. a Turbopack cache panic): restart it, keep the rest up.
+    restarts[name] = (restarts[name] ?? 0) + 1;
+    if (restarts[name] <= 3) {
+      console.log(`${tag}exited (${code ?? 'signal'}); restarting (${restarts[name]}/3)…`);
+      start(name, args, env);
+    } else {
+      console.log(`${tag}exited (${code ?? 'signal'}) too often; stopping the demo.`);
+      stopAll(1);
+    }
   });
   procs.push(p);
 }
 
-let stopping = false;
 function stopAll(code = 0) {
   if (stopping) return;
   stopping = true;
@@ -67,20 +76,18 @@ const apiEnv = (prefix) => ({
   [`${prefix}_DEMO_CONTROLS`]: '1',
 });
 start('web', ['--filter', '@link/web', 'dev'], apiEnv('NEXT_PUBLIC'));
-// CI=1 keeps Expo non-interactive; --web serves the teacher app in the browser on 8081.
+// --web serves the teacher app in the browser on 8081. (No CI=1: it would turn off file watching;
+// Expo does not prompt anyway because stdin is not a terminal.)
 start(
   'app',
   ['--filter', '@link/teacher-app', 'exec', 'expo', 'start', '--web', '--port', '8081'],
-  {
-    ...apiEnv('EXPO_PUBLIC'),
-    CI: '1',
-  },
+  apiEnv('EXPO_PUBLIC'),
 );
 
 console.log(`
 Link demo (sample data only)
-  Teacher app  http://localhost:8081   sign in: +20 10 0000 0002, code 123456
-  Owner web    http://localhost:3000/ar/centre/today   sign in: +20 10 0000 0003 (owner) or …0004 (reception)
-  Parent PWA   http://localhost:3000/ar/children       sign in: +20 10 0000 0001
+  Teacher app  http://localhost:8081   sign in as the sample teacher (Ms Salma)
+  Owner web    http://localhost:3000/ar/centre/today   (Batch 6)
+  Parent PWA   http://localhost:3000/ar/children       sign in: +20 10 0000 0001, code 123456
   Mock server  ${MOCK}/__demo/state
 `);
