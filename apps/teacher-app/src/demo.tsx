@@ -108,6 +108,22 @@ export function DemoControls() {
           <Button
             locale="en"
             variant="secondary"
+            label={`Marketplace flag: ${s?.demo.marketplace === false ? 'off' : 'on'}`}
+            onPress={() =>
+              run('Marketplace', () =>
+                demoApi.settings({ marketplace: s?.demo.marketplace === false }),
+              )
+            }
+          />
+          <Button
+            locale="en"
+            variant="secondary"
+            label="Simulate a new day"
+            onPress={() => run('New day', demoApi.newDay)}
+          />
+          <Button
+            locale="en"
+            variant="secondary"
             label={`Offline: ${s?.demo.offline ? 'on' : 'off'}`}
             onPress={() => run('Offline', () => demoApi.settings({ offline: !s?.demo.offline }))}
           />

@@ -1,38 +1,35 @@
 import { Redirect, Tabs } from 'expo-router';
-import { CalendarCheck, DoorOpen, Users, Wallet } from 'lucide-react-native';
+import { CalendarCheck, ClipboardList, DoorOpen, Users, Wallet } from 'lucide-react-native';
 import { color } from '@link/tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabBar } from '@link/ui-native';
 import { useLocale } from '@/locale';
 import { useSession } from '@/session';
-import { usePhase2 } from '@/flags';
-
-/**
- * Tabs: Today · My groups · Rooms · Earnings (CF-29, question for the team). Records are reached
- * from My groups and Today, not a tab. Today is Phase 2 and is not rendered at all when the flag
- * is off (plan §1.5).
- */
-const ORDER = ['today', 'groups', 'rooms', 'earnings'];
+import { useMarketplace, usePhase2 } from '@/flags';
+import { tabsFor } from '@/tabs';
 
 export default function TabsLayout() {
   const { locale, t } = useLocale();
   const insets = useSafeAreaInsets();
   const { session, ready } = useSession();
   const phase2 = usePhase2();
+  const marketplace = useMarketplace();
   if (ready && !session) return <Redirect href="/sign-in" />;
   const labels: Record<string, string> = {
     today: t('teacher.tabs.today'),
     groups: t('teacher.tabs.groups'),
     rooms: t('teacher.tabs.rooms'),
     earnings: t('teacher.tabs.earnings'),
+    records: t('teacher.tabs.records'),
   };
   const icons: Record<string, typeof Users> = {
     today: CalendarCheck,
     groups: Users,
     rooms: DoorOpen,
     earnings: Wallet,
+    records: ClipboardList,
   };
-  const visible = (name: string) => name !== 'index' && (name !== 'today' || phase2 === true);
+  const shown = tabsFor(phase2 === true, marketplace !== false);
   return (
     <Tabs
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: color.bg } }}
@@ -41,8 +38,9 @@ export default function TabsLayout() {
           locale={locale}
           bottomInset={insets.bottom}
           activeId={state.routes[state.index]?.name ?? 'groups'}
-          items={ORDER.map((name) => state.routes.find((r) => r.name === name))
-            .filter((r): r is NonNullable<typeof r> => !!r && visible(r.name))
+          items={shown
+            .map((name) => state.routes.find((r) => r.name === name))
+            .filter((r): r is NonNullable<typeof r> => !!r)
             .map((r) => {
               const Icon = icons[r.name] ?? Users;
               return {

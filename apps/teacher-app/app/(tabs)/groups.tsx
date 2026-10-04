@@ -6,7 +6,7 @@ import { formatClock, formatDate, formatMoney, formatTime, formatWeekdays } from
 import { Avatar, Button, Callout, Card, StateView, StatusBadge, textStyle } from '@link/ui-native';
 import { color, radius, space } from '@link/tokens';
 import { useLocale } from '@/locale';
-import { usePhase2 } from '@/flags';
+import { useMarketplace, usePhase2 } from '@/flags';
 import { isNetworkError, track } from '@/net';
 import { num } from '@/format';
 import { Screen } from '@/ui/Screen';
@@ -20,6 +20,7 @@ export default function Groups() {
   const { locale, t } = useLocale();
   const router = useRouter();
   const phase2 = usePhase2() === true;
+  const marketplace = useMarketplace() !== false;
   const q = useQuery({
     queryKey: ['teacher-groups', locale],
     queryFn: () => track(fuApi.teacherGroups()),
@@ -60,6 +61,7 @@ export default function Groups() {
               key={g.id}
               g={g}
               phase2={phase2}
+              marketplace={marketplace}
               onRoster={() => router.push(`/group/${g.id}`)}
               onHistory={() => router.push(`/group/${g.id}/history`)}
             />
@@ -74,11 +76,14 @@ export default function Groups() {
 function GroupCard({
   g,
   phase2,
+  marketplace,
   onRoster,
   onHistory,
 }: {
   g: TeacherGroup;
   phase2: boolean;
+  /** Seats and fees are marketplace data: hidden in the follow-up-only pilot (CF-29). */
+  marketplace: boolean;
   onRoster: () => void;
   onHistory: () => void;
 }) {
@@ -132,17 +137,21 @@ function GroupCard({
             ? `${formatDate(g.nextSession.startsAt, locale, { weekday: 'short' })} ${formatTime(g.nextSession.startsAt, locale)}`
             : '—',
         )}
-        {stat(
-          t('teacher.groups.seats'),
-          t('teacher.groups.seatsValue', {
-            filled: num(g.seatsFilled, locale),
-            cap: num(g.seatCap, locale),
-          }),
-        )}
-        {stat(
-          t('teacher.groups.fees'),
-          `${formatMoney(g.sessionFee.amountPt, locale)} / ${formatMoney(g.monthlyFee.amountPt, locale)}`,
-        )}
+        {marketplace
+          ? stat(
+              t('teacher.groups.seats'),
+              t('teacher.groups.seatsValue', {
+                filled: num(g.seatsFilled, locale),
+                cap: num(g.seatCap, locale),
+              }),
+            )
+          : null}
+        {marketplace
+          ? stat(
+              t('teacher.groups.fees'),
+              `${formatMoney(g.sessionFee.amountPt, locale)} / ${formatMoney(g.monthlyFee.amountPt, locale)}`,
+            )
+          : null}
       </View>
       {f ? (
         <View

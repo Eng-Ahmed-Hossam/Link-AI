@@ -11,3 +11,10 @@ export function usePhase2(): boolean | undefined {
   if (!DEMO_CONTROLS) return false;
   return demo ? demo.demo.phase2 : undefined;
 }
+
+/** Phase 1 marketplace (Rooms, Earnings, fees and seats). On unless the demo switch turns it off. */
+export function useMarketplace(): boolean | undefined {
+  const demo = useDemoState();
+  if (!DEMO_CONTROLS) return true;
+  return demo ? demo.demo.marketplace !== false : undefined;
+}
