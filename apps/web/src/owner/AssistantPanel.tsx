@@ -183,11 +183,17 @@ export function AssistantPanel({
               {x.user}
             </p>
             <div className="flex flex-col gap-2 rounded-16 border border-border p-3">
-              {x.tier ? (
-                <StatusBadge tone={x.tier === 'act' ? 'warning' : 'info'} className="self-start">
-                  {tierLabel(x.tier)}
+              <span className="flex flex-wrap gap-2">
+                {x.tier ? (
+                  <StatusBadge tone={x.tier === 'act' ? 'warning' : 'info'}>
+                    {tierLabel(x.tier)}
+                  </StatusBadge>
+                ) : null}
+                {/* The answers are scripted until the assistant runs on ai-service: say so (B3). */}
+                <StatusBadge tone="neutral" data-testid="demo-answer">
+                  {t('owner.assistant.demoAnswer')}
                 </StatusBadge>
-              ) : null}
+              </span>
               {x.text || !x.done ? (
                 <p className="text-body text-navy" data-testid="assistant-answer">
                   {x.text}

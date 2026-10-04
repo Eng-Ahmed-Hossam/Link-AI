@@ -86,6 +86,7 @@ export function PilotPeople() {
                     t('owner.staff.colRole'),
                     t('owner.staff.colScope'),
                     t('owner.pilot.colPin'),
+                    t('owner.pilot.colVoice'),
                     t('owner.staff.colStatus'),
                     ...(owner ? [t('owner.pilot.colActions')] : []),
                   ].map((h) => (
@@ -114,6 +115,33 @@ export function PilotPeople() {
                       <StatusBadge tone={p.hasPin ? 'success' : 'warning'}>
                         {p.hasPin ? t('owner.pilot.pinSet') : t('owner.pilot.pinNotSet')}
                       </StatusBadge>
+                    </td>
+                    <td className="px-5 py-3" data-testid={`voice-${p.id}`}>
+                      {p.role !== 'teacher' ? (
+                        '—'
+                      ) : (
+                        <span className="flex flex-wrap items-center gap-2">
+                          <StatusBadge tone={p.voiceConsent ? 'success' : 'neutral'}>
+                            {p.voiceConsent
+                              ? t('owner.pilot.voiceSigned')
+                              : t('owner.pilot.voiceNone')}
+                          </StatusBadge>
+                          {owner && p.active ? (
+                            <Button
+                              variant="quiet"
+                              disabled={busy}
+                              data-testid={`voice-toggle-${p.id}`}
+                              onClick={() =>
+                                run(() => pilotApi.setVoiceConsent(p.id, !p.voiceConsent))
+                              }
+                            >
+                              {p.voiceConsent
+                                ? t('owner.pilot.voiceWithdraw')
+                                : t('owner.pilot.voiceGrant')}
+                            </Button>
+                          ) : null}
+                        </span>
+                      )}
                     </td>
                     <td className="px-5 py-3">
                       <StatusBadge tone={p.active ? 'success' : 'neutral'}>

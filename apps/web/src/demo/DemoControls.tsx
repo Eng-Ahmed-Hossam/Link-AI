@@ -79,6 +79,16 @@ export function DemoControls() {
             </Button>
             <Button
               variant="secondary"
+              aria-pressed={!!s?.demo.realStt}
+              data-testid="demo-real-stt"
+              onClick={() =>
+                run('Speech-to-text', () => demoApi.settings({ realStt: !s?.demo.realStt }))
+              }
+            >
+              Speech-to-text: {s?.demo.realStt ? 'local Whisper (real)' : 'fixture'}
+            </Button>
+            <Button
+              variant="secondary"
               data-testid="demo-new-day"
               onClick={() => run('New day', demoApi.newDay)}
             >
