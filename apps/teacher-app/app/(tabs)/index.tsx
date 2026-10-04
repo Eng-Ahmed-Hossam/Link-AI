@@ -1,6 +1,9 @@
-import { Placeholder } from '@/Placeholder';
-import { useLocale } from '@/locale';
+import { Redirect } from 'expo-router';
+import { usePhase2 } from '@/flags';
 
-export default function MyGroups() {
-  return <Placeholder title={useLocale().t('teacher.tabs.groups')} />;
+/** Start on Today with the Phase 2 flag, on My groups without it. */
+export default function TabsIndex() {
+  const phase2 = usePhase2();
+  if (phase2 === undefined) return null;
+  return <Redirect href={phase2 ? '/today' : '/groups'} />;
 }
