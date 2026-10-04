@@ -154,6 +154,14 @@ export const followupHandlers = [
     ),
   ),
 
+  http.post(
+    '*/v1/voice-extractions/:id/discard-item',
+    authed(async ({ request, params, userId, lang }) => {
+      const { itemId } = (await request.json()) as { itemId: string };
+      return HttpResponse.json(fu.discardItem(userId, params.id!, itemId, lang));
+    }),
+  ),
+
   // ── Students and notes ────────────────────────────────────────────────────────
   http.get(
     '*/v1/students/:id',

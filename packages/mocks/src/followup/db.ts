@@ -144,6 +144,8 @@ interface Voice {
     status: VoiceExtraction['status'];
     /** itemId → chosen student (T07). */
     resolved: Record<string, string>;
+    /** Items the teacher discarded (never saved to anyone). */
+    discarded?: string[];
   };
 }
 type GuardianState = Pick<fx.GuardianFx, 'whatsappOptIn' | 'smsConsent' | 'stopped'>;
@@ -478,6 +480,7 @@ function evaluate(
 // ── DTOs ───────────────────────────────────────────────────────────────────────
 function signalSummary(x: Sig, lang: Lang): SignalSummary {
   return {
+    student: person(x.studentId, lang),
     id: x.id,
     rule: x.rule,
     ruleVersion: x.ruleVersion,
@@ -692,8 +695,24 @@ export function teacherToday(userId: string, lang: Lang): TeacherToday {
           source: { recordId: r.id, sessionDate: r.date },
         })),
     );
+  const past = pastSessions();
+  const due = past.at(-1);
+  const dueRec = due ? recordFor(due.id) : undefined;
+  const recordDue: TeacherToday['recordDue'] =
+    due && dueRec?.status !== 'confirmed'
+      ? {
+          groupId: G,
+          groupName: fx.groupName[lang],
+          sessionId: due.id,
+          sessionDate: due.date,
+          startsAt: due.startsAt,
+          endsAt: due.endsAt,
+          studentCount: fx.roster.length,
+          recordId: dueRec?.id ?? null,
+        }
+      : null;
   const needsYou: TeacherToday['needsYou'] = [];
-  for (const p of pastSessions().slice(-6)) {
+  for (const p of past.slice(-6, -1)) {
     const r = recordFor(p.id);
     if (r?.status === 'confirmed') continue;
     needsYou.push({
@@ -717,6 +736,7 @@ export function teacherToday(userId: string, lang: Lang): TeacherToday {
         }
       : null,
     reminders,
+    recordDue,
     needsYou: needsYou.reverse(),
   };
 }
@@ -1267,6 +1287,7 @@ function extractionDto(v: Voice, lang: Lang): VoiceExtraction {
     transcript: fx.voiceTranscript,
     audioUrl: null,
     items,
+    discardedItemIds: v.extraction.discarded ?? [],
     unmentioned: fx.roster.filter((s) => !mentioned.has(s.id)).map((s) => person(s.id, lang)),
     assessment: {
       title: fx.assessments.practice.title[lang],
@@ -1291,10 +1312,30 @@ export function resolveIdentity(
   if (!it.candidates.includes(body.studentId))
     throw new MockProblem(422, 'not_a_candidate', 'Pick one of the listed students.');
   v.extraction.resolved[it.id] = body.studentId;
+  v.extraction.discarded = (v.extraction.discarded ?? []).filter((x) => x !== it.id);
+  refreshExtractionStatus(v);
+  save();
+  return extractionDto(v, lang);
+}
+
+function refreshExtractionStatus(v: Voice) {
+  const discarded = v.extraction.discarded ?? [];
   const open = fx.voiceItems.some(
-    (x) => x.identity === 'ambiguous' && !v.extraction.resolved[x.id],
+    (x) => x.identity === 'ambiguous' && !v.extraction.resolved[x.id] && !discarded.includes(x.id),
   );
   v.extraction.status = open ? 'clarification_needed' : 'proposed';
+}
+
+/** The teacher drops an item: nothing from it is saved, and an unclear name no longer blocks confirm. */
+export function discardItem(userId: string, extractionId: string, itemId: string, lang: Lang) {
+  const v = load().voice.find((x) => x.extraction.id === extractionId);
+  if (!v) throw new MockProblem(404, 'not_found', 'Extraction not found.');
+  requireTeacher(userId, G);
+  if (!fx.voiceItems.some((x) => x.id === itemId))
+    throw new MockProblem(404, 'not_found', 'Item not found.');
+  v.extraction.discarded = [...new Set([...(v.extraction.discarded ?? []), itemId])];
+  delete v.extraction.resolved[itemId];
+  refreshExtractionStatus(v);
   save();
   return extractionDto(v, lang);
 }
