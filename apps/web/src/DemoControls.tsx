@@ -38,7 +38,7 @@ export function DemoControls() {
         type="button"
         onClick={() => setOpen(true)}
         lang="en"
-        className="fixed bottom-40 start-3 z-50 min-h-11 rounded-full bg-amber px-4 text-caption font-semibold text-navy"
+        className="fixed bottom-40 start-3 z-50 min-h-11 rounded-full border border-amber bg-amberSoft px-4 text-caption font-semibold text-amber"
       >
         Demo controls
       </button>
