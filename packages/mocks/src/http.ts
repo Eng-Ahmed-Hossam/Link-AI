@@ -24,10 +24,19 @@ export const problem = (
   );
 
 /** Mock bearer tokens look like `mock.<userId>` — dev only, never valid against core-api. */
-export const userIdOf = (req: Request) => {
+const mockTokenUser = (req: Request) => {
   const h = req.headers.get('authorization');
   return h?.startsWith('Bearer mock.') ? h.slice('Bearer mock.'.length) : null;
 };
+let resolveUser: (req: Request) => string | null = mockTokenUser;
+/**
+ * The pilot server replaces mock tokens with its own server-side sessions (httpOnly cookie, A3);
+ * `mock.<userId>` tokens are then never accepted.
+ */
+export const setUserResolver = (fn: (req: Request) => string | null) => {
+  resolveUser = fn;
+};
+export const userIdOf = (req: Request) => resolveUser(req);
 
 /** Wrap a resolver with the dev-panel scenario (empty / error / offline / slow) for read endpoints. */
 export const withScenario =

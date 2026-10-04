@@ -18,6 +18,8 @@ export const followupHandlers = [
   http.get(
     '*/v1/teachers/me/groups',
     authed(async ({ userId, lang }) => {
+      // Pilot: the teacher's follow-up groups from the roster import (no marketplace data).
+      if (fu.isPilot()) return HttpResponse.json(fu.pilotTeacherGroups(userId, lang));
       const me = mfx.staff.find((u) => u.id === userId);
       if (!me?.teacherId) return problem(403, 'forbidden', 'Teachers only.');
       await delay(200);
@@ -266,6 +268,34 @@ export const followupHandlers = [
           lang,
         ),
       ),
+    ),
+  ),
+  // Pilot (A6): staff sent the approved text from the centre's own WhatsApp.
+  http.post(
+    '*/v1/messages/:id/sent-manually',
+    authed(({ params, userId, lang }) =>
+      HttpResponse.json(fu.markSentManually(userId, params.id!, lang)),
+    ),
+  ),
+  // CF-34: the owner asks the teacher to correct a confirmed record; the teacher closes it.
+  http.post(
+    '*/v1/session-records/:id/correction-requests',
+    authed(async ({ request, params, userId, lang }) =>
+      HttpResponse.json(
+        fu.requestCorrection(
+          userId,
+          params.id!,
+          (await request.json()) as Parameters<typeof fu.requestCorrection>[2],
+          lang,
+        ),
+        { status: 201 },
+      ),
+    ),
+  ),
+  http.post(
+    '*/v1/correction-requests/:id/close',
+    authed(({ params, userId, lang }) =>
+      HttpResponse.json(fu.closeCorrectionRequest(userId, params.id!, lang)),
     ),
   ),
   http.post(

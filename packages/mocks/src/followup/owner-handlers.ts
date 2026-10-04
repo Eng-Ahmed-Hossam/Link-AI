@@ -5,9 +5,9 @@ import { authed, langOf, problem, userIdOf } from '../http';
 import * as fu from './db';
 import { ASSISTANT_VOICE_FIXTURE, assistantTurn, briefing } from './assistant';
 
-/** Only the demo centre exists in the mock. */
+/** One centre per world (the demo's Al Nour, or the pilot centre). Any other id is 404 (10 §2). */
 const centre = (id: string | undefined) => {
-  if (id !== 'cen-nour') throw new MockProblem(404, 'not_found', 'Centre not found.');
+  if (id !== fu.world().centre.id) throw new MockProblem(404, 'not_found', 'Centre not found.');
 };
 
 /** Server-sent events: one `data:` line per event, paced so the answer visibly streams. */
@@ -108,6 +108,10 @@ export const ownerHandlers = [
     authed(({ userId, lang }) =>
       HttpResponse.json({ data: fu.parentUpdates(userId, lang), nextCursor: null }),
     ),
+  ),
+  http.get(
+    '*/v1/me/centre-groups',
+    authed(({ userId, lang }) => HttpResponse.json(fu.parentCentreGroups(userId, lang))),
   ),
   http.post(
     '*/v1/messages/:id/revise',
