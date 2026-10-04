@@ -13,12 +13,11 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { MockBadge } from '@link/ui-native';
 import { color } from '@link/tokens';
-import { startMocks } from '@link/mocks/native';
 import { setApiBaseUrl } from '@link/api-client';
 import { LocaleProvider, useLocale } from '@/locale';
 import { API_BASE_URL, API_MODE } from '@/api-mode';
 import { SessionProvider } from '@/session';
-import { DemoControls } from '@/demo';
+import { DemoControls, startMocks } from '@/demo';
 import { startQueueWorker } from '@/offline/voiceQueue';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

@@ -3,8 +3,10 @@ import { Text } from 'react-native';
 import { Button, Callout, textStyle } from '@link/ui-native';
 import { color } from '@link/tokens';
 import { useLocale } from '@/locale';
-import { SAMPLE_TEACHER, useSession } from '@/session';
-import { API_MODE } from '@/api-mode';
+import { useSession } from '@/session';
+import { SAMPLE_TEACHER } from '@/demo';
+import { API_MODE, PILOT } from '@/api-mode';
+import { PilotSignIn } from '@/screens/PilotSignIn';
 import { Screen } from '@/ui/Screen';
 
 /**
@@ -12,13 +14,18 @@ import { Screen } from '@/ui/Screen';
  * modes offer the sample teacher only, and live mode shows nothing to sign in with.
  */
 export default function SignIn() {
+  if (PILOT) return <PilotSignIn />;
+  return <SampleSignIn />;
+}
+
+function SampleSignIn() {
   const { locale, t } = useLocale();
   const { signIn } = useSession();
   const router = useRouter();
   return (
     <Screen title={t('teacher.signIn.title')}>
       <Callout locale={locale} tone="info" body={t('teacher.signIn.pending')} />
-      {API_MODE !== 'live' ? (
+      {API_MODE !== 'live' && SAMPLE_TEACHER ? (
         <Button
           locale={locale}
           testID="sign-in-sample"

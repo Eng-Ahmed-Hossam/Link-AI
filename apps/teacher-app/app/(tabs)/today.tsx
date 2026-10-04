@@ -151,6 +151,35 @@ export default function Today() {
             />
           ) : null}
 
+          {(data.correctionRequests ?? []).map((r) => (
+            // CF-34: the owner asks; only the teacher corrects a confirmed record.
+            <Card key={r.id} tone="warning" testID={`correction-request-${r.id}`}>
+              <Text style={[textStyle(locale, 'label'), { color: color.amber }]}>
+                {t('teacher.pilot.correctionAsked', { name: r.requestedBy.displayName })}
+              </Text>
+              <Text style={[textStyle(locale, 'body'), { color: color.amber }]}>
+                {r.groupName} • {dayMonth(r.sessionDate, locale)}
+                {r.student ? ` • ${r.student.displayName}` : ''}
+              </Text>
+              <Text style={[textStyle(locale, 'body'), { color: color.navy }]}>{r.text}</Text>
+              <Button
+                locale={locale}
+                variant="secondary"
+                label={t('teacher.pilot.openHistory')}
+                onPress={() => router.push(`/group/${r.groupId}/history`)}
+              />
+              <Button
+                locale={locale}
+                variant="quiet"
+                label={t('teacher.pilot.markDone')}
+                onPress={async () => {
+                  await fuApi.closeCorrectionRequest(r.id).catch(() => undefined);
+                  await q.refetch();
+                }}
+              />
+            </Card>
+          ))}
+
           {otherDrafts.length || data.needsYou.length ? (
             <>
               <Text

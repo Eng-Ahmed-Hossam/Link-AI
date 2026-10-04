@@ -40,6 +40,7 @@ const record: SessionRecord = {
   createdAt: '2026-10-03T14:00:00Z',
   corrections: [],
   signals: [],
+  correctionRequests: [],
 };
 const fresh = () => draftFromRecord(record, 'Group', 'key-1');
 

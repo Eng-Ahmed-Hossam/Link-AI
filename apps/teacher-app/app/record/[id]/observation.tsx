@@ -1,6 +1,15 @@
 import { Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Button, Card, StateView, StatusBadge, TextField, textStyle } from '@link/ui-native';
+import {
+  Button,
+  Callout,
+  Card,
+  StateView,
+  StatusBadge,
+  TextField,
+  textStyle,
+} from '@link/ui-native';
+import { useVoiceNotes } from '@/flags';
 import { color, space } from '@link/tokens';
 import { useLocale } from '@/locale';
 import { useDraft } from '@/record/drafts';
@@ -18,6 +27,7 @@ export default function Observation() {
   const router = useRouter();
   const { draft, update } = useDraft(id);
   const queue = useVoiceQueue().filter((n) => n.recordId === id);
+  const voiceOn = useVoiceNotes();
 
   if (!draft)
     return (
@@ -63,21 +73,31 @@ export default function Observation() {
         </>
       }
     >
-      <Card tone="dark">
-        <Text style={[textStyle(locale, 'heading'), { color: color.white }]}>
-          {t('teacher.observation.speakTitle')}
-        </Text>
-        <Text style={[textStyle(locale, 'body'), { color: color.white }]}>
-          {t('teacher.observation.speakBody')}
-        </Text>
-        <Button
+      {!voiceOn ? (
+        // Pilot, before local speech-to-text (Part B): no recording, the typed note works.
+        <Callout
           locale={locale}
-          testID="record-voice"
-          variant="secondary"
-          label={t('teacher.observation.recordVoice')}
-          onPress={() => router.push(`/record/${id}/voice`)}
+          tone="info"
+          title={t('teacher.pilot.typeInsteadTitle')}
+          body={t('teacher.pilot.typeInsteadBody')}
         />
-      </Card>
+      ) : (
+        <Card tone="dark">
+          <Text style={[textStyle(locale, 'heading'), { color: color.white }]}>
+            {t('teacher.observation.speakTitle')}
+          </Text>
+          <Text style={[textStyle(locale, 'body'), { color: color.white }]}>
+            {t('teacher.observation.speakBody')}
+          </Text>
+          <Button
+            locale={locale}
+            testID="record-voice"
+            variant="secondary"
+            label={t('teacher.observation.recordVoice')}
+            onPress={() => router.push(`/record/${id}/voice`)}
+          />
+        </Card>
+      )}
 
       {queue.map((n) => {
         const ready = n.status === 'uploaded' && n.voiceNoteId;

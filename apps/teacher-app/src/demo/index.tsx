@@ -1,10 +1,21 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
-import { demoApi, type DemoSnapshot } from '@link/api-client';
+import { demoApi, type DemoSnapshot } from '@link/api-client/demo';
 import { Button, Sheet, textStyle } from '@link/ui-native';
 import { color, radius, space } from '@link/tokens';
-import { DEMO_CONTROLS } from './api-mode';
+import { DEMO_CONTROLS } from '../api-mode';
+
+/**
+ * Everything dev- and demo-only in the teacher app, behind `@/demo`. Pilot builds
+ * (EXPO_PUBLIC_LINK_MODE=pilot) resolve `@/demo` to `./pilot.tsx` (metro.config.js), so the Demo
+ * controls, the in-app mock handlers and the sample sign-in never reach the pilot bundle.
+ */
+export { startMocks } from '@link/mocks/native';
+import type { Session } from '../session';
+
+/** The sample teacher of the demo scenario (Ms Salma, Al Nour). */
+export const SAMPLE_TEACHER: Session = { accessToken: 'mock.usr-salma', userId: 'usr-salma' };
 
 /** Polls `/__demo/state` while Demo controls are on (same switch the web apps follow). */
 let snapshot: DemoSnapshot | null = null;

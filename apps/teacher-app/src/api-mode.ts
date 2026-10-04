@@ -1,6 +1,12 @@
 import { Platform } from 'react-native';
 import { MOCK_SERVER_URL, resolveApiMode } from '@link/api-client';
 
+/**
+ * Concierge pilot build (`pnpm pilot:build`, docs/13): served by the pilot server over HTTPS on the
+ * centre LAN, same origin as its API. Compile-time constant: pilot and demo code drop out of bundles.
+ */
+export const PILOT = process.env.EXPO_PUBLIC_LINK_MODE === 'pilot';
+
 /** `mock` (in-app handlers) | `mock-server` (shared state over HTTP) | `live` (core-api). */
 export const API_MODE = resolveApiMode(
   process.env.EXPO_PUBLIC_API_MODE,

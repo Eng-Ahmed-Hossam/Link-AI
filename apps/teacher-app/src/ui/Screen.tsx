@@ -7,9 +7,13 @@ import { color, space } from '@link/tokens';
 import { useLocale } from '../locale';
 import { useOnline } from '../net';
 import { offlineStore } from '../offline/store';
+import { useQuery } from '@tanstack/react-query';
+import { pilotApi } from '@link/api-client';
+import { PILOT } from '../api-mode';
 
 /**
- * Teacher app screen frame: header (lockup, role, "Al Nour Centre • Sample data"), an offline
+ * Teacher app screen frame: header (lockup, role, "Al Nour Centre • Sample data" — the centre's name
+ * and "Pilot" in the pilot), an offline
  * banner whenever the last call could not reach the server, and the scrolling body.
  */
 export function Screen({
@@ -38,6 +42,8 @@ export function Screen({
   const router = useRouter();
   const online = useOnline();
   const onBack = back === true ? () => router.back() : back || undefined;
+  // Pilot: the real centre's name, never the sample centre or "Sample data" (A1).
+  const info = useQuery({ queryKey: ['pilot-info'], queryFn: pilotApi.info, enabled: PILOT });
   return (
     <View testID={testID} style={{ flex: 1, backgroundColor: color.bg }}>
       <ScrollView
@@ -47,7 +53,11 @@ export function Screen({
         <ScreenHeader
           locale={locale}
           role={t('teacher.header.role')}
-          context={t('teacher.header.context')}
+          context={
+            PILOT
+              ? t('teacher.pilot.headerContext', { centre: info.data?.centreName ?? '' })
+              : t('teacher.header.context')
+          }
           title={title}
           subtitle={subtitle}
           step={
