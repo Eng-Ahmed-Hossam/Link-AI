@@ -1,0 +1,9 @@
+.venv/
+.models/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+bench/out/
+# built by bench_stt.py from b01..b10
+bench/audio/b-long-60s.wav

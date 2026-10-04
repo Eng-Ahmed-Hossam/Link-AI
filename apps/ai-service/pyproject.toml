@@ -1,0 +1,43 @@
+[project]
+name = "link-ai-service"
+version = "0.1.0"
+description = "Link ai-service: local speech-to-text and extraction for the follow-up loop (docs/09)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn>=0.32",
+  "faster-whisper>=1.1",
+  "httpx>=0.27",
+  "pydantic>=2.9",
+  "python-multipart>=0.0.12",
+  "numpy>=1.26",
+  "jsonschema>=4.23",
+  # faster-whisper 1.2 passes `metadata_errors` to av.open, which PyAV 16+ removed.
+  "av>=11,<16",
+]
+
+[project.optional-dependencies]
+# NVIDIA GPU on Windows/Linux: CUDA 12 cuBLAS and cuDNN 9 for CTranslate2 (faster-whisper).
+gpu = ["nvidia-cublas-cu12>=12.4", "nvidia-cudnn-cu12>=9.1,<10"]
+
+[dependency-groups]
+dev = ["pytest>=8.3", "ruff>=0.7", "mypy>=1.13"]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+# FastAPI declares File()/Form()/Header() parameters as defaults by design.
+ignore = ["B008"]
+
+[tool.ruff.lint.pycodestyle]
+# Code is formatted to 100; comments and docstrings may run a little longer.
+max-line-length = 120
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
