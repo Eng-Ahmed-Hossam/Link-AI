@@ -67,6 +67,25 @@ export function DemoControls() {
             </Button>
             <Button
               variant="secondary"
+              aria-pressed={s?.demo.marketplace !== false}
+              data-testid="demo-marketplace"
+              onClick={() =>
+                run('Marketplace', () =>
+                  demoApi.settings({ marketplace: s?.demo.marketplace === false }),
+                )
+              }
+            >
+              Marketplace flag: {s?.demo.marketplace === false ? 'off' : 'on'}
+            </Button>
+            <Button
+              variant="secondary"
+              data-testid="demo-new-day"
+              onClick={() => run('New day', demoApi.newDay)}
+            >
+              Simulate a new day
+            </Button>
+            <Button
+              variant="secondary"
               aria-pressed={!!s?.demo.offline}
               onClick={() => run('Offline', () => demoApi.settings({ offline: !s?.demo.offline }))}
             >

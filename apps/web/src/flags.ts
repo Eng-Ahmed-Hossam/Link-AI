@@ -10,6 +10,8 @@ import { useDemoState } from './demo-state';
  * and a dev-only panel can override them locally (localStorage `link.flags`) for demos.
  */
 export const FLAG_DEFAULTS = {
+  /** Phase 1 marketplace surfaces (owner nav marketplace items). On by default; the MVP pilot turns it off (CF-29). */
+  'marketplace.enabled': true,
   'followup.owner_nav': false,
   'followup.records': false,
   'followup.voice_notes': false,
@@ -63,7 +65,12 @@ export function useFlags(): Record<FlagKey, boolean> {
   );
   // Demo controls (dev only) switch the Phase 2 flags for every app at once; local overrides still win.
   const demo = useDemoState();
-  const phase2 = demo ? Object.fromEntries(PHASE2_FLAGS.map((k) => [k, demo.demo.phase2])) : {};
+  const phase2 = demo
+    ? {
+        ...Object.fromEntries(PHASE2_FLAGS.map((k) => [k, demo.demo.phase2])),
+        'marketplace.enabled': demo.demo.marketplace !== false,
+      }
+    : {};
   return {
     ...FLAG_DEFAULTS,
     ...phase2,
