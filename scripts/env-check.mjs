@@ -12,6 +12,8 @@ const SKIP_DIRS = new Set([
   'node_modules',
   '.next',
   '.next-pilot',
+  '.models',
+  'evals-runs',
   '.turbo',
   'dist',
   'dist-pilot',

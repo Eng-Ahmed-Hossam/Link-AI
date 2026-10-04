@@ -4,6 +4,9 @@
 //   teacher app  http://localhost:8081  (Expo web, API mode mock-server, Demo controls)
 // Local only: APP_ENV=local is forced; no real provider is called. Ctrl+C stops everything.
 import { spawn, spawnSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { ROOT } from './lib/env.mjs';
 
 const MOCK = 'http://localhost:4010';
@@ -12,8 +15,8 @@ const procs = [];
 const restarts = {};
 let stopping = false;
 
-function start(name, args, env) {
-  const p = spawn('pnpm', args, { cwd: ROOT, env: { ...common, ...env }, shell: true });
+function start(name, args, env, cmd = 'pnpm') {
+  const p = spawn(cmd, args, { cwd: ROOT, env: { ...common, ...env }, shell: true });
   const tag = `[${name}]`.padEnd(8);
   const out = (stream) => (d) =>
     String(d)
@@ -28,7 +31,7 @@ function start(name, args, env) {
     restarts[name] = (restarts[name] ?? 0) + 1;
     if (restarts[name] <= 3) {
       console.log(`${tag}exited (${code ?? 'signal'}); restarting (${restarts[name]}/3)…`);
-      start(name, args, env);
+      start(name, args, env, cmd);
     } else {
       console.log(`${tag}exited (${code ?? 'signal'}) too often; stopping the demo.`);
       stopAll(1);
@@ -85,9 +88,28 @@ if (busy.length) {
   process.exit(1);
 }
 
+// Real speech-to-text (Part B): if ai-service is installed (pnpm ai:models done), start it on
+// 127.0.0.1 with a fresh token. The presenter turns it on with Demo controls → "Speech-to-text";
+// until then the fixtures are used (and the e2e suites always reset to fixtures).
+const aiDir = join(ROOT, 'apps', 'ai-service');
+const aiReady =
+  existsSync(join(aiDir, '.venv')) &&
+  existsSync(join(aiDir, '.models', 'large-v3-turbo', 'model.bin'));
+const aiToken = randomBytes(24).toString('base64url');
+if (aiReady)
+  start(
+    'ai',
+    ['--directory', aiDir, 'run', 'python', '-m', 'ai_service'],
+    { AI_SERVICE_TOKEN: aiToken, AI_SERVICE_HOST: '127.0.0.1', PYTHONUTF8: '1' },
+    'uv',
+  );
+
 // First run: the MVP pilot setup (Phase 2 only, CF-29). After that the presenter's switches are
 // kept in packages/mocks/.data/demo-flags.json, so a restart never loses them.
-start('mock', ['--filter', '@link/mocks', 'mock:server'], { DEMO_DEFAULT_FLAGS: 'phase2-only' });
+start('mock', ['--filter', '@link/mocks', 'mock:server'], {
+  DEMO_DEFAULT_FLAGS: 'phase2-only',
+  ...(aiReady ? { AI_SERVICE_URL: 'http://127.0.0.1:8090', AI_SERVICE_TOKEN: aiToken } : {}),
+});
 await waitFor(`${MOCK}/__demo/state`);
 await fetch(`${MOCK}/__demo/reset`, { method: 'POST', body: '{}' });
 
@@ -112,4 +134,5 @@ Link demo (sample data only)
   Owner web    http://localhost:3000/ar/centre/today   (Batch 6)
   Parent PWA   http://localhost:3000/ar/children       sign in: +20 10 0000 0001, code 123456
   Mock server  ${MOCK}/__demo/state
+  Speech-to-text  ${aiReady ? 'local Whisper ready (Demo controls → "Speech-to-text" to use it)' : 'fixtures only (pnpm ai:models, then restart, for local Whisper)'}
 `);

@@ -14,3 +14,12 @@ packages/ui/src/brand/wordmark.ts
 packages/ui-native/src/brand/wordmark.ts
 apps/web/next-env.d.ts
 apps/teacher-app/expo-env.d.ts
+
+# ai-service (Python): virtualenv, downloaded models, bench output
+apps/ai-service/.venv
+apps/ai-service/.models
+apps/ai-service/bench/out
+evals-runs
+apps/ai-service/.pytest_cache
+apps/ai-service/.ruff_cache
+apps/ai-service/.mypy_cache

@@ -31,3 +31,6 @@ pilot-deletion-receipt-*.txt
 apps/pilot/.e2e-data/
 apps/pilot/.build-check/
 apps/pilot/test-results/
+
+# ai-service: eval predictions and bench output (resumable runs; not committed)
+evals-runs/
