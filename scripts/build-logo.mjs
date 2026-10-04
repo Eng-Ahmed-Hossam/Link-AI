@@ -20,7 +20,18 @@ const orbs = [
   { name: 'logo-mark-halo', base: 96 },
 ];
 for (const { name, base } of orbs) {
-  const src = readFileSync(join(BRAND, 'source', `${name}@3x.png`));
+  // The Figma exports sit on an opaque white square; a circular alpha mask removes only that square
+  // (the orb and its halo are round), so the mark also works on dark surfaces (V01).
+  const raw = readFileSync(join(BRAND, 'source', `${name}@3x.png`));
+  const { width: w = 0 } = await sharp(raw).metadata();
+  const mask = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${w}"><circle cx="${w / 2}" cy="${w / 2}" r="${w / 2 - 0.5}" fill="#fff"/></svg>`,
+  );
+  const src = await sharp(raw)
+    .ensureAlpha()
+    .composite([{ input: mask, blend: 'dest-in' }])
+    .png()
+    .toBuffer();
   for (const scale of [1, 2, 3]) {
     const px = base * scale;
     const img = sharp(src).resize(px, px, { kernel: 'lanczos3' });
