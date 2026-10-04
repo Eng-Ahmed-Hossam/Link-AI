@@ -1,0 +1,338 @@
+/**
+ * The pilot server's request handling, without the listeners (so tests can drive it directly).
+ *
+ * - `/v1/pilot/*` and `/v1/me`: sign-in with a PIN, sessions, people (A3, A16).
+ * - every other `/v1/*` call: the follow-up handlers in `pilotHandlers` (no demo or mock route).
+ * - the teacher port serves the teacher app's static pilot build; the web port proxies the owner
+ *   web's production server and only its centre pages.
+ */
+import { createReadStream, existsSync, statSync } from 'node:fs';
+import { request as httpRequest, type IncomingMessage, type ServerResponse } from 'node:http';
+import { extname, join, normalize, sep } from 'node:path';
+import { getResponse } from 'msw';
+import * as fu from '@link/mocks/followup';
+import { setUserResolver } from '@link/mocks/http';
+import { pilotHandlers } from '@link/mocks/pilot';
+import type { StaffRole } from '@link/mocks/world';
+import { COOKIE, PilotAuth, clearCookie, cookieValue, sessionCookie } from './auth';
+import type { PilotConfig } from './config';
+import type { PilotStore } from './store';
+
+export const PILOT_CENTRE_ID = 'cen-pilot';
+const ROLE: Record<StaffRole, 'centre_owner' | 'centre_staff' | 'teacher'> = {
+  owner: 'centre_owner',
+  reception: 'centre_staff',
+  teacher: 'teacher',
+};
+const SECURITY_HEADERS: Record<string, string> = {
+  'x-content-type-options': 'nosniff',
+  'referrer-policy': 'no-referrer',
+  'x-frame-options': 'DENY',
+  'permissions-policy': 'microphone=(self), camera=(), geolocation=()',
+};
+
+export interface PilotApp {
+  auth: PilotAuth;
+  handle(req: IncomingMessage, res: ServerResponse, surface: 'web' | 'teacher'): Promise<void>;
+  /** Fetch-style entry for the `/v1` API (tests). */
+  api(req: Request, ip?: string): Promise<Response>;
+}
+
+const json = (status: number, body: unknown, headers: Record<string, string> = {}) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json', 'cache-control': 'no-store', ...headers },
+  });
+const problem = (status: number, code: string, detail: string, extra: object = {}) =>
+  new Response(
+    JSON.stringify({ type: 'about:blank', title: detail, status, code, detail, ...extra }),
+    {
+      status,
+      headers: { 'content-type': 'application/problem+json', 'cache-control': 'no-store' },
+    },
+  );
+
+export function createPilotApp(cfg: PilotConfig, store: PilotStore): PilotApp {
+  const activeUser = (id: string) => fu.world().users.some((u) => u.id === id && u.active);
+  const userOf = (id: string) => fu.world().users.find((u) => u.id === id && u.active);
+  const auth = new PilotAuth(store, { sessionHours: cfg.sessionHours, isActiveUser: activeUser });
+  // Mock `mock.<userId>` tokens are never accepted in the pilot: only server-side sessions.
+  setUserResolver((req) => auth.userFor(cookieValue(req.headers.get('cookie'))));
+
+  const originOk = (origin: string | null) => !origin || cfg.allowedOrigins.includes(origin);
+
+  async function pilotRoute(req: Request, ip: string): Promise<Response | null> {
+    const url = new URL(req.url);
+    const p = url.pathname;
+    const secure = url.protocol === 'https:';
+    const me = auth.userFor(cookieValue(req.headers.get('cookie')));
+    const lang = req.headers.get('accept-language')?.startsWith('en') ? 'en' : 'ar';
+    const body = async () => (await req.json().catch(() => ({}))) as Record<string, unknown>;
+
+    if (p === '/v1/pilot/info' && req.method === 'GET') {
+      const m = store.snap!.meta;
+      return json(200, {
+        mode: 'pilot',
+        centreName: m.centreName,
+        startDate: m.startDate,
+        endDate: m.endDate,
+      });
+    }
+    // The sign-in picker: first names / nicknames and roles of the people who can sign in.
+    if (p === '/v1/pilot/people' && req.method === 'GET')
+      return json(
+        200,
+        fu
+          .world()
+          .users.filter((u) => u.active && store.snap!.auth.pins[u.id])
+          .map((u) => ({ id: u.id, displayName: u.name[lang], role: u.role })),
+      );
+    if (p === '/v1/pilot/sessions' && req.method === 'POST') {
+      const b = await body();
+      const r = auth.signIn(String(b.userId ?? ''), String(b.pin ?? ''), ip);
+      if (!r.ok) {
+        if (r.code === 'locked') {
+          fu.recordAccessEvent('access.locked', String(b.userId ?? ''), {});
+          return problem(423, 'locked', 'Too many wrong PINs. Try again later.', {
+            lockedUntil: r.lockedUntil,
+          });
+        }
+        if (r.code === 'rate_limited')
+          return problem(
+            429,
+            'rate_limited',
+            'Too many attempts from this device. Wait 15 minutes.',
+          );
+        if (r.code === 'wrong_pin')
+          return problem(401, 'wrong_pin', 'Wrong PIN.', { attemptsLeft: r.attemptsLeft });
+        return problem(401, 'cannot_sign_in', 'This person cannot sign in.');
+      }
+      const u = userOf(r.userId)!;
+      fu.recordAccessEvent('access.signed_in', r.userId, { role: u.role });
+      return json(
+        200,
+        { id: u.id, name: u.name[lang], role: u.role, expiresAt: r.expiresAt },
+        { 'set-cookie': sessionCookie(r.token, cfg.sessionHours * 3600, secure) },
+      );
+    }
+    if (p === '/v1/pilot/sessions/current' && req.method === 'DELETE') {
+      if (me) fu.recordAccessEvent('access.signed_out', me, {});
+      auth.signOut(cookieValue(req.headers.get('cookie')));
+      return new Response(null, { status: 204, headers: { 'set-cookie': clearCookie(secure) } });
+    }
+    if (p === '/v1/me' && req.method === 'GET') {
+      const u = me ? userOf(me) : null;
+      if (!u) return problem(401, 'unauthenticated', 'Sign in to continue.');
+      return json(200, {
+        id: u.id,
+        name: u.name[lang],
+        language: lang,
+        roles: [ROLE[u.role]],
+        centreId: PILOT_CENTRE_ID,
+      });
+    }
+    // ── people (A16 in the pilot: staff see the list, only the owner changes it) ────
+    const users = /^\/v1\/pilot\/users(?:\/([^/]+))?(\/pin)?$/.exec(p);
+    if (users) {
+      if (!me) return problem(401, 'unauthenticated', 'Sign in to continue.');
+      try {
+        if (!users[1] && req.method === 'GET') {
+          const role = userOf(me)?.role;
+          if (role !== 'owner' && role !== 'reception')
+            return problem(403, 'forbidden', 'Centre staff only.');
+          const w = fu.world();
+          return json(
+            200,
+            w.users.map((u) => ({
+              id: u.id,
+              displayName: u.name[lang],
+              role: u.role,
+              active: u.active,
+              hasPin: !!store.snap!.auth.pins[u.id],
+              groups: w.groups
+                .filter((g) => g.teacherUserId === u.id)
+                .map((g) => ({ id: g.id, name: g.name[lang] })),
+            })),
+          );
+        }
+        if (!users[1] && req.method === 'POST') {
+          const b = await body();
+          const u = fu.addPilotUser(me, {
+            name: String(b.name ?? ''),
+            role: b.role as StaffRole,
+            groupIds: Array.isArray(b.groupIds) ? (b.groupIds as string[]) : [],
+          });
+          const pin = auth.setPin(u.id);
+          return json(201, { user: { id: u.id, displayName: u.name[lang], role: u.role }, pin });
+        }
+        if (users[1] && users[2] && req.method === 'POST') {
+          if (userOf(me)?.role !== 'owner')
+            return problem(403, 'forbidden', 'Only the owner manages staff.');
+          if (!userOf(users[1])) return problem(404, 'not_found', 'Person not found.');
+          const pin = auth.setPin(users[1]);
+          fu.recordAccessEvent('access.pin_reset', me, { userId: users[1] });
+          return json(200, { pin });
+        }
+        if (users[1] && !users[2] && req.method === 'DELETE') {
+          fu.removePilotUser(me, users[1]);
+          auth.revokeSessions(users[1]);
+          store.write();
+          return new Response(null, { status: 204 });
+        }
+      } catch (e) {
+        if (e instanceof fu.MockProblem) return problem(e.status, e.code, e.detail, e.extra);
+        throw e;
+      }
+      return problem(405, 'method_not_allowed', 'Not allowed.');
+    }
+    return null;
+  }
+
+  async function api(req: Request, ip = 'local'): Promise<Response> {
+    const origin = req.headers.get('origin');
+    if (!originOk(origin))
+      return problem(403, 'origin_not_allowed', 'This address is not allowed.');
+    const own = await pilotRoute(req, ip);
+    if (own) return own;
+    const res = await getResponse(pilotHandlers, req);
+    return res ?? problem(404, 'not_found', 'Not found.');
+  }
+
+  async function handle(req: IncomingMessage, res: ServerResponse, surface: 'web' | 'teacher') {
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
+    const secure = (req.socket as { encrypted?: boolean }).encrypted === true;
+    if (secure) res.setHeader('strict-transport-security', 'max-age=86400');
+    const host = req.headers.host ?? `${cfg.bind}`;
+    const url = new URL(req.url ?? '/', `${secure ? 'https' : 'http'}://${host}`);
+    const origin = req.headers.origin;
+
+    if (url.pathname.startsWith('/v1/')) {
+      if (req.method === 'OPTIONS') {
+        // Same-origin apps need no preflight; only listed origins get one.
+        if (!origin || !cfg.allowedOrigins.includes(origin)) return void res.writeHead(403).end();
+        return void res
+          .writeHead(204, {
+            'access-control-allow-origin': origin,
+            'access-control-allow-credentials': 'true',
+            'access-control-allow-methods': 'GET,POST,PATCH,PUT,DELETE',
+            'access-control-allow-headers': 'content-type,idempotency-key,accept-language',
+            vary: 'origin',
+          })
+          .end();
+      }
+      const headers = new Headers();
+      for (const [k, v] of Object.entries(req.headers))
+        if (typeof v === 'string') headers.set(k, v);
+        else if (Array.isArray(v)) headers.set(k, v.join(', '));
+      const chunks: Buffer[] = [];
+      if (req.method !== 'GET' && req.method !== 'HEAD')
+        for await (const c of req) chunks.push(c as Buffer);
+      if (chunks.reduce((n, c) => n + c.length, 0) > 2_000_000)
+        return void res.writeHead(413).end();
+      const request = new Request(url, {
+        method: req.method,
+        headers,
+        body: chunks.length ? Buffer.concat(chunks) : undefined,
+      });
+      const r = await api(request, req.socket.remoteAddress ?? 'unknown');
+      const out: Record<string, string | string[]> = {};
+      r.headers.forEach((v, k) => {
+        if (k === 'set-cookie') out[k] = [...(r.headers.getSetCookie?.() ?? [v])];
+        else out[k] = v;
+      });
+      if (origin && cfg.allowedOrigins.includes(origin)) {
+        out['access-control-allow-origin'] = origin;
+        out['access-control-allow-credentials'] = 'true';
+        out.vary = 'origin';
+      }
+      res.writeHead(r.status, out);
+      if (r.body) {
+        const reader = r.body.getReader();
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(value);
+        }
+      }
+      return void res.end();
+    }
+
+    if (surface === 'teacher') return serveStatic(cfg.teacherDist, url.pathname, res);
+    return proxyWeb(req, res, url);
+  }
+
+  /** Owner web: only the centre pages and Next's own assets; everything else is not part of the pilot. */
+  function proxyWeb(req: IncomingMessage, res: ServerResponse, url: URL) {
+    const p = url.pathname;
+    if (p === '/' || p === '/ar' || p === '/en' || p === '/ar/' || p === '/en/')
+      return void res
+        .writeHead(302, { location: `/${p.startsWith('/en') ? 'en' : 'ar'}/centre` })
+        .end();
+    const allowed =
+      /^\/(ar|en)\/centre(\/|$)/.test(p) ||
+      p.startsWith('/_next/') ||
+      /^\/[\w.-]+\.(png|svg|ico|webp|woff2?|txt|json)$/.test(p) ||
+      p.startsWith('/brand/') ||
+      p.startsWith('/fonts/');
+    if (!allowed)
+      return void res
+        .writeHead(404, { 'content-type': 'text/plain' })
+        .end('Not part of the pilot.');
+    const up = new URL(cfg.webUpstream);
+    const headers = {
+      ...req.headers,
+      host: up.host,
+      'x-forwarded-proto': url.protocol.slice(0, -1),
+    };
+    delete headers.cookie; // the owner web renders on the client; it never needs the session cookie
+    const pr = httpRequest(
+      { hostname: up.hostname, port: up.port, path: req.url, method: req.method, headers },
+      (upRes) => {
+        res.writeHead(upRes.statusCode ?? 502, upRes.headers);
+        upRes.pipe(res);
+      },
+    );
+    pr.on('error', () => {
+      if (!res.headersSent) res.writeHead(502, { 'content-type': 'text/plain' });
+      res.end('The owner web is not running. Start it with pnpm pilot:start.');
+    });
+    req.pipe(pr);
+  }
+
+  return { auth, handle, api };
+}
+
+const TYPES: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.webp': 'image/webp',
+  '.ttf': 'font/ttf',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.map': 'application/json',
+  '.webmanifest': 'application/manifest+json',
+};
+
+/** Static files of the teacher app's web build; unknown paths fall back to index.html (SPA). */
+export function serveStatic(root: string, pathname: string, res: ServerResponse) {
+  const rel = normalize(decodeURIComponent(pathname)).replace(/^([/\\])+/, '');
+  const file = join(root, rel);
+  if (!file.startsWith(root + sep) && file !== root) return void res.writeHead(400).end();
+  const target = existsSync(file) && statSync(file).isFile() ? file : join(root, 'index.html');
+  if (!existsSync(target))
+    return void res.writeHead(503, { 'content-type': 'text/plain' }).end('Teacher app not built.');
+  const isIndex = target.endsWith('index.html');
+  res.writeHead(200, {
+    'content-type': TYPES[extname(target)] ?? 'application/octet-stream',
+    'cache-control': isIndex ? 'no-cache' : 'public, max-age=31536000, immutable',
+  });
+  createReadStream(target).pipe(res);
+}
+
+export { COOKIE };
