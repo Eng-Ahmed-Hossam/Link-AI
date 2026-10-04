@@ -8,6 +8,11 @@
     "./browser": "./src/browser.ts",
     "./native": "./src/native.ts",
     "./fixtures": "./src/data.ts",
+    "./pilot": "./src/pilot.ts",
+    "./followup": "./src/followup/db.ts",
+    "./world": "./src/followup/world.ts",
+    "./http": "./src/http.ts",
+    "./time": "./src/time.ts",
     "./server": "./src/server.ts"
   },
   "scripts": {

@@ -8,7 +8,9 @@
  * - delivery status changes only on provider events (BR-APR-11); STOP takes effect at once;
  * - corrections and audit events are append-only.
  *
- * State lives in memory (mock server, tests) or localStorage (browser MSW mode).
+ * State lives in memory (mock server, tests) or localStorage (browser MSW mode). The pilot server
+ * (`apps/pilot`, LINK_MODE=pilot) plugs in a durable store through `configureFollowupStore` and a
+ * pilot world (`world.ts`) loaded from the roster import.
  */
 import type {
   Attendance,
@@ -47,14 +49,22 @@ import type {
   StaffMember,
 } from '@link/api-client';
 import * as mfx from '../data';
-import { MockProblem, groupDto, sessionsOf, type Lang } from '../db';
+import { MockProblem, groupDto, type Lang } from '../db';
 import { addDays, cairoToday } from '../time';
 import * as fx from './data';
+import {
+  demoWorld,
+  sessionsOfGroup,
+  type Session,
+  type StaffRole,
+  type WorldData,
+  type WorldUser,
+} from './world';
 
 type Text = string | mfx.L;
 const tx = (v: Text | null, lang: Lang) => (v == null ? null : typeof v === 'string' ? v : v[lang]);
 
-const STORAGE_KEY = 'link.mock.fu.v3';
+const STORAGE_KEY = 'link.mock.fu.v4';
 const STT_DELAY_MS = 1500;
 
 interface Entry {
@@ -70,6 +80,7 @@ interface Entry {
 }
 interface Rec {
   id: string;
+  groupId: string;
   sessionId: string;
   date: string;
   startsAt: string;
@@ -101,6 +112,8 @@ interface Sig {
   studentId: string;
   groupId: string;
   evidence: string[]; // record ids
+  /** Sessions in a row the rule version required when it fired (explanations quote it). */
+  n?: number;
   status: Signal['status'];
   caseId: string | null;
   raisedAt: string;
@@ -132,6 +145,8 @@ interface Msg {
   failureReason: string | null;
   replies: { id: string; body: string; receivedAt: string }[];
   history: { status: DeliveryStatus; at: string }[];
+  /** Pilot: the centre sent it from its own WhatsApp (no provider receipt, BR-APR-11). */
+  manualSends?: { by: string; at: string }[];
 }
 interface NoteRow {
   id: string;
@@ -210,14 +225,40 @@ interface FuState {
   guardians: Record<string, GuardianState>;
   /** Idempotency-Key → result (07 §1). */
   idem: Record<string, { kind: string; id: string }>;
-  audit: { id: string; at: string; kind: string; actorId: string | null; text: Text }[];
+  audit: AuditRow[];
   counters: { confirmCalls: number; confirmCommits: number };
   demo: DemoState;
   rules: RuleRow[];
   /** Pending staff invites (A16); part of the scenario, so Reset clears them. */
   invites: { phone: string; role: StaffMember['role']; at: string }[];
+  /** CF-34: the owner asks the teacher to correct a confirmed record (teachers correct, owners ask). */
+  correctionRequests?: CorrectionRequestRow[];
+  /** Pilot only: the imported world. Demo state leaves it out and uses the fixtures. */
+  world?: WorldData;
   seq: number;
 }
+
+/** One append-only activity event (A17). `data` carries ids and dates for `pilot:metrics`, never PII. */
+export interface AuditRow {
+  id: string;
+  at: string;
+  kind: string;
+  actorId: string | null;
+  text: Text;
+  data?: Record<string, string | number | boolean | null>;
+}
+interface CorrectionRequestRow {
+  id: string;
+  recordId: string;
+  groupId: string;
+  studentId: string | null;
+  text: string;
+  requestedBy: string;
+  at: string;
+  status: 'open' | 'done';
+  doneAt: string | null;
+}
+export type FollowupState = FuState;
 
 // ── persistence ────────────────────────────────────────────────────────────────
 const hasStorage = () => {
@@ -229,8 +270,30 @@ const hasStorage = () => {
   }
 };
 let state: FuState | null = null;
+
+/** A durable store for the pilot server (Node). Browser and demo keep their current behaviour. */
+export interface FollowupStore {
+  load(): FuState | null;
+  save(s: FuState): void;
+  /** Called once per new activity event, after `save` (append-only log). */
+  appendAudit?(e: AuditRow): void;
+}
+let store: FollowupStore | null = null;
+let pendingAudit: AuditRow[] = [];
+const isPilotState = () => store !== null || state?.world?.kind === 'pilot';
+export function configureFollowupStore(s: FollowupStore | null) {
+  store = s;
+  state = null;
+  pendingAudit = [];
+}
+
 function load(): FuState {
   if (state) return state;
+  if (store) {
+    const s = store.load();
+    if (s) return (state = s);
+    throw new MockProblem(503, 'not_initialised', 'The pilot has not been set up yet.');
+  }
   if (hasStorage()) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -242,6 +305,13 @@ function load(): FuState {
   return (state = fresh());
 }
 function save() {
+  if (state && store) {
+    store.save(state);
+    const out = pendingAudit;
+    pendingAudit = [];
+    for (const e of out) store.appendAudit?.(e);
+    return;
+  }
   if (state && hasStorage()) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -253,19 +323,39 @@ function save() {
 const nextId = (prefix: string) => `${prefix}-${++load().seq}`;
 
 // ── lookups ────────────────────────────────────────────────────────────────────
+let demoWorldCache: WorldData | null = null;
+/** The active world: the pilot's imported one, or the demo fixtures. */
+export const world = (): WorldData => load().world ?? (demoWorldCache ??= demoWorld());
+export const isPilot = () => world().kind === 'pilot';
 const G = fx.DEMO_GROUP_ID;
-const studentFx = (id: string) => fx.roster.find((s) => s.id === id);
-const guardianFx = (id: string) =>
-  id === fx.genericGuardian.id ? fx.genericGuardian : fx.guardians.find((x) => x.id === id)!;
-const staffFx = (id: string) => mfx.staff.find((u) => u.id === id);
+const studentFx = (id: string) => world().students.find((s) => s.id === id);
+const guardianFx = (id: string) => world().guardians.find((x) => x.id === id)!;
+const staffFx = (id: string): WorldUser | undefined => world().users.find((u) => u.id === id);
+const groupOf = (id: string) => world().groups.find((g) => g.id === id);
+const groupName = (id: string, lang: Lang) => tx(groupOf(id)?.name ?? id, lang)!;
+const groupsOfTeacher = (userId: string) =>
+  world().groups.filter((g) => g.teacherUserId === userId);
+/** Students of one follow-up group, in roster order. */
+const rosterOf = (groupId: string) =>
+  world()
+    .members.filter((m) => m.groupId === groupId)
+    .map((m) => studentFx(m.studentId)!)
+    .filter(Boolean);
+const groupsOfStudent = (studentId: string) =>
+  world()
+    .members.filter((m) => m.studentId === studentId)
+    .map((m) => m.groupId);
+const inGroup = (groupId: string, studentId: string) =>
+  world().members.some((m) => m.groupId === groupId && m.studentId === studentId);
 const person = (id: string, lang: Lang): PersonRef => {
   const s = studentFx(id);
-  if (s) return { id, displayName: s.name[lang] };
+  if (s) return { id, displayName: tx(s.name, lang)! };
   const u = staffFx(id);
-  if (u) return { id, displayName: u.name[lang] };
+  if (u) return { id, displayName: tx(u.name, lang)! };
   return { id, displayName: id };
 };
-const pastSessions = () => sessionsOf(G).filter((s) => s.date <= cairoToday());
+const pastSessions = (groupId: string): Session[] =>
+  sessionsOfGroup(world(), groupId).filter((s) => s.date <= cairoToday());
 const recordFor = (sessionId: string) => load().records.find((r) => r.sessionId === sessionId);
 const recordById = (id: string) => {
   const r = load().records.find((x) => x.id === id);
@@ -273,11 +363,21 @@ const recordById = (id: string) => {
   return r;
 };
 export const isDemoGroup = (groupId: string) => groupId === G;
+const roleOf = (userId: string): StaffRole | null => {
+  const u = staffFx(userId);
+  return u?.active ? u.role : null;
+};
 const teacherOwns = (userId: string, groupId: string) =>
-  groupId === G && userId === fx.DEMO_TEACHER_USER;
-const isCentreStaff = (userId: string) => userId === 'usr-owner' || userId === 'usr-reception';
-/** OD-34: centre staff with `messages.approve` (owner and Reception in the demo). */
+  groupOf(groupId)?.teacherUserId === userId && roleOf(userId) === 'teacher';
+const isCentreStaff = (userId: string) => {
+  const r = roleOf(userId);
+  return r === 'owner' || r === 'reception';
+};
+/** OD-34: centre staff with `messages.approve` (owner and Reception). */
 const canApprove = isCentreStaff;
+/** Ids are readable in the demo (`rec-<date>`) and unique per group in the pilot. */
+const recId = (groupId: string, date: string) =>
+  groupId === G && !isPilot() ? `rec-${date}` : `rec-${groupId}-${date}`;
 
 function fmtDate(date: string, lang: Lang) {
   return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG' : 'en-GB-u-nu-latn', {
@@ -289,14 +389,23 @@ function fmtDate(date: string, lang: Lang) {
 const maskPhone = (e164: string | null) =>
   e164 ? `${e164.slice(0, 3)} ${e164.slice(3, 5)} •••• ${e164.slice(-4)}` : '—';
 
-function audit(kind: string, actorId: string | null, text: Text, at = new Date().toISOString()) {
-  load().audit.push({ id: nextId('aud'), at, kind, actorId, text });
+function audit(
+  kind: string,
+  actorId: string | null,
+  text: Text,
+  at = new Date().toISOString(),
+  data?: AuditRow['data'],
+) {
+  const e: AuditRow = { id: nextId('aud'), at, kind, actorId, text, ...(data ? { data } : {}) };
+  load().audit.push(e);
+  if (store) pendingAudit.push(e);
 }
 
 // ── seed ───────────────────────────────────────────────────────────────────────
-function blankEntries(date: string): Entry[] {
-  return fx.roster.map((s) => ({
-    id: `ent-${date}-${s.id}`,
+function blankEntries(groupId: string, date: string): Entry[] {
+  const prefix = groupId === G && !isPilot() ? `ent-${date}` : `ent-${groupId}-${date}`;
+  return rosterOf(groupId).map((s) => ({
+    id: `${prefix}-${s.id}`,
     studentId: s.id,
     attendance: 'not_recorded',
     lateMinutes: null,
@@ -307,6 +416,26 @@ function blankEntries(date: string): Entry[] {
     source: 'tap',
   }));
 }
+
+const defaultRules = (approvedBy: string): RuleRow[] =>
+  fx.rules.map((r) => ({
+    code: r.code,
+    active: r.active,
+    params: { ...r.params },
+    scope: 'all',
+    version: 1,
+    history: [
+      {
+        version: 1,
+        active: r.active,
+        params: { ...r.params },
+        scope: 'all',
+        approvedBy,
+        at: '2026-09-01T08:00:00.000Z',
+      },
+    ],
+    proposal: null,
+  }));
 
 function fresh(): FuState {
   state = {
@@ -335,27 +464,11 @@ function fresh(): FuState {
       dayOffset: 0,
     },
     invites: [],
-    rules: fx.rules.map((r) => ({
-      code: r.code,
-      active: r.active,
-      params: { ...r.params },
-      scope: 'all',
-      version: 1,
-      history: [
-        {
-          version: 1,
-          active: r.active,
-          params: { ...r.params },
-          scope: 'all',
-          approvedBy: 'usr-owner',
-          at: '2026-09-01T08:00:00.000Z',
-        },
-      ],
-      proposal: null,
-    })),
+    correctionRequests: [],
+    rules: defaultRules('usr-owner'),
     seq: 100,
   };
-  const past = pastSessions();
+  const past = pastSessions(G);
   // past[-1] is the session being recorded now (no record yet); seed the ones before it, oldest first.
   const before = past.slice(0, -1).reverse(); // newest first
   const seeds = fx.pastRecords.map((p, i) => ({ p, s: before[i] })).filter((x) => x.s);
@@ -373,7 +486,7 @@ function fresh(): FuState {
       },
       r.confirmedAt!,
     );
-    for (const st of fx.roster) evaluate(st.id, r.date, r.confirmedAt!);
+    for (const st of fx.roster) evaluate(st.id, G, r.date, r.confirmedAt!);
   }
   // Omar's correction on the unit test (FUP-REC-08).
   const c = fx.omarCorrection;
@@ -412,7 +525,7 @@ function seedRecord(
   p: (typeof fx.pastRecords)[number],
 ) {
   const a = p.assessment ? fx.assessments[p.assessment] : null;
-  const entries = blankEntries(s.date).map((e) => {
+  const entries = blankEntries(G, s.date).map((e) => {
     const absent = p.absent?.includes(e.studentId);
     const notRec = p.notRecorded?.includes(e.studentId);
     const late = p.late?.[e.studentId];
@@ -436,6 +549,7 @@ function seedRecord(
   const groupObs = p.observations?.find((o) => o.studentId === null);
   load().records.push({
     id: `rec-${s.date}`,
+    groupId: G,
     sessionId: s.id,
     date: s.date,
     startsAt: s.startsAt,
@@ -452,7 +566,49 @@ function seedRecord(
   });
 }
 
+/**
+ * Pilot state: the imported world, empty history, the 03 §3 rule defaults (only
+ * `consecutive_absences` on). No fixture record, case, message or demo user is created.
+ */
+export function freshPilotState(w: WorldData): FuState {
+  if (w.kind !== 'pilot') throw new Error('freshPilotState needs a pilot world');
+  const owner = w.users.find((u) => u.role === 'owner');
+  return {
+    records: [],
+    corrections: [],
+    signals: [],
+    cases: [],
+    messages: [],
+    notes: [],
+    voice: [],
+    guardians: Object.fromEntries(
+      w.guardians.map((g) => [g.id, { whatsappOptIn: false, smsConsent: false, stopped: false }]),
+    ),
+    idem: {},
+    audit: [],
+    counters: { confirmCalls: 0, confirmCommits: 0 },
+    demo: {
+      offline: false,
+      phase2: true,
+      marketplace: false,
+      sttDown: false,
+      confirmFault: null,
+      dayOffset: 0,
+    },
+    invites: [],
+    correctionRequests: [],
+    rules: defaultRules(owner?.id ?? 'system').map((r) => ({
+      ...r,
+      history: r.history.map((h) => ({ ...h, at: new Date().toISOString() })),
+    })),
+    world: w,
+    seq: 100,
+  };
+}
+
 export function resetFollowupDb() {
+  if (isPilotState())
+    throw new MockProblem(409, 'pilot_mode', 'Reset is not available in the pilot.');
   const keep = state?.demo;
   state = fresh();
   // A reset keeps the demo switches the presenter set, except one-shot faults and offline.
@@ -469,17 +625,33 @@ export function resetFollowupDb() {
 }
 
 // ── rules (FUP-RUL-03): the followup module is the only evaluator ──────────────
+const AR_DIGITS = (n: number) => new Intl.NumberFormat('ar-EG').format(n);
+const EN_COUNT: Record<number, string> = { 2: 'two', 3: 'three', 4: 'four', 5: 'five' };
+/** "two consecutive scheduled sessions" / "حصتين متتاليتين" (n from the rule version in force). */
+const consecutiveWords = (n: number, lang: Lang) =>
+  lang === 'ar'
+    ? n === 2
+      ? 'حصتين متتاليتين'
+      : n <= 10
+        ? `${AR_DIGITS(n)} حصص متتالية`
+        : `${AR_DIGITS(n)} حصة متتالية`
+    : `${EN_COUNT[n] ?? n} consecutive scheduled sessions`;
+/** "the last two sessions" / "آخر حصتين" for message drafts. */
+const lastWords = (n: number) =>
+  n === 2 ? 'آخر حصتين' : n <= 10 ? `آخر ${AR_DIGITS(n)} حصص` : `آخر ${AR_DIGITS(n)} حصة`;
+
 function evaluate(
   studentId: string,
+  groupId: string,
   uptoDate: string,
   at: string,
   cause?: { correctionOf: string },
 ) {
   const s = load();
   const rule = s.rules.find((r) => r.code === 'consecutive_absences')!;
-  if (!rule.active || (rule.scope !== 'all' && rule.scope !== G)) return;
+  if (!rule.active || (rule.scope !== 'all' && rule.scope !== groupId)) return;
   const n = rule.params.n ?? 2;
-  const sched = pastSessions()
+  const sched = pastSessions(groupId)
     .filter((x) => x.date <= uptoDate)
     .slice(-n);
   const recs = sched.map((x) => recordFor(x.id));
@@ -496,7 +668,7 @@ function evaluate(
     (x) =>
       x.rule === 'consecutive_absences' &&
       x.studentId === studentId &&
-      x.groupId === G &&
+      x.groupId === groupId &&
       (x.status === 'open' || x.status === 'case_opened'),
   );
   if (holds) {
@@ -509,20 +681,23 @@ function evaluate(
     const sig: Sig = {
       id: nextId('sig'),
       rule: 'consecutive_absences',
-      ruleVersion: fx.RULE_DEFAULTS.version,
+      ruleVersion: rule.version,
       studentId,
-      groupId: G,
+      groupId,
       evidence: ids,
+      n,
       status: 'case_opened',
       caseId: null,
       raisedAt: at,
     };
     const raisedOn = at.slice(0, 10);
+    const assignee = defaultAssignee();
+    const assigneeTitle = staffFx(assignee)?.title ?? { en: 'Reception', ar: 'الاستقبال' };
     const c: CaseRow = {
       id: nextId('case'),
       signalId: sig.id,
       studentId,
-      assigneeId: fx.RULE_DEFAULTS.assigneeUserId,
+      assigneeId: assignee,
       status: 'open',
       dueOn: addDays(raisedOn, fx.RULE_DEFAULTS.dueInDays),
       dismissReason: null,
@@ -533,8 +708,8 @@ function evaluate(
           at,
           kind: 'flag_raised',
           text: {
-            en: 'Flag raised by rule "Consecutive absences" (v1)',
-            ar: 'تم رفع تنبيه بقاعدة "غياب متتالي" (الإصدار ١)',
+            en: `Flag raised by rule "Consecutive absences" (v${rule.version})`,
+            ar: `تم رفع تنبيه بقاعدة "غياب متتالي" (الإصدار ${AR_DIGITS(rule.version)})`,
           },
           actorId: null,
         },
@@ -542,8 +717,8 @@ function evaluate(
           at,
           kind: 'assigned',
           text: {
-            en: 'Assigned to Reception, due the same day',
-            ar: 'أُسند إلى الاستقبال، مستحق في نفس اليوم',
+            en: `Assigned to ${assigneeTitle.en}, due the same day`,
+            ar: `أُسند إلى ${assigneeTitle.ar}، مستحق في نفس اليوم`,
           },
           actorId: null,
         },
@@ -552,14 +727,25 @@ function evaluate(
     sig.caseId = c.id;
     s.signals.push(sig);
     s.cases.push(c);
+    const st = studentFx(studentId)!;
     audit(
       'signal.raised',
       null,
       {
-        en: `Rule matched: 2 consecutive absences • ${studentFx(studentId)!.name.en} → follow-up opened, assigned to Reception`,
-        ar: `تطابقت قاعدة: غياب حصتين متتاليتين • ${studentFx(studentId)!.name.ar} ← فُتحت متابعة وأُسندت للاستقبال`,
+        en: `Rule matched: ${n} consecutive absences • ${st.name.en} → follow-up opened, assigned to ${assigneeTitle.en}`,
+        ar: `تطابقت قاعدة: غياب ${consecutiveWords(n, 'ar')} • ${st.name.ar} ← فُتحت متابعة وأُسندت ${assigneeTitle.ar === 'الاستقبال' ? 'للاستقبال' : `إلى ${assigneeTitle.ar}`}`,
       },
       at,
+      {
+        signalId: sig.id,
+        caseId: c.id,
+        rule: sig.rule,
+        ruleVersion: rule.version,
+        groupId,
+        studentId,
+        dueOn: c.dueOn,
+        assigneeId: assignee,
+      },
     );
   } else if (open && cause && open.evidence.includes(cause.correctionOf)) {
     // FUP-REC-08 AC3: a flag that no longer applies is kept with a note, never deleted.
@@ -574,7 +760,25 @@ function evaluate(
       },
       actorId: null,
     });
+    audit(
+      'signal.resolved_by_correction',
+      null,
+      {
+        en: 'A correction resolved a flag: the rule no longer applies',
+        ar: 'تصحيح أنهى تنبيهًا: القاعدة لم تعد تنطبق',
+      },
+      at,
+      { signalId: open.id, caseId: open.caseId },
+    );
   }
+}
+
+/** Reception gets new follow-ups by default (FUP-CAS-02); the owner when there is no Reception. */
+function defaultAssignee(): string {
+  const w = world();
+  if (w.kind === 'demo') return fx.RULE_DEFAULTS.assigneeUserId;
+  const pick = (r: StaffRole) => w.users.find((u) => u.role === r && u.active)?.id;
+  return pick('reception') ?? pick('owner') ?? 'unassigned';
 }
 
 // ── DTOs ───────────────────────────────────────────────────────────────────────
@@ -590,25 +794,34 @@ function signalSummary(x: Sig, lang: Lang): SignalSummary {
   };
 }
 function explanation(x: Sig, lang: Lang) {
+  const n = x.n ?? 2;
   const dates = x.evidence
     .map((id) => recordById(id).date)
     .sort()
-    .slice(-2)
+    .slice(-n)
     .map((d) => fmtDate(d, lang));
   const st = studentFx(x.studentId)!;
-  if (lang === 'ar')
-    return `${st.gender === 'f' ? 'غابت' : 'غاب'} عن حصتين متتاليتين: ${dates.join(' و')}`;
-  return `Absent from two consecutive scheduled sessions: ${dates.join(' and ')}`;
+  if (lang === 'ar') {
+    const verb = st.gender === 'f' ? 'غابت' : st.gender === 'm' ? 'غاب' : 'غياب';
+    return `${verb} عن ${consecutiveWords(n, 'ar')}: ${dates.join(' و')}`;
+  }
+  const list = dates.length > 1 ? `${dates.slice(0, -1).join(', ')} and ${dates.at(-1)}` : dates[0];
+  return `Absent from ${consecutiveWords(n, 'en')}: ${list}`;
 }
-const RULE_TEXT: mfx.L = {
-  en: 'Consecutive absences (Rule v1): a flag is raised when a student is absent from the last 2 scheduled sessions, each with a confirmed record. A "Not recorded" session breaks the streak.',
-  ar: 'غياب متتالي (القاعدة الإصدار ١): يُرفع تنبيه عندما يغيب الطالب عن آخر حصتين مجدولتين، ولكل منهما سجل مؤكَّد. الحصة "غير المسجّلة" تقطع التتابع.',
-};
+/** The rule in plain words, as it stood when the flag was raised (FUP-CAS-02 AC1). */
+function ruleText(version: number, n: number, lang: Lang) {
+  if (lang === 'ar')
+    return `غياب متتالي (القاعدة الإصدار ${AR_DIGITS(version)}): يُرفع تنبيه عندما يغيب الطالب عن ${
+      n === 2 ? 'آخر حصتين مجدولتين، ولكل منهما' : `آخر ${AR_DIGITS(n)} حصص مجدولة، ولكل منها`
+    } سجل مؤكَّد. الحصة "غير المسجّلة" تقطع التتابع.`;
+  return `Consecutive absences (Rule v${version}): a flag is raised when a student is absent from the last ${n} scheduled sessions, each with a confirmed record. A "Not recorded" session breaks the streak.`;
+}
+const RULE_TEXT: mfx.L = { en: ruleText(1, 2, 'en'), ar: ruleText(1, 2, 'ar') };
 function signalDto(x: Sig, lang: Lang): Signal {
   return {
     ...signalSummary(x, lang),
     student: person(x.studentId, lang),
-    group: { id: G, name: fx.groupName[lang] },
+    group: { id: x.groupId, name: groupName(x.groupId, lang) },
     evidence: x.evidence.map((id) => {
       const r = recordById(id);
       return {
@@ -618,7 +831,7 @@ function signalDto(x: Sig, lang: Lang): Signal {
         confirmedBy: person(r.confirmedBy!, lang),
       };
     }),
-    ruleText: RULE_TEXT[lang],
+    ruleText: ruleText(x.ruleVersion, x.n ?? 2, lang),
     raisedAt: x.raisedAt,
   };
 }
@@ -627,7 +840,7 @@ function recordDto(r: Rec, lang: Lang): SessionRecord {
   const s = load();
   return {
     id: r.id,
-    groupId: G,
+    groupId: r.groupId,
     groupSessionId: r.sessionId,
     sessionDate: r.date,
     startsAt: r.startsAt,
@@ -660,6 +873,9 @@ function recordDto(r: Rec, lang: Lang): SessionRecord {
       .filter((c) => c.recordId === r.id)
       .map((c) => correctionDto(c, lang)),
     signals: s.signals.filter((x) => x.evidence.includes(r.id)).map((x) => signalSummary(x, lang)),
+    correctionRequests: (s.correctionRequests ?? [])
+      .filter((q) => q.recordId === r.id)
+      .map((q) => correctionRequestDto(q, lang)),
   };
 }
 function correctionDto(c: Corr, lang: Lang): Correction {
@@ -678,10 +894,10 @@ function correctionDto(c: Corr, lang: Lang): Correction {
 
 function guardianDto(id: string, lang: Lang): GuardianContact {
   const f = guardianFx(id);
-  const g = load().guardians[id]!;
+  const g = load().guardians[id] ?? { whatsappOptIn: false, smsConsent: false, stopped: false };
   return {
     id,
-    displayName: f.name[lang],
+    displayName: tx(f.name, lang)!,
     phoneMasked: maskPhone(f.phone),
     whatsappOptIn: g.whatsappOptIn && !!f.phone,
     smsConsent: g.smsConsent && !!f.phone,
@@ -689,6 +905,8 @@ function guardianDto(id: string, lang: Lang): GuardianContact {
   };
 }
 function blockedReason(guardianId: string): ParentMessage['blockedReason'] {
+  // Pilot: the centre sends from its own WhatsApp, so Link's opt-in state does not apply (A6).
+  if (isPilot()) return null;
   const g = guardianDto(guardianId, 'en');
   if (g.stopped) return 'stopped';
   if (!g.whatsappOptIn) return 'not_opted_in';
@@ -702,7 +920,10 @@ function caseDto(c: CaseRow, lang: Lang): FollowupCase {
     id: c.id,
     signal: signalDto(sig, lang),
     student: person(c.studentId, lang),
-    assignee: { ...person(c.assigneeId, lang), role: staffFx(c.assigneeId)?.title[lang] ?? '' },
+    assignee: {
+      ...person(c.assigneeId, lang),
+      role: tx(staffFx(c.assigneeId)?.title ?? '', lang)!,
+    },
     status: c.status,
     dueOn: c.dueOn,
     // FUP-CAS-05: past due with no outcome recorded.
@@ -741,6 +962,9 @@ function messageDto(m: Msg, lang: Lang): ParentMessage {
     failureReason: m.failureReason,
     replies: m.replies.map((r) => replyDto(r, lang)),
     history: m.history,
+    sentManually: m.manualSends?.length
+      ? { by: person(m.manualSends.at(-1)!.by, lang), at: m.manualSends.at(-1)!.at }
+      : null,
   };
 }
 function replyDto(r: Msg['replies'][number], lang: Lang): InboundMessage {
@@ -778,13 +1002,19 @@ function requireTeacher(userId: string, groupId: string) {
 }
 
 export function teacherToday(userId: string, lang: Lang): TeacherToday {
-  if (userId !== fx.DEMO_TEACHER_USER) throw new MockProblem(403, 'forbidden', 'Teachers only.');
+  if (roleOf(userId) !== 'teacher') throw new MockProblem(403, 'forbidden', 'Teachers only.');
   const s = load();
   const now = Date.now();
-  const next = sessionsOf(G).find((x) => new Date(x.endsAt).getTime() > now) ?? null;
+  const groups = groupsOfTeacher(userId);
+  const mine = new Set(groups.map((g) => g.id));
+  const next =
+    groups
+      .flatMap((g) => sessionsOfGroup(world(), g.id))
+      .filter((x) => new Date(x.endsAt).getTime() > now)
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0] ?? null;
   // Reminders only from CONFIRMED observations, each with its source (FUP-REC-01 AC1).
   const reminders = s.records
-    .filter((r) => r.status === 'confirmed')
+    .filter((r) => r.status === 'confirmed' && mine.has(r.groupId))
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 2)
     .flatMap((r) =>
@@ -796,30 +1026,39 @@ export function teacherToday(userId: string, lang: Lang): TeacherToday {
           source: { recordId: r.id, sessionDate: r.date },
         })),
     );
-  const past = pastSessions();
-  const due = past.at(-1);
+  // The record due is the latest session that has taken place without a confirmed record.
+  const latest = groups
+    .map((g) => pastSessions(g.id).at(-1))
+    .filter((x): x is Session => !!x && recordFor(x.id)?.status !== 'confirmed')
+    .sort((a, b) => b.startsAt.localeCompare(a.startsAt));
+  const due = latest[0];
   const dueRec = due ? recordFor(due.id) : undefined;
-  const recordDue: TeacherToday['recordDue'] =
-    due && dueRec?.status !== 'confirmed'
-      ? {
-          groupId: G,
-          groupName: fx.groupName[lang],
-          sessionId: due.id,
-          sessionDate: due.date,
-          startsAt: due.startsAt,
-          endsAt: due.endsAt,
-          studentCount: fx.roster.length,
-          recordId: dueRec?.id ?? null,
-        }
-      : null;
+  const recordDue: TeacherToday['recordDue'] = due
+    ? {
+        groupId: due.groupId,
+        groupName: groupName(due.groupId, lang),
+        sessionId: due.id,
+        sessionDate: due.date,
+        startsAt: due.startsAt,
+        endsAt: due.endsAt,
+        studentCount: rosterOf(due.groupId).length,
+        recordId: dueRec?.id ?? null,
+      }
+    : null;
   const needsYou: TeacherToday['needsYou'] = [];
-  for (const p of past.slice(-6, -1)) {
+  const older = groups.flatMap((g) => {
+    const past = pastSessions(g.id);
+    const last = past.at(-1);
+    // A group's latest session is listed here only when another group's is the record due.
+    return [...past.slice(-6, -1), ...(last && last.id !== due?.id ? [last] : [])];
+  });
+  for (const p of older.sort((a, b) => a.startsAt.localeCompare(b.startsAt))) {
     const r = recordFor(p.id);
     if (r?.status === 'confirmed') continue;
     needsYou.push({
       kind: r ? 'draft' : 'missing',
-      groupId: G,
-      groupName: fx.groupName[lang],
+      groupId: p.groupId,
+      groupName: groupName(p.groupId, lang),
       sessionId: p.id,
       sessionDate: p.date,
       recordId: r?.id ?? null,
@@ -829,35 +1068,69 @@ export function teacherToday(userId: string, lang: Lang): TeacherToday {
     teacher: person(userId, lang),
     nextSession: next
       ? {
-          groupId: G,
-          groupName: fx.groupName[lang],
+          groupId: next.groupId,
+          groupName: groupName(next.groupId, lang),
           sessionId: next.id,
           startsAt: next.startsAt,
-          studentCount: fx.roster.length,
+          studentCount: rosterOf(next.groupId).length,
         }
       : null,
     reminders,
     recordDue,
     needsYou: needsYou.reverse(),
+    correctionRequests: (s.correctionRequests ?? [])
+      .filter((q) => q.status === 'open' && mine.has(q.groupId))
+      .map((q) => correctionRequestDto(q, lang)),
   };
 }
 
 /** Follow-up part of T09 for one group (null when the group has no follow-up subscription). */
 export function followupSummary(groupId: string) {
-  if (groupId !== G) return null;
-  const recent = pastSessions().slice(-7);
+  if (!groupOf(groupId)) return null;
+  const recent = pastSessions(groupId).slice(-7);
+  const s = load();
   return {
-    studentCount: fx.roster.length,
+    studentCount: rosterOf(groupId).length,
     recordsComplete: {
       confirmed: recent.filter((p) => recordFor(p.id)?.status === 'confirmed').length,
       eligible: recent.length,
     },
-    openFollowUps: load().cases.filter((c) => !['resolved', 'dismissed'].includes(c.status)).length,
+    openFollowUps: s.cases.filter(
+      (c) =>
+        !['resolved', 'dismissed'].includes(c.status) &&
+        s.signals.find((x) => x.id === c.signalId)?.groupId === groupId,
+    ).length,
   } satisfies TeacherGroup['followup'];
 }
 
-function lastFour(studentId: string): (Attendance | 'none')[] {
-  return pastSessions()
+/** T09 in the pilot: the teacher's follow-up groups only (no marketplace fields to show). */
+export function pilotTeacherGroups(userId: string, lang: Lang): TeacherGroup[] {
+  if (roleOf(userId) !== 'teacher') throw new MockProblem(403, 'forbidden', 'Teachers only.');
+  const now = Date.now();
+  const w = world();
+  return groupsOfTeacher(userId).map((g) => {
+    const next = sessionsOfGroup(w, g.id).find((x) => new Date(x.startsAt).getTime() > now);
+    return {
+      id: g.id,
+      name: tx(g.name, lang)!,
+      centre: { id: w.centre.id, displayName: tx(w.centre.name, lang)! },
+      room: '',
+      weekdays: g.weekdays,
+      startTime: g.startTime,
+      endTime: g.endTime,
+      sessionFee: { amountPt: 0, currency: 'EGP' as const },
+      monthlyFee: { amountPt: 0, currency: 'EGP' as const },
+      offersMonthlyRecurring: false,
+      seatCap: 0,
+      seatsFilled: 0,
+      nextSession: next ? { id: next.id, startsAt: next.startsAt } : null,
+      followup: followupSummary(g.id),
+    };
+  });
+}
+
+function lastFour(studentId: string, groupId: string): (Attendance | 'none')[] {
+  return pastSessions(groupId)
     .slice(-4)
     .map((p) => {
       const r = recordFor(p.id);
@@ -885,11 +1158,12 @@ const flagsOf = (studentId: string, lang: Lang) =>
     .map((x) => signalSummary(x, lang));
 
 export function roster(userId: string, groupId: string, lang: Lang): RosterRow[] {
+  if (!groupOf(groupId)) throw new MockProblem(404, 'not_found', 'Group not found.');
   if (!teacherOwns(userId, groupId) && !isCentreStaff(userId))
     throw new MockProblem(403, 'forbidden', 'Not allowed.');
-  return fx.roster.map((st) => ({
+  return rosterOf(groupId).map((st) => ({
     student: person(st.id, lang),
-    lastSessions: lastFour(st.id),
+    lastSessions: lastFour(st.id, groupId),
     latestScore: latestScore(st.id, lang),
     noteCount:
       load().notes.filter((n) => n.studentId === st.id).length +
@@ -903,13 +1177,16 @@ export function roster(userId: string, groupId: string, lang: Lang): RosterRow[]
 
 export function studentDetail(userId: string, studentId: string, lang: Lang): StudentDetail {
   if (!studentFx(studentId)) throw new MockProblem(404, 'not_found', 'Student not found.');
-  if (userId !== fx.DEMO_TEACHER_USER && !isCentreStaff(userId))
+  const groupIds = groupsOfStudent(studentId);
+  if (!groupIds.some((g) => teacherOwns(userId, g)) && !isCentreStaff(userId))
     throw new MockProblem(403, 'forbidden', 'Not allowed.');
+  // The student's group taught by this teacher, else the first one (a student is usually in one).
+  const groupId = groupIds.find((g) => teacherOwns(userId, g)) ?? groupIds[0]!;
   const s = load();
   const confirmed = s.records
     .filter((r) => r.status === 'confirmed')
     .sort((a, b) => a.date.localeCompare(b.date));
-  const att = pastSessions().map((p) => {
+  const att = pastSessions(groupId).map((p) => {
     const r = recordFor(p.id);
     const v =
       r?.status === 'confirmed'
@@ -935,7 +1212,7 @@ export function studentDetail(userId: string, studentId: string, lang: Lang): St
   const notes = notesOf(studentId, lang);
   return {
     student: person(studentId, lang),
-    group: { id: G, name: fx.groupName[lang] },
+    group: { id: groupId, name: groupName(groupId, lang) },
     attended: {
       present: att.filter((a) => a.value === 'present' || a.value === 'late').length,
       of: att.filter((a) => a.value !== 'none' && a.value !== 'not_recorded').length,
@@ -960,7 +1237,7 @@ function notesOf(studentId: string, lang: Lang): Note[] {
         .map((e) => ({
           id: `obs-${e.id}`,
           student: person(studentId, lang),
-          groupId: G,
+          groupId: r.groupId,
           tag: e.observationTag ?? 'understanding',
           body: tx(e.observation, lang)!,
           visibility: 'internal' as const,
@@ -981,7 +1258,8 @@ export function addNote(
   lang: Lang,
 ): Note {
   requireTeacher(userId, body.groupId);
-  if (!studentFx(studentId)) throw new MockProblem(404, 'not_found', 'Student not found.');
+  if (!studentFx(studentId) || !inGroup(body.groupId, studentId))
+    throw new MockProblem(404, 'not_found', 'Student not found.');
   const TAGS: NoteTag[] = [
     'understanding',
     'needs_revisit',
@@ -1005,10 +1283,16 @@ export function addNote(
     at: new Date().toISOString(),
   };
   load().notes.push(n);
-  audit('note.saved', userId, {
-    en: `Note saved for ${studentFx(studentId)!.name.en}`,
-    ar: `ملاحظة محفوظة عن ${studentFx(studentId)!.name.ar}`,
-  });
+  audit(
+    'note.saved',
+    userId,
+    {
+      en: `Note saved for ${studentFx(studentId)!.name.en}`,
+      ar: `ملاحظة محفوظة عن ${studentFx(studentId)!.name.ar}`,
+    },
+    undefined,
+    { groupId: body.groupId, studentId },
+  );
   save();
   return { ...n, student: person(studentId, lang), author: person(userId, lang) };
 }
@@ -1033,14 +1317,14 @@ export function listRecords(userId: string, groupId: string, lang: Lang) {
   if (!teacherOwns(userId, groupId) && !isCentreStaff(userId))
     throw new MockProblem(403, 'forbidden', 'Not allowed.');
   return load()
-    .records.slice()
+    .records.filter((r) => r.groupId === groupId)
     .sort((a, b) => b.date.localeCompare(a.date))
     .map((r) => recordDto(r, lang));
 }
 
 export function openRecord(userId: string, groupId: string, sessionId: string, lang: Lang) {
   requireTeacher(userId, groupId);
-  const sess = pastSessions().find((p) => p.id === sessionId);
+  const sess = pastSessions(groupId).find((p) => p.id === sessionId);
   if (!sess)
     throw new MockProblem(
       422,
@@ -1050,38 +1334,45 @@ export function openRecord(userId: string, groupId: string, sessionId: string, l
   const existing = recordFor(sessionId);
   if (existing) return { created: false, record: recordDto(existing, lang) };
   const r: Rec = {
-    id: `rec-${sess.date}`,
+    id: recId(groupId, sess.date),
+    groupId,
     sessionId,
     date: sess.date,
     startsAt: sess.startsAt,
     status: 'draft',
     source: 'tap',
     assessment: null,
-    entries: blankEntries(sess.date),
+    entries: blankEntries(groupId, sess.date),
     groupObservation: null,
     confirmedBy: null,
     confirmedAt: null,
     createdAt: new Date().toISOString(),
   };
   load().records.push(r);
-  audit('record.draft_created', userId, {
-    en: `Draft record created • ${fx.groupName.en} (${fmtDate(sess.date, 'en')})`,
-    ar: `تم إنشاء مسودة سجل • ${fx.groupName.ar} (${fmtDate(sess.date, 'ar')})`,
-  });
+  audit(
+    'record.draft_created',
+    userId,
+    {
+      en: `Draft record created • ${groupName(groupId, 'en')} (${fmtDate(sess.date, 'en')})`,
+      ar: `تم إنشاء مسودة سجل • ${groupName(groupId, 'ar')} (${fmtDate(sess.date, 'ar')})`,
+    },
+    undefined,
+    { recordId: r.id, groupId, sessionId, sessionDate: sess.date },
+  );
   save();
   return { created: true, record: recordDto(r, lang) };
 }
 
 export function getRecord(userId: string, id: string, lang: Lang) {
   const r = recordById(id);
-  if (!teacherOwns(userId, G) && !isCentreStaff(userId))
+  if (!teacherOwns(userId, r.groupId) && !isCentreStaff(userId))
     throw new MockProblem(403, 'forbidden', 'Not allowed.');
   return recordDto(r, lang);
 }
 
-function validateEntries(entries: EntryInput[], maxScore: number | null) {
+function validateEntries(entries: EntryInput[], maxScore: number | null, groupId: string) {
   for (const e of entries) {
-    if (!studentFx(e.studentId))
+    if (!inGroup(groupId, e.studentId))
       throw new MockProblem(422, 'unknown_student', 'A student is not on this roster.');
     if (e.score == null) continue;
     if (maxScore == null)
@@ -1114,7 +1405,7 @@ function validateEntries(entries: EntryInput[], maxScore: number | null) {
 
 export function saveDraft(userId: string, id: string, body: SaveRecordBody, lang: Lang) {
   const r = recordById(id);
-  requireTeacher(userId, G);
+  requireTeacher(userId, r.groupId);
   if (r.status === 'confirmed')
     throw new MockProblem(
       409,
@@ -1124,7 +1415,7 @@ export function saveDraft(userId: string, id: string, body: SaveRecordBody, lang
   const a = body.assessment === undefined ? r.assessment : body.assessment;
   if (a && !(a.maxScore > 0))
     throw new MockProblem(422, 'validation_failed', 'The maximum must be above 0.');
-  validateEntries(body.entries ?? [], a ? a.maxScore : null);
+  validateEntries(body.entries ?? [], a ? a.maxScore : null, r.groupId);
   r.assessment = a
     ? {
         id: r.assessment?.id ?? `asm-${r.date}`,
@@ -1174,7 +1465,7 @@ export function confirmRecord(userId: string, id: string, key: string | null, la
     return recordDto(recordById(id), lang); // replay: same result, nothing new (FUP-REC-07 AC3)
   }
   const r = recordById(id);
-  requireTeacher(userId, G);
+  requireTeacher(userId, r.groupId);
   if (s.demo.confirmFault === 'before_commit') {
     s.demo.confirmFault = null;
     save();
@@ -1195,6 +1486,7 @@ export function confirmRecord(userId: string, id: string, key: string | null, la
   validateEntries(
     r.entries.map((e) => ({ studentId: e.studentId, attendance: e.attendance, score: e.score })),
     r.assessment?.maxScore ?? null,
+    r.groupId,
   );
   const at = new Date().toISOString();
   r.status = 'confirmed';
@@ -1203,12 +1495,27 @@ export function confirmRecord(userId: string, id: string, key: string | null, la
   s.idem[key] = { kind: 'confirm', id };
   s.counters.confirmCommits++;
   for (const v of s.voice) if (v.recordId === id) v.extraction.status = 'accepted';
-  audit('record.confirmed', userId, {
-    en: `Session record confirmed • ${fx.groupName.en} (${fmtDate(r.date, 'en')})`,
-    ar: `تم تأكيد سجل الحصة • ${fx.groupName.ar} (${fmtDate(r.date, 'ar')})`,
-  });
+  const sess = sessionsOfGroup(world(), r.groupId).find((x) => x.id === r.sessionId);
+  audit(
+    'record.confirmed',
+    userId,
+    {
+      en: `Session record confirmed • ${groupName(r.groupId, 'en')} (${fmtDate(r.date, 'en')})`,
+      ar: `تم تأكيد سجل الحصة • ${groupName(r.groupId, 'ar')} (${fmtDate(r.date, 'ar')})`,
+    },
+    at,
+    {
+      recordId: r.id,
+      groupId: r.groupId,
+      sessionId: r.sessionId,
+      sessionDate: r.date,
+      sessionEndsAt: sess?.endsAt ?? null,
+      source: r.source,
+      draftCreatedAt: r.createdAt,
+    },
+  );
   // record.confirmed → the followup module evaluates the rules (FUP-RUL-03).
-  for (const st of fx.roster) evaluate(st.id, r.date, at);
+  for (const st of rosterOf(r.groupId)) evaluate(st.id, r.groupId, r.date, at);
   const fault = s.demo.confirmFault;
   if (fault === 'after_commit') s.demo.confirmFault = null;
   save();
@@ -1225,7 +1532,7 @@ export function addCorrection(
   const s = load();
   const r = s.records.find((x) => x.entries.some((e) => e.id === entryId));
   if (!r) throw new MockProblem(404, 'not_found', 'Entry not found.');
-  requireTeacher(userId, G);
+  requireTeacher(userId, r.groupId);
   if (r.status !== 'confirmed')
     throw new MockProblem(
       409,
@@ -1248,6 +1555,7 @@ export function addCorrection(
     validateEntries(
       [{ studentId: e.studentId, attendance: e.attendance, score: v }],
       r.assessment?.maxScore ?? null,
+      r.groupId,
     );
     e.score = v;
   } else if (body.field === 'attendance') {
@@ -1269,17 +1577,29 @@ export function addCorrection(
     at,
   };
   s.corrections.push(c);
-  audit('record.corrected', userId, {
-    en: `Correction: ${studentFx(e.studentId)!.name.en} ${body.field} ${old ?? '—'} → ${body.newValue ?? '—'}`,
-    ar: `تصحيح: ${studentFx(e.studentId)!.name.ar} ${old ?? '—'} ← ${body.newValue ?? '—'}`,
-  });
+  audit(
+    'record.corrected',
+    userId,
+    {
+      en: `Correction: ${studentFx(e.studentId)!.name.en} ${body.field} ${old ?? '—'} → ${body.newValue ?? '—'}`,
+      ar: `تصحيح: ${studentFx(e.studentId)!.name.ar} ${old ?? '—'} ← ${body.newValue ?? '—'}`,
+    },
+    at,
+    { recordId: r.id, groupId: r.groupId, field: body.field },
+  );
+  // CF-34: a correction answers any open request from the owner on this record.
+  for (const q of s.correctionRequests ?? [])
+    if (q.recordId === r.id && q.status === 'open') {
+      q.status = 'done';
+      q.doneAt = at;
+    }
   // record.corrected → re-run the rules for that student (FUP-REC-08 AC3).
   const latest = s.records
-    .filter((x) => x.status === 'confirmed')
+    .filter((x) => x.status === 'confirmed' && x.groupId === r.groupId)
     .map((x) => x.date)
     .sort()
     .at(-1)!;
-  evaluate(e.studentId, latest, at, { correctionOf: r.id });
+  evaluate(e.studentId, r.groupId, latest, at, { correctionOf: r.id });
   save();
   return correctionDto(c, lang);
 }
@@ -1293,8 +1613,11 @@ export function createVoiceNote(
   const s = load();
   if (key && s.idem[key]?.kind === 'voice')
     return voiceDto(s.voice.find((v) => v.id === s.idem[key]!.id)!);
+  if (isPilot())
+    // Part A: no speech-to-text in the pilot yet; the app offers "Type the note instead".
+    throw new MockProblem(503, 'stt_unavailable', 'Voice notes are not available yet.');
   const r = recordById(body.sessionRecordId);
-  requireTeacher(userId, G);
+  requireTeacher(userId, r.groupId);
   if (r.status === 'confirmed')
     throw new MockProblem(409, 'record_confirmed', 'This record is confirmed.');
   const v: Voice = {
@@ -1324,7 +1647,7 @@ const voiceById = (id: string) => {
 };
 export function voiceUploaded(userId: string, id: string): VoiceNote {
   const v = voiceById(id);
-  requireTeacher(userId, G);
+  requireTeacher(userId, recordById(v.recordId).groupId);
   if (v.status === 'queued') {
     v.status = 'transcribing';
     v.readyAt = Date.now() + STT_DELAY_MS;
@@ -1337,7 +1660,7 @@ export function voiceUploaded(userId: string, id: string): VoiceNote {
 export function voiceExtraction(userId: string, id: string, lang: Lang): VoiceExtraction | null {
   const s = load();
   const v = voiceById(id);
-  requireTeacher(userId, G);
+  requireTeacher(userId, recordById(v.recordId).groupId);
   if (s.demo.sttDown)
     throw new MockProblem(
       503,
@@ -1389,7 +1712,9 @@ function extractionDto(v: Voice, lang: Lang): VoiceExtraction {
     audioUrl: null,
     items,
     discardedItemIds: v.extraction.discarded ?? [],
-    unmentioned: fx.roster.filter((s) => !mentioned.has(s.id)).map((s) => person(s.id, lang)),
+    unmentioned: rosterOf(recordById(v.recordId).groupId)
+      .filter((s) => !mentioned.has(s.id))
+      .map((s) => person(s.id, lang)),
     assessment: {
       title: fx.assessments.practice.title[lang],
       maxScore: fx.assessments.practice.maxScore,
@@ -1405,7 +1730,7 @@ export function resolveIdentity(
 ) {
   const v = load().voice.find((x) => x.extraction.id === extractionId);
   if (!v) throw new MockProblem(404, 'not_found', 'Extraction not found.');
-  requireTeacher(userId, G);
+  requireTeacher(userId, recordById(v.recordId).groupId);
   const it = fx.voiceItems.find((x) => x.id === body.itemId);
   if (!it || it.identity !== 'ambiguous')
     throw new MockProblem(422, 'not_ambiguous', 'This item needs no choice.');
@@ -1431,7 +1756,7 @@ function refreshExtractionStatus(v: Voice) {
 export function discardItem(userId: string, extractionId: string, itemId: string, lang: Lang) {
   const v = load().voice.find((x) => x.extraction.id === extractionId);
   if (!v) throw new MockProblem(404, 'not_found', 'Extraction not found.');
-  requireTeacher(userId, G);
+  requireTeacher(userId, recordById(v.recordId).groupId);
   if (!fx.voiceItems.some((x) => x.id === itemId))
     throw new MockProblem(404, 'not_found', 'Item not found.');
   v.extraction.discarded = [...new Set([...(v.extraction.discarded ?? []), itemId])];
@@ -1497,10 +1822,13 @@ export function addAttempt(
     text: { en: 'Contact recorded. Next step set.', ar: 'تم تسجيل التواصل وتحديد الخطوة التالية.' },
     actorId: userId,
   });
-  audit('case.outcome', userId, {
-    en: 'Outcome recorded on a follow-up',
-    ar: 'تم تسجيل نتيجة متابعة',
-  });
+  audit(
+    'case.outcome',
+    userId,
+    { en: 'Outcome recorded on a follow-up', ar: 'تم تسجيل نتيجة متابعة' },
+    at,
+    { caseId: c.id, channel: body.channel, result: body.result, status: c.status },
+  );
   save();
   return caseDto(c, lang);
 }
@@ -1508,19 +1836,22 @@ export function dismissCase(userId: string, id: string, reason: string, lang: La
   requireStaff(userId);
   if (!reason?.trim()) throw new MockProblem(422, 'reason_required', 'Give a reason to dismiss.');
   const c = caseById(id);
+  const at = new Date().toISOString();
   c.status = 'dismissed';
   c.dismissReason = reason.trim();
   load().signals.find((x) => x.id === c.signalId)!.status = 'dismissed';
-  c.timeline.push({
-    at: new Date().toISOString(),
-    kind: 'dismissed',
-    text: reason.trim(),
-    actorId: userId,
-  });
-  audit('case.dismissed', userId, {
-    en: `Follow-up dismissed: "${reason.trim()}" — stays in history, can be reopened`,
-    ar: `تم إغلاق المتابعة: "${reason.trim()}" — تبقى في السجل ويمكن إعادة فتحها`,
-  });
+  c.timeline.push({ at, kind: 'dismissed', text: reason.trim(), actorId: userId });
+  audit(
+    'case.dismissed',
+    userId,
+    {
+      en: `Follow-up dismissed: "${reason.trim()}" — stays in history, can be reopened`,
+      ar: `تم إغلاق المتابعة: "${reason.trim()}" — تبقى في السجل ويمكن إعادة فتحها`,
+    },
+    at,
+    // The reason is staff free text about a pseudonymised student; metrics list it as written.
+    { caseId: c.id, reason: reason.trim() },
+  );
   save();
   return caseDto(c, lang);
 }
@@ -1536,28 +1867,49 @@ export function reopenCase(userId: string, id: string, lang: Lang) {
     text: { en: 'Reopened', ar: 'أعيد فتحها' },
     actorId: userId,
   });
-  audit('case.reopened', userId, { en: 'Follow-up reopened', ar: 'أعيد فتح متابعة' });
+  audit('case.reopened', userId, { en: 'Follow-up reopened', ar: 'أعيد فتح متابعة' }, undefined, {
+    caseId: c.id,
+  });
   save();
   return caseDto(c, lang);
 }
 
 // ── messages (FUP-MSG) ─────────────────────────────────────────────────────────
+/**
+ * Deterministic Egyptian Arabic drafts built only from confirmed facts (FUP-MSG-01). No LLM: the
+ * text says who, which group and which dates, nothing else. Staff edit and approve it.
+ */
 function draftText(sig: Sig, tone: ParentMessage['tone']) {
   const st = studentFx(sig.studentId)!;
-  const gd = guardianFx(st.guardianId);
+  const w = world();
+  const n = sig.n ?? 2;
   const first = st.name.ar.split(' ')[0];
-  const gFirst = gd.phone && gd.id !== fx.genericGuardian.id ? gd.name.ar.split(' ')[0] : null;
   const dates = sig.evidence
-    .map((id) => fmtDate(recordById(id).date, 'ar'))
-    .slice(-2)
+    .map((id) => recordById(id).date)
+    .sort()
+    .slice(-n)
+    .map((d) => fmtDate(d, 'ar'))
     .join(' و');
+  const centre = w.centre.name.ar;
+  if (w.kind === 'pilot') {
+    // Pilot: guardian labels are not names, the student's gender is unknown → neutral wording.
+    const group = groupName(sig.groupId, 'ar');
+    if (tone === 'formal')
+      return `السلام عليكم، معكم ${centre}. نود إبلاغكم بتسجيل غياب ${first} عن ${lastWords(n)} في مجموعة ${group} (${dates}). يسعدنا التواصل معكم إن كان هناك ما يمكننا المساعدة فيه.`;
+    if (tone === 'neutral')
+      return `أهلاً بحضرتك، معاك ${centre}. سجّلنا غياب ${first} عن ${lastWords(n)} في مجموعة ${group} (${dates}). لو في حاجة نقدر نساعد فيها، بلّغنا.`;
+    return `أهلاً بحضرتك، معاك ${centre} 😊 حبينا نطمّن على ${first}: سجل الحضور عندنا فيه غياب ${lastWords(n)} في مجموعة ${group} (${dates}). لو في أي ظرف أو حاجة نقدر نساعد فيها، ياريت تقولنا. شكرًا!`;
+  }
+  const gd = guardianFx(st.guardianId);
+  const subject = groupOf(sig.groupId)?.subject?.ar ?? groupName(sig.groupId, 'ar');
+  const gFirst = gd.phone && !gd.generic ? gd.name.ar.split(' ')[0] : null;
   const verb = st.gender === 'f' ? 'غابت' : 'غاب';
   const hi = gFirst ? `أهلاً أستاذ ${gFirst}` : 'أهلاً بحضرتك';
   if (tone === 'formal')
-    return `${hi}، معكم مركز النور. نود إبلاغكم بأن ${first} ${verb} عن حصتي الرياضيات يومي ${dates}. يسعدنا التواصل معكم إن كان هناك ما يمكننا المساعدة فيه.`;
+    return `${hi}، معكم ${centre}. نود إبلاغكم بأن ${first} ${verb} عن حصتي ال${subject} يومي ${dates}. يسعدنا التواصل معكم إن كان هناك ما يمكننا المساعدة فيه.`;
   if (tone === 'neutral')
-    return `${hi}، معاك مركز النور. ${first} ${verb} عن آخر حصتين رياضيات (${dates}). لو في حاجة نقدر نساعد فيها، بلّغنا.`;
-  return `${hi}، معاك مركز النور 😊 حبينا نطمّن على ${first}؛ ${verb} عن آخر حصتين رياضيات (${dates}). لو في أي ظرف أو حاجة نقدر نساعد فيها، ياريت تقولنا. شكرًا!`;
+    return `${hi}، معاك ${centre}. ${first} ${verb} عن ${lastWords(n)} ${subject} (${dates}). لو في حاجة نقدر نساعد فيها، بلّغنا.`;
+  return `${hi}، معاك ${centre} 😊 حبينا نطمّن على ${first}؛ ${verb} عن ${lastWords(n)} ${subject} (${dates}). لو في أي ظرف أو حاجة نقدر نساعد فيها، ياريت تقولنا. شكرًا!`;
 }
 const msgById = (id: string) => {
   const m = load().messages.find((x) => x.id === id);
@@ -1597,10 +1949,16 @@ export function createDraft(
     text: { en: 'Parent message drafted (not sent)', ar: 'تمت صياغة رسالة لوليّ الأمر (لم تُرسل)' },
     actorId: userId,
   });
-  audit('message.drafted', userId, {
-    en: `Parent message drafted for ${studentFx(c.studentId)!.name.en} (not sent)`,
-    ar: `صياغة رسالة لوليّ أمر ${studentFx(c.studentId)!.name.ar} (لم تُرسل)`,
-  });
+  audit(
+    'message.drafted',
+    userId,
+    {
+      en: `Parent message drafted for ${studentFx(c.studentId)!.name.en} (not sent)`,
+      ar: `صياغة رسالة لوليّ أمر ${studentFx(c.studentId)!.name.ar} (لم تُرسل)`,
+    },
+    undefined,
+    { caseId: c.id, messageId: m.id },
+  );
   save();
   return messageDto(m, lang);
 }
@@ -1661,6 +2019,33 @@ export function approveMessage(
   m.approvedBy = userId;
   m.approvedAt = at;
   m.history.push({ status: 'approved', at });
+  if (isPilot()) {
+    // A6: Link sends nothing in the pilot. The message stays "approved" until staff send it from the
+    // centre's own WhatsApp; it never shows Delivered or Read (no provider receipt, BR-APR-11).
+    m.status = 'approved';
+    const c = m.caseId ? caseById(m.caseId) : null;
+    if (c) {
+      if (c.status === 'open') c.status = 'in_progress';
+      c.timeline.push({
+        at,
+        kind: 'message_approved',
+        text: {
+          en: "Message approved — send it from the centre's WhatsApp",
+          ar: 'تم اعتماد الرسالة — أرسلها من واتساب المركز',
+        },
+        actorId: userId,
+      });
+    }
+    audit(
+      'message.approved',
+      userId,
+      { en: 'Parent message approved', ar: 'تم اعتماد رسالة لوليّ الأمر' },
+      at,
+      { caseId: m.caseId, messageId: m.id },
+    );
+    save();
+    return messageDto(m, lang);
+  }
   // FUP-MSG-03 AC2 + FUP-MSG-07: WhatsApp only with opt-in and no STOP; SMS only with SMS consent.
   const channel =
     body.channel === 'sms'
@@ -1703,12 +2088,148 @@ export function approveMessage(
       });
     }
   }
-  audit('message.approved', userId, {
-    en: 'Parent message approved',
-    ar: 'تم اعتماد رسالة لوليّ الأمر',
-  });
+  audit(
+    'message.approved',
+    userId,
+    { en: 'Parent message approved', ar: 'تم اعتماد رسالة لوليّ الأمر' },
+    at,
+    { caseId: m.caseId, messageId: m.id },
+  );
   save();
   return messageDto(m, lang);
+}
+
+/**
+ * Pilot (A6): staff copied the approved text and sent it from the centre's own WhatsApp. That is a
+ * contact attempt (`whatsapp_manual`) by this person at this time — not a delivery: the status stays
+ * "approved" and never becomes Delivered or Read. The case stays open until an outcome is recorded.
+ */
+export function markSentManually(userId: string, id: string, lang: Lang) {
+  requireStaff(userId);
+  if (!isPilot())
+    throw new MockProblem(409, 'not_pilot', 'Messages are sent by the provider outside the pilot.');
+  const m = msgById(id);
+  if (m.status !== 'approved')
+    throw new MockProblem(409, 'not_approved', 'Approve the message before sending it.');
+  if (m.manualSends?.length)
+    throw new MockProblem(
+      409,
+      'already_sent',
+      'Already marked as sent. Start a new draft to send again.',
+    );
+  const at = new Date().toISOString();
+  m.manualSends = [{ by: userId, at }];
+  const c = m.caseId ? caseById(m.caseId) : null;
+  if (c) {
+    c.attempts.push({
+      id: nextId('att'),
+      channel: 'whatsapp_manual',
+      result: 'message_sent',
+      learned: null,
+      nextAction: null,
+      followUpOn: null,
+      messageId: m.id,
+      createdBy: userId,
+      at,
+    });
+    if (c.status === 'open') c.status = 'in_progress';
+    c.timeline.push({
+      at,
+      kind: 'message_sent_manually',
+      text: {
+        en: "Sent from the centre's WhatsApp (by hand)",
+        ar: 'أُرسلت من واتساب المركز (يدويًا)',
+      },
+      actorId: userId,
+    });
+  }
+  audit(
+    'message.sent_manually',
+    userId,
+    {
+      en: "Parent message sent by hand from the centre's WhatsApp",
+      ar: 'أُرسلت رسالة لوليّ الأمر يدويًا من واتساب المركز',
+    },
+    at,
+    { caseId: m.caseId, messageId: m.id, channel: 'whatsapp_manual' },
+  );
+  save();
+  return messageDto(m, lang);
+}
+
+// ── CF-34: teachers correct, the owner asks ─────────────────────────────────────
+function correctionRequestDto(q: CorrectionRequestRow, lang: Lang) {
+  const r = recordById(q.recordId);
+  return {
+    id: q.id,
+    recordId: q.recordId,
+    groupId: q.groupId,
+    groupName: groupName(q.groupId, lang),
+    sessionDate: r.date,
+    student: q.studentId ? person(q.studentId, lang) : null,
+    text: q.text,
+    requestedBy: person(q.requestedBy, lang),
+    at: q.at,
+    status: q.status,
+  };
+}
+/** A14 "Ask the teacher to correct": a note to the teacher, never a change to the record. */
+export function requestCorrection(
+  userId: string,
+  recordId: string,
+  body: { studentId?: string | null; text: string },
+  lang: Lang,
+) {
+  if (roleOf(userId) !== 'owner')
+    throw new MockProblem(403, 'forbidden', 'Only the owner asks for corrections.');
+  const r = recordById(recordId);
+  if (r.status !== 'confirmed')
+    throw new MockProblem(409, 'record_not_confirmed', 'Only confirmed records are corrected.');
+  const text = (body.text ?? '').trim();
+  if (!text) throw new MockProblem(422, 'validation_failed', 'Say what should be corrected.');
+  if ([...text].length > 500)
+    throw new MockProblem(422, 'too_long', 'Up to 500 characters.', { max: 500 });
+  if (body.studentId && !inGroup(r.groupId, body.studentId))
+    throw new MockProblem(422, 'unknown_student', 'A student is not on this roster.');
+  const s = load();
+  const q: CorrectionRequestRow = {
+    id: nextId('crq'),
+    recordId,
+    groupId: r.groupId,
+    studentId: body.studentId ?? null,
+    text,
+    requestedBy: userId,
+    at: new Date().toISOString(),
+    status: 'open',
+    doneAt: null,
+  };
+  (s.correctionRequests ??= []).push(q);
+  audit(
+    'record.correction_requested',
+    userId,
+    {
+      en: `Correction requested from the teacher • ${groupName(r.groupId, 'en')} (${fmtDate(r.date, 'en')})`,
+      ar: `طُلب تصحيح من المعلّم • ${groupName(r.groupId, 'ar')} (${fmtDate(r.date, 'ar')})`,
+    },
+    q.at,
+    { recordId, groupId: r.groupId },
+  );
+  save();
+  return correctionRequestDto(q, lang);
+}
+/** The teacher closes a request without a correction (e.g. the record was right). */
+export function closeCorrectionRequest(userId: string, id: string, lang: Lang) {
+  const q = (load().correctionRequests ?? []).find((x) => x.id === id);
+  if (!q) throw new MockProblem(404, 'not_found', 'Request not found.');
+  requireTeacher(userId, q.groupId);
+  q.status = 'done';
+  q.doneAt = new Date().toISOString();
+  audit('record.correction_request_closed', userId, {
+    en: 'Correction request marked done by the teacher',
+    ar: 'أنهى المعلّم طلب التصحيح',
+  });
+  save();
+  return correctionRequestDto(q, lang);
 }
 
 // ── demo controls (dev only) ───────────────────────────────────────────────────
@@ -1858,11 +2379,17 @@ export function guardianOf(studentId: string, lang: Lang) {
   return st ? guardianDto(st.guardianId, lang) : null;
 }
 
-export { RULE_TEXT };
+export { RULE_TEXT, MockProblem };
 
 // ── owner web (Batch 6) ────────────────────────────────────────────────────────
-const isOwner = (userId: string) => userId === 'usr-owner';
-const teacherOf = (lang: Lang) => person(fx.DEMO_TEACHER_USER, lang);
+const isOwner = (userId: string) => roleOf(userId) === 'owner';
+const teacherOf = (groupId: string, lang: Lang) =>
+  person(groupOf(groupId)?.teacherUserId ?? '', lang);
+/** Sessions that took place, across every follow-up group, oldest first. */
+const allPastSessions = () =>
+  world()
+    .groups.flatMap((g) => pastSessions(g.id))
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 const OPEN_CASE = (c: CaseRow) => c.status !== 'resolved' && c.status !== 'dismissed';
 const isOverdue = (c: CaseRow) => OPEN_CASE(c) && c.dueOn < cairoToday() && c.attempts.length === 0;
 
@@ -1871,7 +2398,7 @@ export function ownerToday(userId: string, lang: Lang): OwnerToday {
   requireStaff(userId);
   const s = load();
   const today = cairoToday();
-  const eligible = pastSessions().filter((p) => p.date >= addDays(today, -14));
+  const eligible = allPastSessions().filter((p) => p.date >= addDays(today, -14));
   const confirmed = eligible.filter((p) => recordFor(p.id)?.status === 'confirmed').length;
   const open = s.cases.filter(OPEN_CASE);
   const overdue = open.filter(isOverdue);
@@ -1890,9 +2417,9 @@ export function ownerToday(userId: string, lang: Lang): OwnerToday {
       .filter((p) => recordFor(p.id)?.status !== 'confirmed')
       .reverse()
       .map((p) => ({
-        groupId: G,
-        groupName: fx.groupName[lang],
-        teacher: teacherOf(lang),
+        groupId: p.groupId,
+        groupName: groupName(p.groupId, lang),
+        teacher: teacherOf(p.groupId, lang),
         sessionDate: p.date,
         startsAt: p.startsAt,
         status: recordFor(p.id) ? ('draft' as const) : ('missing' as const),
@@ -1904,26 +2431,36 @@ export function ownerToday(userId: string, lang: Lang): OwnerToday {
 export function centreStudents(userId: string, lang: Lang): CentreStudentRow[] {
   requireStaff(userId);
   const s = load();
-  return fx.roster.map((st) => {
-    const c = [...s.cases].reverse().find((x) => x.studentId === st.id && OPEN_CASE(x));
-    const notes = notesOf(st.id, lang);
-    const g = guardianFx(st.guardianId);
-    const latest = latestScore(st.id, lang);
+  const w = world();
+  // One row per student per follow-up group.
+  return w.members.map(({ groupId, studentId }) => {
+    const c = [...s.cases]
+      .reverse()
+      .find(
+        (x) =>
+          x.studentId === studentId &&
+          OPEN_CASE(x) &&
+          s.signals.find((g) => g.id === x.signalId)?.groupId === groupId,
+      );
+    const notes = notesOf(studentId, lang);
+    const g = guardianFx(studentFx(studentId)!.guardianId);
+    const latest = latestScore(studentId, lang);
     return {
-      student: person(st.id, lang),
-      group: { id: G, name: fx.groupName[lang] },
-      lastSessions: lastFour(st.id),
+      student: person(studentId, lang),
+      group: { id: groupId, name: groupName(groupId, lang) },
+      lastSessions: lastFour(studentId, groupId),
       latestScore: latest ? { score: latest.score, maxScore: latest.maxScore } : null,
       followUp: c ? { caseId: c.id, status: c.status, overdue: isOverdue(c) } : null,
       latestNote: notes[0]
         ? { body: notes[0].body, author: notes[0].author, at: notes[0].at }
         : null,
-      guardian: g.phone
-        ? {
-            status: 'verified' as const,
-            name: g.id === fx.genericGuardian.id ? null : g.name[lang],
-          }
-        : { status: 'missing_phone' as const, name: g.name[lang] },
+      // Pilot: the centre keeps the phone numbers; Link only has the guardian's label.
+      guardian:
+        w.kind === 'pilot'
+          ? { status: 'kept_by_centre' as const, name: tx(g.name, lang)! }
+          : g.phone
+            ? { status: 'verified' as const, name: g.generic ? null : tx(g.name, lang)! }
+            : { status: 'missing_phone' as const, name: tx(g.name, lang)! },
     };
   });
 }
@@ -1932,7 +2469,7 @@ export function centreStudents(userId: string, lang: Lang): CentreStudentRow[] {
 export function centreSessions(userId: string, lang: Lang): CentreSessionRow[] {
   requireStaff(userId);
   const today = cairoToday();
-  return pastSessions()
+  return allPastSessions()
     .filter((p) => p.date >= addDays(today, -14))
     .reverse()
     .map((p) => {
@@ -1943,9 +2480,9 @@ export function centreSessions(userId: string, lang: Lang): CentreSessionRow[] {
           if (e.attendance === 'not_recorded') c.notRecorded++;
           else c[e.attendance]++;
       return {
-        groupId: G,
-        groupName: fx.groupName[lang],
-        teacher: teacherOf(lang),
+        groupId: p.groupId,
+        groupName: groupName(p.groupId, lang),
+        teacher: teacherOf(p.groupId, lang),
         sessionDate: p.date,
         startsAt: p.startsAt,
         recordId: r?.id ?? null,
@@ -2048,7 +2585,7 @@ function validateRule(code: RuleRow['code'], b: RuleChangeBody) {
         { field: k },
       );
   }
-  if (b.scope !== 'all' && b.scope !== G)
+  if (b.scope !== 'all' && !groupOf(b.scope))
     throw new MockProblem(422, 'validation_failed', 'Unknown group.');
 }
 function applyRule(r: RuleRow, b: RuleChangeBody, approvedBy: string) {
@@ -2073,10 +2610,16 @@ export function changeRule(userId: string, code: string, b: RuleChangeBody, lang
   validateRule(r.code, b);
   if (isOwner(userId)) {
     applyRule(r, b, userId);
-    audit('rule.changed', userId, {
-      en: `Rule "${r.code}" changed — version ${r.version}`,
-      ar: `تم تعديل القاعدة "${r.code}" — الإصدار ${r.version}`,
-    });
+    audit(
+      'rule.changed',
+      userId,
+      {
+        en: `Rule "${r.code}" changed — version ${r.version}`,
+        ar: `تم تعديل القاعدة "${r.code}" — الإصدار ${r.version}`,
+      },
+      undefined,
+      { rule: r.code, version: r.version },
+    );
   } else {
     r.proposal = {
       ...b,
@@ -2117,33 +2660,35 @@ export function rejectRule(userId: string, code: string, lang: Lang) {
 // ── staff (A16, FUP-STF-01) ────────────────────────────────────────────────────
 export function staffList(userId: string, lang: Lang): StaffMember[] {
   requireStaff(userId);
-  const role = (r: string): StaffMember['role'] =>
-    r === 'centre_owner' ? 'owner' : r === 'centre_staff' ? 'reception' : 'teacher';
   const ar = lang === 'ar';
-  const scope = (u: (typeof mfx.staff)[number]) =>
-    u.role === 'centre_owner'
+  const scope = (u: WorldUser) =>
+    u.role === 'owner'
       ? ar
         ? 'كل المجموعات'
         : 'All groups'
-      : u.role === 'centre_staff'
+      : u.role === 'reception'
         ? ar
           ? 'كل الطلاب • المتابعات'
           : 'All students • Follow-ups'
-        : u.id === fx.DEMO_TEACHER_USER
-          ? fx.groupName[lang]
+        : groupsOfTeacher(u.id).length
+          ? groupsOfTeacher(u.id)
+              .map((g) => tx(g.name, lang))
+              .join(ar ? '، ' : ', ')
           : ar
             ? 'مجموعاته فقط'
             : 'Own groups only';
   const last = (id: string) =>
     [...load().audit].reverse().find((a) => a.actorId === id)?.at ?? null;
   return [
-    ...mfx.staff.map((u) => ({
-      user: { id: u.id, displayName: u.name[lang] },
-      role: role(u.role),
-      scope: scope(u),
-      lastActiveAt: last(u.id),
-      status: 'active' as const,
-    })),
+    ...world()
+      .users.filter((u) => u.active || isPilot())
+      .map((u) => ({
+        user: { id: u.id, displayName: tx(u.name, lang)! },
+        role: u.role,
+        scope: scope(u),
+        lastActiveAt: last(u.id),
+        status: u.active ? ('active' as const) : ('removed' as const),
+      })),
     ...load().invites.map((i, n) => ({
       user: { id: `invite-${n}`, displayName: maskPhone(i.phone) },
       role: i.role,
@@ -2153,12 +2698,105 @@ export function staffList(userId: string, lang: Lang): StaffMember[] {
     })),
   ];
 }
+
+/**
+ * Pilot A16: the owner adds a person (no phone number needed). The pilot server sets their PIN.
+ * Names are first names or nicknames; roles are the existing ones (owner, reception, teacher).
+ */
+export function addPilotUser(
+  userId: string,
+  b: { name: string; role: StaffRole; groupIds?: string[] },
+) {
+  if (!isPilot()) throw new MockProblem(409, 'not_pilot', 'Use invites outside the pilot.');
+  if (!isOwner(userId)) throw new MockProblem(403, 'forbidden', 'Only the owner manages staff.');
+  const name = (b.name ?? '').trim();
+  if (!name || [...name].length > 40)
+    throw new MockProblem(422, 'validation_failed', 'Enter a name (up to 40 characters).');
+  if (!['owner', 'reception', 'teacher'].includes(b.role))
+    throw new MockProblem(422, 'validation_failed', 'Pick a role.');
+  const w = load().world!;
+  if (w.users.some((u) => u.active && tx(u.name, 'ar') === name))
+    throw new MockProblem(409, 'name_taken', 'Someone already has this name. Add an initial.');
+  const u: WorldUser = {
+    id: nextId('usr'),
+    name: { ar: name, en: name },
+    role: b.role,
+    title: TITLES[b.role],
+    active: true,
+  };
+  w.users.push(u);
+  for (const gid of b.groupIds ?? []) {
+    const g = w.groups.find((x) => x.id === gid);
+    if (!g) throw new MockProblem(422, 'validation_failed', 'Unknown group.');
+    if (b.role !== 'teacher')
+      throw new MockProblem(422, 'validation_failed', 'Only teachers have groups.');
+    g.teacherUserId = u.id;
+  }
+  audit(
+    'access.user_added',
+    userId,
+    { en: `Staff added (${b.role})`, ar: `أُضيف موظف (${TITLES[b.role].ar})` },
+    undefined,
+    { userId: u.id, role: b.role },
+  );
+  save();
+  return u;
+}
+/** Pilot A16: remove someone's access (kept in history; their past actions stay attributed). */
+export function removePilotUser(userId: string, targetId: string) {
+  if (!isPilot()) throw new MockProblem(409, 'not_pilot', 'Not available outside the pilot.');
+  if (!isOwner(userId)) throw new MockProblem(403, 'forbidden', 'Only the owner manages staff.');
+  if (targetId === userId) throw new MockProblem(409, 'self', 'You cannot remove yourself.');
+  const u = load().world!.users.find((x) => x.id === targetId);
+  if (!u) throw new MockProblem(404, 'not_found', 'Person not found.');
+  u.active = false;
+  audit(
+    'access.user_removed',
+    userId,
+    { en: 'Staff access removed', ar: 'أُلغي وصول موظف' },
+    undefined,
+    {
+      userId: targetId,
+    },
+  );
+  save();
+}
+/** The audit trail for sign-ins and PIN changes, written by the pilot server (A3). */
+export function recordAccessEvent(
+  kind: 'access.signed_in' | 'access.signed_out' | 'access.pin_reset' | 'access.locked',
+  actorId: string | null,
+  data: AuditRow['data'] = {},
+) {
+  const text: Record<typeof kind, mfx.L> = {
+    'access.signed_in': { en: 'Signed in', ar: 'تسجيل دخول' },
+    'access.signed_out': { en: 'Signed out', ar: 'تسجيل خروج' },
+    'access.pin_reset': { en: 'PIN reset by the owner', ar: 'أعاد المالك تعيين الرمز' },
+    'access.locked': {
+      en: 'Sign-in locked after 5 wrong PINs',
+      ar: 'قُفل الدخول بعد ٥ رموز خاطئة',
+    },
+  };
+  audit(kind, actorId, text[kind], undefined, data);
+  save();
+}
+/** A system event in the activity log (pilot set-up steps such as a roster import). */
+export function recordSystemEvent(kind: string, text: mfx.L, data: AuditRow['data'] = {}) {
+  audit(kind, null, text, undefined, data);
+  save();
+}
+export const TITLES: Record<StaffRole, mfx.L> = {
+  owner: { en: 'Owner', ar: 'المالك' },
+  reception: { en: 'Reception', ar: 'الاستقبال' },
+  teacher: { en: 'Teacher', ar: 'معلّم' },
+};
+
 export function inviteStaff(
   userId: string,
   b: { phone: string; role: StaffMember['role'] },
   lang: Lang,
 ) {
   if (!isOwner(userId)) throw new MockProblem(403, 'forbidden', 'Only the owner manages staff.');
+  if (isPilot()) throw new MockProblem(409, 'pilot_mode', 'In the pilot, add people with a PIN.');
   if (!/^\+20(10|11|12|15)\d{8}$/.test(b.phone ?? ''))
     throw new MockProblem(422, 'invalid_phone', 'Enter an Egyptian mobile number.');
   if (!['reception', 'teacher'].includes(b.role))
@@ -2183,11 +2821,13 @@ const KIND: Record<string, ActivityKind> = {
   rule: 'access',
   access: 'access',
 };
+/** Sign-ins are counted for usage metrics but are not shown in A17. */
+const HIDDEN_KINDS = ['demo.', 'access.signed_in', 'access.signed_out'];
 export function activity(userId: string, lang: Lang): ActivityLog {
   requireStaff(userId);
   const s = load();
   const events: ActivityEvent[] = s.audit
-    .filter((a) => !a.kind.startsWith('demo.'))
+    .filter((a) => !HIDDEN_KINDS.some((k) => a.kind.startsWith(k)))
     .map((a) => ({
       id: a.id,
       at: a.at,
@@ -2215,7 +2855,11 @@ const SENT: DeliveryStatus[] = ['queued', 'sent', 'delivered', 'read'];
 /** Approved (and handed to the provider) messages only. Confirmed attendance is off by default (OD-41). */
 export function parentUpdates(userId: string, lang: Lang): ParentUpdate[] {
   const s = load();
-  const mine = new Set(fx.guardians.filter((g) => g.userId === userId).map((g) => g.id));
+  const mine = new Set(
+    world()
+      .guardians.filter((g) => g.userId === userId)
+      .map((g) => g.id),
+  );
   return s.messages
     .filter((m) => mine.has(m.guardianId) && SENT.includes(m.status) && m.finalText)
     .map((m) => ({
@@ -2223,10 +2867,33 @@ export function parentUpdates(userId: string, lang: Lang): ParentUpdate[] {
       studentId: m.studentId,
       kind: 'message' as const,
       text: m.finalText!,
-      from: lang === 'ar' ? 'مركز النور' : 'Al Nour Centre',
+      from: tx(world().centre.name, lang)!,
       at: m.approvedAt!,
     }))
     .sort((a, b) => b.at.localeCompare(a.at));
+}
+
+/** CF-39: the parent's children's follow-up groups at the centre (P09 when the marketplace is off). */
+export function parentCentreGroups(userId: string, lang: Lang) {
+  const w = world();
+  const mine = new Set(w.guardians.filter((g) => g.userId === userId).map((g) => g.id));
+  return w.students
+    .filter((s) => mine.has(s.guardianId))
+    .flatMap((s) =>
+      groupsOfStudent(s.id).map((gid) => {
+        const g = groupOf(gid)!;
+        return {
+          childId: s.id,
+          groupId: gid,
+          groupName: tx(g.name, lang)!,
+          centreName: tx(w.centre.name, lang)!,
+          teacher: person(g.teacherUserId, lang),
+          weekdays: g.weekdays,
+          startTime: g.startTime,
+          endTime: g.endTime,
+        };
+      }),
+    );
 }
 
 /** FUP-MSG-02 AC3: an approved message is locked; changing it starts a NEW draft. */
