@@ -302,9 +302,15 @@ importers:
       expo:
         specifier: ^57.0.26
         version: 57.0.26(@babel/core@7.29.7(supports-color@8.1.1))(@expo/metro-runtime@57.0.16)(expo-router@57.0.24)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-worklets@0.13.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.4)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1))(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.4)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1)(typescript@5.9.3)
+      expo-audio:
+        specifier: ~57.0.5
+        version: 57.0.5(expo-asset@57.0.18(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.4)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1)(typescript@5.9.3))(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.4)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)
       expo-constants:
         specifier: ^57.0.20
         version: 57.0.20(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.4)(react@19.2.3)(supports-color@8.1.1))(supports-color@8.1.1)
+      expo-file-system:
+        specifier: ~57.0.7
+        version: 57.0.7(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.4)(react@19.2.3)(supports-color@8.1.1))
       expo-font:
         specifier: ^57.0.4
         version: 57.0.4(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.4)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)
@@ -345,9 +351,15 @@ importers:
       '@link/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@playwright/test':
+        specifier: ^1.63.0
+        version: 1.63.0
       '@types/react':
         specifier: 19.2.4
         version: 19.2.4
+      vitest:
+        specifier: ^5.0.3
+        version: 5.0.3(@types/node@26.6.4)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   apps/web:
     dependencies:
@@ -377,7 +389,7 @@ importers:
         version: 1.49.0(@types/react@19.2.4)(react@19.2.3)
       msw:
         specifier: ^3.0.1
-        version: 3.0.1(@types/node@26.6.4)(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0))
+        version: 3.0.1(@types/node@26.6.4)(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
       next:
         specifier: ^16.3.8
         version: 16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.63.0)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -458,7 +470,7 @@ importers:
         version: link:../config
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@types/node@26.6.4)(msw@3.0.1(@types/node@26.6.4)(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0))
+        version: 5.0.3(@types/node@26.6.4)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/mocks:
     dependencies:
@@ -550,10 +562,10 @@ importers:
         version: 10.6.1(storybook@10.6.1(@types/react@19.2.4)(prettier@3.9.9)(react@19.2.3))
       '@storybook/react-vite':
         specifier: ^10.6.1
-        version: 10.6.1(@types/react-dom@19.3.0(@types/react@19.2.4))(@types/react@19.2.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(storybook@10.6.1(@types/react@19.2.4)(prettier@3.9.9)(react@19.2.3))(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+        version: 10.6.1(@types/react-dom@19.3.0(@types/react@19.2.4))(@types/react@19.2.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(storybook@10.6.1(@types/react@19.2.4)(prettier@3.9.9)(react@19.2.3))(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
       '@tailwindcss/vite':
         specifier: ^4.3.3
-        version: 4.3.3(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+        version: 4.3.3(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
       '@types/react':
         specifier: 19.2.4
         version: 19.2.4
@@ -568,10 +580,13 @@ importers:
         version: 4.3.3
       vite:
         specifier: ^8.3.2
-        version: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+        version: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   packages/ui-native:
     dependencies:
+      '@link/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@link/tokens':
         specifier: workspace:*
         version: link:../tokens
@@ -3552,6 +3567,14 @@ packages:
     resolution: {integrity: sha512-zDIQkUr0NM2S7YRj98Zohf/OBuM1q0o4ctxLz1C1oe4/33lHNLjp+2v3qUtBWVwn0zKka8UGADmS8M+83Wi6pw==}
     peerDependencies:
       expo: '*'
+      react: 19.2.3
+      react-native: '*'
+
+  expo-audio@57.0.5:
+    resolution: {integrity: sha512-39fX5JC5zDvELB4/eDJPj2XAYRN0W9+K2DfDWm5N3aC5WZ7HRrhupWtT6hbH09NlfYpsRSqYOwEZnocFM42ynQ==}
+    peerDependencies:
+      expo: '*'
+      expo-asset: '*'
       react: 19.2.3
       react-native: '*'
 
@@ -6912,11 +6935,11 @@ snapshots:
       '@types/yargs': 17.0.35
       chalk: 4.1.2
 
-  '@joshwooding/vite-plugin-react-docgen-typescript@0.7.0(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))':
+  '@joshwooding/vite-plugin-react-docgen-typescript@0.7.0(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))':
     dependencies:
       glob: 13.0.6
       react-docgen-typescript: 2.4.0(typescript@5.9.3)
-      vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+      vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     optionalDependencies:
       typescript: 5.9.3
 
@@ -7662,11 +7685,11 @@ snapshots:
       axe-core: 4.13.0
       storybook: 10.6.1(@types/react@19.2.4)(prettier@3.9.9)(react@19.2.3)
 
-  '@storybook/builder-vite@10.6.1(storybook@10.6.1(@types/react@19.2.4)(prettier@3.9.9)(react@19.2.3))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))':
+  '@storybook/builder-vite@10.6.1(storybook@10.6.1(@types/react@19.2.4)(prettier@3.9.9)(react@19.2.3))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))':
     dependencies:
       storybook: 10.6.1(@types/react@19.2.4)(prettier@3.9.9)(react@19.2.3)
       ts-dedent: 2.3.0
-      vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+      vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   '@storybook/global@5.0.0': {}
 
@@ -7683,11 +7706,11 @@ snapshots:
       '@types/react': 19.2.4
       '@types/react-dom': 19.3.0(@types/react@19.2.4)
 
-  '@storybook/react-vite@10.6.1(@types/react-dom@19.3.0(@types/react@19.2.4))(@types/react@19.2.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(storybook@10.6.1(@types/react@19.2.4)(prettier@3.9.9)(react@19.2.3))(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))':
+  '@storybook/react-vite@10.6.1(@types/react-dom@19.3.0(@types/react@19.2.4))(@types/react@19.2.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(storybook@10.6.1(@types/react@19.2.4)(prettier@3.9.9)(react@19.2.3))(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))':
     dependencies:
-      '@joshwooding/vite-plugin-react-docgen-typescript': 0.7.0(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      '@joshwooding/vite-plugin-react-docgen-typescript': 0.7.0(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
       '@rollup/pluginutils': 5.4.0
-      '@storybook/builder-vite': 10.6.1(storybook@10.6.1(@types/react@19.2.4)(prettier@3.9.9)(react@19.2.3))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      '@storybook/builder-vite': 10.6.1(storybook@10.6.1(@types/react@19.2.4)(prettier@3.9.9)(react@19.2.3))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
       '@storybook/react': 10.6.1(@types/react-dom@19.3.0(@types/react@19.2.4))(@types/react@19.2.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(storybook@10.6.1(@types/react@19.2.4)(prettier@3.9.9)(react@19.2.3))(supports-color@8.1.1)(typescript@5.9.3)
       empathic: 2.1.0
       magic-string: 1.4.2
@@ -7697,7 +7720,7 @@ snapshots:
       resolve: 1.22.12
       storybook: 10.6.1(@types/react@19.2.4)(prettier@3.9.9)(react@19.2.3)
       tsconfig-paths: 4.2.0
-      vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+      vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     optionalDependencies:
       typescript: 5.9.3
     transitivePeerDependencies:
@@ -7795,12 +7818,12 @@ snapshots:
       postcss: 8.5.28
       tailwindcss: 4.3.3
 
-  '@tailwindcss/vite@4.3.3(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))':
+  '@tailwindcss/vite@4.3.3(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))':
     dependencies:
       '@tailwindcss/node': 4.3.3
       '@tailwindcss/oxide': 4.3.3
       tailwindcss: 4.3.3
-      vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+      vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   '@tanstack/query-core@5.104.0': {}
 
@@ -8059,15 +8082,14 @@ snapshots:
       msw: 3.0.1(@types/node@24.19.1)(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
       vite: 8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
-  '@vitest/mocker@5.0.3(msw@3.0.1(@types/node@26.6.4)(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0))':
+  '@vitest/mocker@5.0.3(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.3
       estree-walker: 3.0.3
       magic-string: 1.4.2
     optionalDependencies:
-      msw: 3.0.1(@types/node@26.6.4)(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0))
-      vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+      vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
@@ -8742,6 +8764,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
       - typescript
+
+  expo-audio@57.0.5(expo-asset@57.0.18(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.4)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1)(typescript@5.9.3))(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.4)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3):
+    dependencies:
+      expo: 57.0.26(@babel/core@7.29.7(supports-color@8.1.1))(@expo/metro-runtime@57.0.16)(expo-router@57.0.24)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-worklets@0.13.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.4)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1))(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.4)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1)(typescript@5.9.3)
+      expo-asset: 57.0.18(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.4)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1)(typescript@5.9.3)
+      react: 19.2.3
+      react-native: 0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.4)(react@19.2.3)(supports-color@8.1.1)
 
   expo-constants@57.0.20(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.4)(react@19.2.3)(supports-color@8.1.1))(supports-color@8.1.1):
     dependencies:
@@ -9792,7 +9821,7 @@ snapshots:
       - '@types/node'
       - supports-color
 
-  msw@3.0.1(@types/node@26.6.4)(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)):
+  msw@3.0.1(@types/node@26.6.4)(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:
       '@inquirer/confirm': 6.3.2(@types/node@26.6.4)
       '@msw/url': 0.1.2
@@ -9808,7 +9837,7 @@ snapshots:
       yargs: 18.2.0
     optionalDependencies:
       typescript: 5.9.3
-      vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+      vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
       - '@types/node'
       - supports-color
@@ -10865,7 +10894,7 @@ snapshots:
       tsx: 4.23.15
       yaml: 2.9.1
 
-  vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1):
+  vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -10878,6 +10907,7 @@ snapshots:
       fsevents: 2.3.3
       jiti: 2.7.0
       terser: 5.51.2
+      tsx: 4.23.15
       yaml: 2.9.1
 
   vitest@5.0.3(@types/node@24.19.1)(msw@3.0.1(@types/node@24.19.1)(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)):
@@ -10901,10 +10931,10 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vitest@5.0.3(@types/node@26.6.4)(msw@3.0.1(@types/node@26.6.4)(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)):
+  vitest@5.0.3(@types/node@26.6.4)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.3(msw@3.0.1(@types/node@26.6.4)(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0))
+      '@vitest/mocker': 5.0.3(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
       chai: 6.3.0
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -10915,7 +10945,7 @@ snapshots:
       tinybench: 6.2.0
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+      vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       why-is-node-running: 3.2.1
     optionalDependencies:
       '@types/node': 26.6.4

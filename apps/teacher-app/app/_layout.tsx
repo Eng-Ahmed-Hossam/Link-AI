@@ -17,6 +17,9 @@ import { startMocks } from '@link/mocks/native';
 import { setApiBaseUrl } from '@link/api-client';
 import { LocaleProvider, useLocale } from '@/locale';
 import { API_BASE_URL, API_MODE } from '@/api-mode';
+import { SessionProvider } from '@/session';
+import { DemoControls } from '@/demo';
+import { startQueueWorker } from '@/offline/voiceQueue';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 const USE_IN_APP_MOCKS = API_MODE === 'mock';
@@ -29,8 +32,11 @@ function Shell() {
       style={{ flex: 1, backgroundColor: color.bg, direction: locale === 'ar' ? 'rtl' : 'ltr' }}
     >
       <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.bg } }} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.bg } }}>
+        <Stack.Screen name="student/[id]/note" options={{ presentation: 'transparentModal' }} />
+      </Stack>
       {API_MODE !== 'live' ? <MockBadge locale={locale} label={t('common.mockBadge')} /> : null}
+      <DemoControls />
     </View>
   );
 }
@@ -57,6 +63,11 @@ export default function RootLayout() {
     setMocksReady(true);
   }, []);
 
+  // The offline voice queue uploads on launch and whenever the server is reachable again.
+  useEffect(() => {
+    if (mocksReady) startQueueWorker();
+  }, [mocksReady]);
+
   // Keep RTL on for first paint when the default (Arabic) is active.
   void I18nManager;
 
@@ -65,7 +76,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <LocaleProvider>
-          <Shell />
+          <SessionProvider>
+            <Shell />
+          </SessionProvider>
         </LocaleProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

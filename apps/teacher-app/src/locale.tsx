@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { DevSettings, I18nManager, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setApiLocale } from '@link/api-client';
 import {
   createTranslator,
   defaultLocale,
@@ -64,6 +65,9 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     setLocaleState(l);
     AsyncStorage.setItem(KEY, l).catch(() => {});
   }, []);
+
+  // API calls carry the UI language (Accept-Language, 07 §1): names and labels come back localised.
+  setApiLocale(locale);
 
   const value = useMemo(
     () => ({ locale, t: createTranslator(locale), setLocale }),

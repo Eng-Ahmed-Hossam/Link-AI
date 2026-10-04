@@ -7,9 +7,16 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "plugins": ["expo-router", "expo-font"],
-    "experiments": { "typedRoutes": true },
-    "android": { "package": "app.link.teacher" },
-    "web": { "bundler": "metro", "output": "single" }
+    "plugins": ["expo-router", "expo-font", "expo-audio"],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "android": {
+      "package": "app.link.teacher"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    }
   }
 }
