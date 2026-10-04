@@ -351,6 +351,31 @@ Centre and teacher profiles add `ratingDistribution`: published public reviews p
 ```
 `canReview` is computed per enrolment for the pair (teacher, centre): P10 posts one `POST /v1/reviews` per rated target, each with its own text (CF-27), and `409 already_reviewed` covers a target already reviewed this term.
 
+## 2b. Proposed — from frontend Batch 5 (Phase 2, teacher app)
+
+**Status: proposed, mock only.** §3 lists Phase 2 endpoints in outline. The teacher app (T01–T13, V01–V02) is built on the shapes below; the draft types are in `packages/api-client/src/followup.ts` (all `PLACEHOLDER`) and the mock implementation in `packages/mocks/src/followup/`. Nothing is in OpenAPI yet.
+
+| Method | Path | Body → response (draft types) | Rules the mock enforces |
+|---|---|---|---|
+| GET | `/v1/teachers/me/today` | → `TeacherToday` (`nextSession`, `reminders[]` with source record, `recordDue`, `needsYou[]`) | Reminders only from confirmed records (FUP-REC-01) |
+| GET | `/v1/teachers/me/groups` | → `TeacherGroup[]` (marketplace fields + `followup` or null) | CF-30 |
+| GET | `/v1/groups/{id}/roster` | → `RosterRow[]` (last 4 sessions, latest score, notes, open flags) | `none` = no confirmed record (BR-APR-07) |
+| GET / POST | `/v1/groups/{id}/session-records` | POST `{groupSessionId}` → `SessionRecord` (201 new draft, 200 existing) | Only sessions that took place or today |
+| GET / PATCH | `/v1/session-records/{id}` | PATCH `SaveRecordBody` → `SessionRecord` | Draft only (409 `record_confirmed`); 422 `score_out_of_range` (block, never cap), `score_for_absent`, `assessment_required` |
+| POST | `/v1/session-records/{id}/confirm` | Idempotency-Key required → `SessionRecord` with `signals[]` | Same key replays; 409 `identity_unresolved`; runs the rules (FUP-RUL-03) |
+| POST | `/v1/record-entries/{id}/corrections` | `CorrectionBody` → `Correction` | Confirmed records only; reason required; re-runs rules, `resolved_by_correction` |
+| POST | `/v1/voice-notes` | `{sessionRecordId, durationS}` + Idempotency-Key → `VoiceNote` (`uploadUrl`) | Key = the device's queue id: a retry never creates a second note |
+| PUT | `uploadUrl` (signed) | audio bytes | — |
+| POST | `/v1/voice-notes/{id}/uploaded` | → `VoiceNote` | — |
+| GET | `/v1/voice-notes/{id}/extraction` | → 202 `{status}` while processing, then `VoiceExtraction` | 503 `stt_unavailable` (FUP-VOI-06) |
+| POST | `/v1/voice-extractions/{id}/resolve-identity` | `{itemId, studentId}` → `VoiceExtraction` | Only a listed candidate (422 `not_a_candidate`) |
+| POST | `/v1/voice-extractions/{id}/discard-item` | `{itemId}` → `VoiceExtraction` | A discarded item is never saved and no longer blocks confirm |
+| GET | `/v1/students/{id}` | → `StudentDetail` | Trends per assessment series only (FUP-REC-11) |
+| POST | `/v1/students/{id}/notes` | `{groupId, tag, body}` → `Note` | ≤ 500 characters; internal |
+| POST | `/v1/notes/{id}/suggest-for-parent` | → `Note` (`suggested_for_parent`) | Goes to staff; no message is created |
+
+Owner-side endpoints (cases, messages, demo controls) are listed with Batch 6.
+
 ## 3. Later phases (outline only)
 
 | Area | Endpoints (Phase) |

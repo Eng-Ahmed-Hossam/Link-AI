@@ -1,0 +1,74 @@
+{
+  "note": "GET http://localhost:4010/__demo/state/ar right after the teacher confirmed the record (sample data).",
+  "demo": {
+    "offline": false,
+    "phase2": true,
+    "sttDown": false,
+    "confirmFault": null
+  },
+  "counters": {
+    "confirmCalls": 1,
+    "confirmCommits": 1
+  },
+  "records": {
+    "confirmed": 9,
+    "drafts": []
+  },
+  "signals": [
+    {
+      "id": "sig-101",
+      "rule": "consecutive_absences",
+      "ruleVersion": 1,
+      "student": "نور خالد",
+      "status": "case_opened",
+      "caseId": "case-102",
+      "explanation": "غابت عن حصتين متتاليتين: ٢٦ سبتمبر و٣٠ سبتمبر",
+      "evidence": [
+        {
+          "recordId": "rec-2026-09-26",
+          "sessionDate": "2026-09-26"
+        },
+        {
+          "recordId": "rec-2026-09-30",
+          "sessionDate": "2026-09-30"
+        }
+      ]
+    },
+    {
+      "id": "sig-109",
+      "rule": "consecutive_absences",
+      "ruleVersion": 1,
+      "student": "مريم حسن",
+      "status": "case_opened",
+      "caseId": "case-110",
+      "explanation": "غابت عن حصتين متتاليتين: ٣٠ سبتمبر و٣ أكتوبر",
+      "evidence": [
+        {
+          "recordId": "rec-2026-09-30",
+          "sessionDate": "2026-09-30"
+        },
+        {
+          "recordId": "rec-2026-10-03",
+          "sessionDate": "2026-10-03"
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "case-102",
+      "student": "نور خالد",
+      "assignee": "دينا عادل",
+      "status": "open",
+      "dueOn": "2026-09-30"
+    },
+    {
+      "id": "case-110",
+      "student": "مريم حسن",
+      "assignee": "دينا عادل",
+      "status": "open",
+      "dueOn": "2026-10-04"
+    }
+  ],
+  "messages": []
+}

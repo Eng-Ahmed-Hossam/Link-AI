@@ -2,6 +2,15 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-04 — Frontend Batch 5 (teacher app, Phase 2)
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | 13 | CF-29 (teacher tabs — open question), CF-30 (one My groups screen), CF-31 (V01 cancel = slide toward the start edge), CF-32 (no live transcript in V01). | Found while building T01–T13, V01–V02 |
+| 2 | 07 | New §2b "Proposed — from frontend Batch 5": the Phase 2 teacher endpoints and draft shapes the app uses (mock only). | Batch 5 |
+| 3 | frontend/screen-log.md | Batch 5 rows. | Batch 5 |
+| 4 | frontend/walkthroughs/batch-5 | Arabic walkthrough and the mock-server proof of `consecutive_absences`. | Batch 5 report |
+
 ## 2026-10-03 — Shared demo mock server
 
 | # | File | What changed | Why |

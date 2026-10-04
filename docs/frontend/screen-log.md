@@ -20,3 +20,27 @@ All Batch 1 screens run on mock data (`packages/mocks`); none calls core-api yet
 | P10 Leave feedback | `/{lang}/enrolments/[id]/feedback` | built | MKT-REV-01 | Verified parent after the first session only; CF-27 (one text box for two reviews) | Shared text sent with each review (CF-27) | `P10-feedback`, `P10-thanks`, `P10-not-yet` |
 | Mock provider page | `/{lang}/mock-checkout/[paymentId]` | built (dev only) | BR-MNY-06, BR-MNY-12 | Not a Figma screen: stands in for the provider's hosted page; no card fields | Replaced by the provider (or fake-pay) when live | `P08-mock-provider` |
 | Account tab | `/{lang}/account` | needs design review | MKT-ACC-03, MKT-ACC-04 (UI) | No Figma frame: language switch + sign out | Profile, children management, consents | — |
+
+## Batch 5 · Teacher app, Phase 2 (follow-up and voice)
+
+Expo (React Native) app, tested on Expo web against the shared mock server (`pnpm demo`). Phase 2: every screen below renders only with the Phase 2 flag (`followup.records`, `followup.voice_notes`; Demo controls switch them together). Data: scenario `demo-followup` (docs/14 §5.1). Screens tested with Playwright on Expo web (`apps/teacher-app/e2e`), pure logic with Vitest; **not yet run on Android** (no SDK on the build machine).
+
+| Screen | Route | Status | Stories covered | Differs from Figma (CF) | Placeholders | Screenshots |
+|---|---|---|---|---|---|---|
+| T01 / AR01 Today | `/today` (tab) | built | FUP-REC-01 | "Record due" card is the latest session that has taken place; drafts on the device are listed under "Needs you"; storage note "not encrypted — placeholder" | Next-session reminders only from `needs_revisit` observations of the last 2 confirmed records (no rule in docs for which observations) | `T01`, `T01-state-offline` |
+| T02 Confirm attendance | `/record/[id]/attendance` | built | FUP-REC-02 | Per-student segmented control (Present · Absent · Late) under the status chip; "Mark remaining present" is an explicit action, never a default | Late minutes optional | `T02` |
+| T03 Scores | `/record/[id]/scores` | built | FUP-REC-03 | Series picker added (FUP-REC-03 AC4; not in Figma); every non-absent student gets a field; absent students show "Absent — no score" | "New series" creates a code from the date | `T03`, `T03-over-max.ar` |
+| T04 Observation | `/record/[id]/observation` | built | FUP-REC-04, FUP-VOI-01 | Typed note = the group's "next time" note; queued voice notes listed with their status | Per-student typed notes go through ✎ (T11) | `T04` |
+| V01 Voice note — recording | `/record/[id]/voice` | built | FUP-VOI-01, FUP-VOI-06 | CF-31 (slide toward the start edge); CF-32 (no live transcript); halo orb at hero size | Microphone permission denied → Settings + "Type the note instead" | `V01`, `V01-recording.ar`, `V01-stt-down.ar` |
+| V02 What the AI understood | `/record/[id]/understood` | built | FUP-VOI-03 | Topic tags and "feeds topic scores" removed (CF-07, Phase 3); "Keep — choose the student before confirming" lets an unclear item reach T05 | Audio replay plays the device copy (the mock server keeps no audio) | `V02` |
+| T07 Check the student | `/record/[id]/identity` | built | FUP-VOI-04 | Candidates as radio cards, none pre-selected; "Skip this item" discards it | — | `T07` |
+| T05 / AR02 Review before saving | `/record/[id]/review` | built | FUP-REC-05 | Shows "not recorded" count and "Missing data is not absence"; open identity items listed with a link to T07 | — | `T05`, `T05-identity-open.ar` |
+| T06 / AR03 Record saved | `/record/[id]/saved` | built | FUP-REC-06 | Lists any follow-up the record raised (rule explanation), with "A flag starts a review…" | — | `T06` |
+| T08 Save failed | `/record/[id]/failed` | built | FUP-REC-07 | Draft summary on screen; survives a restart | — | `T08` |
+| T09 My groups (merged with J05) | `/groups` (tab) | built | FUP-REC-09 AC1 (+ J05 read-only parts) | CF-30 | J05 fee/seat editing is Batch 3 | `T09`, `T09-phase2-off.ar` |
+| T10 / AR04 Group roster | `/group/[id]` | built | FUP-REC-09 AC2 | Last 4 sessions as letters + colour (ح/م/غ/–), never colour alone | — | `T10`, `T10-state-empty` |
+| T11 / AR05 Note sheet | `/student/[id]/note` (modal) | built | FUP-REC-10 | Topic must be picked (no default); visibility as two radio cards | "Hold to speak" for notes not built (one voice fixture in the mock) | `T11` |
+| T12 Student detail | `/student/[id]` | built | FUP-REC-11 | One card per assessment series, text summary before the bars | — | `T12` |
+| T13 Records history | `/group/[id]/history` | built | FUP-REC-08 | Per group (reached from My groups), not a tab (CF-29); "Add a correction" sheet | Corrections for attendance and score only | `T13` |
+
+Full-length screenshots leave out the bottom tab bar (react-native-web cannot keep it at the bottom of a grown page); it is there in the app and in the walkthrough captures.
