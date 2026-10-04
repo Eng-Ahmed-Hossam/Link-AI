@@ -1,5 +1,6 @@
 .env*
 !.env.example
+!apps/pilot/.env.pilot.example
 .turbo
 .next
 .expo
@@ -19,3 +20,14 @@ nohup.out
 
 # Mock server: the presenter flag switches (pnpm demo)
 packages/mocks/.data/
+
+# Concierge pilot (apps/pilot): this laptop's settings, pilot builds, results to review before sharing
+apps/pilot/.env.pilot
+apps/web/.next-pilot/
+apps/teacher-app/dist-pilot/
+docs/pilot/metrics-*
+pilot-deletion-receipt-*.txt
+
+apps/pilot/.e2e-data/
+apps/pilot/.build-check/
+apps/pilot/test-results/

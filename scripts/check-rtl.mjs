@@ -7,6 +7,10 @@ const ROOTS = ['apps', 'packages'];
 const SKIP = new Set([
   'node_modules',
   '.next',
+  '.next-pilot',
+  'dist-pilot',
+  '.e2e-data',
+  'test-results',
   '.turbo',
   'dist',
   'storybook-static',

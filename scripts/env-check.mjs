@@ -11,8 +11,12 @@ import { ROOT, COMPOSE_FILE } from './lib/env.mjs';
 const SKIP_DIRS = new Set([
   'node_modules',
   '.next',
+  '.next-pilot',
   '.turbo',
   'dist',
+  'dist-pilot',
+  '.e2e-data',
+  'test-results',
   '.expo',
   'storybook-static',
   '.venv',

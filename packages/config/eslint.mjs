@@ -8,6 +8,10 @@ export default tseslint.config(
     ignores: [
       '**/node_modules/**',
       '**/.next/**',
+      '**/.next-pilot/**',
+      '**/dist-pilot/**',
+      '**/.e2e-data/**',
+      '**/test-results/**',
       '**/dist/**',
       '**/storybook-static/**',
       '**/.expo/**',
