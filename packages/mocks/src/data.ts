@@ -637,4 +637,20 @@ export const staff: {
     name: { en: 'Dina Adel', ar: 'دينا عادل' },
     title: { en: 'Reception', ar: 'الاستقبال' },
   },
+  {
+    id: 'usr-ahmed',
+    phone: '+201000000005',
+    role: 'teacher',
+    name: { en: 'Mr Ahmed Samy', ar: 'أ. أحمد سامي' },
+    title: { en: 'Teacher', ar: 'معلّم' },
+    teacherId: 'tch-ahmed',
+  },
+  {
+    id: 'usr-nada',
+    phone: '+201000000006',
+    role: 'teacher',
+    name: { en: 'Ms Nada Kamal', ar: 'أ. ندى كمال' },
+    title: { en: 'Teacher', ar: 'معلّمة' },
+    teacherId: 'tch-nada',
+  },
 ];

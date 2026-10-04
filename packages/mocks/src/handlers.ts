@@ -4,6 +4,7 @@ import * as db from './db';
 import * as fx from './data';
 import { authed, langOf, problem, withScenario } from './http';
 import { followupHandlers, demoHandlers } from './followup/handlers';
+import { ownerHandlers } from './followup/owner-handlers';
 
 /** Mock mode accepts this code for every phone number. */
 export const MOCK_OTP = '123456';
@@ -65,7 +66,10 @@ export const handlers = [
       if (!u) return problem(401, 'unauthenticated', 'Sign in to continue.');
       return HttpResponse.json({
         id: u.id,
-        name: u.id === fx.parent.id ? db.parentName(lang) : u.name,
+        name:
+          u.id === fx.parent.id
+            ? db.parentName(lang)
+            : (fx.staff.find((x) => x.id === u.id)?.name[lang] ?? u.name),
         language: lang,
         roles: u.roles,
       });
@@ -307,4 +311,5 @@ export const handlers = [
     return HttpResponse.json({ ok: true });
   }),
   ...followupHandlers,
+  ...ownerHandlers,
 ];

@@ -330,8 +330,13 @@ export const demoHandlers = [
         b.confirmFault === 'after_commit'
       )
         patch.confirmFault = b.confirmFault;
+      if (typeof b.marketplace === 'boolean') patch.marketplace = b.marketplace;
       return fu.setDemo(patch);
     }),
+  ),
+  http.post(
+    '*/__demo/new-day',
+    demoCall(() => fu.simulateNewDay()),
   ),
   http.post(
     '*/__demo/provider',

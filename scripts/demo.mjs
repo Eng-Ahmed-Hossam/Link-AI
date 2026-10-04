@@ -64,10 +64,32 @@ async function waitFor(url, ms = 60_000) {
   throw new Error(`Timed out waiting for ${url}`);
 }
 
-start('mock', ['--filter', '@link/mocks', 'mock:server'], {});
+// Fail fast if another dev server (or an earlier demo) still holds a port.
+const busy = [];
+for (const [name, url] of [
+  ['mock server', `${MOCK}/__demo/state`],
+  ['web', 'http://localhost:3000'],
+  ['teacher app', 'http://localhost:8081'],
+]) {
+  try {
+    await fetch(url, { signal: AbortSignal.timeout(1500) });
+    busy.push(`${name} (${new URL(url).port})`);
+  } catch {
+    /* free */
+  }
+}
+if (busy.length) {
+  console.error(
+    `pnpm demo: already in use: ${busy.join(', ')}. Stop the other dev servers (or an earlier demo) first.`,
+  );
+  process.exit(1);
+}
+
+// First run: the MVP pilot setup (Phase 2 only, CF-29). After that the presenter's switches are
+// kept in packages/mocks/.data/demo-flags.json, so a restart never loses them.
+start('mock', ['--filter', '@link/mocks', 'mock:server'], { DEMO_DEFAULT_FLAGS: 'phase2-only' });
 await waitFor(`${MOCK}/__demo/state`);
 await fetch(`${MOCK}/__demo/reset`, { method: 'POST', body: '{}' });
-await fetch(`${MOCK}/__demo/settings`, { method: 'POST', body: JSON.stringify({ phase2: true }) });
 
 const apiEnv = (prefix) => ({
   [`${prefix}_API_MODE`]: 'mock-server',

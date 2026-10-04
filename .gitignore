@@ -16,3 +16,6 @@ dist
 .ops.log
 .sb.log
 nohup.out
+
+# Mock server: the presenter flag switches (pnpm demo)
+packages/mocks/.data/

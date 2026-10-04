@@ -285,11 +285,15 @@ export const demoReply = {
 };
 
 /** Rules for Al Nour (03 §3, defaults). Only `consecutive_absences` is on. */
-export const rules = [
-  { code: 'consecutive_absences' as const, active: true, params: { n: 2 } },
-  { code: 'score_decline' as const, active: false, params: { k: 2, drop: 10, minScores: 3 } },
-  { code: 'low_participation' as const, active: false, params: { k: 2, m: 3 } },
-  { code: 'repeated_concern' as const, active: false, params: { count: 3, windowDays: 30 } },
+export const rules: {
+  code: 'consecutive_absences' | 'score_decline' | 'low_participation' | 'repeated_concern';
+  active: boolean;
+  params: Record<string, number>;
+}[] = [
+  { code: 'consecutive_absences', active: true, params: { n: 2 } },
+  { code: 'score_decline', active: false, params: { k: 2, drop: 10, minScores: 3 } },
+  { code: 'low_participation', active: false, params: { k: 2, m: 3 } },
+  { code: 'repeated_concern', active: false, params: { count: 3, windowDays: 30 } },
 ];
 /** FUP-CAS-02 AC2: default assignee Reception, due the same day. */
 export const RULE_DEFAULTS = { assigneeUserId: 'usr-reception', dueInDays: 0, version: 1 };

@@ -35,16 +35,26 @@ import type {
   VoiceExtraction,
   VoiceItem,
   VoiceNote,
+  ActivityEvent,
+  ActivityKind,
+  ActivityLog,
+  CentreSessionRow,
+  CentreStudentRow,
+  OwnerToday,
+  ParentUpdate,
+  RuleChangeBody,
+  RuleView,
+  StaffMember,
 } from '@link/api-client';
 import * as mfx from '../data';
-import { MockProblem, sessionsOf, type Lang } from '../db';
+import { MockProblem, groupDto, sessionsOf, type Lang } from '../db';
 import { addDays, cairoToday } from '../time';
 import * as fx from './data';
 
 type Text = string | mfx.L;
 const tx = (v: Text | null, lang: Lang) => (v == null ? null : typeof v === 'string' ? v : v[lang]);
 
-const STORAGE_KEY = 'link.mock.fu.v1';
+const STORAGE_KEY = 'link.mock.fu.v3';
 const STT_DELAY_MS = 1500;
 
 interface Entry {
@@ -158,6 +168,35 @@ export interface DemoState {
   sttDown: boolean;
   /** One-shot fault on the next confirm (T08): fail before the commit, or lose the response after it. */
   confirmFault: 'before_commit' | 'after_commit' | null;
+  /** Phase 1 marketplace screens (owner nav marketplace items, teacher Rooms/Earnings). */
+  marketplace: boolean;
+  /** "Simulate a new day" presses (cases' due dates move one day into the past each time). */
+  dayOffset: number;
+}
+
+/** Rule row (06 §7 rules + rule_versions). A staff change is a proposal until the owner approves it. */
+export interface RuleRow {
+  code: 'consecutive_absences' | 'score_decline' | 'low_participation' | 'repeated_concern';
+  active: boolean;
+  params: Record<string, number>;
+  /** `all` or one group id (FUP-RUL-01 AC2). */
+  scope: string;
+  version: number;
+  history: {
+    version: number;
+    active: boolean;
+    params: Record<string, number>;
+    scope: string;
+    approvedBy: string | null;
+    at: string;
+  }[];
+  proposal: {
+    active: boolean;
+    params: Record<string, number>;
+    scope: string;
+    proposedBy: string;
+    at: string;
+  } | null;
 }
 
 interface FuState {
@@ -174,6 +213,9 @@ interface FuState {
   audit: { id: string; at: string; kind: string; actorId: string | null; text: Text }[];
   counters: { confirmCalls: number; confirmCommits: number };
   demo: DemoState;
+  rules: RuleRow[];
+  /** Pending staff invites (A16); part of the scenario, so Reset clears them. */
+  invites: { phone: string; role: StaffMember['role']; at: string }[];
   seq: number;
 }
 
@@ -247,8 +289,8 @@ function fmtDate(date: string, lang: Lang) {
 const maskPhone = (e164: string | null) =>
   e164 ? `${e164.slice(0, 3)} ${e164.slice(3, 5)} •••• ${e164.slice(-4)}` : '—';
 
-function audit(kind: string, actorId: string | null, text: Text) {
-  load().audit.push({ id: nextId('aud'), at: new Date().toISOString(), kind, actorId, text });
+function audit(kind: string, actorId: string | null, text: Text, at = new Date().toISOString()) {
+  load().audit.push({ id: nextId('aud'), at, kind, actorId, text });
 }
 
 // ── seed ───────────────────────────────────────────────────────────────────────
@@ -284,7 +326,33 @@ function fresh(): FuState {
     idem: {},
     audit: [],
     counters: { confirmCalls: 0, confirmCommits: 0 },
-    demo: { offline: false, phase2: false, sttDown: false, confirmFault: null },
+    demo: {
+      offline: false,
+      phase2: false,
+      marketplace: true,
+      sttDown: false,
+      confirmFault: null,
+      dayOffset: 0,
+    },
+    invites: [],
+    rules: fx.rules.map((r) => ({
+      code: r.code,
+      active: r.active,
+      params: { ...r.params },
+      scope: 'all',
+      version: 1,
+      history: [
+        {
+          version: 1,
+          active: r.active,
+          params: { ...r.params },
+          scope: 'all',
+          approvedBy: 'usr-owner',
+          at: '2026-09-01T08:00:00.000Z',
+        },
+      ],
+      proposal: null,
+    })),
     seq: 100,
   };
   const past = pastSessions();
@@ -295,8 +363,18 @@ function fresh(): FuState {
   for (const s of before.slice(fx.pastRecords.length).reverse()) seedRecord(s, {});
   for (const { p, s } of [...seeds].reverse()) if (!p.missing) seedRecord(s!, p);
   // Run the rules over the history in order, as the real system would have.
-  for (const r of [...state.records].sort((a, b) => a.date.localeCompare(b.date)))
+  for (const r of [...state.records].sort((a, b) => a.date.localeCompare(b.date))) {
+    audit(
+      'record.confirmed',
+      fx.DEMO_TEACHER_USER,
+      {
+        en: `Session record confirmed • ${fx.groupName.en} (${fmtDate(r.date, 'en')})`,
+        ar: `تم تأكيد سجل الحصة • ${fx.groupName.ar} (${fmtDate(r.date, 'ar')})`,
+      },
+      r.confirmedAt!,
+    );
     for (const st of fx.roster) evaluate(st.id, r.date, r.confirmedAt!);
+  }
   // Omar's correction on the unit test (FUP-REC-08).
   const c = fx.omarCorrection;
   const target = seeds[c.recordIndex]?.s;
@@ -316,6 +394,15 @@ function fresh(): FuState {
       at: new Date(new Date(r.confirmedAt!).getTime() + 86_400_000).toISOString(),
     });
     e.score = Number(c.newValue);
+    audit(
+      'record.corrected',
+      fx.DEMO_TEACHER_USER,
+      {
+        en: `Correction: Omar Ali score 21 → 12 (typing error) • original kept`,
+        ar: `تصحيح: درجة عمر علي ٢١ ← ١٢ (خطأ في الكتابة) • الأصل محفوظ`,
+      },
+      new Date(new Date(r.confirmedAt!).getTime() + 86_400_000).toISOString(),
+    );
   }
   return state;
 }
@@ -369,7 +456,15 @@ export function resetFollowupDb() {
   const keep = state?.demo;
   state = fresh();
   // A reset keeps the demo switches the presenter set, except one-shot faults and offline.
-  if (keep) state.demo = { ...keep, offline: false, confirmFault: null, sttDown: false };
+  if (keep)
+    state.demo = {
+      ...state.demo,
+      ...keep,
+      offline: false,
+      confirmFault: null,
+      sttDown: false,
+      dayOffset: 0,
+    };
   save();
 }
 
@@ -381,9 +476,9 @@ function evaluate(
   cause?: { correctionOf: string },
 ) {
   const s = load();
-  const rule = fx.rules.find((r) => r.code === 'consecutive_absences')!;
-  if (!rule.active) return;
-  const n = rule.params.n;
+  const rule = s.rules.find((r) => r.code === 'consecutive_absences')!;
+  if (!rule.active || (rule.scope !== 'all' && rule.scope !== G)) return;
+  const n = rule.params.n ?? 2;
   const sched = pastSessions()
     .filter((x) => x.date <= uptoDate)
     .slice(-n);
@@ -457,10 +552,15 @@ function evaluate(
     sig.caseId = c.id;
     s.signals.push(sig);
     s.cases.push(c);
-    audit('signal.raised', null, {
-      en: `Flag raised: ${studentFx(studentId)!.name.en} — consecutive absences`,
-      ar: `تنبيه جديد: ${studentFx(studentId)!.name.ar} — غياب متتالي`,
-    });
+    audit(
+      'signal.raised',
+      null,
+      {
+        en: `Rule matched: 2 consecutive absences • ${studentFx(studentId)!.name.en} → follow-up opened, assigned to Reception`,
+        ar: `تطابقت قاعدة: غياب حصتين متتاليتين • ${studentFx(studentId)!.name.ar} ← فُتحت متابعة وأُسندت للاستقبال`,
+      },
+      at,
+    );
   } else if (open && cause && open.evidence.includes(cause.correctionOf)) {
     // FUP-REC-08 AC3: a flag that no longer applies is kept with a note, never deleted.
     open.status = 'resolved_by_correction';
@@ -555,6 +655,7 @@ function recordDto(r: Rec, lang: Lang): SessionRecord {
     groupObservation: tx(r.groupObservation, lang),
     confirmedBy: r.confirmedBy ? person(r.confirmedBy, lang) : null,
     confirmedAt: r.confirmedAt,
+    createdAt: r.createdAt,
     corrections: s.corrections
       .filter((c) => c.recordId === r.id)
       .map((c) => correctionDto(c, lang)),
@@ -964,8 +1065,8 @@ export function openRecord(userId: string, groupId: string, sessionId: string, l
   };
   load().records.push(r);
   audit('record.draft_created', userId, {
-    en: `Draft record created for ${sess.date}`,
-    ar: `تم إنشاء مسودة سجل ${sess.date}`,
+    en: `Draft record created • ${fx.groupName.en} (${fmtDate(sess.date, 'en')})`,
+    ar: `تم إنشاء مسودة سجل • ${fx.groupName.ar} (${fmtDate(sess.date, 'ar')})`,
   });
   save();
   return { created: true, record: recordDto(r, lang) };
@@ -1103,8 +1204,8 @@ export function confirmRecord(userId: string, id: string, key: string | null, la
   s.counters.confirmCommits++;
   for (const v of s.voice) if (v.recordId === id) v.extraction.status = 'accepted';
   audit('record.confirmed', userId, {
-    en: `Record confirmed for ${r.date}`,
-    ar: `تم تأكيد سجل ${r.date}`,
+    en: `Session record confirmed • ${fx.groupName.en} (${fmtDate(r.date, 'en')})`,
+    ar: `تم تأكيد سجل الحصة • ${fx.groupName.ar} (${fmtDate(r.date, 'ar')})`,
   });
   // record.confirmed → the followup module evaluates the rules (FUP-RUL-03).
   for (const st of fx.roster) evaluate(st.id, r.date, at);
@@ -1416,6 +1517,10 @@ export function dismissCase(userId: string, id: string, reason: string, lang: La
     text: reason.trim(),
     actorId: userId,
   });
+  audit('case.dismissed', userId, {
+    en: `Follow-up dismissed: "${reason.trim()}" — stays in history, can be reopened`,
+    ar: `تم إغلاق المتابعة: "${reason.trim()}" — تبقى في السجل ويمكن إعادة فتحها`,
+  });
   save();
   return caseDto(c, lang);
 }
@@ -1431,6 +1536,7 @@ export function reopenCase(userId: string, id: string, lang: Lang) {
     text: { en: 'Reopened', ar: 'أعيد فتحها' },
     actorId: userId,
   });
+  audit('case.reopened', userId, { en: 'Follow-up reopened', ar: 'أعيد فتح متابعة' });
   save();
   return caseDto(c, lang);
 }
@@ -1490,6 +1596,10 @@ export function createDraft(
     kind: 'message_drafted',
     text: { en: 'Parent message drafted (not sent)', ar: 'تمت صياغة رسالة لوليّ الأمر (لم تُرسل)' },
     actorId: userId,
+  });
+  audit('message.drafted', userId, {
+    en: `Parent message drafted for ${studentFx(c.studentId)!.name.en} (not sent)`,
+    ar: `صياغة رسالة لوليّ أمر ${studentFx(c.studentId)!.name.ar} (لم تُرسل)`,
   });
   save();
   return messageDto(m, lang);
@@ -1603,12 +1713,51 @@ export function approveMessage(
 
 // ── demo controls (dev only) ───────────────────────────────────────────────────
 export const demoState = () => load().demo;
+/** The mock server persists the presenter's switches (flags) across restarts (Node only). */
+let demoListener: ((d: DemoState) => void) | null = null;
+export const onDemoChange = (fn: (d: DemoState) => void) => {
+  demoListener = fn;
+};
 export function setDemo(patch: Partial<DemoState>) {
   Object.assign(load().demo, patch);
   save();
+  demoListener?.(load().demo);
   return load().demo;
 }
 
+/**
+ * "Simulate a new day": a day passes for the follow-ups — every open case's due date moves one day
+ * into the past, so a case due today becomes overdue (FUP-CAS-05) and A01 can show it.
+ */
+export function simulateNewDay() {
+  const s = load();
+  for (const c of s.cases)
+    if (c.status !== 'resolved' && c.status !== 'dismissed') c.dueOn = addDays(c.dueOn, -1);
+  s.demo.dayOffset += 1;
+  audit('demo.new_day', null, {
+    en: 'Demo: a new day (due dates moved one day back)',
+    ar: 'عرض تجريبي: يوم جديد (تواريخ الاستحقاق رجعت يومًا)',
+  });
+  save();
+  demoListener?.(s.demo);
+  return {
+    dayOffset: s.demo.dayOffset,
+    overdue: s.cases.filter(
+      (c) =>
+        !['resolved', 'dismissed'].includes(c.status) &&
+        c.dueOn < cairoToday() &&
+        c.attempts.length === 0,
+    ).length,
+  };
+}
+
+const ST_AR: Partial<Record<DeliveryStatus, string>> = {
+  queued: 'في قائمة الإرسال',
+  sent: 'أُرسلت',
+  delivered: 'وصلت',
+  read: 'قُرئت',
+  failed: 'فشل الإرسال',
+};
 /** Mock provider event: Queued → Sent → Delivered, or → Failed (BR-APR-11). */
 export function providerEvent(outcome: 'advance' | 'fail', messageId?: string) {
   const s = load();
@@ -1626,6 +1775,15 @@ export function providerEvent(outcome: 'advance' | 'fail', messageId?: string) {
   else if (m.status === 'sent') m.status = 'delivered';
   else throw new MockProblem(409, 'not_in_flight', 'This message is not in flight.');
   m.history.push({ status: m.status, at });
+  audit(
+    'message.status',
+    null,
+    {
+      en: `Provider reported: ${m.status} (${studentFx(m.studentId)!.name.en})`,
+      ar: `أبلغ المزوّد: ${ST_AR[m.status] ?? m.status} (${studentFx(m.studentId)!.name.ar})`,
+    },
+    at,
+  );
   save();
   return { id: m.id, status: m.status };
 }
@@ -1701,3 +1859,418 @@ export function guardianOf(studentId: string, lang: Lang) {
 }
 
 export { RULE_TEXT };
+
+// ── owner web (Batch 6) ────────────────────────────────────────────────────────
+const isOwner = (userId: string) => userId === 'usr-owner';
+const teacherOf = (lang: Lang) => person(fx.DEMO_TEACHER_USER, lang);
+const OPEN_CASE = (c: CaseRow) => c.status !== 'resolved' && c.status !== 'dismissed';
+const isOverdue = (c: CaseRow) => OPEN_CASE(c) && c.dueOn < cairoToday() && c.attempts.length === 0;
+
+/** A01 Today (FUP-DSH-01). "Eligible" = sessions that took place in the last 2 weeks. */
+export function ownerToday(userId: string, lang: Lang): OwnerToday {
+  requireStaff(userId);
+  const s = load();
+  const today = cairoToday();
+  const eligible = pastSessions().filter((p) => p.date >= addDays(today, -14));
+  const confirmed = eligible.filter((p) => recordFor(p.id)?.status === 'confirmed').length;
+  const open = s.cases.filter(OPEN_CASE);
+  const overdue = open.filter(isOverdue);
+  const owners = [...new Set(overdue.map((c) => c.assigneeId))].map((id) => person(id, lang));
+  return {
+    date: today,
+    dueToday: open.filter((c) => c.dueOn <= today).length,
+    overdue: { count: overdue.length, owners },
+    missingRecords: { missing: eligible.length - confirmed, eligible: eligible.length },
+    recordsComplete: { confirmed, eligible: eligible.length },
+    followUpToday: open
+      .filter((c) => c.dueOn <= today || c.status === 'open')
+      .sort((a, b) => a.dueOn.localeCompare(b.dueOn))
+      .map((c) => caseDto(c, lang)),
+    keepComplete: eligible
+      .filter((p) => recordFor(p.id)?.status !== 'confirmed')
+      .reverse()
+      .map((p) => ({
+        groupId: G,
+        groupName: fx.groupName[lang],
+        teacher: teacherOf(lang),
+        sessionDate: p.date,
+        startsAt: p.startsAt,
+        status: recordFor(p.id) ? ('draft' as const) : ('missing' as const),
+      })),
+  };
+}
+
+/** A13 Students (FUP-DSH-02). */
+export function centreStudents(userId: string, lang: Lang): CentreStudentRow[] {
+  requireStaff(userId);
+  const s = load();
+  return fx.roster.map((st) => {
+    const c = [...s.cases].reverse().find((x) => x.studentId === st.id && OPEN_CASE(x));
+    const notes = notesOf(st.id, lang);
+    const g = guardianFx(st.guardianId);
+    const latest = latestScore(st.id, lang);
+    return {
+      student: person(st.id, lang),
+      group: { id: G, name: fx.groupName[lang] },
+      lastSessions: lastFour(st.id),
+      latestScore: latest ? { score: latest.score, maxScore: latest.maxScore } : null,
+      followUp: c ? { caseId: c.id, status: c.status, overdue: isOverdue(c) } : null,
+      latestNote: notes[0]
+        ? { body: notes[0].body, author: notes[0].author, at: notes[0].at }
+        : null,
+      guardian: g.phone
+        ? {
+            status: 'verified' as const,
+            name: g.id === fx.genericGuardian.id ? null : g.name[lang],
+          }
+        : { status: 'missing_phone' as const, name: g.name[lang] },
+    };
+  });
+}
+
+/** A05 Sessions (FUP-REC-12 AC1): the last 2 weeks of the follow-up groups. */
+export function centreSessions(userId: string, lang: Lang): CentreSessionRow[] {
+  requireStaff(userId);
+  const today = cairoToday();
+  return pastSessions()
+    .filter((p) => p.date >= addDays(today, -14))
+    .reverse()
+    .map((p) => {
+      const r = recordFor(p.id);
+      const c = { present: 0, absent: 0, late: 0, notRecorded: 0 };
+      if (r)
+        for (const e of r.entries)
+          if (e.attendance === 'not_recorded') c.notRecorded++;
+          else c[e.attendance]++;
+      return {
+        groupId: G,
+        groupName: fx.groupName[lang],
+        teacher: teacherOf(lang),
+        sessionDate: p.date,
+        startsAt: p.startsAt,
+        recordId: r?.id ?? null,
+        status: !r ? 'not_started' : r.status === 'confirmed' ? 'confirmed' : 'draft',
+        attendance: r ? c : null,
+      };
+    });
+}
+
+// ── rules (A07, FUP-RUL-01/02) ─────────────────────────────────────────────────
+const RULE_COPY: Record<
+  RuleRow['code'],
+  { text: (p: Record<string, number>, lang: Lang) => string; example: mfx.L }
+> = {
+  consecutive_absences: {
+    text: (p, l) =>
+      l === 'ar'
+        ? `يُرفع تنبيه عندما يغيب الطالب عن آخر ${p.n} حصص مجدولة، ولكل منها سجل مؤكَّد. الحصة "غير المسجّلة" تقطع التتابع.`
+        : `Flag when a student is absent from the last ${p.n} scheduled sessions, each with a confirmed record. A "Not recorded" session breaks the streak.`,
+    example: {
+      en: 'Absent from two consecutive scheduled sessions: 24 and 28 September.',
+      ar: 'غاب عن حصتين مجدولتين متتاليتين: ٢٤ و٢٨ سبتمبر.',
+    },
+  },
+  score_decline: {
+    text: (p, l) =>
+      l === 'ar'
+        ? `يُرفع تنبيه عندما تكون آخر ${p.k} درجات قابلة للمقارنة أقل من متوسط الطالب السابق بـ${p.drop} نقطة (٪) أو أكثر، في السلسلة نفسها، مع ${p.minScores} درجات على الأقل.`
+        : `Flag when the last ${p.k} comparable scores are each ${p.drop} points (%) or more below the student's own earlier average in the same assessment series, with at least ${p.minScores} scores.`,
+    example: {
+      en: 'Sign rules practice: 60% and 55% after an average of 75%.',
+      ar: 'تدريب قواعد الإشارات: ٦٠٪ و٥٥٪ بعد متوسط ٧٥٪.',
+    },
+  },
+  low_participation: {
+    text: (p, l) =>
+      l === 'ar'
+        ? `يُرفع تنبيه عندما تكون المشاركة "منخفضة" في ${p.k} من آخر ${p.m} حصص مؤكَّدة.`
+        : `Flag when participation was "low" in ${p.k} of the last ${p.m} confirmed sessions.`,
+    example: {
+      en: 'Low participation on 21 and 28 September.',
+      ar: 'مشاركة منخفضة يومي ٢١ و٢٨ سبتمبر.',
+    },
+  },
+  repeated_concern: {
+    text: (p, l) =>
+      l === 'ar'
+        ? `يُرفع تنبيه عندما يتكرر موضوع الملاحظة نفسه (الفهم، يحتاج مراجعة، السلوك) ${p.count} مرات خلال ${p.windowDays} يومًا.`
+        : `Flag when the same note topic (understanding, needs revisit, behaviour) is recorded ${p.count} times in ${p.windowDays} days.`,
+    example: {
+      en: '"Needs revisit" noted three times since 10 September.',
+      ar: '"يحتاج مراجعة" تكرر ثلاث مرات منذ ١٠ سبتمبر.',
+    },
+  },
+};
+
+function ruleView(r: RuleRow, lang: Lang): RuleView {
+  const copy = RULE_COPY[r.code];
+  return {
+    code: r.code,
+    active: r.active,
+    params: r.params,
+    scope: r.scope,
+    version: r.version,
+    text: copy.text(r.params, lang),
+    example: copy.example[lang],
+    proposal: r.proposal
+      ? { ...r.proposal, proposedBy: person(r.proposal.proposedBy, lang) }
+      : null,
+    history: r.history.map((h) => ({
+      version: h.version,
+      approvedBy: h.approvedBy ? person(h.approvedBy, lang) : null,
+      at: h.at,
+    })),
+  };
+}
+const ruleByCode = (code: string) => {
+  const r = load().rules.find((x) => x.code === code);
+  if (!r) throw new MockProblem(404, 'not_found', 'Rule not found.');
+  return r;
+};
+export function listRules(userId: string, lang: Lang) {
+  requireStaff(userId);
+  return load().rules.map((r) => ruleView(r, lang));
+}
+const RULE_PARAMS: Record<RuleRow['code'], string[]> = {
+  consecutive_absences: ['n'],
+  score_decline: ['k', 'drop', 'minScores'],
+  low_participation: ['k', 'm'],
+  repeated_concern: ['count', 'windowDays'],
+};
+function validateRule(code: RuleRow['code'], b: RuleChangeBody) {
+  for (const k of RULE_PARAMS[code]) {
+    const v = b.params?.[k];
+    if (!Number.isInteger(v) || (v as number) < 1)
+      throw new MockProblem(
+        422,
+        'validation_failed',
+        `"${k}" must be a whole number of 1 or more.`,
+        { field: k },
+      );
+  }
+  if (b.scope !== 'all' && b.scope !== G)
+    throw new MockProblem(422, 'validation_failed', 'Unknown group.');
+}
+function applyRule(r: RuleRow, b: RuleChangeBody, approvedBy: string) {
+  r.version += 1;
+  r.active = b.active;
+  r.params = { ...b.params };
+  r.scope = b.scope;
+  r.history.push({
+    version: r.version,
+    active: b.active,
+    params: { ...b.params },
+    scope: b.scope,
+    approvedBy,
+    at: new Date().toISOString(),
+  });
+  r.proposal = null;
+}
+/** FUP-RUL-02: the owner's change applies as a new version; a staff change is a proposal. */
+export function changeRule(userId: string, code: string, b: RuleChangeBody, lang: Lang) {
+  requireStaff(userId);
+  const r = ruleByCode(code);
+  validateRule(r.code, b);
+  if (isOwner(userId)) {
+    applyRule(r, b, userId);
+    audit('rule.changed', userId, {
+      en: `Rule "${r.code}" changed — version ${r.version}`,
+      ar: `تم تعديل القاعدة "${r.code}" — الإصدار ${r.version}`,
+    });
+  } else {
+    r.proposal = {
+      ...b,
+      params: { ...b.params },
+      proposedBy: userId,
+      at: new Date().toISOString(),
+    };
+    audit('rule.proposed', userId, {
+      en: `Rule change proposed for "${r.code}" (needs the owner)`,
+      ar: `اقتراح تعديل القاعدة "${r.code}" (يحتاج موافقة المالك)`,
+    });
+  }
+  save();
+  return ruleView(r, lang);
+}
+export function approveRule(userId: string, code: string, lang: Lang) {
+  if (!isOwner(userId))
+    throw new MockProblem(403, 'forbidden', 'Only the owner approves rule changes.');
+  const r = ruleByCode(code);
+  if (!r.proposal) throw new MockProblem(409, 'no_proposal', 'Nothing to approve.');
+  applyRule(r, r.proposal, userId);
+  audit('rule.approved', userId, {
+    en: `Rule change approved for "${r.code}" — version ${r.version}`,
+    ar: `تمت الموافقة على تعديل "${r.code}" — الإصدار ${r.version}`,
+  });
+  save();
+  return ruleView(r, lang);
+}
+export function rejectRule(userId: string, code: string, lang: Lang) {
+  if (!isOwner(userId))
+    throw new MockProblem(403, 'forbidden', 'Only the owner decides on rule changes.');
+  const r = ruleByCode(code);
+  r.proposal = null;
+  save();
+  return ruleView(r, lang);
+}
+
+// ── staff (A16, FUP-STF-01) ────────────────────────────────────────────────────
+export function staffList(userId: string, lang: Lang): StaffMember[] {
+  requireStaff(userId);
+  const role = (r: string): StaffMember['role'] =>
+    r === 'centre_owner' ? 'owner' : r === 'centre_staff' ? 'reception' : 'teacher';
+  const ar = lang === 'ar';
+  const scope = (u: (typeof mfx.staff)[number]) =>
+    u.role === 'centre_owner'
+      ? ar
+        ? 'كل المجموعات'
+        : 'All groups'
+      : u.role === 'centre_staff'
+        ? ar
+          ? 'كل الطلاب • المتابعات'
+          : 'All students • Follow-ups'
+        : u.id === fx.DEMO_TEACHER_USER
+          ? fx.groupName[lang]
+          : ar
+            ? 'مجموعاته فقط'
+            : 'Own groups only';
+  const last = (id: string) =>
+    [...load().audit].reverse().find((a) => a.actorId === id)?.at ?? null;
+  return [
+    ...mfx.staff.map((u) => ({
+      user: { id: u.id, displayName: u.name[lang] },
+      role: role(u.role),
+      scope: scope(u),
+      lastActiveAt: last(u.id),
+      status: 'active' as const,
+    })),
+    ...load().invites.map((i, n) => ({
+      user: { id: `invite-${n}`, displayName: maskPhone(i.phone) },
+      role: i.role,
+      scope: '—',
+      lastActiveAt: null,
+      status: 'invite_pending' as const,
+    })),
+  ];
+}
+export function inviteStaff(
+  userId: string,
+  b: { phone: string; role: StaffMember['role'] },
+  lang: Lang,
+) {
+  if (!isOwner(userId)) throw new MockProblem(403, 'forbidden', 'Only the owner manages staff.');
+  if (!/^\+20(10|11|12|15)\d{8}$/.test(b.phone ?? ''))
+    throw new MockProblem(422, 'invalid_phone', 'Enter an Egyptian mobile number.');
+  if (!['reception', 'teacher'].includes(b.role))
+    throw new MockProblem(422, 'validation_failed', 'Pick a role.');
+  load().invites.push({ phone: b.phone, role: b.role, at: new Date().toISOString() });
+  save();
+  audit('access.invited', userId, {
+    en: `Staff invited (${b.role}) — invite pending`,
+    ar: `دعوة موظف (${b.role === 'teacher' ? 'معلّم' : 'استقبال'}) — بانتظار القبول`,
+  });
+  save();
+  return staffList(userId, lang);
+}
+
+// ── activity (A17, FUP-DSH-04) ─────────────────────────────────────────────────
+const KIND: Record<string, ActivityKind> = {
+  record: 'records',
+  note: 'records',
+  signal: 'followups',
+  case: 'followups',
+  message: 'messages',
+  rule: 'access',
+  access: 'access',
+};
+export function activity(userId: string, lang: Lang): ActivityLog {
+  requireStaff(userId);
+  const s = load();
+  const events: ActivityEvent[] = s.audit
+    .filter((a) => !a.kind.startsWith('demo.'))
+    .map((a) => ({
+      id: a.id,
+      at: a.at,
+      kind:
+        a.kind === 'record.corrected' ? 'corrections' : (KIND[a.kind.split('.')[0]!] ?? 'records'),
+      text: tx(a.text, lang)!,
+      actor: a.actorId ? person(a.actorId, lang) : null,
+    }))
+    .sort((a, b) => b.at.localeCompare(a.at));
+  const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  const week = s.audit.filter((a) => a.at >= since);
+  return {
+    events,
+    week: {
+      recordsConfirmed: week.filter((a) => a.kind === 'record.confirmed').length,
+      followUpsOpened: week.filter((a) => a.kind === 'signal.raised').length,
+      outcomesRecorded: week.filter((a) => a.kind === 'case.outcome').length,
+      corrections: week.filter((a) => a.kind === 'record.corrected').length,
+    },
+  };
+}
+
+// ── parent feed (P09, FUP-MSG-08) ──────────────────────────────────────────────
+const SENT: DeliveryStatus[] = ['queued', 'sent', 'delivered', 'read'];
+/** Approved (and handed to the provider) messages only. Confirmed attendance is off by default (OD-41). */
+export function parentUpdates(userId: string, lang: Lang): ParentUpdate[] {
+  const s = load();
+  const mine = new Set(fx.guardians.filter((g) => g.userId === userId).map((g) => g.id));
+  return s.messages
+    .filter((m) => mine.has(m.guardianId) && SENT.includes(m.status) && m.finalText)
+    .map((m) => ({
+      id: m.id,
+      studentId: m.studentId,
+      kind: 'message' as const,
+      text: m.finalText!,
+      from: lang === 'ar' ? 'مركز النور' : 'Al Nour Centre',
+      at: m.approvedAt!,
+    }))
+    .sort((a, b) => b.at.localeCompare(a.at));
+}
+
+/** FUP-MSG-02 AC3: an approved message is locked; changing it starts a NEW draft. */
+export function reviseMessage(userId: string, id: string, lang: Lang) {
+  requireStaff(userId);
+  const old = msgById(id);
+  if (old.status === 'draft')
+    throw new MockProblem(409, 'still_draft', 'This draft can be edited directly.');
+  const m: Msg = {
+    ...old,
+    id: nextId('msg'),
+    draft: old.finalText ?? old.draft,
+    finalText: null,
+    status: 'draft',
+    channel: null,
+    approvedBy: null,
+    approvedAt: null,
+    failureReason: null,
+    replies: [],
+    history: [{ status: 'draft', at: new Date().toISOString() }],
+  };
+  load().messages.push(m);
+  const c = m.caseId ? caseById(m.caseId) : null;
+  c?.messageIds.push(m.id);
+  audit('message.drafted', userId, {
+    en: 'New draft from an approved message (the approved one stays locked)',
+    ar: 'مسودة جديدة من رسالة معتمدة (المعتمدة تبقى مقفلة)',
+  });
+  save();
+  return messageDto(m, lang);
+}
+
+/** V06 "Check a seat": a read of another group's seats, logged on the case timeline. */
+export function checkSeat(userId: string, caseId: string, lang: Lang) {
+  requireStaff(userId);
+  const c = caseById(caseId);
+  const alt = groupDto('grp-salma-st', lang);
+  const next = alt.upcomingSessions[0];
+  const left = next?.seatsLeft ?? 0;
+  const text =
+    lang === 'ar'
+      ? `فحص مقعد: ${alt.schoolYear.name} · ${alt.subject.name}، الأحد والثلاثاء ٣ م — ${new Intl.NumberFormat('ar-EG').format(left)} مقاعد متاحة`
+      : `Seat check: ${alt.schoolYear.name} · ${alt.subject.name}, Sun & Tue 3 PM — ${left} seats left`;
+  c.timeline.push({ at: new Date().toISOString(), kind: 'seat_checked', text, actorId: userId });
+  save();
+  return { text, seatsLeft: left, groupId: alt.id };
+}

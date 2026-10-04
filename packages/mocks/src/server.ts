@@ -2,12 +2,46 @@
  * `pnpm mock:server` — the same MSW handlers the apps use in `mock` mode, served over HTTP with ONE
  * shared in-memory state, so the parent PWA, the owner web and the teacher app see the same data
  * (API mode `mock-server`). Dev only: refuses to start unless APP_ENV is unset or `local`.
- * No real provider is ever called; nothing is written to disk.
+ * No real provider is ever called. The only file it writes is the presenter's flag switches
+ * (`.data/demo-flags.json`, git-ignored) so the Phase 2 / marketplace flags survive a restart.
  */
 import { createServer, type IncomingMessage } from 'node:http';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { getResponse } from 'msw';
 import { handlers } from './handlers';
-import { demoSnapshot } from './followup/db';
+import { demoSnapshot, onDemoChange, setDemo, type DemoState } from './followup/db';
+
+// ── persisted demo flags ─────────────────────────────────────────────────────────
+const FLAGS_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', '.data', 'demo-flags.json');
+type Flags = Pick<DemoState, 'phase2' | 'marketplace'>;
+const PRESETS: Record<string, Flags> = {
+  // The MVP pilot setup (CF-29): follow-up only.
+  'phase2-only': { phase2: true, marketplace: false },
+  'phase1-only': { phase2: false, marketplace: true },
+  both: { phase2: true, marketplace: true },
+};
+if (existsSync(FLAGS_FILE)) {
+  try {
+    const saved = JSON.parse(readFileSync(FLAGS_FILE, 'utf8')) as Partial<Flags>;
+    setDemo({ phase2: !!saved.phase2, marketplace: saved.marketplace !== false });
+  } catch {
+    /* unreadable: fall back to the preset below */
+  }
+} else if (process.env.DEMO_DEFAULT_FLAGS && PRESETS[process.env.DEMO_DEFAULT_FLAGS]) {
+  setDemo(PRESETS[process.env.DEMO_DEFAULT_FLAGS]!);
+}
+let lastSaved = '';
+const persistFlags = (d: DemoState) => {
+  const json = JSON.stringify({ phase2: d.phase2, marketplace: d.marketplace }, null, 2);
+  if (json === lastSaved) return;
+  lastSaved = json;
+  mkdirSync(dirname(FLAGS_FILE), { recursive: true });
+  writeFileSync(FLAGS_FILE, json + '\n');
+};
+onDemoChange(persistFlags);
+persistFlags(demoSnapshot().demo);
 
 const PORT = Number(process.env.MOCK_SERVER_PORT ?? 4010);
 const env = process.env.APP_ENV ?? 'local';
@@ -73,7 +107,16 @@ const server = createServer(async (req, res) => {
     const out: Record<string, string> = { ...cors(origin) };
     response.headers.forEach((v, k) => (out[k] = v));
     res.writeHead(response.status, out);
-    res.end(Buffer.from(await response.arrayBuffer()));
+    if (response.body && response.headers.get('content-type')?.includes('text/event-stream')) {
+      // Stream server-sent events as they are produced (the assistant answer streams, V03).
+      const reader = response.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(Buffer.from(value));
+      }
+      res.end();
+    } else res.end(Buffer.from(await response.arrayBuffer()));
     log(req.method!, url.pathname, response.status, started);
   } catch (e) {
     console.error(e);
