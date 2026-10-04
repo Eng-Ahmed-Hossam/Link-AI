@@ -20,7 +20,7 @@ pnpm install
 pnpm pilot:build          # owner web + teacher app, pilot builds; ends with the bundle check
 ```
 
-Measured on the build machine from a fresh clone (Windows 11, Wi-Fi): see the timing in the pilot report. `pnpm pilot:build` alone takes about 1.5 minutes.
+Measured 2026-10-04 on the build laptop (Windows 11), fresh `git clone` with pnpm's package cache already warm: clone 6 s · `pnpm install` 2 min 42 s · `pnpm pilot:build` 46 s (84 s with a cold build cache) · `pilot:init` + `pilot:cert` + `pilot:import` + `pilot:check` about 5 s · server up in a few seconds — **about 4 minutes**. Not measured: a truly clean laptop, which also installs Git, Node.js and pnpm and downloads the packages (allow 20–40 minutes on the centre Wi-Fi; do it before the visit).
 
 ## 2. Check the encryption
 
