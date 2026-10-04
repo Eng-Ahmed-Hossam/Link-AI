@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 import { File, Directory, Paths } from 'expo-file-system';
-import { apiUrl, fuApi } from '@link/api-client';
+import { ApiError, apiUrl, fuApi } from '@link/api-client';
 import { offlineStore } from './store';
 import { reportOnline, track } from '../net';
 
@@ -17,8 +17,11 @@ export interface QueuedNote {
   createdAt: string;
   /** Native: a file in the app's document folder. Web preview: a data URL in the store. */
   audio: { kind: 'file'; uri: string } | { kind: 'data'; dataUrl: string };
-  status: 'queued' | 'uploading' | 'uploaded';
+  /** `rejected`: the server refused the note for good (e.g. voice switched off); not retried. */
+  status: 'queued' | 'uploading' | 'uploaded' | 'rejected';
   voiceNoteId?: string;
+  /** Where the server said to upload (the pilot's own route, or the mock's signed URL). */
+  uploadUrl?: string;
 }
 
 const KEY = 'voice-queue';
@@ -90,11 +93,11 @@ export function processQueue(): Promise<void> {
   running = (async () => {
     try {
       for (const n of await read()) {
-        if (n.status === 'uploaded') continue;
+        if (n.status === 'uploaded' || n.status === 'rejected') continue;
         try {
           // The local id is the Idempotency-Key: a retry after a lost response never creates a second note.
           const vn = n.voiceNoteId
-            ? { id: n.voiceNoteId, uploadUrl: `/__mock/uploads/${n.voiceNoteId}` }
+            ? { id: n.voiceNoteId, uploadUrl: n.uploadUrl ?? `/__mock/uploads/${n.voiceNoteId}` }
             : await track(
                 fuApi.createVoiceNote(
                   { sessionRecordId: n.recordId, durationS: n.durationS },
@@ -103,12 +106,18 @@ export function processQueue(): Promise<void> {
               );
           await write(
             (await read()).map((x) =>
-              x.localId === n.localId ? { ...x, voiceNoteId: vn.id, status: 'uploading' } : x,
+              x.localId === n.localId
+                ? { ...x, voiceNoteId: vn.id, uploadUrl: vn.uploadUrl, status: 'uploading' }
+                : x,
             ),
           );
+          const audio = await body(n);
           const put = await fetch(apiUrl(vn.uploadUrl), {
             method: 'PUT',
-            body: (await body(n)) as BodyInit,
+            headers: {
+              'content-type': audio instanceof Blob && audio.type ? audio.type : 'audio/mp4',
+            },
+            body: audio as BodyInit,
           });
           if (!put.ok) throw new Error(`upload ${put.status}`);
           await track(fuApi.voiceUploaded(vn.id));
@@ -117,6 +126,16 @@ export function processQueue(): Promise<void> {
           );
         } catch (e) {
           if (e instanceof TypeError) reportOnline(false); // fetch could not reach the server
+          const s = e instanceof ApiError ? e.problem.status : 0;
+          if (s >= 400 && s < 500 && s !== 408 && s !== 429) {
+            // Refused for good (not this teacher's group, voice off…): stop retrying this note.
+            await write(
+              (await read()).map((x) =>
+                x.localId === n.localId ? { ...x, status: 'rejected' } : x,
+              ),
+            );
+            continue;
+          }
           break; // offline or server error: keep the queue and try again later
         }
       }

@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query';
+import { pilotApi } from '@link/api-client';
 import { useDemoState } from '@/demo';
 import { DEMO_CONTROLS, PILOT } from './api-mode';
 
@@ -22,7 +24,17 @@ export function useMarketplace(): boolean | undefined {
 }
 
 /**
- * Voice notes need real speech-to-text. The pilot shows "Type the note instead" until the local
- * speech-to-text service lands (Part B); demo and mock modes use the fixture pipeline.
+ * Voice notes. Demo and mock modes: on (the fixture pipeline, or local Whisper when the presenter
+ * turns real speech-to-text on). Pilot: only for a teacher whose signed consent the owner recorded,
+ * with voice switched on for the pilot (`/v1/me` says so); otherwise "Type the note instead".
  */
-export const useVoiceNotes = () => !PILOT;
+export function useVoiceNotes(): boolean {
+  const me = useQuery({
+    queryKey: ['pilot-me'],
+    queryFn: pilotApi.me,
+    enabled: PILOT,
+    staleTime: 60_000,
+  });
+  if (!PILOT) return true;
+  return me.data?.voiceNotes === true;
+}

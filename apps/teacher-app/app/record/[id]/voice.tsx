@@ -16,10 +16,20 @@ import { useLocale } from '@/locale';
 import { useOnline } from '@/net';
 import { useDraft } from '@/record/drafts';
 import { enqueue, processQueue, useVoiceQueue } from '@/offline/voiceQueue';
-import { dayMonth } from '@/format';
+import { dayMonth, num } from '@/format';
 import { Screen } from '@/ui/Screen';
 
-type Phase = 'idle' | 'recording' | 'saving' | 'processing' | 'queued' | 'cancelled' | 'stt_down';
+type Phase =
+  | 'idle'
+  | 'recording'
+  | 'saving'
+  | 'processing'
+  | 'queued'
+  | 'cancelled'
+  | 'stt_down'
+  | 'stt_failed';
+/** B3: give up waiting after 3 minutes (the server says so too); the audio is kept for a retry. */
+const GIVE_UP_MS = 190_000;
 type Perm = 'unknown' | 'granted' | 'ask' | 'denied';
 
 /**
@@ -42,6 +52,10 @@ export default function Voice() {
   const localId = useRef<string | null>(null);
   /** True once the first upload attempt for this recording has finished (either way). */
   const [tried, setTried] = useState(false);
+  /** Seconds left, as the server estimates (real speech-to-text); null = no estimate. */
+  const [eta, setEta] = useState<number | null>(null);
+  /** Bumped by "Try again" to restart the wait. */
+  const [attempt, setAttempt] = useState(0);
   const queue = useVoiceQueue();
 
   useEffect(() => {
@@ -69,10 +83,16 @@ export default function Voice() {
     }
     setPhase('processing');
     let alive = true;
+    const since = Date.now();
     const poll = async () => {
       while (alive) {
+        if (Date.now() - since > GIVE_UP_MS) {
+          setPhase('stt_failed');
+          return;
+        }
         try {
           const x = await fuApi.extraction(mine.voiceNoteId!);
+          if (!isExtractionReady(x)) setEta(x.etaSeconds ?? null);
           if (isExtractionReady(x)) {
             router.replace({
               pathname: '/record/[id]/understood',
@@ -83,6 +103,10 @@ export default function Voice() {
         } catch (e) {
           if (e instanceof ApiError && e.code === 'stt_unavailable') {
             setPhase('stt_down');
+            return;
+          }
+          if (e instanceof ApiError && (e.code === 'stt_failed' || e.code === 'stt_timeout')) {
+            setPhase('stt_failed');
             return;
           }
           if (e instanceof ApiError && e.isNetwork) {
@@ -97,7 +121,19 @@ export default function Voice() {
     return () => {
       alive = false;
     };
-  }, [mine?.status, mine?.voiceNoteId, tried]);
+  }, [mine?.status, mine?.voiceNoteId, tried, attempt]);
+
+  async function retry() {
+    if (!mine?.voiceNoteId) return;
+    try {
+      await fuApi.retryVoice(mine.voiceNoteId);
+      setEta(null);
+      setPhase('processing');
+      setAttempt((n) => n + 1);
+    } catch {
+      setPhase('stt_failed');
+    }
+  }
 
   async function ensurePermission() {
     if (perm === 'granted') return true;
@@ -177,8 +213,28 @@ export default function Voice() {
           locale={locale}
           kind="loading"
           title={t('teacher.voice.processing')}
-          body={t('teacher.voice.processingBody')}
+          body={
+            eta != null
+              ? t('teacher.voice.processingEta', { count: eta, n: num(eta, locale) })
+              : t('teacher.voice.processingBody')
+          }
         />
+      ) : phase === 'stt_failed' ? (
+        <Callout
+          locale={locale}
+          tone="warning"
+          role="alert"
+          title={t('teacher.voice.failedTitle')}
+          body={t('teacher.voice.failedBody')}
+        >
+          <Button
+            locale={locale}
+            variant="secondary"
+            testID="voice-retry"
+            label={t('teacher.voice.retry')}
+            onPress={retry}
+          />
+        </Callout>
       ) : phase === 'queued' ? (
         <Callout
           locale={locale}

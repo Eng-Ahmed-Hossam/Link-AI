@@ -147,6 +147,13 @@ export function DemoControls() {
           <Button
             locale="en"
             variant="secondary"
+            testID="demo-real-stt"
+            label={`Speech-to-text: ${s?.demo.realStt ? 'local Whisper (real)' : 'fixture'}`}
+            onPress={() => run('Real STT', () => demoApi.settings({ realStt: !s?.demo.realStt }))}
+          />
+          <Button
+            locale="en"
+            variant="secondary"
             label="Next confirm fails (before saving)"
             onPress={() => run('Fault', () => demoApi.settings({ confirmFault: 'before_commit' }))}
           />
