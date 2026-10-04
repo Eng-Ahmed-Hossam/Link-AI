@@ -374,7 +374,38 @@ Centre and teacher profiles add `ratingDistribution`: published public reviews p
 | POST | `/v1/students/{id}/notes` | `{groupId, tag, body}` → `Note` | ≤ 500 characters; internal |
 | POST | `/v1/notes/{id}/suggest-for-parent` | → `Note` (`suggested_for_parent`) | Goes to staff; no message is created |
 
-Owner-side endpoints (cases, messages, demo controls) are listed with Batch 6.
+Owner-side endpoints (cases, messages, assistant, demo controls) are in §2c.
+
+## 2c. Proposed — from frontend Batch 6 (Phase 2, owner web, messages, assistant)
+
+**Status: proposed, mock only.** The owner web (A01–A17, V03/V04/V06/V07) and the parent updates feed are built on these shapes; types in `packages/api-client/src/followup.ts` (all `PLACEHOLDER`), mock in `packages/mocks/src/followup/` (`db.ts`, `owner-handlers.ts`, `assistant.ts`). Every `/v1/centres/{id}/*` call checks that the caller is staff of that centre (403 otherwise; 404 for a centre the caller cannot see, 10 §2). Not in OpenAPI yet; Step 2 (core-api) turns this table into the contract.
+
+| Method | Path | Body → response (draft types) | Rules the mock enforces |
+|---|---|---|---|
+| GET | `/v1/centres/{id}/today` | → `OwnerToday` (due, overdue with owners, missing and complete records over eligible sessions, follow-up list, keep-complete list) | Overdue = past due with no contact attempt (FUP-CAS-05); "missing" counts eligible sessions with no confirmed record, never absences |
+| GET | `/v1/cases` · `/v1/cases/{id}` | → `Page<FollowupCase>` · `FollowupCase` (signal with evidence, rule text and version, assignee, due, timeline, attempts) | Reception gets the case by default, due the same day (FUP-CAS-02) |
+| POST | `/v1/cases/{id}/dismiss` | `{reason}` → `FollowupCase` | 422 `reason_required`; the signal stays in history (FUP-CAS-04) |
+| POST | `/v1/cases/{id}/reopen` | → `FollowupCase` | Dismissed or resolved only |
+| POST | `/v1/cases/{id}/attempts` | `{method, result, learned?, nextStep?, keepOpen}` → `FollowupCase` | 422 `validation_failed` without method and result; `keepOpen` (default) → `awaiting_confirmation`; 409 `case_closed` |
+| POST | `/v1/cases/{id}/seat-check` | → `{text, seatsLeft, groupId}` | Logged on the case timeline; changes nothing else |
+| GET | `/v1/messages` · `/v1/messages/{id}` | → `Page<ParentMessage>` · `ParentMessage` (text, tone, grounded facts with sources, masked phone, status history, `blockedReason`) | Phone shown masked only |
+| POST | `/v1/messages/drafts` | `{caseId, tone?}` → `ParentMessage` (`draft`) | Facts only from confirmed records (FUP-MSG-01) |
+| PATCH | `/v1/messages/{id}` | `{text?, tone?}` → `ParentMessage` | Draft only: 409 `message_locked` after approval |
+| POST | `/v1/messages/{id}/approve` | `{checked: true, channel?}` → `ParentMessage` (`queued` or `not_sendable`) | Permission `messages.approve`; 422 without the tick; STOP / no opt-in → `not_sendable` with the reason (FUP-MSG-03 AC2) |
+| POST | `/v1/messages/{id}/revise` | → new `ParentMessage` (`draft`) | The approved one keeps its status (locked) |
+| GET | `/v1/centres/{id}/students` | → `Page<CentreStudentRow>` (last 4 sessions, latest score, open follow-up, latest internal note, guardian status) | Search by student or guardian is client-side over this page (FUP-DSH-02) |
+| GET | `/v1/centres/{id}/sessions` | → `Page<CentreSessionRow>` | Only confirmed records count as complete; detail reuses `GET /v1/session-records/{id}` with corrections |
+| GET | `/v1/centres/{id}/rules` | → `RuleView[]` (code, active, params, scope, version, history, proposal, readable text and example) | 03 §3 defaults; only `consecutive_absences` on |
+| PUT | `/v1/centres/{id}/rules/{code}` | `RuleChangeBody` → `RuleView` | Owner: new version. Staff: a proposal, version unchanged. Parameters must be whole numbers ≥ 1 (422, never adjusted) |
+| POST | `/v1/centres/{id}/rules/{code}/approve` · `/reject` | → `RuleView` | Owner only (403); 409 `no_proposal` |
+| GET | `/v1/centres/{id}/staff` · POST `/staff/invites` | → `StaffMember[]` · `{phone, role}` → `StaffMember[]` | Invite: owner only; Egyptian mobile (422 `invalid_phone`) |
+| GET | `/v1/centres/{id}/activity` | → `ActivityLog` (`events[]`, `week` counts) | Append-only audit events (FUP-DSH-04); filters by kind |
+| GET | `/v1/me/updates` | → `Page<ParentUpdate>` | Parent: approved messages for their own children only, never drafts (FUP-MSG-08, OD-41) |
+| GET | `/v1/assistant/briefing` | → `{text, items[]}` (case, reason, draft id, latest sent status, blocked reason) | Staff of the centre only |
+| POST | `/v1/assistant/turns` | `{text}` → `text/event-stream` of `AssistantEvent` (`tier`, `token`, `draft`, `list`, `needs_approval`, `done`) | Acts as the signed-in user; tiers read / draft / act — act never acts, it returns `needs_approval`; more than one student match → it asks (never guesses); drafts only from confirmed facts |
+| POST | `/v1/assistant/transcribe` | audio bytes → `{text, language}` | Mock returns a fixture; Step 2 sends it through ai-service |
+
+**Demo-only (`APP_ENV=local`, never in production builds):** `GET /__demo/state[/{lang}]`, `POST /__demo/reset`, `POST /__demo/settings` (`phase2`, `marketplace`, `offline`, `sttDown`, `confirmFault`), `POST /__demo/new-day`, `POST /__demo/provider` (`advance` \| `fail` — the only way a message status moves, BR-APR-11), `POST /__demo/reply` (an inbound guardian reply with summary and intent). docs/14 §5.2.
 
 ## 3. Later phases (outline only)
 

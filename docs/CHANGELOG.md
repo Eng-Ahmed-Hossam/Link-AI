@@ -2,6 +2,18 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-04 — Frontend Batch 6 (owner web, messages, assistant) and the MVP focus
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | 13 | CF-29 closed: teacher tabs follow the flags (Phase 2 only: Today · My groups · Records; Phase 1 only: My groups · Rooms · Earnings; both: Today · My groups · Rooms · Earnings). CF-30: seats and fees only with `marketplace.enabled`. | Team decision (MVP focus on the follow-up loop) |
+| 2 | 13 | CF-33 (V06 nothing pre-ticked), CF-34 (no owner correction on A14 — question), CF-35 (Ask Link as a side panel), CF-36 (demo "Simulate a new day"), CF-37 (A03 badge vs stepper — question), CF-38 (only cases from rules that are on), CF-39 (P09 marketplace cards in the pilot — question). | Found while building A01–A17, V03–V07 |
+| 3 | 07 | New §2c "Proposed — from frontend Batch 6": owner, case, message, rule, staff, activity, parent-updates and assistant endpoints, plus the demo-only endpoints (mock only). | Batch 6; input for core-api (MVP Step 2) |
+| 4 | 14 | `DEMO_DEFAULT_FLAGS`; `pnpm demo` starts with Phase 2 on and the marketplace off; `test:e2e:demo`; new §5.2 demo flags, persistence in `packages/mocks/.data/demo-flags.json`, "Simulate a new day", provider events and replies. | MVP pilot defaults; demo restarts keep the presenter's flags |
+| 5 | frontend/screen-log.md | Batch 6 rows. | Batch 6 |
+| 6 | frontend/demo-script.md | New: the 3-minute Demo Day script, Arabic and English. | Demo Day |
+| 7 | frontend/walkthroughs/batch-6 | Arabic cross-app walkthrough (teacher voice note → awaiting confirmation) and the mock-server proof. | Batch 6 report |
+
 ## 2026-10-04 — Frontend Batch 5 (teacher app, Phase 2)
 
 | # | File | What changed | Why |

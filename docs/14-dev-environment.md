@@ -112,6 +112,7 @@ Names and purpose only. **Never commit values.** `.env.example` lists every name
 | `NEXT_PUBLIC_USE_MOCKS`, `EXPO_PUBLIC_USE_MOCKS` | Older switch; `false` means `live`. `*_API_MODE` wins when set |
 | `NEXT_PUBLIC_APP_ENV`, `EXPO_PUBLIC_APP_ENV` + `*_DEMO_CONTROLS` | `local` + `1` shows the dev-only **Demo controls** (reset scenario, mock provider events, parent reply, offline, Phase 2 switch). Never with `live`, never in production builds |
 | `MOCK_SERVER_PORT`, `MOCK_SERVER_URL` | Mock server port (4010) and the URL the scenario script calls |
+| `DEMO_DEFAULT_FLAGS` | Demo flags on the mock server's first run (no `packages/mocks/.data/demo-flags.json` yet). `pnpm demo` sets `phase2-only`: Phase 2 on, marketplace off (the MVP pilot). Empty: both on |
 
 ### Local infrastructure only
 `.env.example` also lists the names `infra/local/docker-compose.yml` and the repo scripts read: `POSTGRES_PASSWORD` (container superuser, never used by apps), `APP_MIGRATOR_PASSWORD`, `APP_USER_PASSWORD` / `APP_WORKER_PASSWORD` / `APP_OPS_PASSWORD` (set on the roles by `pnpm db:migrate`, local only), the `*_HOST_PORT` overrides, `SMS_SINK_URL`, `FAKE_PAY_URL`, `FAKE_PAY_WEBHOOK_URL`, and dummy `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` for `aws-local`.
@@ -157,10 +158,17 @@ All commands are Node scripts, so they run the same in PowerShell, cmd and bash.
 | `pnpm ai:eval` | Run the eval harness against the gold set (E15-02) | *planned* (placeholder in Part 2) |
 | `pnpm mock:server` | The shared demo mock server on 4010 (same MSW handlers, in-memory state, `APP_ENV=local` only) | real |
 | `pnpm scenario:demo-followup` | Reset the running mock server to the Phase 2 demo scenario (§5.1) | real |
-| `pnpm demo` | Mock server + web (3000) + teacher app on Expo web (8081), all in `mock-server` mode with Demo controls and the Phase 2 flag on. Stop any other `pnpm dev` of the web app first (Next allows one dev server per app) | real |
+| `pnpm demo` | Mock server + web (3000) + teacher app on Expo web (8081), all in `mock-server` mode with Demo controls. First run: Phase 2 on, marketplace off (the MVP pilot, `DEMO_DEFAULT_FLAGS=phase2-only`). Restarts a crashed app up to 3 times. Stop any other `pnpm dev` of the web app first (Next allows one dev server per app) | real |
+| `pnpm --filter @link/web test:e2e:demo` | Owner web rule tests (Batch 6) and the cross-app Arabic walkthrough, against `pnpm demo` (started if not running) | real |
 
 ### 5.1 Demo scenario `demo-followup` (sample data only)
 Al Nour Centre · Ms Salma · "Secondary 2 · Maths" (Wed & Sat 5 PM), 18 fictional students. Mariam was absent last session; the voice note for today's session says she is absent again, so confirming the record raises `consecutive_absences` (n = 2), assigned to Reception and due the same day. Her guardian is opted in to WhatsApp. Nour already has an open, overdue case and her guardian replied STOP; Omar's guardian has SMS consent only; Habiba has no guardian phone. Omar Ali's unit-test score was corrected 21 → 12 ("typing error"). "Ahmed Samir" and "Ahmed Samy" make "أحمد" in the voice note ambiguous (T07). The voice fixture is the transcript «مريم غابت النهارده، وأحمد جاب ١٤ من ٢٠ في الكويز، ومحتاجين نراجع قواعد الإشارات الجاية» with one high, one medium and one low confidence item and 17 unmentioned students. Sign in with code `123456`: parent `+20 10 0000 0001`, teacher `…0002`, owner `…0003`, Reception `…0004`. `GET /__demo/state` shows records, flags, cases and messages as JSON.
+
+### 5.2 Demo flags and Demo controls
+- **Flags.** `phase2` (follow-up tools: teacher Today and Records, owner follow-up pages, Ask Link, parent updates feed) and `marketplace` (`marketplace.enabled`: search, booking, rooms, earnings, payouts). The teacher tabs follow them (CF-29): Phase 2 only → Today · My groups · Records; marketplace only → My groups · Rooms · Earnings; both → Today · My groups · Rooms · Earnings. The owner nav shows the follow-up items plus Staff when the marketplace is off. A flagged-off part is not rendered at all.
+- **Persistence.** The mock server writes the flags to `packages/mocks/.data/demo-flags.json` (git-ignored) and reads them at start, so a restart keeps the presenter's choice. Delete the file to go back to `DEMO_DEFAULT_FLAGS`. Reset scenario keeps the flags and clears the rest.
+- **Simulate a new day** (`POST /__demo/new-day`): moves every open case's due date back one day, so a case due today becomes overdue (FUP-CAS-05). Repeatable; Reset scenario undoes it.
+- **Provider events** (`POST /__demo/provider` `advance` | `fail`) and **guardian reply** (`POST /__demo/reply`): the only way a message's status moves on the mock (BR-APR-11).
 
 ### Troubleshooting (Windows)
 - **Port already in use** (often a native PostgreSQL on 5432): set `POSTGRES_HOST_PORT=5433` (or the matching `*_HOST_PORT`) in `.env.local` and use the same port in the `DATABASE_URL*` values.

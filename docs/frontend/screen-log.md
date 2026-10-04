@@ -44,3 +44,29 @@ Expo (React Native) app, tested on Expo web against the shared mock server (`pnp
 | T13 Records history | `/group/[id]/history` | built | FUP-REC-08 | Per group (reached from My groups), not a tab (CF-29); "Add a correction" sheet | Corrections for attendance and score only | `T13` |
 
 Full-length screenshots leave out the bottom tab bar (react-native-web cannot keep it at the bottom of a grown page); it is there in the app and in the walkthrough captures.
+
+## Batch 6 · Owner web, messages and assistant (Phase 2)
+
+Next.js owner workspace under `/{lang}/centre/{centreId}/…`, tested against the shared mock server (`pnpm demo`) with `pnpm --filter @link/web test:e2e:demo` (18 rule tests, axe in AR and EN on every page, and the cross-app Arabic walkthrough). Phase 2: every page below renders only with the Phase 2 flag (owner nav `followup.owner_nav`); with the marketplace off the nav shows the follow-up items plus Staff (CF-29). A01 is the owner landing page (`/{lang}/centre` → Today). Data: scenario `demo-followup` (docs/14 §5.1). Figma side-by-sides: `docs/frontend/compare/<ID>.png`.
+
+| Screen | Route | Status | Stories covered | Differs from Figma (CF) | Placeholders | Screenshots |
+|---|---|---|---|---|---|---|
+| A01 / A12 Today | `/centre/[id]/today` | built | FUP-DSH-01, FUP-CAS-05 | CF-38 (only cases from rules that are on); "Missing data is not absence" callout | — | `A01` |
+| A02 Follow-ups | `…/follow-ups` | built | FUP-CAS-01 | Filters (Open · Mine · Overdue · Closed); reason with dates and rule version on each row | — | `A02` |
+| A03 Follow-up case | `…/follow-ups/[caseId]` | built | FUP-CAS-02, FUP-CAS-04 | CF-37 (status badge, not a stepper); dismiss needs a reason; reopen | Reassigning a case not built | `A03` |
+| A06 / V04 Review message | `…/messages/[messageId]` | built | FUP-MSG-01, FUP-MSG-02 | Grounded facts list each source record; tone choice; masked phone; the tick is required; STOP / no opt-in shown before approval | SMS channel shown, not sent (no SMS provider) | `A06` |
+| A09 Approved message | `…/messages/[messageId]` (after approval) | built | FUP-MSG-03, BR-APR-11 | Locked; status history only from provider events; "Sending is not solving"; "Change wording (new draft)" | — | `A09` |
+| V06 Parent replied | `…/follow-ups/[caseId]/reply` | built | FUP-MSG-05 | CF-33 (nothing pre-ticked) | "Write my own reply" not built (a reply draft comes from confirmed facts, step "Draft a reply") | `V06` |
+| A08 Record outcome | `…/follow-ups/[caseId]/outcome` | built | FUP-CAS-03 | "Keep the case open" is the default; "What did you learn?" prefilled from V06 | — | `A08` |
+| A10 Outcome saved | `…/follow-ups/[caseId]/outcome/done` | built | FUP-CAS-03 | Confirmation title + Awaiting confirmation status | — | `A10` |
+| A11 Parent communication | `…/communication` | built | FUP-MSG-06 | Filters: to review · approved · awaiting a reply · issues (failed, not sendable) | — | `A11` |
+| A13 Students | `…/students` | built | FUP-DSH-02 | Search by student or guardian; No guardian filter; attendance as dot + letter | — | `A13` |
+| A04 Student | `…/students/[studentId]` | built | FUP-DSH-03 | "Not recorded" shown as such; "More comparable results are needed…" until a series has enough scores | — | `A04` |
+| A05 Sessions | `…/sessions` | built | FUP-REC-12 | "Only confirmed records trigger rules" | — | `A05` |
+| A14 Session record | `…/sessions/[recordId]` | built | FUP-REC-08, FUP-REC-12 | CF-34 (no "Add a correction" for owners); rules triggered by this record | — | `A14` |
+| A07 Rules & settings | `…/rules` | built | FUP-RUL-01, FUP-RUL-02 | Owner saves a new version; Reception proposes and the owner approves or rejects; readable rule text and example | Scope = all groups or one group | `A07` |
+| A16 Staff | `…/staff` | built | FUP-STF-01 | Role matrix (incl. "No guardian phone numbers" for teachers); owner-only invite | Invite is recorded, no SMS sent | `A16` |
+| A17 Activity history | `…/activity` | built | FUP-DSH-04 | Append-only, "This log can't be edited"; weekly counts; filters by kind | — | `A17` |
+| V07 / V03 Ask Link | side panel on every owner page | built | FUP-DSH-05 | CF-35 (side panel); voice through the panel mic | Mock transcription returns one fixture request | `V07` |
+| V05 Parent's phone | Storybook only (`Followup/WhatsAppPreview`) | built (illustrative) | — | Illustrative, as in Figma | — | — |
+| P09 Updates feed | `/{lang}/children` | built | FUP-MSG-08 | Approved messages only, never drafts; behind `parent.updates_feed`; CF-39 | — | `P09-feed` |
