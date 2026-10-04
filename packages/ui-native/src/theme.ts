@@ -23,5 +23,8 @@ export function textStyle(locale: Locale, name: TextStyleName) {
     fontSize: s.size,
     lineHeight: Math.round(s.size * s.lineHeight),
     color: color.navy,
+    // The paragraph direction follows the UI language, not the first letter (react-native-web uses
+    // dir="auto" otherwise, which flips English copy that starts with an Arabic name). RTL-05.
+    writingDirection: locale === 'ar' ? 'rtl' : 'ltr',
   } as const;
 }
