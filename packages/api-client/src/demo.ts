@@ -14,6 +14,8 @@ export interface DemoSnapshot {
     confirmFault: 'before_commit' | 'after_commit' | null;
     marketplace: boolean;
     dayOffset: number;
+    /** Voice notes and Ask Link questions go to local Whisper (ai-service) instead of fixtures. */
+    realStt?: boolean;
   };
   counters: { confirmCalls: number; confirmCommits: number };
   records: { confirmed: number; drafts: string[] };

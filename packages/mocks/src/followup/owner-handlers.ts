@@ -4,6 +4,7 @@ import { MockProblem } from '../db';
 import { authed, langOf, problem, userIdOf } from '../http';
 import * as fu from './db';
 import { ASSISTANT_VOICE_FIXTURE, assistantTurn, briefing } from './assistant';
+import { bridge } from './voice-bridge';
 
 /** One centre per world (the demo's Al Nour, or the pilot centre). Any other id is 404 (10 §2). */
 const centre = (id: string | undefined) => {
@@ -143,10 +144,21 @@ export const ownerHandlers = [
   http.post(
     '*/v1/assistant/transcribe',
     authed(async ({ request }) => {
-      // Mock speech-to-text: the recording is read and discarded; the fixture is returned.
-      await request.arrayBuffer();
+      const audio = new Uint8Array(await request.arrayBuffer());
+      // Demo with real speech-to-text on: the question is transcribed by local Whisper (synthetic
+      // data class); the answer stays scripted and is labelled as a demo answer.
+      const stt = bridge.assistantStt;
+      if (stt) {
+        try {
+          const text = await stt(audio, request.headers.get('content-type') ?? 'audio/webm');
+          return HttpResponse.json({ text, language: 'ar-EG', real: true });
+        } catch {
+          return problem(503, 'stt_unavailable', 'Speech-to-text is not responding.');
+        }
+      }
+      // Otherwise the recording is read and discarded; the fixture question is returned.
       await delay(600);
-      return HttpResponse.json({ text: ASSISTANT_VOICE_FIXTURE, language: 'ar-EG' });
+      return HttpResponse.json({ text: ASSISTANT_VOICE_FIXTURE, language: 'ar-EG', real: false });
     }),
   ),
 ];

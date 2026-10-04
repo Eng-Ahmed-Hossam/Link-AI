@@ -4,6 +4,7 @@ import * as mdb from '../db';
 import * as mfx from '../data';
 import { authed, langOf, problem } from '../http';
 import * as fu from './db';
+import { bridge } from './voice-bridge';
 
 /** Phase 2 endpoints (docs/07 §3 outline; shapes are draft, see api-client/followup.ts). */
 export const followupHandlers = [
@@ -124,10 +125,35 @@ export const followupHandlers = [
       ),
     ),
   ),
-  http.put('*/__mock/uploads/:id', async ({ request }) => {
-    // The signed-URL upload: the mock accepts and discards the audio. Nothing is stored.
-    await request.arrayBuffer();
+  http.put('*/__mock/uploads/:id', async ({ request, params }) => {
+    // The signed-URL upload. The demo keeps the audio (in memory) only while real speech-to-text is
+    // on, to hand it to ai-service; otherwise it is read and discarded.
+    const bytes = new Uint8Array(await request.arrayBuffer());
+    await bridge.audioStore?.put(
+      params.id as string,
+      bytes,
+      request.headers.get('content-type') ?? 'application/octet-stream',
+    );
     return new HttpResponse(null, { status: 200 });
+  }),
+  // B3 "Try again" after a failed or timed-out note (the audio was kept).
+  http.post(
+    '*/v1/voice-notes/:id/retry',
+    authed(({ params, userId }) => HttpResponse.json(fu.retryVoice(userId, params.id!))),
+  ),
+  // ai-service posts each note's proposal (or failure) here. Local only, shared token; the pilot
+  // server also refuses any caller that is not this machine.
+  http.post('*/v1/internal/voice-results/:id', async ({ request, params }) => {
+    const token = bridge.internalToken;
+    if (!token || request.headers.get('x-link-internal-token') !== token)
+      return problem(404, 'not_found', 'Not found.');
+    try {
+      fu.setVoiceResult(params.id as string, (await request.json()) as fu.VoiceResultIn);
+      return new HttpResponse(null, { status: 204 });
+    } catch (e) {
+      if (e instanceof mdb.MockProblem) return problem(e.status, e.code, e.detail);
+      throw e;
+    }
   }),
   http.post(
     '*/v1/voice-notes/:id/uploaded',
@@ -139,7 +165,10 @@ export const followupHandlers = [
       const x = fu.voiceExtraction(userId, params.id!, lang);
       return x
         ? HttpResponse.json(x)
-        : HttpResponse.json({ status: 'transcribing' }, { status: 202 });
+        : HttpResponse.json(
+            { status: 'transcribing', etaSeconds: fu.voiceEta(params.id!) },
+            { status: 202 },
+          );
     }),
   ),
   http.post(
@@ -361,6 +390,7 @@ export const demoHandlers = [
       )
         patch.confirmFault = b.confirmFault;
       if (typeof b.marketplace === 'boolean') patch.marketplace = b.marketplace;
+      if (typeof b.realStt === 'boolean') patch.realStt = b.realStt;
       return fu.setDemo(patch);
     }),
   ),

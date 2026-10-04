@@ -158,12 +158,52 @@ interface NoteRow {
   authorId: string;
   at: string;
 }
+/** One proposal item as ai-service returns it (ids only; names are filled in per request). */
+export interface StoredVoiceItem {
+  id: string;
+  identity: VoiceItem['identity'];
+  studentId: string | null;
+  candidates: string[];
+  mention: string | null;
+  field: VoiceItem['field'];
+  value: string | number | null;
+  confidence: number;
+  span: { start: number; end: number };
+  sourceText: string;
+  outOfRange: boolean;
+}
+/** What ai-service posts back for a note (B3). */
+export interface VoiceResultIn {
+  status: 'ready' | 'failed';
+  code?: string;
+  detail?: string;
+  result?: {
+    transcript: string;
+    items: StoredVoiceItem[];
+    unmentioned?: string[];
+    modelVersion: string;
+    latencyMs?: Record<string, number>;
+  };
+}
 interface Voice {
   id: string;
   recordId: string;
   durationS: number;
   status: VoiceNote['status'];
   readyAt: number | null;
+  /** Real pipeline (pilot, or demo with real speech-to-text): set when the audio was handed over. */
+  submittedAt?: number | null;
+  etaSeconds?: number | null;
+  /** The ai-service proposal; absent = the demo fixture is used. */
+  result?: {
+    transcript: string;
+    items: StoredVoiceItem[];
+    modelVersion: string;
+    latencyMs?: Record<string, number>;
+  } | null;
+  failure?: { code: string; at: string } | null;
+  /** The teacher who recorded it (consent withdrawal removes their transcripts). */
+  teacherId?: string;
   extraction: {
     id: string;
     status: VoiceExtraction['status'];
@@ -187,6 +227,8 @@ export interface DemoState {
   marketplace: boolean;
   /** "Simulate a new day" presses (cases' due dates move one day into the past each time). */
   dayOffset: number;
+  /** B3: voice notes and Ask Link questions go to local Whisper (ai-service) instead of fixtures. */
+  realStt?: boolean;
 }
 
 /** Rule row (06 §7 rules + rule_versions). A staff change is a proposal until the owner approves it. */
@@ -690,7 +732,8 @@ function evaluate(
       caseId: null,
       raisedAt: at,
     };
-    const raisedOn = at.slice(0, 10);
+    // Due dates are Cairo calendar days (Africa/Cairo), never the UTC date of the timestamp.
+    const raisedOn = cairoToday(new Date(at));
     const assignee = defaultAssignee();
     const assigneeTitle = staffFx(assignee)?.title ?? { en: 'Reception', ar: 'الاستقبال' };
     const c: CaseRow = {
@@ -1218,7 +1261,7 @@ export function studentDetail(userId: string, studentId: string, lang: Lang): St
       of: att.filter((a) => a.value !== 'none' && a.value !== 'not_recorded').length,
     },
     latestScore: latestScore(studentId, lang),
-    notesThisMonth: notes.filter((n) => n.at.slice(0, 10) >= monthStart).length,
+    notesThisMonth: notes.filter((n) => cairoToday(new Date(n.at)) >= monthStart).length,
     attendance: att,
     trends: [...bySeries].map(([series, points]) => ({ series, points })),
     notes,
@@ -1605,6 +1648,35 @@ export function addCorrection(
 }
 
 // ── voice (FUP-VOI) ────────────────────────────────────────────────────────────
+/** B3: a note that has no proposal this long after upload is given up ("Type the note instead"). */
+export const VOICE_TIMEOUT_MS = 180_000;
+
+/**
+ * Real speech-to-text (B3). The pilot server — or the demo mock server with real STT switched on —
+ * registers how an uploaded note reaches ai-service. Without a hook the demo fixture is used.
+ */
+export interface VoiceDispatch {
+  voiceId: string;
+  recordId: string;
+  groupId: string;
+  durationS: number;
+  roster: { id: string; displayName: string; nicknames: string[] }[];
+  assessment: { title: string; maxScore: number } | null;
+}
+let voiceHook: ((d: VoiceDispatch) => void) | null = null;
+/** Pilot: may this teacher record voice notes now (consent signed, voice switched on)? */
+let voicePolicy: ((userId: string) => boolean) | null = null;
+let voiceUploadPath = (id: string) => `/__mock/uploads/${id}`;
+export function configureVoice(opts: {
+  dispatch: ((d: VoiceDispatch) => void) | null;
+  policy?: ((userId: string) => boolean) | null;
+  uploadPath?: (id: string) => string;
+}) {
+  voiceHook = opts.dispatch;
+  voicePolicy = opts.policy ?? null;
+  if (opts.uploadPath) voiceUploadPath = opts.uploadPath;
+}
+
 export function createVoiceNote(
   userId: string,
   body: { sessionRecordId: string; durationS: number },
@@ -1613,8 +1685,8 @@ export function createVoiceNote(
   const s = load();
   if (key && s.idem[key]?.kind === 'voice')
     return voiceDto(s.voice.find((v) => v.id === s.idem[key]!.id)!);
-  if (isPilot())
-    // Part A: no speech-to-text in the pilot yet; the app offers "Type the note instead".
+  if (isPilot() && !(voicePolicy?.(userId) ?? false))
+    // No signed consent (OD-52) or voice switched off: the app offers "Type the note instead".
     throw new MockProblem(503, 'stt_unavailable', 'Voice notes are not available yet.');
   const r = recordById(body.sessionRecordId);
   requireTeacher(userId, r.groupId);
@@ -1627,6 +1699,7 @@ export function createVoiceNote(
     status: 'queued',
     readyAt: null,
     extraction: { id: nextId('vx'), status: 'clarification_needed', resolved: {} },
+    teacherId: userId,
   };
   s.voice.push(v);
   if (key) s.idem[key] = { kind: 'voice', id: v.id };
@@ -1638,25 +1711,135 @@ const voiceDto = (v: Voice): VoiceNote => ({
   sessionRecordId: v.recordId,
   status: v.status,
   durationS: v.durationS,
-  uploadUrl: `/__mock/uploads/${v.id}`,
+  uploadUrl: voiceUploadPath(v.id),
 });
 const voiceById = (id: string) => {
   const v = load().voice.find((x) => x.id === id);
   if (!v) throw new MockProblem(404, 'not_found', 'Voice note not found.');
   return v;
 };
+export const voiceNote = (id: string) => voiceDto(voiceById(id));
+/** The pilot's audio upload route: only the teacher of the record may upload, once, before processing. */
+export function assertVoiceUpload(userId: string, id: string) {
+  const v = voiceById(id);
+  requireTeacher(userId, recordById(v.recordId).groupId);
+  if (v.status !== 'queued') throw new MockProblem(409, 'already_uploaded', 'Already uploaded.');
+}
+
+function dispatch(v: Voice) {
+  const r = recordById(v.recordId);
+  v.submittedAt = Date.now();
+  v.failure = null;
+  v.result = null;
+  v.status = 'transcribing';
+  voiceHook!({
+    voiceId: v.id,
+    recordId: v.recordId,
+    groupId: r.groupId,
+    durationS: v.durationS,
+    roster: rosterOf(r.groupId).map((st) => ({
+      id: st.id,
+      displayName: st.name.ar,
+      nicknames: [],
+    })),
+    assessment: r.assessment
+      ? { title: tx(r.assessment.title, 'ar')!, maxScore: r.assessment.maxScore }
+      : null,
+  });
+}
+
 export function voiceUploaded(userId: string, id: string): VoiceNote {
   const v = voiceById(id);
   requireTeacher(userId, recordById(v.recordId).groupId);
   if (v.status === 'queued') {
-    v.status = 'transcribing';
-    v.readyAt = Date.now() + STT_DELAY_MS;
+    if (voiceHook) dispatch(v);
+    else {
+      v.status = 'transcribing';
+      v.readyAt = Date.now() + STT_DELAY_MS;
+    }
+    audit(
+      'voice.uploaded',
+      userId,
+      { en: 'Voice note uploaded', ar: 'تم رفع ملاحظة صوتية' },
+      undefined,
+      {
+        voiceId: v.id,
+        recordId: v.recordId,
+        durationS: v.durationS,
+      },
+    );
   }
   save();
   return voiceDto(v);
 }
 
-/** null while processing (HTTP 202). */
+/** B3 "Try again": hand the kept audio to ai-service again. */
+export function retryVoice(userId: string, id: string): VoiceNote {
+  const v = voiceById(id);
+  requireTeacher(userId, recordById(v.recordId).groupId);
+  if (!voiceHook) throw new MockProblem(409, 'not_real_stt', 'Nothing to retry.');
+  if (v.status === 'queued')
+    throw new MockProblem(409, 'not_uploaded', 'Upload the recording first.');
+  if (v.result) return voiceDto(v);
+  dispatch(v);
+  save();
+  return voiceDto(v);
+}
+
+/** ai-service's answer for a note (posted back through the server's internal route). */
+export function setVoiceResult(id: string, body: VoiceResultIn) {
+  const v = voiceById(id);
+  const at = new Date().toISOString();
+  if (body.status === 'ready' && body.result) {
+    const groupId = recordById(v.recordId).groupId;
+    // Never trust ids blindly: only students of this group can be attached or offered.
+    const ok = (sid: string | null) => !sid || inGroup(groupId, sid);
+    const items = body.result.items.filter(
+      (it) => ok(it.studentId) && it.candidates.every((c) => inGroup(groupId, c)),
+    );
+    v.result = {
+      transcript: body.result.transcript,
+      items,
+      modelVersion: body.result.modelVersion,
+      latencyMs: body.result.latencyMs,
+    };
+    v.status = 'ready';
+    v.failure = null;
+    v.extraction = { id: v.extraction.id, status: 'proposed', resolved: {}, discarded: [] };
+    refreshExtractionStatus(v);
+    audit(
+      'voice.processed',
+      null,
+      { en: 'Voice note processed', ar: 'تمت معالجة ملاحظة صوتية' },
+      at,
+      {
+        voiceId: v.id,
+        recordId: v.recordId,
+        items: items.length,
+        needsIdentity: v.extraction.status === 'clarification_needed',
+        modelVersion: body.result.modelVersion,
+        sttMs: body.result.latencyMs?.stt ?? null,
+        totalMs: body.result.latencyMs?.total ?? null,
+      },
+    );
+  } else {
+    v.status = 'failed';
+    v.failure = { code: body.code ?? 'stt_failed', at };
+    audit(
+      'voice.failed',
+      null,
+      { en: 'Voice note could not be processed', ar: 'تعذّرت معالجة ملاحظة صوتية' },
+      at,
+      {
+        voiceId: v.id,
+        code: v.failure.code,
+      },
+    );
+  }
+  save();
+}
+
+/** null while processing (HTTP 202, with an estimate). */
 export function voiceExtraction(userId: string, id: string, lang: Lang): VoiceExtraction | null {
   const s = load();
   const v = voiceById(id);
@@ -1669,6 +1852,20 @@ export function voiceExtraction(userId: string, id: string, lang: Lang): VoiceEx
     );
   if (v.status === 'queued')
     throw new MockProblem(409, 'not_uploaded', 'Upload the recording first.');
+  if (v.submittedAt != null && !v.result) {
+    if (v.failure)
+      throw new MockProblem(
+        503,
+        'stt_failed',
+        'This note could not be processed. The audio is kept.',
+        {
+          reason: v.failure.code,
+        },
+      );
+    if (Date.now() - v.submittedAt > VOICE_TIMEOUT_MS)
+      throw new MockProblem(503, 'stt_timeout', 'This note is taking too long. The audio is kept.');
+    return null;
+  }
   if (v.readyAt && Date.now() < v.readyAt) return null;
   if (v.status !== 'ready') {
     v.status = 'ready';
@@ -1676,19 +1873,54 @@ export function voiceExtraction(userId: string, id: string, lang: Lang): VoiceEx
   }
   return extractionDto(v, lang);
 }
+/** For the 202 body: seconds left (estimate) while a real note is processed. */
+export function voiceEta(id: string): number | null {
+  const v = voiceById(id);
+  if (v.submittedAt == null || v.result) return null;
+  const est = v.etaSeconds ?? Math.max(10, Math.round(v.durationS * 0.8) + 10);
+  return Math.max(3, Math.round(est - (Date.now() - v.submittedAt) / 1000));
+}
+export function setVoiceEta(id: string, seconds: number) {
+  voiceById(id).etaSeconds = seconds;
+  save();
+}
 
 function bandOf(c: number): VoiceItem['band'] {
   return c >= 0.85 ? 'high' : c >= 0.6 ? 'medium' : 'low'; // OD-36
 }
+/** The proposal's items: ai-service's for a real note, the fixture otherwise. */
+function itemsOf(v: Voice): StoredVoiceItem[] {
+  if (v.result) return v.result.items;
+  return fx.voiceItems.map((it) => ({
+    id: it.id,
+    identity: it.identity,
+    studentId: it.identity === 'matched' ? it.studentId : null,
+    candidates: [...it.candidates],
+    mention: it.mention,
+    field: it.field,
+    value: it.value,
+    confidence: it.confidence,
+    span: it.span,
+    sourceText: fx.voiceTranscript.slice(it.span.start, it.span.end),
+    outOfRange:
+      it.field === 'score' &&
+      typeof it.value === 'number' &&
+      it.value > fx.assessments.practice.maxScore,
+  }));
+}
 function extractionDto(v: Voice, lang: Lang): VoiceExtraction {
   const mentioned = new Set<string>();
-  const items: VoiceItem[] = fx.voiceItems.map((it) => {
+  const r = recordById(v.recordId);
+  const items: VoiceItem[] = itemsOf(v).map((it) => {
     const chosen = v.extraction.resolved[it.id];
     const studentId = it.identity === 'matched' ? it.studentId : (chosen ?? null);
     if (studentId) mentioned.add(studentId);
     return {
       id: it.id,
-      identity: it.identity === 'ambiguous' && chosen ? 'matched' : it.identity,
+      identity:
+        (it.identity === 'ambiguous' || it.identity === 'unknown') && chosen
+          ? 'matched'
+          : it.identity,
       student: studentId ? person(studentId, lang) : null,
       candidates: it.candidates.map((c) => person(c, lang)),
       mention: it.mention,
@@ -1697,28 +1929,29 @@ function extractionDto(v: Voice, lang: Lang): VoiceExtraction {
       confidence: it.confidence,
       band: bandOf(it.confidence),
       span: it.span,
-      sourceText: fx.voiceTranscript.slice(it.span.start, it.span.end),
-      outOfRange:
-        it.field === 'score' &&
-        typeof it.value === 'number' &&
-        it.value > fx.assessments.practice.maxScore,
+      sourceText: it.sourceText,
+      outOfRange: it.outOfRange,
     };
   });
   return {
     id: v.extraction.id,
     voiceNoteId: v.id,
     status: v.extraction.status,
-    transcript: fx.voiceTranscript,
+    transcript: v.result ? v.result.transcript : fx.voiceTranscript,
     audioUrl: null,
     items,
     discardedItemIds: v.extraction.discarded ?? [],
-    unmentioned: rosterOf(recordById(v.recordId).groupId)
-      .filter((s) => !mentioned.has(s.id))
-      .map((s) => person(s.id, lang)),
-    assessment: {
-      title: fx.assessments.practice.title[lang],
-      maxScore: fx.assessments.practice.maxScore,
-    },
+    unmentioned: rosterOf(r.groupId)
+      .filter((st) => !mentioned.has(st.id))
+      .map((st) => person(st.id, lang)),
+    assessment: v.result
+      ? r.assessment
+        ? { title: tx(r.assessment.title, lang)!, maxScore: r.assessment.maxScore }
+        : null
+      : {
+          title: fx.assessments.practice.title[lang],
+          maxScore: fx.assessments.practice.maxScore,
+        },
   };
 }
 
@@ -1730,13 +1963,18 @@ export function resolveIdentity(
 ) {
   const v = load().voice.find((x) => x.extraction.id === extractionId);
   if (!v) throw new MockProblem(404, 'not_found', 'Extraction not found.');
-  requireTeacher(userId, recordById(v.recordId).groupId);
-  const it = fx.voiceItems.find((x) => x.id === body.itemId);
-  if (!it || it.identity !== 'ambiguous')
+  const groupId = recordById(v.recordId).groupId;
+  requireTeacher(userId, groupId);
+  const it = itemsOf(v).find((x) => x.id === body.itemId);
+  if (!it || (it.identity !== 'ambiguous' && it.identity !== 'unknown'))
     throw new MockProblem(422, 'not_ambiguous', 'This item needs no choice.');
-  // Never guess: only one of the listed candidates is accepted (FUP-VOI-04).
-  if (!it.candidates.includes(body.studentId))
-    throw new MockProblem(422, 'not_a_candidate', 'Pick one of the listed students.');
+  // Never guess: an ambiguous name takes one of its listed candidates; an unknown one takes a
+  // student of this group that the teacher chose (FUP-VOI-04, AI-02).
+  const allowed =
+    it.identity === 'ambiguous'
+      ? it.candidates.includes(body.studentId)
+      : inGroup(groupId, body.studentId);
+  if (!allowed) throw new MockProblem(422, 'not_a_candidate', 'Pick one of the listed students.');
   v.extraction.resolved[it.id] = body.studentId;
   v.extraction.discarded = (v.extraction.discarded ?? []).filter((x) => x !== it.id);
   refreshExtractionStatus(v);
@@ -1746,8 +1984,11 @@ export function resolveIdentity(
 
 function refreshExtractionStatus(v: Voice) {
   const discarded = v.extraction.discarded ?? [];
-  const open = fx.voiceItems.some(
-    (x) => x.identity === 'ambiguous' && !v.extraction.resolved[x.id] && !discarded.includes(x.id),
+  const open = itemsOf(v).some(
+    (x) =>
+      (x.identity === 'ambiguous' || x.identity === 'unknown') &&
+      !v.extraction.resolved[x.id] &&
+      !discarded.includes(x.id),
   );
   v.extraction.status = open ? 'clarification_needed' : 'proposed';
 }
@@ -1757,7 +1998,7 @@ export function discardItem(userId: string, extractionId: string, itemId: string
   const v = load().voice.find((x) => x.extraction.id === extractionId);
   if (!v) throw new MockProblem(404, 'not_found', 'Extraction not found.');
   requireTeacher(userId, recordById(v.recordId).groupId);
-  if (!fx.voiceItems.some((x) => x.id === itemId))
+  if (!itemsOf(v).some((x) => x.id === itemId))
     throw new MockProblem(404, 'not_found', 'Item not found.');
   v.extraction.discarded = [...new Set([...(v.extraction.discarded ?? []), itemId])];
   delete v.extraction.resolved[itemId];
@@ -1765,6 +2006,24 @@ export function discardItem(userId: string, extractionId: string, itemId: string
   save();
   return extractionDto(v, lang);
 }
+
+/**
+ * Consent withdrawn (teacher consent §6): that teacher's transcripts and proposals are removed;
+ * confirmed record values the teacher already reviewed stay (they are the teacher's own record).
+ */
+export function forgetVoiceOf(teacherId: string): string[] {
+  const ids: string[] = [];
+  for (const v of load().voice)
+    if (v.teacherId === teacherId) {
+      v.result = v.result ? { ...v.result, transcript: '', items: [] } : v.result;
+      ids.push(v.id);
+    }
+  save();
+  return ids;
+}
+/** Voice notes for the retention job: id, teacher and when the audio was handed over. */
+export const voiceNotesForRetention = () =>
+  load().voice.map((v) => ({ id: v.id, teacherId: v.teacherId ?? null, status: v.status }));
 
 // ── cases (FUP-CAS) ────────────────────────────────────────────────────────────
 function requireStaff(userId: string) {

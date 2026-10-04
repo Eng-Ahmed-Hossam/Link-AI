@@ -241,10 +241,13 @@ export const fuApi = {
   voiceUploaded: (id: string) => request<VoiceNote>('POST', `/v1/voice-notes/${id}/uploaded`),
   /** `{ status: 'transcribing' }` (HTTP 202) until the extraction is ready. */
   extraction: (voiceNoteId: string) =>
-    request<VoiceExtraction | { status: 'transcribing' }>(
+    request<VoiceExtraction | { status: 'transcribing'; etaSeconds?: number | null }>(
       'GET',
       `/v1/voice-notes/${voiceNoteId}/extraction`,
     ),
+  /** B3 "Try again": the server sends the kept audio to speech-to-text again. */
+  retryVoice: (voiceNoteId: string) =>
+    request<VoiceNote>('POST', `/v1/voice-notes/${voiceNoteId}/retry`),
   resolveIdentity: (extractionId: string, itemId: string, studentId: string) =>
     request<VoiceExtraction>('POST', `/v1/voice-extractions/${extractionId}/resolve-identity`, {
       body: { itemId, studentId },
@@ -408,6 +411,13 @@ export const pilotApi = {
     request<{ user: PilotPerson; pin: string }>('POST', '/v1/pilot/users', { body }),
   setPin: (userId: string) => request<{ pin: string }>('POST', `/v1/pilot/users/${userId}/pin`),
   removeUser: (userId: string) => request<void>('DELETE', `/v1/pilot/users/${userId}`),
+  /** The owner records a teacher's signed voice consent (E15-01), or its withdrawal. */
+  setVoiceConsent: (userId: string, granted: boolean) =>
+    request<{ userId: string; voiceConsent: boolean }>(
+      'POST',
+      `/v1/pilot/users/${userId}/voice-consent`,
+      { body: { granted } },
+    ),
 };
 
 export const isExtractionReady = (

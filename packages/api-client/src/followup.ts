@@ -519,11 +519,15 @@ export interface PilotMe {
   language: 'ar' | 'en';
   roles: ('centre_owner' | 'centre_staff' | 'teacher')[];
   centreId: string;
+  /** Part B: this teacher may record voice notes (signed consent, voice on). */
+  voiceNotes?: boolean;
 }
 /** A16 in the pilot: people, their groups, and whether they have a PIN yet. */
 export interface PilotStaffRow extends PilotPerson {
   active: boolean;
   hasPin: boolean;
+  /** Part B: the teacher's signed voice consent (E15-01), recorded by the owner. */
+  voiceConsent?: boolean;
   groups: { id: string; name: string }[];
 }
 

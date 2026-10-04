@@ -13,7 +13,9 @@
     "./world": "./src/followup/world.ts",
     "./http": "./src/http.ts",
     "./time": "./src/time.ts",
-    "./server": "./src/server.ts"
+    "./server": "./src/server.ts",
+    "./voice-bridge": "./src/followup/voice-bridge.ts",
+    "./ai-client": "./src/followup/ai-client.ts"
   },
   "scripts": {
     "typecheck": "tsc -p .",

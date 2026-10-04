@@ -2,8 +2,10 @@
  * `pnpm mock:server` — the same MSW handlers the apps use in `mock` mode, served over HTTP with ONE
  * shared in-memory state, so the parent PWA, the owner web and the teacher app see the same data
  * (API mode `mock-server`). Dev only: refuses to start unless APP_ENV is unset or `local`.
- * No real provider is ever called. The only file it writes is the presenter's flag switches
- * (`.data/demo-flags.json`, git-ignored) so the Phase 2 / marketplace flags survive a restart.
+ * No outside provider is ever called. The only file it writes is the presenter's flag switches
+ * (`.data/demo-flags.json`, git-ignored) so the Phase 2 / marketplace / real-STT switches survive a
+ * restart. With "real speech-to-text" on (and ai-service running on this machine, AI_SERVICE_URL +
+ * AI_SERVICE_TOKEN), voice notes and Ask Link questions go to local Whisper as `synthetic` data.
  */
 import { createServer, type IncomingMessage } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -11,11 +13,13 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getResponse } from 'msw';
 import { handlers } from './handlers';
-import { demoSnapshot, onDemoChange, setDemo, type DemoState } from './followup/db';
+import { configureVoice, demoSnapshot, onDemoChange, setDemo, type DemoState } from './followup/db';
+import { configureBridge } from './followup/voice-bridge';
+import { sendVoiceJob, transcribeQuestion, type AiTarget } from './followup/ai-client';
 
 // ── persisted demo flags ─────────────────────────────────────────────────────────
 const FLAGS_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', '.data', 'demo-flags.json');
-type Flags = Pick<DemoState, 'phase2' | 'marketplace'>;
+type Flags = Pick<DemoState, 'phase2' | 'marketplace' | 'realStt'>;
 const PRESETS: Record<string, Flags> = {
   // The MVP pilot setup (CF-29): follow-up only.
   'phase2-only': { phase2: true, marketplace: false },
@@ -25,7 +29,11 @@ const PRESETS: Record<string, Flags> = {
 if (existsSync(FLAGS_FILE)) {
   try {
     const saved = JSON.parse(readFileSync(FLAGS_FILE, 'utf8')) as Partial<Flags>;
-    setDemo({ phase2: !!saved.phase2, marketplace: saved.marketplace !== false });
+    setDemo({
+      phase2: !!saved.phase2,
+      marketplace: saved.marketplace !== false,
+      realStt: !!saved.realStt,
+    });
   } catch {
     /* unreadable: fall back to the preset below */
   }
@@ -34,16 +42,51 @@ if (existsSync(FLAGS_FILE)) {
 }
 let lastSaved = '';
 const persistFlags = (d: DemoState) => {
-  const json = JSON.stringify({ phase2: d.phase2, marketplace: d.marketplace }, null, 2);
+  applyRealStt(!!d.realStt);
+  const json = JSON.stringify(
+    { phase2: d.phase2, marketplace: d.marketplace, realStt: !!d.realStt },
+    null,
+    2,
+  );
   if (json === lastSaved) return;
   lastSaved = json;
   mkdirSync(dirname(FLAGS_FILE), { recursive: true });
   writeFileSync(FLAGS_FILE, json + '\n');
 };
-onDemoChange(persistFlags);
-persistFlags(demoSnapshot().demo);
 
 const PORT = Number(process.env.MOCK_SERVER_PORT ?? 4010);
+
+// ── real speech-to-text in the demo (B3) ─────────────────────────────────────────
+const AI: AiTarget | null =
+  process.env.AI_SERVICE_URL && process.env.AI_SERVICE_TOKEN
+    ? {
+        url: process.env.AI_SERVICE_URL,
+        token: process.env.AI_SERVICE_TOKEN,
+        dataClass: 'synthetic', // the presenter's role-played notes: never real student audio
+        callbackBase: `http://127.0.0.1:${PORT}`,
+      }
+    : null;
+const audio = new Map<string, { bytes: Uint8Array; mime: string }>();
+let realOn: boolean | null = null;
+function applyRealStt(on: boolean) {
+  const active = on && !!AI;
+  if (active === realOn) return;
+  realOn = active;
+  if (on && !AI)
+    console.warn('mock-server: real speech-to-text is on but ai-service is not set up.');
+  configureBridge({
+    audioStore: active ? { put: (id, bytes, mime) => void audio.set(id, { bytes, mime }) } : null,
+    internalToken: active ? AI!.token : null,
+    assistantStt: active ? (bytes, mime) => transcribeQuestion(AI!, bytes, mime) : null,
+  });
+  configureVoice({
+    dispatch: active
+      ? (d) => void sendVoiceJob(AI!, d, audio.get(d.voiceId) ?? null) // kept for "Try again"
+      : null,
+  });
+}
+onDemoChange(persistFlags);
+persistFlags(demoSnapshot().demo);
 const env = process.env.APP_ENV ?? 'local';
 if (env !== 'local') {
   console.error(`mock-server: refusing to start with APP_ENV=${env} (local only).`);
