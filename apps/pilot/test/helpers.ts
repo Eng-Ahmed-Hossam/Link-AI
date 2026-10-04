@@ -100,12 +100,13 @@ export function seedPilot(dir: string) {
 }
 
 /** An in-process pilot app on `dir` (no listeners). */
-export function openApp(dir: string) {
+export function openApp(dir: string, extraEnv: Record<string, string> = {}) {
   const cfg = pilotConfig({
     PILOT_DATA_DIR: dir,
     PILOT_BIND: '127.0.0.1',
     PILOT_WEB_PORT: '18443',
     PILOT_TEACHER_PORT: '18444',
+    ...extraEnv,
   } as NodeJS.ProcessEnv);
   const store = new PilotStore(dir);
   store.open();

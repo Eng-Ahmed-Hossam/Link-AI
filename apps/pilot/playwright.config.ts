@@ -1,4 +1,8 @@
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@playwright/test';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 /**
  * Pilot mode end to end (docs/pilot): the real pilot builds and the pilot server with a fresh,
@@ -16,7 +20,12 @@ export default defineConfig({
     viewport: { width: 1440, height: 1000 },
     permissions: ['microphone', 'clipboard-read', 'clipboard-write'],
     launchOptions: {
-      args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
+      args: [
+        '--use-fake-ui-for-media-stream',
+        '--use-fake-device-for-media-stream',
+        // The "microphone" plays a synthetic teacher note (local TTS, bench audio): voice.spec.ts.
+        `--use-file-for-fake-audio-capture=${join(HERE, '..', 'ai-service', 'bench', 'audio', 'b01.wav')}`,
+      ],
     },
     trace: 'retain-on-failure',
   },

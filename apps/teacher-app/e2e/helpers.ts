@@ -19,6 +19,7 @@ export async function resetScenario(settings: Record<string, unknown> = {}) {
   await post('/__demo/settings', {
     phase2: true,
     marketplace: false,
+    realStt: false, // fixtures, not local Whisper: tests stay deterministic
     offline: false,
     sttDown: false,
     confirmFault: null,

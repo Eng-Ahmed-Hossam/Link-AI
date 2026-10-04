@@ -30,6 +30,19 @@ const env = {
   PILOT_WEB_PORT: '9443',
   PILOT_TEACHER_PORT: '9444',
   PILOT_WEB_UPSTREAM: 'http://127.0.0.1:3101',
+  // Opt-in real voice path (PILOT_E2E_VOICE=1): ai-service with local Whisper on the CPU (like a
+  // laptop without a GPU) and Ollama, on test ports.
+  ...(process.env.PILOT_E2E_VOICE === '1'
+    ? {
+        PILOT_VOICE: '1',
+        AI_SERVICE_PORT: '18090',
+        AI_SERVICE_URL: 'http://127.0.0.1:18090',
+        MODEL_ROUTING_CONFIG: JSON.stringify({
+          stt: { provider: 'local-whisper', model: 'large-v3-turbo', device: 'cpu' },
+          llm: { provider: 'ollama', model: 'qwen3:8b' },
+        }),
+      }
+    : {}),
 };
 const tsx = join(PILOT, 'node_modules', 'tsx', 'dist', 'cli.mjs');
 const cli = (script, args) =>
