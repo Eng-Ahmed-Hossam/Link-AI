@@ -9,7 +9,8 @@
     "typecheck": "tsc -p .",
     "lint": "eslint .",
     "msw:init": "msw init public --no-save",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:demo": "playwright test -c playwright.demo.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
