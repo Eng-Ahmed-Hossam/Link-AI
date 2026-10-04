@@ -2,6 +2,21 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-05 — Part B: local speech-to-text and extraction (pilot and demo)
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | adr/ADR-0007 | New: ai-service with faster-whisper (`large-v3-turbo` default) and Ollama `qwen3:8b`, the data-safety guard, gateway versioning, licences, the benchmark on this laptop and what fits which laptop. Groq declared, not wired (no key; terms not checked). | B1, B2; OD-51 |
+| 2 | 09 | New §2.6 "As built": order (rules first, LLM for the rest), grounding, the LLM budget, model version, the `link_nlp` stub. §8: data classes and the guard. | What the code does, and why (LLM tests) |
+| 3 | 07 | Extraction 202 carries `etaSeconds`; 503 `stt_failed` / `stt_timeout`; `POST /v1/voice-notes/{id}/retry`. §2d: pilot voice endpoints (`PUT …/audio`, voice consent, `/v1/me.voiceNotes`, the loopback-only internal callback) and the ai-service API. | B3 |
+| 4 | 06 | `voice_notes.data_class`; pilot retention `min(+30 days, pilot end)`, encrypted audio, deletion on consent withdrawal. | B2, B3 |
+| 5 | 13 | OD-57 annotated: voice on per teacher consent with `PILOT_VOICE=1`; Ask Link still hidden in the pilot. | Part B |
+| 6 | 14 | Ollama in Tools; ai-service env vars; `pnpm ai:eval` (real predictions), `ai:models`, `ai:bench`; Python lint/typecheck real; the demo's "Speech-to-text: local Whisper (real)" flag. `.env.example` updated. | B1, B3, B4 |
+| 7 | pilot/runbook | §1b: what to download before the visit (~11 GB), checks, `PILOT_VOICE`, per-teacher consent, measured speed. "What is stored where": encrypted audio, `ai-usage.jsonl`. | Laptop setup |
+| 8 | frontend/screen-log.md | Part B rows: V01 processing and failed states, V02 real, A16 voice consent, Ask Link demo label, the demo toggle. | B3 |
+| 9 | pilot/accuracy.md | New: "What we learned about accuracy" (synthetic audio only). | Demo Day |
+| 10 | pilot/strings-to-review.csv | Re-exported with the Part B strings. | Copy review |
+
 ## 2026-10-04 — Concierge pilot, Part A (pilot-ready)
 
 | # | File | What changed | Why |

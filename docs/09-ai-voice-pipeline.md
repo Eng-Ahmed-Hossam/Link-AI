@@ -106,6 +106,13 @@ Validation after the call (in ai-service, before the proposal is stored):
 - `score` must be between 0 and the assessment maximum. Otherwise keep the value, mark it `out_of_range`, and show it as a blocking error (AI-06).
 - `topic` is kept only in Phase 3, and only if it matches a topic in the teacher's topic map (CF-07).
 
+### 2.6 As built for the pilot and the demo (Part B, ADR-0007)
+- **Order:** clean-up → roster match → tokenise → `rule_extract` (attendance, late minutes, scores) → the LLM **only** for observations and what the rules missed (the prompt lists what is already extracted) → `validate_extraction` → grounding → detokenise. Rules win when both give the same student and field.
+- **Grounding** (added after tests with `qwen3:8b`, which invented a score of 0, observations that were not said and a confidence of 1.0): an LLM number must appear in the note; an observation must reuse the teacher's own words; whole-class lines (`unassigned`) may not contain a token or Latin text; "present" must be said in the student's clause; two different LLM values for one student and field cancel out (rules win over the LLM); one-word whole-class lines are dropped; LLM confidence is capped at 0.80, so an LLM item is never pre-filled as sure (OD-36 bands: "check" or blank).
+- **Limits:** prompt `extract-v3`, temperature 0, at most 800 output tokens, thinking off. One time budget for the whole LLM step (`AI_LLM_BUDGET_S`, 90 s); a timeout is not retried. Out of time or invalid twice → the rule items only (§9). The whole note is given up after 3 minutes ("Type the note instead", the audio kept for "Try again").
+- **Model version** on every result: `faster-whisper:<model>@<compute>/<device>|link_nlp@<version>|ollama:<model>+extract-v3`.
+- **NLP core:** `py/link_nlp` (Codex track) owns normalisation, matching (0.85 / margin 0.15), tokenisation, rules, the schema and its validator. Until it is merged, ai-service uses a stub with the same contract (`link_nlp@stub` in the model version).
+
 ## 3. Confidence handling
 
 Starting thresholds (OD-36), tuned on the evaluation set:
@@ -186,6 +193,7 @@ Inside ai-service. Every STT and LLM call goes through it.
 - No person name reaches the LLM: every detected name span is tokenised as `<S…>`, `<A…>` or `<U…>` (§2.4), and guardian contact data is redacted.
 - Audio: encrypted, signed URLs only, deleted after 30 days (BR-DAT-04). Transcripts: per OD-28.
 - Teacher corrections are used as training labels **only** for data covered by the `ai_training_use` consent.
+- **Data classes (Part B, OD-51):** every audio file and transcript is `synthetic` or `consented_real`. Each provider declares `allows_real_data`, `trains_on_inputs` and `processing_region`; the gateway refuses `consented_real` for anything but a local provider that allows real data and does not train on it — an error, never a fallback to another provider (`apps/ai-service/tests/test_guard.py`).
 
 ## 9. Failure modes
 

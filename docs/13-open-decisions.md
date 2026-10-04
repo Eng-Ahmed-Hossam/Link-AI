@@ -84,7 +84,7 @@ A pseudonymised pilot of the follow-up loop at one centre, run on one laptop at 
 | OD-54 | **OD-21 for the pilot:** the roster comes from a CSV we load (`pnpm pilot:import`); no import screen (A15 stays blocked). | Plus a schedule CSV (group, weekday, start, end): the rule needs scheduled sessions. | Founder | decided for the pilot |
 | OD-55 | **OD-36:** keep the defaults (0.85 / 0.60); tune them after the accuracy eval. | — | Founder | decided |
 | OD-56 | **Messages in the pilot are sent by hand** from the centre's own WhatsApp. Link records "sent by hand by <name>" as a contact attempt (`whatsapp_manual`); it never shows Delivered or Read (BR-APR-11). Guardian opt-in state does not apply, because the centre sends. | Pilot only. The WhatsApp API waits until after Demo Day. | Founder | decided |
-| OD-57 | **Ask Link is hidden in the pilot** (its answers are fixtures); **voice notes show "Type the note instead"** until local speech-to-text lands (Part B). Message drafts are deterministic Egyptian Arabic templates filled only from confirmed facts. | Pilot only; demo mode unchanged. | Founder | decided |
+| OD-57 | **Ask Link is hidden in the pilot** (its answers are fixtures); **voice notes show "Type the note instead"** until local speech-to-text lands (Part B). **Part B (2026-10-05):** voice notes run locally (ADR-0007) when `PILOT_VOICE=1` and only for teachers whose signed voice consent the owner recorded; others still see "Type the note instead". Ask Link stays hidden in the pilot. Message drafts are deterministic Egyptian Arabic templates filled only from confirmed facts. | Pilot only; demo mode unchanged. | Founder | decided |
 
 ---
 

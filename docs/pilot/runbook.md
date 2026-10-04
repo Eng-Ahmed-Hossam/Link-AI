@@ -22,6 +22,29 @@ pnpm pilot:build          # owner web + teacher app, pilot builds; ends with the
 
 Measured 2026-10-04 on the build laptop (Windows 11), fresh `git clone` with pnpm's package cache already warm: clone 6 s · `pnpm install` 2 min 42 s · `pnpm pilot:build` 46 s (84 s with a cold build cache) · `pilot:init` + `pilot:cert` + `pilot:import` + `pilot:check` about 5 s · server up in a few seconds — **about 4 minutes**. Not measured: a truly clean laptop, which also installs Git, Node.js and pnpm and downloads the packages (allow 20–40 minutes on the centre Wi-Fi; do it before the visit).
 
+## 1b. Voice notes: speech-to-text and the LLM (Part B) — download before you go
+
+Voice notes run **entirely on this laptop** (OD-51): local Whisper (faster-whisper) turns the audio into text and a local LLM (Ollama) helps with observations. Nothing is sent to any online service. About **11 GB of downloads**: do them at home or the office, not on the centre Wi-Fi.
+
+| What | Size | Command |
+|---|---|---|
+| uv (Python tool) | ~30 MB | `powershell -c "irm https://astral.sh/uv/install.ps1 \| iex"` |
+| ai-service Python packages | ~1.5 GB with the GPU libraries, ~0.4 GB without | `uv sync --directory apps/ai-service` (add `--extra gpu` only on a laptop with an NVIDIA card) |
+| Whisper models | ~1.6 GB (`large-v3-turbo`, the default) · +1.6 GB (`egy-turbo-ft`) · +3 GB (`large-v3`) | `pnpm ai:models large-v3-turbo` (or no name for all three; resumable) |
+| Ollama | ~1 GB | install from ollama.com (Windows installer); it runs in the background |
+| The LLM | ~5.2 GB (`qwen3:8b`) | `ollama pull qwen3:8b` |
+
+Check before the visit (no internet needed after this):
+```powershell
+ollama list                                            # qwen3:8b is listed
+uv --directory apps/ai-service run pytest -q           # ai-service tests pass
+pnpm ai:bench --models large-v3-turbo --devices cpu     # optional: this laptop's speed (writes apps/ai-service/bench/out)
+```
+
+Turn voice on for the pilot: add `PILOT_VOICE=1` to `apps\pilot\.env.pilot`. `pnpm pilot:start` then also starts ai-service on 127.0.0.1 (never the LAN) with a fresh shared token. Voice is still **per teacher**: the owner records each teacher's signed voice consent in Staff & access → "Consent signed" (OD-52). Without it the teacher sees "Type the note instead". Withdrawing consent deletes that teacher's recordings and their text at once.
+
+Speed (measured on the build laptop, i7-9750H, 16 GB; a 60-second note): `large-v3-turbo` on the CPU about **43 s**, on an RTX 2070 about **3 s**; the LLM step adds 3–14 s on the GPU. **On a laptop without an NVIDIA GPU**, `qwen3:8b` usually runs out of its time (a note then takes about 1 min 45 s and keeps the rule results only): pull `qwen3:4b` instead and set `MODEL_ROUTING_CONFIG={"llm":{"model":"qwen3:4b"}}` in `.env.pilot`, and measure it before the visit ([ADR-0007](../adr/ADR-0007-local-speech-to-text-and-llm.md)). A note waits at most 3 minutes; after that the teacher sees "Type the note instead" and can try again (the audio is kept). Recordings are encrypted on the laptop and deleted 30 days after upload or at the end of the pilot, whichever is first.
+
 ## 2. Check the encryption
 
 ```powershell
@@ -125,5 +148,7 @@ pnpm pilot:restore <name>         # server stopped; asks you to type RESTORE; cu
 | `<data>\activity.jsonl` | Append-only activity log: ids, dates and actions, plus a readable line that names the pseudonymised student (e.g. "Note saved for مريم") and any dismiss reason staff typed. No message bodies. |
 | `<data>\backups\` | 48 copies of both files. |
 | `<data>\tls\` | The pilot CA and server certificate and keys. |
+| `<data>\audio\` | Voice recordings (Part B), **encrypted** (AES-256-GCM) with the key in `<data>\keys\`; deleted 30 days after upload or at the pilot's end. |
+| `<data>\ai-usage.jsonl` | One line per speech-to-text / LLM call: task, model, data class, seconds. No text, no names. |
 | Teacher phones | Drafts and unsent records in browser storage ("not encrypted — placeholder" label) until confirmed. |
-| Nowhere | Phone numbers, national IDs, audio (no recording in Part A). |
+| Nowhere else | Phone numbers, national IDs. Audio and transcripts never leave the laptop (ai-service runs here). |

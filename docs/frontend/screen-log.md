@@ -89,3 +89,15 @@ Pilot builds (`pnpm pilot:build`: `NEXT_PUBLIC_LINK_MODE` / `EXPO_PUBLIC_LINK_MO
 | T01 Today | The owner's correction requests (open history, "the record is right — mark done") (both modes) | CF-34 | `T01-today.ar` |
 | T04 Observation | "Type the note instead" in place of the voice card (until local STT, Part B) | OD-57 | `T04-type-instead.ar` |
 | P09 (demo) | With the marketplace off: only the child's groups at the centre + updates feed | CF-39 | — |
+
+### Part B: real speech-to-text (2026-10-05, ADR-0007)
+
+| Screen | Difference | Stories / decisions | Screenshots |
+|---|---|---|---|
+| T04 Observation | Pilot: the voice card is back for a teacher whose voice consent is recorded and with `PILOT_VOICE=1`; others keep "Type the note instead" | OD-57, OD-52 | — |
+| V01 Processing | "Processing your note on the centre laptop… about N seconds left." (estimate from ai-service, ICU plural) | FUP-VOI-06 | — |
+| V01 Failed | After a failure or 3 minutes: "We couldn't process this note" + **Try again** (the kept audio is sent again) + **Type the note instead** | FUP-VOI-06 | — |
+| V02 What the AI understood | Real transcript and proposal from local Whisper + rules + LLM (pilot: `consented_real`; demo with "Speech-to-text: local Whisper (real)": `synthetic`) | FUP-VOI-03 | `docs/pilot/screenshots/V02-real-stt.ar` (from the opt-in voice e2e) |
+| A16 Staff (pilot) | "Voice consent" column: "Signed" / "Not signed"; the owner presses "Consent signed" or "Withdraw (deletes recordings)" | E15-01, OD-52 | — |
+| V07 Ask Link (demo) | With real STT on, the question is transcribed for real; answers stay scripted with a "Demo answer (scripted)" badge. Still hidden in the pilot | OD-57 | — |
+| Demo controls (web + teacher dev panel) | Toggle "Speech-to-text: local Whisper (real) \| fixture" | §5.2 docs/14 | — |

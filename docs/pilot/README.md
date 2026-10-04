@@ -11,8 +11,9 @@ The pseudonymised follow-up pilot at one centre (OD-50 to OD-57 in [docs/13](../
 | [guardian-notice.md](guardian-notice.md) | Guardians, if the centre wants to share it | Arabic, then English |
 | [daily-check-in.md](daily-check-in.md) | Us: what to ask and observe each day | Arabic questions, English notes |
 | [end-of-pilot-interview.md](end-of-pilot-interview.md) | Us: value, what they would stop using, and the price question | Arabic script, English notes |
+| [accuracy.md](accuracy.md) | Demo Day and the team: what we learned about speech-to-text and extraction accuracy (synthetic audio only) | English |
 | [strings-to-review.csv](strings-to-review.csv) | The founder: Arabic review of the pilot screens and the demo path | — |
 | [sample/](sample/) | Synthetic roster and schedule CSVs (the template the centre fills in) | — |
 | `metrics-<date>.md` / `.csv` | Results from `pnpm pilot:metrics` (git-ignored: check before sharing) | English |
 
-**Nothing real is recorded** until the founder approves the consent pack in writing (OD-52). Part A of the pilot records no voice at all: teachers type the note and tap attendance.
+**Nothing real is recorded** until the founder approves the consent pack in writing (OD-52). Part A of the pilot records no voice at all: teachers type the note and tap attendance. Part B adds voice notes on the laptop only (ADR-0007), off unless `PILOT_VOICE=1`, and only for teachers whose signed voice consent the owner has recorded.

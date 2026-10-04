@@ -6,7 +6,8 @@
     "marketplace": false,
     "sttDown": false,
     "confirmFault": null,
-    "dayOffset": 0
+    "dayOffset": 0,
+    "realStt": false
   },
   "counters": {
     "confirmCalls": 1,
@@ -37,12 +38,12 @@
       ]
     },
     {
-      "id": "sig-118",
+      "id": "sig-119",
       "rule": "consecutive_absences",
       "ruleVersion": 1,
       "student": "مريم حسن",
       "status": "case_opened",
-      "caseId": "case-119",
+      "caseId": "case-120",
       "explanation": "غابت عن حصتين متتاليتين: ٣٠ سبتمبر و٣ أكتوبر",
       "evidence": [
         {
@@ -65,11 +66,11 @@
       "dueOn": "2026-09-30"
     },
     {
-      "id": "case-119",
+      "id": "case-120",
       "student": "مريم حسن",
       "assignee": "دينا عادل",
       "status": "open",
-      "dueOn": "2026-10-04"
+      "dueOn": "2026-10-05"
     }
   ],
   "messages": []

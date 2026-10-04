@@ -24,7 +24,8 @@ pnpm db:migrate && pnpm db:seed
 | Node.js | 24 LTS (`engines: >=24`) | core-api, web, ops, teacher app; repo scripts |
 | pnpm | 12.8.1 (`packageManager` in `package.json`) | Workspaces (ADR-0004) |
 | Python | 3.12 | ai-service |
-| uv | latest | Python dependencies, `ruff`, `pytest`, `mypy` |
+| uv | latest (0.11 used) | Python dependencies, `ruff`, `pytest`, `mypy` |
+| Ollama | current (0.35 used) | Local LLM for voice extraction (`ollama pull qwen3:8b`, ADR-0007). Optional: without it, notes get rule results only |
 | Docker + Docker Compose | current | Local services (§2) |
 | Expo CLI / EAS CLI | current | Teacher app builds |
 | Terraform | pinned in `infra/` | Cloud environments |
@@ -95,7 +96,17 @@ Names and purpose only. **Never commit values.** `.env.example` lists every name
 | `CORE_API_URL` | Write-back through core-api only |
 | `STT_PROVIDER`, `STT_API_KEY` | Speech-to-text vendor (chosen by E15-03) |
 | `LLM_PROVIDER`, `LLM_API_KEY` | LLM vendor, through the model gateway |
-| `MODEL_ROUTING_CONFIG` | Per-task vendor, model and prompt version |
+| `MODEL_ROUTING_CONFIG` | Per-task vendor, model and prompt version (JSON, or a path to a `.json` file). Local ai-service keys: `stt_provider`, `stt_model` (`large-v3-turbo` default), `stt_device` (`auto`/`cuda`/`cpu`), `stt_compute`, `llm_provider`, `llm_model` (`qwen3:8b`) |
+| `AI_SERVICE_TOKEN` | Shared secret between the pilot server or mock server and ai-service; `pilot:start` and `pnpm demo` generate one at random per start. ai-service refuses to start without it |
+| `AI_SERVICE_HOST`, `AI_SERVICE_PORT` | Where ai-service listens: `127.0.0.1:8090`. A non-loopback host is refused |
+| `AI_SERVICE_URL` | Where the pilot / mock server reaches ai-service |
+| `AI_MODELS_DIR` | Whisper models (`apps/ai-service/.models`, from `pnpm ai:models`) |
+| `OLLAMA_URL` | Local Ollama (`http://127.0.0.1:11434`) |
+| `AI_USAGE_LOG` | One JSON line per STT/LLM call (task, model, data class, seconds; no text) |
+| `AI_JOB_TIMEOUT_S` | Per-note limit (180 s); after it the teacher sees "Type the note instead" |
+| `AI_PRELOAD` | `0` = load the Whisper model on the first note instead of at start (`pnpm demo` sets it unless real speech-to-text was left on) |
+| `AI_LLM_BUDGET_S` | The LLM step's share of a note, all attempts together (90 s); a timeout is not retried and the note keeps the rule results |
+| `PILOT_VOICE` | `1` turns voice notes on in the pilot (still per teacher consent, OD-52) |
 | `AI_BUDGET_DEFAULT_PER_CENTRE` | Monthly cost budget used for alerts (09 §7) |
 | `EVAL_GOLD_SET_URI` | Location of the locked gold set (09 §6) |
 
@@ -147,15 +158,18 @@ All commands are Node scripts, so they run the same in PowerShell, cmd and bash.
 | `pnpm db:seed` | Load the §4 sample data (refused when `APP_ENV=prod`) | real |
 | `pnpm env:check` | Fail if code reads an env name missing from `.env.example` | real |
 | `pnpm dev` | Run api, workers, gateway, ai-service, web, ops and the teacher app locally | *planned* (Part 2) |
-| `pnpm lint` | ESLint + RTL check; `ruff` for ai-service | real (TS); *planned* (Python) |
-| `pnpm typecheck` | `tsc`; `mypy` for ai-service | real (TS); *planned* (Python) |
+| `pnpm lint` | ESLint + RTL check; `ruff` for ai-service | real |
+| `pnpm typecheck` | `tsc`; `mypy` for ai-service | real |
 | `pnpm test` | Unit + integration tests | real (frontend packages) |
 | `pnpm test:rls` | Cross-tenant suite: a user of centre A gets `404` for centre B on every endpoint (10 §2) | *planned* (Part 2) |
 | `pnpm test:money` | Ledger property tests (INV-01, INV-15) + golden tests for worked examples A–I + seat tests (08 §9) | *planned* (E8-01) |
 | `pnpm openapi:check` | OpenAPI drift check; regenerates `packages/api-client` | *planned* (Part 2) |
 | `pnpm events:check` | Event-contract (schema registry) compatibility check | *planned* (Part 2) |
 | `pnpm i18n:check` | Missing AR/EN keys fail (RTL-11) | real |
-| `pnpm ai:eval` | Run the eval harness against the gold set (E15-02) | *planned* (placeholder in Part 2) |
+| `pnpm ai:eval` | Write one `<id>.pred.json` per gold note with ai-service (`--mode text` or `--mode audio --models a,b`; resumable, into `evals-runs/`), then score them with `python -m link_eval run` when the eval kit (Codex track) is present | real (predictions); scoring when `evals/` is merged |
+| `pnpm ai:models [name…]` | Download the Whisper models into `apps/ai-service/.models` (resumable; no name = all three) | real |
+| `pnpm ai:bench --models … --devices cuda,cpu` | STT speed and quick WER on the synthetic bench notes (resumable, `apps/ai-service/bench/out`; ADR-0007) | real |
+| `uv --directory apps/ai-service run python -m ai_service` | ai-service alone (needs `AI_SERVICE_TOKEN`); `pilot:start` (with `PILOT_VOICE=1`) and `pnpm demo` start it for you | real |
 | `pnpm mock:server` | The shared demo mock server on 4010 (same MSW handlers, in-memory state, `APP_ENV=local` only) | real |
 | `pnpm scenario:demo-followup` | Reset the running mock server to the Phase 2 demo scenario (§5.1) | real |
 | `pnpm demo` | Mock server + web (3000) + teacher app on Expo web (8081), all in `mock-server` mode with Demo controls. First run: Phase 2 on, marketplace off (the MVP pilot, `DEMO_DEFAULT_FLAGS=phase2-only`). Restarts a crashed app up to 3 times. Stop any other `pnpm dev` of the web app first (Next allows one dev server per app) | real |
@@ -173,6 +187,7 @@ Al Nour Centre · Ms Salma · "Secondary 2 · Maths" (Wed & Sat 5 PM), 18 fictio
 - **Persistence.** The mock server writes the flags to `packages/mocks/.data/demo-flags.json` (git-ignored) and reads them at start, so a restart keeps the presenter's choice. Delete the file to go back to `DEMO_DEFAULT_FLAGS`. Reset scenario keeps the flags and clears the rest.
 - **Simulate a new day** (`POST /__demo/new-day`): moves every open case's due date back one day, so a case due today becomes overdue (FUP-CAS-05). Repeatable; Reset scenario undoes it.
 - **Provider events** (`POST /__demo/provider` `advance` | `fail`) and **guardian reply** (`POST /__demo/reply`): the only way a message's status moves on the mock (BR-APR-11).
+- **Speech-to-text: local Whisper (real) | fixture** (`realStt`, persisted with the flags; off by default and after Reset scenario in the e2e helpers). On: a recorded note is sent to the local ai-service as `synthetic` data and the proposal comes from the real pipeline; Ask Link's microphone transcribes the question for real, while its answers stay scripted and are labelled "Demo answer (scripted)". `pnpm demo` starts ai-service only if `apps/ai-service/.venv` and the `large-v3-turbo` model exist (otherwise the toggle has no effect and the fixture is used) and `DEMO_AI` is not `0` (the e2e configs set `0`). The Whisper model loads at start only if real speech-to-text was left on (`AI_PRELOAD`); otherwise the first real note waits about 10 s for it.
 
 ### Troubleshooting (Windows)
 - **A port is held by a stuck process** (`pnpm demo` or `pnpm pilot:start` says the port is in use after a crash or a closed window): in PowerShell, `Get-NetTCPConnection -LocalPort 3000 -State Listen | Select-Object OwningProcess`, then `Stop-Process -Id <pid> -Force`. Demo ports: 3000, 4010, 8081. Pilot ports: 8443, 8444, 3100. Stopping a terminal tab does not always stop the processes it started.

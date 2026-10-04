@@ -790,8 +790,9 @@ The owner asks the teacher to correct a confirmed record; only the teacher corre
 | delete_after | timestamptz | `uploaded_at + 30 days` (BR-DAT-04) |
 | transcript_delete_after | timestamptz | OD-28 |
 | stt_provider, model_version | text | |
+| data_class | text | `synthetic` \| `consented_real` (CHECK). Set on upload; the model gateway refuses `consented_real` for any provider that is not local, allows no real data, or trains on inputs (ADR-0007, OD-51). Proposed, Part B |
 
-Index `(delete_after) WHERE status <> 'audio_deleted'` for the clean-up job. RLS: `TEACHER` (author), `CENTRE` owner (metadata only), `SYSTEM`.
+Index `(delete_after) WHERE status <> 'audio_deleted'` for the clean-up job. **Pilot (Part B):** `delete_after = min(uploaded_at + 30 days, the pilot's end date)`; the audio is an AES-256-GCM file on the laptop (`<data>/audio`, the voice note id as associated data); withdrawing a teacher's voice consent deletes that teacher's audio and transcripts at once. RLS: `TEACHER` (author), `CENTRE` owner (metadata only), `SYSTEM`.
 
 ### voice_extractions (added)
 id, voice_note_id, centre_id, proposal jsonb (schema in [09](09-ai-voice-pipeline.md)), model_version, status (`proposed` \| `clarification_needed` \| `accepted` \| `superseded`).

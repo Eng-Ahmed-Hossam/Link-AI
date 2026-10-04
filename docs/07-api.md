@@ -367,7 +367,8 @@ Centre and teacher profiles add `ratingDistribution`: published public reviews p
 | POST | `/v1/voice-notes` | `{sessionRecordId, durationS}` + Idempotency-Key → `VoiceNote` (`uploadUrl`) | Key = the device's queue id: a retry never creates a second note |
 | PUT | `uploadUrl` (signed) | audio bytes | — |
 | POST | `/v1/voice-notes/{id}/uploaded` | → `VoiceNote` | — |
-| GET | `/v1/voice-notes/{id}/extraction` | → 202 `{status}` while processing, then `VoiceExtraction` | 503 `stt_unavailable` (FUP-VOI-06) |
+| GET | `/v1/voice-notes/{id}/extraction` | → 202 `{status, etaSeconds}` while processing, then `VoiceExtraction` | 503 `stt_unavailable` (FUP-VOI-06); with real STT also 503 `stt_failed` and `stt_timeout` (no answer within 3 minutes): the app shows "Type the note instead" and keeps the audio |
+| POST | `/v1/voice-notes/{id}/retry` | → `VoiceNote` | Proposed (Part B). The note's author; sends the kept audio to speech-to-text again. 409 `not_uploaded`, 409 `not_real_stt` (fixture mode) |
 | POST | `/v1/voice-extractions/{id}/resolve-identity` | `{itemId, studentId}` → `VoiceExtraction` | Only a listed candidate (422 `not_a_candidate`) |
 | POST | `/v1/voice-extractions/{id}/discard-item` | `{itemId}` → `VoiceExtraction` | A discarded item is never saved and no longer blocks confirm |
 | GET | `/v1/students/{id}` | → `StudentDetail` | Trends per assessment series only (FUP-REC-11) |
@@ -427,6 +428,19 @@ Owner-side endpoints (cases, messages, assistant, demo controls) are in §2c.
 | POST | `/v1/session-records/{id}/correction-requests` | `{studentId?, text}` → `CorrectionRequest` | CF-34. Owner only; confirmed records only; ≤ 500 characters. Both modes |
 | POST | `/v1/correction-requests/{id}/close` | → `CorrectionRequest` (`done`) | The group's teacher. A correction on the record also closes it |
 | GET | `/v1/me/centre-groups` | → `CentreGroup[]` | CF-39, demo parent P09 with the marketplace off. Not mounted in the pilot |
+
+**Voice notes in the pilot (Part B, ADR-0007, 2026-10-05):**
+
+| Method | Path | Body → response | Rules |
+|---|---|---|---|
+| GET | `/v1/me` | `PilotMe.voiceNotes` (boolean) | True only when `PILOT_VOICE=1` **and** the signed-in teacher's voice consent is recorded; the app hides the microphone otherwise |
+| POST | `/v1/pilot/users/{id}/voice-consent` | `{granted}` → `{userId, voiceConsent}` | Owner only; teachers only. Withdrawal deletes that teacher's recordings and their text at once. Writes `consent.voice_granted` / `consent.voice_withdrawn` |
+| GET | `/v1/pilot/users` | `PilotStaffRow.voiceConsent` | — |
+| POST | `/v1/voice-notes` | as §2b; `uploadUrl` = `/v1/voice-notes/{id}/audio` | 503 `stt_unavailable` without voice or consent |
+| PUT | `/v1/voice-notes/{id}/audio` | audio bytes (`content-type` of the recording) → 200 | The note's author; 413 `bad_audio` (empty or > 15 MB). Stored encrypted (AES-256-GCM) on the laptop; deleted 30 days after upload or at the pilot's end |
+| POST | `/v1/internal/voice-results/{id}` | ai-service's result → 204 | Loopback only, header `x-link-internal-token` (random per start); anything else gets 404. Items naming a student outside the group are dropped |
+
+ai-service itself (`127.0.0.1:8090`, bearer token): `POST /v1/jobs` (multipart `audio` + `meta` with `dataClass`, roster, assessment, callback) → 202 `{jobId, etaSeconds}`; `GET /v1/jobs/{id}`; `POST /v1/transcribe` (Ask Link question, demo only); `POST /v1/extract-text` (eval); `GET /health`, `GET /ready`. A `consented_real` job for a non-local provider fails with `data_safety_refused`.
 
 `TeacherToday.correctionRequests` and `SessionRecord.correctionRequests` carry open and done requests (CF-34). `CaseAttempt.channel` gains `whatsapp_manual` (06 `case_attempts`).
 
