@@ -70,3 +70,22 @@ Next.js owner workspace under `/{lang}/centre/{centreId}/…`, tested against th
 | V07 / V03 Ask Link | side panel on every owner page | built | FUP-DSH-05 | CF-35 (side panel); voice through the panel mic | Mock transcription returns one fixture request | `V07` |
 | V05 Parent's phone | Storybook only (`Followup/WhatsAppPreview`) | built (illustrative) | — | Illustrative, as in Figma | — | — |
 | P09 Updates feed | `/{lang}/children` | built | FUP-MSG-08 | Approved messages only, never drafts; behind `parent.updates_feed`; CF-39 | — | `P09-feed` |
+
+## Concierge pilot mode (OD-50 to OD-57, 2026-10-04)
+
+Pilot builds (`pnpm pilot:build`: `NEXT_PUBLIC_LINK_MODE` / `EXPO_PUBLIC_LINK_MODE=pilot`) served by `apps/pilot` (ADR-0008). Same screens as Batch 5–6, with these differences; everything demo-only (`@demo`: Demo controls, dev panel, MSW, sample sign-in) is aliased to a stub, and the start-up check scans the bundles. Tested by `pnpm --filter @link/pilot test:e2e` (6 tests, axe in AR and EN) on the real pilot builds.
+
+| Screen | Pilot difference | Stories / decisions | Screenshots (`docs/pilot/screenshots`) |
+|---|---|---|---|
+| Centre sign-in | Pick your name + 6-digit PIN; wrong PIN says tries left; lock after 5 (15 min); teachers sent to the teacher app | OD-50, A3 | `P-sign-in.ar` |
+| Owner shell | The centre's own name; "Pilot" badge; no Ask Link; no marketplace items | OD-57, CF-29 | — |
+| A06 / A09 Message | Phone "kept by the centre"; approve → "Approved — not sent yet"; **Copy message**; **I sent it from the centre's WhatsApp** → "Approved — sent by hand by <name>"; never Delivered/Read; **Log the guardian's reply** → A08 | OD-56, BR-APR-11 | `A06-review.ar`, `A09-sent-by-hand.ar` |
+| A03 Case | "Sent by hand" on the message chip; **Log the guardian's reply** | OD-56 | — |
+| A08 Outcome | Method "WhatsApp (sent by hand)"; opens prefilled from "Log the guardian's reply" | FUP-CAS-03 | `A10-awaiting.ar` |
+| A13 Students | Guardian column: label + "Phone kept by the centre" | OD-50 | — |
+| A14 Session record | **Ask the teacher to correct** (owner; both modes) and the requests' status | CF-34 | `A14-ask-teacher.ar` |
+| A16 Staff | People with PIN status; owner adds a person (PIN shown once), sets a new PIN, removes access | A3 | `A16-people.ar`, `A16-people.en` |
+| Teacher sign-in | Pick your name + PIN | A3 | — |
+| T01 Today | The owner's correction requests (open history, "the record is right — mark done") (both modes) | CF-34 | `T01-today.ar` |
+| T04 Observation | "Type the note instead" in place of the voice card (until local STT, Part B) | OD-57 | `T04-type-instead.ar` |
+| P09 (demo) | With the marketplace off: only the child's groups at the centre + updates feed | CF-39 | — |

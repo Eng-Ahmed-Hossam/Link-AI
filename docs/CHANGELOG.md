@@ -2,6 +2,18 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-04 — Concierge pilot, Part A (pilot-ready)
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | 13 | New A3 "Concierge pilot": OD-50 (pseudonymised pilot, scoped exception to sample-data-only, end date and wipe), OD-51 (OD-26 for the pilot: local only), OD-52 (consent pack pending written approval), OD-53 (price EGP 2,000/month in the interview only), OD-54 (CSV roster + schedule), OD-55 (OD-36 defaults kept), OD-56 (messages sent by hand from the centre's WhatsApp), OD-57 (no Ask Link, no voice until Part B). OD-05/21/26/36 annotated. CF-34, CF-37, CF-39 closed. | Founder's decisions for the pilot |
+| 2 | adr/ADR-0008 | New: pilot server, JSON snapshot + append-only log, backups, PIN sessions, same-origin serving, local CA, start-up check. | Durable state and safe access for real staff |
+| 3 | 06 | `correction_requests` (CF-34); `case_attempts.channel` adds `whatsapp_manual`. | CF-34, OD-56 |
+| 4 | 07 | New §2d: pilot endpoints (people, sessions, PINs, sent-manually), correction requests, `/v1/me/centre-groups`. | Pilot server, CF-34, CF-39 |
+| 5 | 14 | `pnpm demo:warm`, `i18n:export-review` / `i18n:apply-review`, `pilot:*`, pilot e2e; troubleshooting for ports held by stuck processes. `.env.example`: `LINK_MODE`, `*_LINK_MODE`, `NEXT_DIST_DIR`, `PILOT_*`. | Pilot and demo runbooks |
+| 6 | pilot/ | New folder: README, runbook, phone setup, centre agreement, teacher consent (E15-01), guardian notice, daily check-in, end-of-pilot interview (all drafts; AR first), strings to review, sample CSVs, screenshots. | Pilot documents (A10, A11) |
+| 7 | frontend/screen-log.md | Pilot-mode rows. | Pilot screens differ |
+
 ## 2026-10-04 — Frontend Batch 6 (owner web, messages, assistant) and the MVP focus
 
 | # | File | What changed | Why |

@@ -763,6 +763,9 @@ id, assessment_item_id → assessment_items, student_id, centre_id, marks `numer
 ### corrections
 id, record_entry_id → record_entries, centre_id, field, old_value, new_value, **reason (NOT NULL)**, corrected_by. Append-only.
 
+### correction_requests
+The owner asks the teacher to correct a confirmed record; only the teacher corrects (CF-34). id, session_record_id → session_records, centre_id, group_id, student_id (nullable: the whole record), text (≤ 500), requested_by, status (`open` \| `done`), done_at. `done` when the teacher adds a correction to that record or closes the request. RLS: the centre's owner and staff read; the group's teacher reads and closes.
+
 ### notes
 | Field | Type | Notes |
 |---|---|---|
@@ -840,7 +843,7 @@ Partial unique **`UNIQUE NULLS NOT DISTINCT (rule_id, student_id, group_id, topi
 | closed_at | timestamptz | |
 
 ### case_attempts
-id, case_id → cases, centre_id, channel (`phone` \| `whatsapp` \| `sms` \| `meeting`), result (`reached` \| `no_answer` \| `wrong_number` \| `message_sent` \| `replied`), learned, next_action, follow_up_on, message_id, created_by. Append-only.
+id, case_id → cases, centre_id, channel (`phone` \| `whatsapp` \| `whatsapp_manual` \| `sms` \| `meeting`; `whatsapp_manual` = sent by staff from the centre's own WhatsApp, concierge pilot OD-56 — a contact attempt, never a delivery), result (`reached` \| `no_answer` \| `wrong_number` \| `message_sent` \| `replied`), learned, next_action, follow_up_on, message_id, created_by. Append-only.
 
 ---
 

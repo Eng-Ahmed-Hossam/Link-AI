@@ -159,6 +159,10 @@ All commands are Node scripts, so they run the same in PowerShell, cmd and bash.
 | `pnpm mock:server` | The shared demo mock server on 4010 (same MSW handlers, in-memory state, `APP_ENV=local` only) | real |
 | `pnpm scenario:demo-followup` | Reset the running mock server to the Phase 2 demo scenario (§5.1) | real |
 | `pnpm demo` | Mock server + web (3000) + teacher app on Expo web (8081), all in `mock-server` mode with Demo controls. First run: Phase 2 on, marketplace off (the MVP pilot, `DEMO_DEFAULT_FLAGS=phase2-only`). Restarts a crashed app up to 3 times. Stop any other `pnpm dev` of the web app first (Next allows one dev server per app) | real |
+| `pnpm demo:warm` | After `pnpm demo` is up: requests every Demo Day page and its scripts once, so nothing compiles cold on stage (the first owner page and the teacher bundle each take about a minute cold) | real |
+| `pnpm i18n:export-review` / `pnpm i18n:apply-review <csv>` | Export the pilot-screen and demo-path strings to `docs/pilot/strings-to-review.csv`; write the reviewed Arabic back (refuses broken ICU, placeholders or Western digits) | real |
+| `pnpm pilot:*` | The concierge pilot on one laptop (OD-50, ADR-0008): `pilot:init`, `pilot:cert`, `pilot:import`, `pilot:build`, `pilot:check`, `pilot:start`, `pilot:backup`, `pilot:restore`, `pilot:metrics`, `pilot:wipe`. Steps: [docs/pilot/runbook.md](pilot/runbook.md) | real |
+| `pnpm --filter @link/pilot test:e2e` | The pilot end to end (PIN sign-in, the loop with hand-sent WhatsApp, axe in AR/EN) on the real pilot builds; run `pnpm pilot:build` first | real |
 | `pnpm --filter @link/web test:e2e:demo` | Owner web rule tests (Batch 6) and the cross-app Arabic walkthrough, against `pnpm demo` (started if not running) | real |
 
 ### 5.1 Demo scenario `demo-followup` (sample data only)
@@ -171,6 +175,7 @@ Al Nour Centre · Ms Salma · "Secondary 2 · Maths" (Wed & Sat 5 PM), 18 fictio
 - **Provider events** (`POST /__demo/provider` `advance` | `fail`) and **guardian reply** (`POST /__demo/reply`): the only way a message's status moves on the mock (BR-APR-11).
 
 ### Troubleshooting (Windows)
+- **A port is held by a stuck process** (`pnpm demo` or `pnpm pilot:start` says the port is in use after a crash or a closed window): in PowerShell, `Get-NetTCPConnection -LocalPort 3000 -State Listen | Select-Object OwningProcess`, then `Stop-Process -Id <pid> -Force`. Demo ports: 3000, 4010, 8081. Pilot ports: 8443, 8444, 3100. Stopping a terminal tab does not always stop the processes it started.
 - **Port already in use** (often a native PostgreSQL on 5432): set `POSTGRES_HOST_PORT=5433` (or the matching `*_HOST_PORT`) in `.env.local` and use the same port in the `DATABASE_URL*` values.
 - **pnpm installed with npm but Turborepo says `pnpm` is not recognised:** reinstall with `npm install -g --allow-scripts=pnpm pnpm@12.8.1`.
 - **Docker not running:** `pnpm dev:infra` stops with a message; start Docker Desktop (WSL2 backend).

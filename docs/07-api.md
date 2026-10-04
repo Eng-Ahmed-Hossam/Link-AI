@@ -407,6 +407,29 @@ Owner-side endpoints (cases, messages, assistant, demo controls) are in §2c.
 
 **Demo-only (`APP_ENV=local`, never in production builds):** `GET /__demo/state[/{lang}]`, `POST /__demo/reset`, `POST /__demo/settings` (`phase2`, `marketplace`, `offline`, `sttDown`, `confirmFault`), `POST /__demo/new-day`, `POST /__demo/provider` (`advance` \| `fail` — the only way a message status moves, BR-APR-11), `POST /__demo/reply` (an inbound guardian reply with summary and intent). docs/14 §5.2.
 
+## 2d. Proposed — concierge pilot and CF-34/CF-39 (2026-10-04)
+
+**Status: pilot server only** (`apps/pilot`, ADR-0008, OD-50). The pilot mounts the §2b/§2c follow-up handlers except Ask Link, the parent feed, seat checks, phone invites, sign-in mocks and every `/__demo` or `/__mock` route; it adds the endpoints below. Same-origin only; sessions are server-side (httpOnly cookie).
+
+| Method | Path | Body → response | Rules |
+|---|---|---|---|
+| GET | `/v1/pilot/info` | → `{mode, centreName, startDate, endDate}` | Public; no personal data |
+| GET | `/v1/pilot/people` | → `PilotPerson[]` (id, first name, role) | Public on the centre LAN: the sign-in picker; only people with a PIN |
+| POST | `/v1/pilot/sessions` | `{userId, pin}` → person + `Set-Cookie` | 401 `wrong_pin` (`attemptsLeft`), 423 `locked` (`lockedUntil`, after 5 wrong PINs, 15 min), 429 `rate_limited` (30 per address per 15 min) |
+| DELETE | `/v1/pilot/sessions/current` | → 204, cookie cleared | — |
+| GET | `/v1/me` | → `PilotMe` (`roles`, `centreId`) | 401 without a valid session |
+| GET | `/v1/pilot/users` | → `PilotStaffRow[]` (role, groups, `hasPin`, `active`) | Owner and Reception |
+| POST | `/v1/pilot/users` | `{name, role, groupIds?}` → `{user, pin}` | Owner only; the PIN is returned once and stored as a hash |
+| POST | `/v1/pilot/users/{id}/pin` | → `{pin}` | Owner only; ends that person's sessions |
+| DELETE | `/v1/pilot/users/{id}` | → 204 | Owner only; access removed, sessions ended, history kept |
+| POST | `/v1/messages/{id}/approve` | as §2c | **Pilot:** status stays `approved` (no channel, no opt-in check: the centre sends, OD-56) |
+| POST | `/v1/messages/{id}/sent-manually` | → `ParentMessage` with `sentManually {by, at}` | Pilot only; message must be `approved`; once per message (409 `already_sent`); logs a `whatsapp_manual` / `message_sent` attempt; the status never becomes `delivered` or `read` (BR-APR-11) |
+| POST | `/v1/session-records/{id}/correction-requests` | `{studentId?, text}` → `CorrectionRequest` | CF-34. Owner only; confirmed records only; ≤ 500 characters. Both modes |
+| POST | `/v1/correction-requests/{id}/close` | → `CorrectionRequest` (`done`) | The group's teacher. A correction on the record also closes it |
+| GET | `/v1/me/centre-groups` | → `CentreGroup[]` | CF-39, demo parent P09 with the marketplace off. Not mounted in the pilot |
+
+`TeacherToday.correctionRequests` and `SessionRecord.correctionRequests` carry open and done requests (CF-34). `CaseAttempt.channel` gains `whatsapp_manual` (06 `case_attempts`).
+
 ## 3. Later phases (outline only)
 
 | Area | Endpoints (Phase) |
