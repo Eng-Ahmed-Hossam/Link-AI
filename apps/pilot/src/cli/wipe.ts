@@ -24,6 +24,7 @@ const counts = {
   messages: fu.messages.length,
   notes: fu.notes.length,
   activityEvents: fu.audit.length,
+  voiceRecordings: Object.keys(snap.voice?.audio ?? {}).length,
   backups: listBackups(cfg.backupDir).length,
 };
 
@@ -55,6 +56,9 @@ const f = files(cfg.dataDir);
 rm(f.state);
 rm(f.log);
 rm(join(cfg.dataDir, 'tls'));
+rm(join(cfg.dataDir, 'audio')); // encrypted voice recordings
+rm(join(cfg.dataDir, 'keys')); // the audio key
+rm(join(cfg.dataDir, 'ai-usage.jsonl'));
 for (const n of readdirSync(cfg.dataDir))
   if (n.startsWith('state.json.tmp')) rm(join(cfg.dataDir, n));
 rm(cfg.backupDir);

@@ -2,10 +2,16 @@
 // LAN) and the pilot server in front of it. Ctrl+C stops both; the pilot server saves and takes a
 // backup on the way out. A crashed process is restarted (up to 5 times).
 import { spawn, spawnSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+// The laptop's settings (PILOT_VOICE, MODEL_ROUTING_CONFIG…) are needed here too, not only by the
+// pilot server: they decide whether ai-service starts and how. Real env vars win (as in config.ts).
+const ENV_FILE = join(ROOT, 'apps', 'pilot', '.env.pilot');
+if (existsSync(ENV_FILE)) process.loadEnvFile(ENV_FILE);
 const clean = Object.fromEntries(
   Object.entries(process.env).filter(([k]) => !/DEMO|^NEXT_PUBLIC_|^EXPO_PUBLIC_/.test(k)),
 );
@@ -13,8 +19,8 @@ const procs = new Map();
 const restarts = {};
 let stopping = false;
 
-function start(name, args, cwd, env) {
-  const p = spawn('pnpm', args, { cwd, env: { ...clean, ...env }, shell: true });
+function start(name, args, cwd, env, cmd = 'pnpm') {
+  const p = spawn(cmd, args, { cwd, env: { ...clean, ...env }, shell: true });
   const tag = `[${name}]`.padEnd(9);
   const out = (stream) => (d) =>
     String(d)
@@ -34,7 +40,7 @@ function start(name, args, cwd, env) {
     }
     if (restarts[name] <= 5) {
       console.log(`${tag}stopped (${code ?? 'signal'}); restarting (${restarts[name]}/5)…`);
-      setTimeout(() => start(name, args, cwd, env), 2000);
+      setTimeout(() => start(name, args, cwd, env, cmd), 2000);
     } else {
       console.log(`${tag}stopped too often. Check the messages above.`);
       stop(1);
@@ -72,4 +78,26 @@ start(
     NEXT_TELEMETRY_DISABLED: '1',
   },
 );
-start('pilot', ['--filter', '@link/pilot', 'run', 'start'], ROOT, { LINK_MODE: 'pilot' });
+// Part B: voice notes. ai-service (local Whisper + Ollama) on 127.0.0.1 only, sharing a fresh
+// random token with the pilot server for this run.
+const voice = process.env.PILOT_VOICE === '1';
+const token = randomBytes(24).toString('base64url');
+if (voice) {
+  const dataDir = process.env.PILOT_DATA_DIR ?? '';
+  start(
+    'ai',
+    ['--directory', join(ROOT, 'apps', 'ai-service'), 'run', 'python', '-m', 'ai_service'],
+    ROOT,
+    {
+      AI_SERVICE_TOKEN: token,
+      AI_SERVICE_HOST: '127.0.0.1',
+      AI_USAGE_LOG: dataDir ? join(dataDir, 'ai-usage.jsonl') : '',
+      PYTHONUTF8: '1',
+    },
+    'uv',
+  );
+}
+start('pilot', ['--filter', '@link/pilot', 'run', 'start'], ROOT, {
+  LINK_MODE: 'pilot',
+  ...(voice ? { AI_SERVICE_TOKEN: token } : {}),
+});

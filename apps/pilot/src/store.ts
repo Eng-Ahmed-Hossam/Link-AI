@@ -40,11 +40,19 @@ export interface AuthState {
   /** sha256(session token) → session. The token itself is only ever in the httpOnly cookie. */
   sessions: Record<string, { userId: string; createdAt: string; expiresAt: string }>;
 }
+export interface VoiceState {
+  /** userId → the teacher's signed voice consent (E15-01), recorded by the owner in A16. */
+  consent: Record<string, { granted: boolean; at: string; by: string }>;
+  /** voiceId → the encrypted recording on this laptop (audio.ts). */
+  audio: Record<string, import('./audio').AudioEntry>;
+}
 export interface Snapshot {
   version: 1;
   meta: PilotMeta;
   auth: AuthState;
   fu: FollowupState;
+  /** Voice notes (Part B). Absent in data created before Part B. */
+  voice?: VoiceState;
 }
 
 export const files = (dir: string) => ({

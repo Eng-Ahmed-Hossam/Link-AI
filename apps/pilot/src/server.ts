@@ -94,9 +94,18 @@ for (const [surface, port] of [
 console.log(
   `pilot: ${snap.meta.centreName} • data in ${cfg.dataDir} • backups in ${cfg.backupDir}`,
 );
+console.log(
+  cfg.voice && cfg.aiToken
+    ? `pilot: voice notes ON for teachers with signed consent → ai-service ${cfg.aiUrl} (this laptop)`
+    : 'pilot: voice notes OFF (teachers type the note)',
+);
 
 // Hourly backups, and one on every shutdown (A2).
-const hourly = setInterval(() => backup(cfg.dataDir, cfg.backupDir, 'hourly'), 3_600_000);
+app.runRetention(); // recordings past 30 days or the pilot's end go at once
+const hourly = setInterval(() => {
+  app.runRetention();
+  backup(cfg.dataDir, cfg.backupDir, 'hourly');
+}, 3_600_000);
 const heartbeat = setInterval(() => refreshLock(cfg.dataDir), LOCK_REFRESH_MS);
 let stopping = false;
 function stop(signal: string) {

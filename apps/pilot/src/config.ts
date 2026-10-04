@@ -25,6 +25,11 @@ export interface PilotConfig {
   /** The teacher app's static web build (pilot build). */
   teacherDist: string;
   allowedOrigins: string[];
+  /** Part B: voice notes on (still per teacher: signed consent recorded by the owner). */
+  voice: boolean;
+  /** ai-service on this machine (127.0.0.1 only) and the shared token `pnpm pilot:start` sets. */
+  aiUrl: string;
+  aiToken: string | null;
 }
 
 /** `apps/pilot/.env.pilot` (git-ignored) holds this laptop's settings; real env vars win. */
@@ -70,5 +75,8 @@ export function pilotConfig(env: NodeJS.ProcessEnv = process.env): PilotConfig {
     webUpstream: env.PILOT_WEB_UPSTREAM ?? 'http://127.0.0.1:3100',
     teacherDist: env.PILOT_TEACHER_DIST ?? join(REPO_ROOT, 'apps', 'teacher-app', 'dist-pilot'),
     allowedOrigins: [...new Set(origins)],
+    voice: env.PILOT_VOICE === '1',
+    aiUrl: env.AI_SERVICE_URL ?? 'http://127.0.0.1:8090',
+    aiToken: env.AI_SERVICE_TOKEN || null,
   };
 }

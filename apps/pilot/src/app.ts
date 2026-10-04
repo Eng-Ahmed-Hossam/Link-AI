@@ -12,6 +12,9 @@ import { extname, join, normalize, sep } from 'node:path';
 import { getResponse } from 'msw';
 import * as fu from '@link/mocks/followup';
 import { setUserResolver } from '@link/mocks/http';
+import { configureBridge } from '@link/mocks/voice-bridge';
+import { sendVoiceJob } from '@link/mocks/ai-client';
+import { AudioVault, purgeAudio } from './audio';
 import { pilotHandlers } from '@link/mocks/pilot';
 import type { StaffRole } from '@link/mocks/world';
 import { COOKIE, PilotAuth, clearCookie, cookieValue, sessionCookie } from './auth';
@@ -33,6 +36,8 @@ const SECURITY_HEADERS: Record<string, string> = {
 
 export interface PilotApp {
   auth: PilotAuth;
+  /** Delete recordings past their date (30 days, or the pilot's end); run hourly and at start. */
+  runRetention(now?: Date): string[];
   handle(req: IncomingMessage, res: ServerResponse, surface: 'web' | 'teacher'): Promise<void>;
   /** Fetch-style entry for the `/v1` API (tests). */
   api(req: Request, ip?: string): Promise<Response>;
@@ -58,6 +63,45 @@ export function createPilotApp(cfg: PilotConfig, store: PilotStore): PilotApp {
   const auth = new PilotAuth(store, { sessionHours: cfg.sessionHours, isActiveUser: activeUser });
   // Mock `mock.<userId>` tokens are never accepted in the pilot: only server-side sessions.
   setUserResolver((req) => auth.userFor(cookieValue(req.headers.get('cookie'))));
+
+  // ── voice notes (Part B): local ai-service, consented_real only, audio encrypted here ──────────
+  const voice = (store.snap!.voice ??= { consent: {}, audio: {} });
+  const vault = new AudioVault(cfg.dataDir);
+  const voiceOn = (userId: string) =>
+    cfg.voice && !!cfg.aiToken && !!voice.consent[userId]?.granted;
+  const ai = cfg.aiToken
+    ? {
+        url: cfg.aiUrl,
+        token: cfg.aiToken,
+        dataClass: 'consented_real' as const,
+        callbackBase: `http://127.0.0.1:${cfg.webPort}`,
+      }
+    : null;
+  fu.configureVoice({
+    dispatch: ai
+      ? (d) => {
+          const e = voice.audio[d.voiceId];
+          const bytes = e && !e.deletedAt ? vault.get(d.voiceId, e.file) : null;
+          void sendVoiceJob(ai, d, bytes ? { bytes, mime: e!.mime } : null);
+        }
+      : null,
+    policy: voiceOn,
+    uploadPath: (id) => `/v1/voice-notes/${id}/audio`,
+  });
+  configureBridge({ internalToken: cfg.aiToken, audioStore: null, assistantStt: null });
+
+  function runRetention(now = new Date()) {
+    const gone = purgeAudio(voice.audio, vault, store.snap!.meta.endDate, now);
+    if (gone.length) {
+      store.write();
+      fu.recordSystemEvent(
+        'voice.audio_deleted',
+        { en: 'Voice recordings deleted (retention)', ar: 'حُذفت تسجيلات صوتية (مدة الحفظ)' },
+        { count: gone.length },
+      );
+    }
+    return gone;
+  }
 
   const originOk = (origin: string | null) => !origin || cfg.allowedOrigins.includes(origin);
 
@@ -129,7 +173,70 @@ export function createPilotApp(cfg: PilotConfig, store: PilotStore): PilotApp {
         language: lang,
         roles: [ROLE[u.role]],
         centreId: PILOT_CENTRE_ID,
+        voiceNotes: voiceOn(u.id),
       });
+    }
+    // ── voice upload: the recording, encrypted on this laptop (never leaves it) ───────────────
+    const upload = /^\/v1\/voice-notes\/([^/]+)\/audio$/.exec(p);
+    if (upload && req.method === 'PUT') {
+      if (!me) return problem(401, 'unauthenticated', 'Sign in to continue.');
+      try {
+        fu.assertVoiceUpload(me, upload[1]!);
+      } catch (e) {
+        if (e instanceof fu.MockProblem) return problem(e.status, e.code, e.detail, e.extra);
+        throw e;
+      }
+      if (!voiceOn(me)) return problem(503, 'stt_unavailable', 'Voice notes are not available.');
+      const bytes = new Uint8Array(await req.arrayBuffer());
+      if (!bytes.length || bytes.length > 15_000_000)
+        return problem(413, 'bad_audio', 'The recording is empty or too large.');
+      const file = vault.put(upload[1]!, bytes);
+      voice.audio[upload[1]!] = {
+        file,
+        mime: req.headers.get('content-type') ?? 'application/octet-stream',
+        bytes: bytes.length,
+        uploadedAt: new Date().toISOString(),
+        teacherId: me,
+        deletedAt: null,
+      };
+      store.write();
+      return new Response(null, { status: 200 });
+    }
+    // ── the owner records a teacher's signed voice consent (E15-01), or its withdrawal ────────
+    const consent = /^\/v1\/pilot\/users\/([^/]+)\/voice-consent$/.exec(p);
+    if (consent && req.method === 'POST') {
+      if (!me) return problem(401, 'unauthenticated', 'Sign in to continue.');
+      if (userOf(me)?.role !== 'owner')
+        return problem(403, 'forbidden', 'Only the owner records consent.');
+      const target = userOf(consent[1]!);
+      if (!target || target.role !== 'teacher')
+        return problem(404, 'not_found', 'Teacher not found.');
+      const granted = (await body()).granted === true;
+      voice.consent[target.id] = { granted, at: new Date().toISOString(), by: me };
+      if (!granted) {
+        // Withdrawn: the teacher's recordings and their text are deleted (teacher consent §6).
+        for (const [, e] of Object.entries(voice.audio))
+          if (e.teacherId === target.id && !e.deletedAt) {
+            vault.delete(e.file);
+            e.deletedAt = new Date().toISOString();
+          }
+        fu.forgetVoiceOf(target.id);
+      }
+      store.write();
+      fu.recordSystemEvent(
+        granted ? 'consent.voice_granted' : 'consent.voice_withdrawn',
+        granted
+          ? {
+              en: 'Voice consent recorded for a teacher',
+              ar: 'سُجّلت موافقة معلّم على الملاحظات الصوتية',
+            }
+          : {
+              en: 'Voice consent withdrawn; recordings deleted',
+              ar: 'سُحبت الموافقة وحُذفت التسجيلات',
+            },
+        { userId: target.id, by: me },
+      );
+      return json(200, { userId: target.id, voiceConsent: granted });
     }
     // ── people (A16 in the pilot: staff see the list, only the owner changes it) ────
     const users = /^\/v1\/pilot\/users(?:\/([^/]+))?(\/pin)?$/.exec(p);
@@ -149,6 +256,7 @@ export function createPilotApp(cfg: PilotConfig, store: PilotStore): PilotApp {
               role: u.role,
               active: u.active,
               hasPin: !!store.snap!.auth.pins[u.id],
+              voiceConsent: !!voice.consent[u.id]?.granted,
               groups: w.groups
                 .filter((g) => g.teacherUserId === u.id)
                 .map((g) => ({ id: g.id, name: g.name[lang] })),
@@ -206,6 +314,12 @@ export function createPilotApp(cfg: PilotConfig, store: PilotStore): PilotApp {
     const url = new URL(req.url ?? '/', `${secure ? 'https' : 'http'}://${host}`);
     const origin = req.headers.origin;
 
+    if (url.pathname.startsWith('/v1/internal/')) {
+      // ai-service's callbacks: this machine only (plus the shared token checked by the handler).
+      const ip = req.socket.remoteAddress ?? '';
+      if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(ip))
+        return void res.writeHead(404).end();
+    }
     if (url.pathname.startsWith('/v1/')) {
       if (req.method === 'OPTIONS') {
         // Same-origin apps need no preflight; only listed origins get one.
@@ -299,7 +413,7 @@ export function createPilotApp(cfg: PilotConfig, store: PilotStore): PilotApp {
     req.pipe(pr);
   }
 
-  return { auth, handle, api };
+  return { auth, handle, api, runRetention };
 }
 
 const TYPES: Record<string, string> = {
