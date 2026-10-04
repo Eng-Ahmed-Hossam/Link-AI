@@ -3,8 +3,10 @@
   "demo": {
     "offline": false,
     "phase2": true,
+    "marketplace": false,
     "sttDown": false,
-    "confirmFault": null
+    "confirmFault": null,
+    "dayOffset": 0
   },
   "counters": {
     "confirmCalls": 1,
@@ -16,12 +18,12 @@
   },
   "signals": [
     {
-      "id": "sig-101",
+      "id": "sig-109",
       "rule": "consecutive_absences",
       "ruleVersion": 1,
       "student": "نور خالد",
       "status": "case_opened",
-      "caseId": "case-102",
+      "caseId": "case-110",
       "explanation": "غابت عن حصتين متتاليتين: ٢٦ سبتمبر و٣٠ سبتمبر",
       "evidence": [
         {
@@ -35,12 +37,12 @@
       ]
     },
     {
-      "id": "sig-109",
+      "id": "sig-118",
       "rule": "consecutive_absences",
       "ruleVersion": 1,
       "student": "مريم حسن",
       "status": "case_opened",
-      "caseId": "case-110",
+      "caseId": "case-119",
       "explanation": "غابت عن حصتين متتاليتين: ٣٠ سبتمبر و٣ أكتوبر",
       "evidence": [
         {
@@ -56,14 +58,14 @@
   ],
   "cases": [
     {
-      "id": "case-102",
+      "id": "case-110",
       "student": "نور خالد",
       "assignee": "دينا عادل",
       "status": "open",
       "dueOn": "2026-09-30"
     },
     {
-      "id": "case-110",
+      "id": "case-119",
       "student": "مريم حسن",
       "assignee": "دينا عادل",
       "status": "open",

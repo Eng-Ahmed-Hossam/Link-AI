@@ -1,0 +1,84 @@
+{
+  "note": "GET http://localhost:4010/__demo/state/ar at the end of the walkthrough (sample data).",
+  "demo": {
+    "offline": false,
+    "phase2": true,
+    "marketplace": false,
+    "sttDown": false,
+    "confirmFault": null,
+    "dayOffset": 0
+  },
+  "counters": {
+    "confirmCalls": 1,
+    "confirmCommits": 1
+  },
+  "records": {
+    "confirmed": 9,
+    "drafts": []
+  },
+  "signals": [
+    {
+      "id": "sig-109",
+      "rule": "consecutive_absences",
+      "ruleVersion": 1,
+      "student": "نور خالد",
+      "status": "case_opened",
+      "caseId": "case-110",
+      "explanation": "غابت عن حصتين متتاليتين: ٢٦ سبتمبر و٣٠ سبتمبر",
+      "evidence": [
+        {
+          "recordId": "rec-2026-09-26",
+          "sessionDate": "2026-09-26"
+        },
+        {
+          "recordId": "rec-2026-09-30",
+          "sessionDate": "2026-09-30"
+        }
+      ]
+    },
+    {
+      "id": "sig-118",
+      "rule": "consecutive_absences",
+      "ruleVersion": 1,
+      "student": "مريم حسن",
+      "status": "case_opened",
+      "caseId": "case-119",
+      "explanation": "غابت عن حصتين متتاليتين: ٣٠ سبتمبر و٣ أكتوبر",
+      "evidence": [
+        {
+          "recordId": "rec-2026-09-30",
+          "sessionDate": "2026-09-30"
+        },
+        {
+          "recordId": "rec-2026-10-03",
+          "sessionDate": "2026-10-03"
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "case-110",
+      "student": "نور خالد",
+      "assignee": "دينا عادل",
+      "status": "open",
+      "dueOn": "2026-09-30"
+    },
+    {
+      "id": "case-119",
+      "student": "مريم حسن",
+      "assignee": "دينا عادل",
+      "status": "awaiting_confirmation",
+      "dueOn": "2026-10-04"
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg-121",
+      "student": "مريم حسن",
+      "status": "delivered",
+      "channel": "whatsapp",
+      "replies": 1
+    }
+  ]
+}
