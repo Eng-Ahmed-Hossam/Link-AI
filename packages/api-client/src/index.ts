@@ -52,6 +52,8 @@ import type {
 export * from './types';
 export * from './followup';
 export * from './demo';
+export { setApiBaseUrl, apiUrl } from './config';
+import { config } from './config';
 
 export class ApiError extends Error {
   constructor(public readonly problem: ProblemDetails) {
@@ -65,14 +67,6 @@ export class ApiError extends Error {
     return this.problem.code === 'network_error';
   }
 }
-
-const config = { baseUrl: '', locale: 'ar' as 'ar' | 'en', token: null as string | null };
-
-export const setApiBaseUrl = (url: string) => {
-  config.baseUrl = url.replace(/\/$/, '');
-};
-/** Absolute URL for a path on the current API (mock routes such as `/__mock/*` included). */
-export const apiUrl = (path: string) => `${config.baseUrl}${path}`;
 
 /**
  * Where API calls go (docs/14):
@@ -239,6 +233,10 @@ export const fuApi = {
   resolveIdentity: (extractionId: string, itemId: string, studentId: string) =>
     request<VoiceExtraction>('POST', `/v1/voice-extractions/${extractionId}/resolve-identity`, {
       body: { itemId, studentId },
+    }),
+  discardItem: (extractionId: string, itemId: string) =>
+    request<VoiceExtraction>('POST', `/v1/voice-extractions/${extractionId}/discard-item`, {
+      body: { itemId },
     }),
   student: (id: string) => request<StudentDetail>('GET', `/v1/students/${id}`),
   addNote: (studentId: string, body: { groupId: string; tag: NoteTag; body: string }) =>

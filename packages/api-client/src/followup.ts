@@ -142,7 +142,18 @@ export interface TeacherToday {
     student: PersonRef | null;
     source: { recordId: string; sessionDate: string };
   }[];
-  /** Records not confirmed yet, and past sessions without a record (FUP-REC-01 AC3). */
+  /** The latest session that has taken place (or is today) without a confirmed record. */
+  recordDue: {
+    groupId: string;
+    groupName: string;
+    sessionId: string;
+    sessionDate: string;
+    startsAt: string;
+    endsAt: string;
+    studentCount: number;
+    recordId: string | null;
+  } | null;
+  /** Older records not confirmed yet, and past sessions without a record (FUP-REC-01 AC3). */
   needsYou: {
     kind: 'draft' | 'missing';
     groupId: string;
@@ -227,6 +238,8 @@ export interface VoiceExtraction {
   transcript: string;
   audioUrl: string | null;
   items: VoiceItem[];
+  /** Items the teacher discarded: never saved to anyone. */
+  discardedItemIds: string[];
   /** Roster students with no matched item. */
   unmentioned: PersonRef[];
   assessment: { title: string; maxScore: number } | null;
@@ -238,6 +251,7 @@ export type RuleCode =
 
 export interface SignalSummary {
   id: string;
+  student: PersonRef;
   rule: RuleCode;
   ruleVersion: number;
   /** Readable reason (BR-APR-04). */
@@ -247,7 +261,6 @@ export interface SignalSummary {
 }
 
 export interface Signal extends SignalSummary {
-  student: PersonRef;
   group: { id: string; name: string };
   /** The numbers and source records (BR-APR-04). */
   evidence: {

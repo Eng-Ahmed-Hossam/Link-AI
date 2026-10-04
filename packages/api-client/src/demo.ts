@@ -3,7 +3,7 @@
  * (`mock` and `mock-server` API modes). Apps render the controls only when APP_ENV=local and the
  * demo flag are set, and never in production builds.
  */
-import { apiUrl } from './index';
+import { apiUrl } from './config';
 
 export interface DemoSnapshot {
   demo: {
