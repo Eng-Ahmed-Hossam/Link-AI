@@ -33,6 +33,7 @@ import type {
 } from './types';
 import type {
   CaseAttempt,
+  DeliveryStatus,
   Correction,
   CorrectionBody,
   FollowupCase,
@@ -47,6 +48,15 @@ import type {
   TeacherToday,
   VoiceExtraction,
   VoiceNote,
+  ActivityLog,
+  AssistantEvent,
+  CentreSessionRow,
+  CentreStudentRow,
+  OwnerToday,
+  ParentUpdate,
+  RuleChangeBody,
+  RuleView,
+  StaffMember,
 } from './followup';
 
 export * from './types';
@@ -260,6 +270,100 @@ export const fuApi = {
     request<ParentMessage>('PATCH', `/v1/messages/${id}`, { body }),
   approveMessage: (id: string, body: { checked: boolean; channel?: 'whatsapp' | 'sms' }) =>
     request<ParentMessage>('POST', `/v1/messages/${id}/approve`, { body }),
+};
+
+/** Owner web (Batch 6). Centre-scoped paths name the centre (07 §1). */
+export const ownerApi = {
+  today: (centreId: string) => request<OwnerToday>('GET', `/v1/centres/${centreId}/today`),
+  students: (centreId: string) =>
+    request<Page<CentreStudentRow>>('GET', `/v1/centres/${centreId}/students`),
+  sessions: (centreId: string) =>
+    request<Page<CentreSessionRow>>('GET', `/v1/centres/${centreId}/sessions`),
+  rules: (centreId: string) => request<RuleView[]>('GET', `/v1/centres/${centreId}/rules`),
+  changeRule: (centreId: string, code: string, body: RuleChangeBody) =>
+    request<RuleView>('PUT', `/v1/centres/${centreId}/rules/${code}`, { body }),
+  approveRule: (centreId: string, code: string) =>
+    request<RuleView>('POST', `/v1/centres/${centreId}/rules/${code}/approve`),
+  rejectRule: (centreId: string, code: string) =>
+    request<RuleView>('POST', `/v1/centres/${centreId}/rules/${code}/reject`),
+  staff: (centreId: string) => request<StaffMember[]>('GET', `/v1/centres/${centreId}/staff`),
+  invite: (centreId: string, body: { phone: string; role: StaffMember['role'] }) =>
+    request<StaffMember[]>('POST', `/v1/centres/${centreId}/staff/invites`, { body }),
+  activity: (centreId: string) => request<ActivityLog>('GET', `/v1/centres/${centreId}/activity`),
+  reviseMessage: (id: string) => request<ParentMessage>('POST', `/v1/messages/${id}/revise`),
+  seatCheck: (caseId: string) =>
+    request<{ text: string; seatsLeft: number; groupId: string }>(
+      'POST',
+      `/v1/cases/${caseId}/seat-check`,
+    ),
+  parentUpdates: () => request<Page<ParentUpdate>>('GET', '/v1/me/updates'),
+  briefing: () =>
+    request<{
+      text: string;
+      items: {
+        caseId: string;
+        student: { id: string; displayName: string };
+        reason: string;
+        draftMessageId: string | null;
+        latestSent: { messageId: string; status: DeliveryStatus } | null;
+        blocked: string | null;
+      }[];
+    }>('GET', '/v1/assistant/briefing'),
+  transcribe: async (audio: Blob) => {
+    const res = await fetch(`${config.baseUrl}/v1/assistant/transcribe`, {
+      method: 'POST',
+      headers: {
+        'accept-language': config.locale,
+        ...(config.token ? { authorization: `Bearer ${config.token}` } : {}),
+      },
+      body: audio,
+    });
+    if (!res.ok) throw new ApiError((await res.json()) as ProblemDetails);
+    return (await res.json()) as { text: string; language: string };
+  },
+  /**
+   * One assistant turn, streamed (SSE over a POST). Events arrive through `onEvent` as the server
+   * sends them; resolves when the stream ends.
+   */
+  assistantTurn: async (text: string, onEvent: (e: AssistantEvent) => void) => {
+    let res: Response;
+    try {
+      res = await fetch(`${config.baseUrl}/v1/assistant/turns`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          accept: 'text/event-stream',
+          'accept-language': config.locale,
+          'idempotency-key': newIdempotencyKey(),
+          ...(config.token ? { authorization: `Bearer ${config.token}` } : {}),
+        },
+        body: JSON.stringify({ text }),
+      });
+    } catch {
+      throw new ApiError({
+        type: 'about:blank',
+        title: 'Network error',
+        status: 0,
+        code: 'network_error',
+      });
+    }
+    if (!res.ok || !res.body) throw new ApiError((await res.json()) as ProblemDetails);
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i: number;
+      while ((i = buf.indexOf('\n\n')) >= 0) {
+        const chunk = buf.slice(0, i);
+        buf = buf.slice(i + 2);
+        const line = chunk.split('\n').find((l) => l.startsWith('data: '));
+        if (line) onEvent(JSON.parse(line.slice(6)) as AssistantEvent);
+      }
+    }
+  },
 };
 
 export const isExtractionReady = (

@@ -64,6 +64,8 @@ export interface SessionRecord {
   groupObservation: string | null;
   confirmedBy: PersonRef | null;
   confirmedAt: string | null;
+  /** When the draft was created (A14 record status timeline). */
+  createdAt: string;
   corrections: Correction[];
   /** Flags this record raised or added evidence to (A14). */
   signals: SignalSummary[];
@@ -349,3 +351,130 @@ export interface ParentMessage {
   /** Status history; changes only on provider events (BR-APR-11). */
   history: { status: DeliveryStatus; at: string }[];
 }
+
+// ── Owner web (Batch 6) ─────────────────────────────────────────────────────────
+/** A01 Today (FUP-DSH-01). */
+export interface OwnerToday {
+  date: string;
+  /** Open follow-ups due today or earlier. */
+  dueToday: number;
+  /** Past due with no outcome (FUP-CAS-05), and who owns them. */
+  overdue: { count: number; owners: PersonRef[] };
+  /** Past sessions in the last 2 weeks with no confirmed record. */
+  missingRecords: { missing: number; eligible: number };
+  recordsComplete: { confirmed: number; eligible: number };
+  followUpToday: FollowupCase[];
+  keepComplete: {
+    groupId: string;
+    groupName: string;
+    teacher: PersonRef;
+    sessionDate: string;
+    startsAt: string;
+    status: 'draft' | 'missing';
+  }[];
+}
+
+export interface CentreStudentRow {
+  student: PersonRef;
+  group: { id: string; name: string };
+  lastSessions: (Attendance | 'none')[];
+  latestScore: { score: number; maxScore: number } | null;
+  followUp: { caseId: string; status: CaseStatus; overdue: boolean } | null;
+  /** Latest teacher note — internal (BR-APR-13). */
+  latestNote: { body: string; author: PersonRef; at: string } | null;
+  guardian: { status: 'verified' | 'missing_phone'; name: string | null };
+}
+
+export interface CentreSessionRow {
+  groupId: string;
+  groupName: string;
+  teacher: PersonRef;
+  sessionDate: string;
+  startsAt: string;
+  recordId: string | null;
+  status: 'confirmed' | 'draft' | 'not_started';
+  attendance: { present: number; absent: number; late: number; notRecorded: number } | null;
+}
+
+export interface RuleView {
+  code: RuleCode;
+  active: boolean;
+  params: Record<string, number>;
+  scope: string;
+  version: number;
+  /** Plain-words example (FUP-RUL-01 AC1). */
+  example: string;
+  /** Readable rule text. */
+  text: string;
+  proposal: {
+    active: boolean;
+    params: Record<string, number>;
+    scope: string;
+    proposedBy: PersonRef;
+    at: string;
+  } | null;
+  history: { version: number; approvedBy: PersonRef | null; at: string }[];
+}
+
+export interface RuleChangeBody {
+  active: boolean;
+  params: Record<string, number>;
+  scope: string;
+}
+
+export interface StaffMember {
+  user: PersonRef;
+  role: 'owner' | 'reception' | 'teacher';
+  scope: string;
+  lastActiveAt: string | null;
+  status: 'active' | 'invite_pending';
+}
+
+export type ActivityKind = 'records' | 'followups' | 'messages' | 'corrections' | 'access';
+
+export interface ActivityEvent {
+  id: string;
+  at: string;
+  kind: ActivityKind;
+  text: string;
+  actor: PersonRef | null;
+}
+
+export interface ActivityLog {
+  events: ActivityEvent[];
+  week: {
+    recordsConfirmed: number;
+    followUpsOpened: number;
+    outcomesRecorded: number;
+    corrections: number;
+  };
+}
+
+/** P09 "Updates from the centre": approved messages only (FUP-MSG-08, OD-41). */
+export interface ParentUpdate {
+  id: string;
+  studentId: string;
+  kind: 'message';
+  text: string;
+  from: string;
+  at: string;
+}
+
+// ── Ask Link assistant (FUP-DSH-05) ──────────────────────────────────────────────
+export type AssistantTier = 'read' | 'draft' | 'act';
+/** One server-sent event of an assistant turn. */
+export type AssistantEvent =
+  | { type: 'token'; text: string }
+  | { type: 'tier'; tier: AssistantTier }
+  | {
+      type: 'draft';
+      messageId: string;
+      caseId: string;
+      student: PersonRef;
+      guardian: string;
+      evidence: string[];
+      tone: ParentMessage['tone'];
+    }
+  | { type: 'list'; items: { label: string; detail: string; href: string | null }[] }
+  | { type: 'needs_approval'; text: string }
+  | { type: 'done' };

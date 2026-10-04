@@ -11,6 +11,8 @@ export interface DemoSnapshot {
     phase2: boolean;
     sttDown: boolean;
     confirmFault: 'before_commit' | 'after_commit' | null;
+    marketplace: boolean;
+    dayOffset: number;
   };
   counters: { confirmCalls: number; confirmCommits: number };
   records: { confirmed: number; drafts: string[] };
@@ -53,6 +55,8 @@ export const demoApi = {
   /** Mock provider event: Queued → Sent → Delivered, or → Failed. */
   provider: (outcome: 'advance' | 'fail', messageId?: string) =>
     call<{ id: string; status: string }>('POST', '/__demo/provider', { outcome, messageId }),
+  /** "Simulate a new day": open cases' due dates move a day back (an open case becomes overdue). */
+  newDay: () => call<{ dayOffset: number; overdue: number }>('POST', '/__demo/new-day', {}),
   /** Delivers the parent reply "عندها درس تاني الأربع" (or another body). */
   reply: (body?: string, messageId?: string) =>
     call<{ messageId: string; caseId: string | null }>('POST', '/__demo/reply', {
