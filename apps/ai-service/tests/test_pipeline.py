@@ -247,12 +247,18 @@ def test_one_student_twice_rules_win_and_llm_disagreements_cancel(make_gw):
 
 def test_llm_spans_are_not_trusted(make_gw):
     # Seen on the real stack: the LLM pointed an item for يوسف at the clause before his name.
-    note = "مريم غابت أنها رده، ويوسف شارك كتير النهارده."
+    note = "مريم غابت أنها رده، ويوسف كان مركز النهارده."
 
     def reply(prompt):
-        item = _item("<S2>", "participation", "high")
+        item = _item("<S2>", "observation_tag", "positive")
         return {"items": [{**item, "span": {"start": 2, "end": 9}}]}
 
     res = run_text(note, ROSTER, None, "synthetic", make_gw(FakeStt(), FakeLlm(reply=reply)))
-    p = by(res.items, "participation", "stu-youssef")
-    assert p and p[0]["sourceText"].startswith("ويوسف شارك كتير")
+    p = by(res.items, "observation_tag", "stu-youssef")
+    assert p and p[0]["sourceText"].startswith("ويوسف كان مركز")
+
+
+def test_the_llm_never_fills_participation(make_gw):
+    reply = {"items": [_item("<S2>", "participation", "high")]}
+    res = run_text(NOTE, ROSTER, None, "synthetic", make_gw(FakeStt(), FakeLlm(reply=reply)))
+    assert res.llm_used is True and by(res.items, "participation") == []

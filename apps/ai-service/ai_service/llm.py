@@ -1,5 +1,7 @@
-"""Extraction LLM through a local Ollama (docs/09 §2.5). Input is the TOKENISED transcript only:
-no person name reaches the model. Output is constrained to the strict JSON schema, temperature 0."""
+"""Extraction LLM through a local Ollama (docs/09 §2.5). Input is the TOKENISED, redacted transcript
+only: no person name reaches the model. Decoding is constrained (Ollama `format`) to `llm_schema`, a
+stricter per-note subset of the wire schema; the pipeline adds locally computed spans and validates
+the result against the full wire schema (link_nlp `validate_extraction`). Temperature 0."""
 
 from __future__ import annotations
 
@@ -8,7 +10,7 @@ from typing import Any
 
 import httpx
 
-PROMPT_VERSION = "extract-v3"
+PROMPT_VERSION = "extract-v7"
 
 SYSTEM = """You extract facts from an Egyptian Arabic note a teacher recorded after one class session.
 Student names are replaced by tokens such as <S1>, <A1>, <U1>.
@@ -22,14 +24,63 @@ Rules:
 - An observation must copy the teacher's own words from NOTE (a short exact phrase).
 - Use only the tokens listed under TOKENS. Never invent a token.
 - Fields: attendance (present | absent | late), late_minutes (number), score (number),
-  participation (low | normal | high), observation (a short Arabic phrase in the teacher's words),
+  observation (a short Arabic phrase in the teacher's words),
   observation_tag (understanding | needs_revisit | behaviour | positive | absence_context).
 - Statements about the whole class or the next session (no token) go in "unassigned" as short Arabic
   phrases in the teacher's words.
 - Do not repeat facts listed under ALREADY EXTRACTED.
+- If the teacher corrects themselves ("لا قصدي", "لا استنى", "أقصد", "يتلغى"), only the corrected
+  statement counts. If it is not clear what was meant, leave the item out.
+- Ignore anything said as a plan, a guess or about another session ("هيغيب", "لو", "الحصة اللي فاتت").
+- score and late_minutes are JSON numbers taken from NOTE (scores are written N/M there).
 - confidence: how sure you are the teacher said exactly this (0 to 1).
-- span: character offsets (start, end) in NOTE of the words the item came from.
 Return only JSON matching the schema."""
+
+_VALUES: dict[str, dict[str, Any]] = {
+    "attendance": {"enum": ["present", "absent", "late"]},
+    "late_minutes": {"type": "integer", "minimum": 0},
+    "score": {"type": "number"},
+    # No participation: on the 30 gold notes the LLM's participation had precision 0.38 (8 guesses
+    # for 1 extra hit) against 1.00 for link_nlp's explicit-phrase rules, so the rules own it.
+    "observation": {"type": "string"},
+    "observation_tag": {
+        "enum": ["understanding", "needs_revisit", "behaviour", "positive", "absence_context"]
+    },
+}
+
+
+def llm_schema(tokens: list[str], max_items: int = 12) -> dict[str, Any]:
+    """What the model may write for this note: one shape per field with its allowed values, only
+    the tokens that were sent, no spans (computed locally), and a cap on items (a model that lists
+    every field for every student runs out of tokens and returns cut-off JSON)."""
+    variants = [
+        {
+            "type": "object",
+            "required": ["student", "field", "value", "confidence"],
+            "additionalProperties": False,
+            "properties": {
+                "student": {"enum": tokens},
+                "field": {"const": name},
+                "value": value,
+                "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+            },
+        }
+        for name, value in _VALUES.items()
+    ]
+    items: dict[str, Any] = (
+        {"type": "array", "maxItems": max_items, "items": {"anyOf": variants}}
+        if tokens
+        else {"type": "array", "maxItems": 0}
+    )
+    return {
+        "type": "object",
+        "required": ["items", "unassigned"],
+        "additionalProperties": False,
+        "properties": {
+            "items": items,
+            "unassigned": {"type": "array", "maxItems": 3, "items": {"type": "string"}},
+        },
+    }
 
 
 def build_user_prompt(

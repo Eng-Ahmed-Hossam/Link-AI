@@ -22,7 +22,7 @@ from typing import Any
 
 from . import nlp
 from .gateway import Gateway
-from .llm import build_user_prompt
+from .llm import build_user_prompt, llm_schema
 from .providers import DataSafetyError
 from .redact import find_leaks, redact_contacts
 
@@ -30,6 +30,8 @@ from .redact import find_leaks, redact_contacts
 IDENTITY = {"resolved": "matched", "needs_identity": "ambiguous", "who_is_this": "unknown"}
 # LLM confidence is not calibrated: an LLM-only item is at most "check" (OD-36 medium band).
 LLM_MAX_CONFIDENCE = 0.80
+# Fields the LLM may not fill at all (measured: the LLM guessed participation, precision 0.38).
+RULES_ONLY_FIELDS = frozenset({"participation"})
 # Fields where a rule result always wins over the LLM.
 RULE_FIELDS = frozenset({"attendance", "late_minutes", "score"})
 # Fields with one value per student; two different LLM values for one student cancel out.
@@ -71,6 +73,21 @@ def _source_span(it: dict[str, Any], text: str) -> dict[str, int]:
     return {"start": s, "end": max(e, s + 1)}
 
 
+def with_spans(raw: Any, text: str) -> Any:
+    """The model writes no spans (llm_schema); each item gets the locally computed source span so
+    the reply can be checked against the full wire schema. Anything malformed is left as it is for
+    validate_extraction to reject."""
+    if not isinstance(raw, dict) or not isinstance(raw.get("items"), list):
+        return raw
+    items = [
+        {**it, "span": _source_span(it, text)}
+        if isinstance(it, dict) and isinstance(it.get("field"), str)
+        else it
+        for it in raw["items"]
+    ]
+    return {**raw, "items": items}
+
+
 def ground_llm_items(items: list[dict[str, Any]], text: str) -> list[dict[str, Any]]:
     """Keep only validated LLM items the note supports (on top of validate_extraction)."""
     # clean_transcript writes scores as "N/M" and durations as "N min": an LLM number must appear in
@@ -88,6 +105,10 @@ def ground_llm_items(items: list[dict[str, Any]], text: str) -> list[dict[str, A
         v = it.get("value")
         if v is None:
             continue  # "not said" carries nothing to review
+        if it["student"].startswith("<U"):
+            continue  # unknown spans are not LLM targets (see run_text)
+        if it["field"] in RULES_ONLY_FIELDS:
+            continue  # owned by link_nlp's explicit-phrase rules (see llm._VALUES)
         if it["field"] in said:
             if not isinstance(v, (int, float)) or f"{v:g}" not in said[it["field"]]:
                 continue  # a number the teacher did not say (as a score / as minutes)
@@ -269,12 +290,15 @@ def run_text(
     elif use_llm and gw.llm is not None:
         t1 = time.perf_counter()
         already = [(it["student"], it["field"]) for it in rule_items]
-        prompt = build_user_prompt(text, sorted(sent_tokens), assessment, already)
+        # Not <U#>: an unknown span is often not a person ("على كشف"), and an LLM item on it can only
+        # become a blocking "Who is this?" for the teacher. Rule items on <U#> still go through.
+        llm_tokens = sorted(t for t in sent_tokens if not t.startswith("<U"))
+        prompt = build_user_prompt(text, llm_tokens, assessment, already)
         deadline = time.monotonic() + gw.cfg.llm_budget_s  # one budget for the step (B3)
         for _attempt in range(2):
             try:
-                raw = gw.extract(prompt, nlp.VOICE_EXTRACTION_SCHEMA, data_class, deadline)
-                vr = nlp.validate_extraction(raw, sent_tokens, max_score)
+                raw = gw.extract(prompt, llm_schema(llm_tokens), data_class, deadline)
+                vr = nlp.validate_extraction(with_spans(raw, text), sent_tokens, max_score)
                 if not vr.valid:
                     raise ValueError("; ".join(vr.errors[:3]))
                 oor = set(vr.out_of_range)

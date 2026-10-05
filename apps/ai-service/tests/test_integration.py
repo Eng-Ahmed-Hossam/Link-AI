@@ -109,7 +109,7 @@ def test_leak_check_counts_names_with_attached_conjunctions():
 
 def test_rules_win_on_attendance_late_and_scores_for_the_same_student(make_gw):
     # يوسف is said three times (three tokens). The LLM disagrees with the rules on attendance, minutes
-    # and the score; its participation (not a rule field) is kept.
+    # and the score; its observation (not a rule field) is kept, its participation never is.
     note = "يوسف اتأخر ١٠ دقايق. يوسف جاب ١٤ من ٢٠. يوسف كان مشارك جدا"
 
     def reply(prompt):
@@ -119,6 +119,7 @@ def test_rules_win_on_attendance_late_and_scores_for_the_same_student(make_gw):
                 _item("<S2>", "late_minutes", 14),
                 _item("<S3>", "score", 10),
                 _item("<S3>", "participation", "high", 0.8),
+                _item("<S3>", "observation", "كان مشارك جدا", 0.8),
             ]
         }
 
@@ -126,7 +127,9 @@ def test_rules_win_on_attendance_late_and_scores_for_the_same_student(make_gw):
     assert [i["value"] for i in by(res.items, "attendance", "stu-youssef")] == ["late"]
     assert [i["value"] for i in by(res.items, "late_minutes", "stu-youssef")] == [10]
     assert [i["value"] for i in by(res.items, "score", "stu-youssef")] == [14]
-    assert [i["value"] for i in by(res.items, "participation", "stu-youssef")] == ["high"]
+    assert [i["value"] for i in by(res.items, "observation", "stu-youssef")] == ["كان مشارك جدا"]
+    # Participation comes from the rules' explicit phrase ("مشارك جدا"), not from the LLM.
+    assert all(i["confidence"] > 0.8 for i in by(res.items, "participation", "stu-youssef"))
 
 
 def test_pilot_scores_are_never_prefilled_but_kept_and_still_blocked_out_of_range(make_gw, cfg):
@@ -164,3 +167,49 @@ def test_an_llm_number_must_be_said_as_a_score_or_as_minutes(make_gw):
     llm = FakeLlm(reply={"items": [_item("<S1>", "score", 10)]})
     res = run_text(note, ROSTER, {"maxScore": 20}, "synthetic", make_gw(FakeStt(), llm))
     assert res.llm_used is True and by(res.items, "score") == []
+
+
+def test_the_llm_schema_is_a_strict_subset_of_the_wire_schema():
+    import jsonschema
+
+    from ai_service.llm import llm_schema
+    from ai_service.nlp import validate_extraction
+    from ai_service.pipeline import with_spans
+
+    schema = llm_schema(["<S1>", "<A1>"])
+    reply = {
+        "items": [
+            {"student": "<S1>", "field": "score", "value": 14, "confidence": 0.8},
+            {"student": "<A1>", "field": "observation", "value": "شارك كتير", "confidence": 0.7},
+        ],
+        "unassigned": [],
+    }
+    jsonschema.validate(reply, schema)
+    for bad in (
+        {"student": "<S9>", "field": "score", "value": 3, "confidence": 0.5},  # not sent
+        {"student": "<S1>", "field": "score", "value": "14", "confidence": 0.5},  # a string
+        {
+            "student": "<S1>",
+            "field": "participation",
+            "value": "high",
+            "confidence": 0.5,
+        },  # rules own it
+        {"student": "<S1>", "field": "attendance", "value": "here", "confidence": 0.5},
+        {"student": "<S1>", "field": "topic", "value": "x", "confidence": 0.5},  # Phase 3
+    ):
+        with __import__("pytest").raises(jsonschema.ValidationError):
+            jsonschema.validate({"items": [bad], "unassigned": []}, schema)
+    text = "<S1> جاب 14/20، و<A1> شارك كتير"
+    vr = validate_extraction(with_spans(reply, text), {"<S1>", "<A1>"}, 20)
+    assert vr.valid, vr.errors
+    assert llm_schema([])["properties"]["items"]["maxItems"] == 0
+
+
+def test_the_llm_is_not_offered_unknown_spans(make_gw):
+    # "سيف ماجاشا" (a verb read as a surname) is an unknown span: the LLM never sees its token as a
+    # target and an item on it is dropped; the teacher is not asked "who is this?" for LLM guesses.
+    llm = FakeLlm(reply={"items": [_item("<U1>", "observation", "ماجاشا")]})
+    res = run_text("سيف ماجاشا النهارده", [*ROSTER, pipeline.RosterEntry("stu-seif", "سيف")],
+                   None, "synthetic", make_gw(FakeStt(), llm))  # fmt: skip
+    assert "<U1>" not in llm.prompts[0].split("TOKENS:")[1].splitlines()[0]
+    assert res.unresolved == []

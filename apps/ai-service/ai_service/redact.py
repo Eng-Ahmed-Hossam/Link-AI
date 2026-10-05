@@ -55,12 +55,16 @@ def _name_words(names: Iterable[str]) -> set[str]:
 def find_leaks(
     llm_text: str, roster: Iterable[RosterStudent], mentions: Iterable[NameMention]
 ) -> int:
-    """How many roster names, nicknames or detected names are still in `llm_text` (0 = safe)."""
-    names = _name_words(
-        [s.display_name for s in roster]
-        + [n for s in roster for n in s.nicknames]
-        + [m.text for m in mentions]
-    )
+    """How many roster names, nicknames or detected names are still in `llm_text` (0 = safe).
+
+    Roster names and nicknames count word by word. A detected mention counts as its whole phrase
+    and its first word only: link_nlp's unknown spans can run on past the name ("على السبورة قبل
+    أي"), and "قبل" elsewhere in the note is not a name."""
+    names = _name_words([s.display_name for s in roster] + [n for s in roster for n in s.nicknames])
+    for m in mentions:
+        phrase = normalize_for_match(m.text).strip(" .،,")
+        first = _WORD.findall(phrase)[:1]
+        names.update([phrase, *first] if phrase else [])
     text = normalize_for_match(llm_text)
     words = _WORD.findall(text)
     leaks = sum(1 for w in words if any(w == p + n for n in names for p in _PREFIXES))

@@ -1,0 +1,121 @@
+{
+  "id": "b05",
+  "data_class": "synthetic",
+  "audio_file": "b05.wav",
+  "recording": {
+    "condition": "windows_tts",
+    "speaker": "windows-tts-ar-EG-hoda"
+  },
+  "roster": [
+    {
+      "id": "s1",
+      "display_name": "مريم",
+      "nicknames": []
+    },
+    {
+      "id": "s2",
+      "display_name": "يوسف",
+      "nicknames": []
+    },
+    {
+      "id": "s3",
+      "display_name": "أحمد س.",
+      "nicknames": []
+    },
+    {
+      "id": "s4",
+      "display_name": "أحمد م.",
+      "nicknames": []
+    },
+    {
+      "id": "s5",
+      "display_name": "ليلى",
+      "nicknames": []
+    },
+    {
+      "id": "s6",
+      "display_name": "زياد",
+      "nicknames": []
+    },
+    {
+      "id": "s7",
+      "display_name": "نور",
+      "nicknames": []
+    },
+    {
+      "id": "s8",
+      "display_name": "عمر",
+      "nicknames": []
+    },
+    {
+      "id": "s9",
+      "display_name": "هنا",
+      "nicknames": []
+    },
+    {
+      "id": "s10",
+      "display_name": "سيف",
+      "nicknames": []
+    }
+  ],
+  "assessment": {
+    "name": "كويز",
+    "max": 20
+  },
+  "reference_transcript": "كل الطلبة حضروا ما عدا يوسف وليلى. زياد بيلخبط في إشارات الضرب، لازم نعيد معاه مثالين.",
+  "expected_mentions": [
+    {
+      "text": "يوسف",
+      "status": "unique",
+      "student_id": "s2",
+      "candidates": [
+        "s2"
+      ]
+    },
+    {
+      "text": "ليلى",
+      "status": "unique",
+      "student_id": "s5",
+      "candidates": [
+        "s5"
+      ]
+    },
+    {
+      "text": "زياد",
+      "status": "unique",
+      "student_id": "s6",
+      "candidates": [
+        "s6"
+      ]
+    }
+  ],
+  "expected_items": [
+    {
+      "student_id": "s2",
+      "field": "attendance",
+      "value": "absent"
+    },
+    {
+      "student_id": "s5",
+      "field": "attendance",
+      "value": "absent"
+    }
+  ],
+  "expected_needs_identity": [],
+  "expected_unmentioned": [
+    "s1",
+    "s3",
+    "s4",
+    "s7",
+    "s8",
+    "s9",
+    "s10"
+  ],
+  "hard_case_tags": [
+    "windows_tts"
+  ],
+  "annotation": {
+    "method": "authored_with_the_script",
+    "version": "tts-v0"
+  }
+}
