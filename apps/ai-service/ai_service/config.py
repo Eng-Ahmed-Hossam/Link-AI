@@ -18,6 +18,7 @@ class Routing:
     stt_compute_type: str = "auto"  # auto | int8 | int8_float16 | float16 | float32
     llm_provider: str = "ollama"
     llm_model: str = "qwen3:8b"
+    llm_device: str = "auto"  # auto | cpu (cpu: Ollama keeps the model off the GPU)
 
 
 @dataclass
@@ -56,6 +57,7 @@ def load_config(env: dict[str, str] | None = None) -> Config:
             stt_compute_type=stt.get("compute_type", routing.stt_compute_type),
             llm_provider=llm.get("provider", routing.llm_provider),
             llm_model=llm.get("model", routing.llm_model),
+            llm_device=llm.get("device", routing.llm_device),
         )
     return Config(
         host=e.get("AI_SERVICE_HOST", "127.0.0.1"),

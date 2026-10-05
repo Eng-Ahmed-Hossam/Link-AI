@@ -147,7 +147,7 @@ def create_app(cfg: Config | None = None, gw: Gateway | None = None) -> FastAPI:
 
         r = cfg.routing
         stt = WhisperStt(r.stt_model, cfg.models_dir, r.stt_device, r.stt_compute_type)
-        gw = Gateway(cfg, stt, OllamaLlm(cfg.ollama_url, r.llm_model))
+        gw = Gateway(cfg, stt, OllamaLlm(cfg.ollama_url, r.llm_model, device=r.llm_device))
         if cfg.preload:  # in the background, so the first note does not pay for it
             threading.Thread(target=stt.load, daemon=True).start()
     jobs = Jobs(gw, cfg)

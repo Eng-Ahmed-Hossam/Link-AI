@@ -104,10 +104,11 @@ def build_user_prompt(
 class OllamaLlm:
     provider = "ollama"
 
-    def __init__(self, url: str, model: str, timeout_s: float = 60):
+    def __init__(self, url: str, model: str, timeout_s: float = 60, device: str = "auto"):
         self.url = url.rstrip("/")
         self.model = model
         self.timeout_s = timeout_s
+        self.device = device
 
     @property
     def version(self) -> str:
@@ -135,7 +136,12 @@ class OllamaLlm:
             "stream": False,
             "think": False,
             # Capped output: a runaway generation must not hold a note for minutes.
-            "options": {"temperature": 0, "num_ctx": 4096, "num_predict": 800},
+            "options": {
+                "temperature": 0,
+                "num_ctx": 4096,
+                "num_predict": 800,
+                **({"num_gpu": 0} if self.device == "cpu" else {}),
+            },
             "keep_alive": "30m",
         }
         limit = self.timeout_s if timeout_s is None else min(self.timeout_s, timeout_s)

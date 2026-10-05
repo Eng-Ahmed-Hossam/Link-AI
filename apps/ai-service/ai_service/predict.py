@@ -84,6 +84,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--stt-device", default="auto")
     ap.add_argument("--llm")
     ap.add_argument("--no-llm", action="store_true")
+    ap.add_argument("--llm-device", default="auto", choices=["auto", "cpu"])
     ap.add_argument("--roster")
     ap.add_argument("--data-class", default="synthetic", choices=["synthetic", "consented_real"])
     ap.add_argument("--force", action="store_true")
@@ -99,7 +100,7 @@ def main(argv: list[str] | None = None) -> int:
     if not a.no_llm:
         from .llm import OllamaLlm
 
-        llm = OllamaLlm(cfg.ollama_url, a.llm or cfg.routing.llm_model)
+        llm = OllamaLlm(cfg.ollama_url, a.llm or cfg.routing.llm_model, device=a.llm_device)
         if not llm.ready():
             print(
                 f"✖ Ollama is not serving {llm.model} at {cfg.ollama_url}. "

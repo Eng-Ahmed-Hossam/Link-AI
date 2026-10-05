@@ -230,3 +230,31 @@ def test_a_decimal_score_stays_in_its_clause(make_gw):
     llm = FakeLlm(reply={"items": [_item("<S1>", "score", 19.5)]})
     res = run_text(note, ROSTER, {"maxScore": 20}, "synthetic", make_gw(FakeStt(), llm))
     assert [i["value"] for i in by(res.items, "score", "stu-youssef")] == [19.5]
+
+
+def test_the_llm_can_be_kept_off_the_gpu(monkeypatch):
+    import httpx
+
+    from ai_service.config import load_config
+    from ai_service.llm import OllamaLlm
+
+    sent = {}
+
+    class R:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"message": {"content": '{"items": [], "unassigned": []}'}}
+
+    def post(url, json=None, timeout=None):
+        sent.update(json)
+        return R()
+
+    monkeypatch.setattr(httpx, "post", post)
+    cfg = load_config({"MODEL_ROUTING_CONFIG": '{"llm": {"model": "qwen3:4b", "device": "cpu"}}'})
+    assert (cfg.routing.llm_model, cfg.routing.llm_device) == ("qwen3:4b", "cpu")
+    OllamaLlm("http://x", "qwen3:4b", device="cpu").extract("p", {})
+    assert sent["options"]["num_gpu"] == 0
+    OllamaLlm("http://x", "qwen3:8b").extract("p", {})
+    assert "num_gpu" not in sent["options"]

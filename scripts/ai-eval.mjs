@@ -1,7 +1,7 @@
 // pnpm ai:eval — predictions from ai-service, then the eval kit's report (B4).
 //
 //   pnpm ai:eval [--mode text|audio] [--gold evals/gold/synthetic] [--audio-dir <dir>]
-//                [--models large-v3-turbo,egy-turbo-ft] [--stt-device auto|cuda|cpu]
+//                [--models large-v3-turbo,egy-turbo-ft] [--stt-device auto|cuda|cpu] [--llm-device auto|cpu]
 //                [--llm qwen3:8b | --no-llm] [--label <suffix>] [--force]
 //
 // 1. For each STT model (audio mode) or once (text mode), `python -m ai_service.predict` writes one
@@ -29,6 +29,7 @@ const audioDir = opt('audio-dir', join('evals', 'gold', 'audio'));
 const models = mode === 'audio' ? opt('models', 'large-v3-turbo').split(',') : ['reference'];
 const llm = flag('no-llm') ? null : opt('llm', 'qwen3:8b');
 const sttDevice = opt('stt-device', 'auto');
+const llmDevice = opt('llm-device', 'auto');
 const label = opt('label', '');
 const day = new Date().toISOString().slice(0, 10);
 
@@ -66,7 +67,7 @@ for (const m of models) {
     ...(mode === 'audio'
       ? ['--audio-dir', join(ROOT, audioDir), '--stt-model', m, '--stt-device', sttDevice]
       : []),
-    ...(llm ? ['--llm', llm] : ['--no-llm']),
+    ...(llm ? ['--llm', llm, '--llm-device', llmDevice] : ['--no-llm']),
     ...(flag('force') ? ['--force'] : []),
   ];
   if (run('uv', args) !== 0) process.exit(1);
