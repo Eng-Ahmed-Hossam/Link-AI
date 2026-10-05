@@ -73,6 +73,7 @@ for (const m of models) {
   preds.push({ out, name });
 }
 
+let worst = 0;
 for (const { out, name } of preds) {
   const report = join(ROOT, 'evals', 'reports', `${name}.md`);
   console.log(`
@@ -92,5 +93,7 @@ for (const { out, name } of preds) {
     '--out',
     report,
   ]);
-  if (status !== 0) process.exit(status);
+  // 0 PASS; non-zero = FAIL or INCOMPLETE: keep scoring the other models, report the worst.
+  worst = Math.max(worst, status);
 }
+process.exit(worst);
