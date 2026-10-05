@@ -1,0 +1,184 @@
+{
+  "id": "syn-016",
+  "data_class": "synthetic",
+  "group": "تانية ثانوي · رياضة",
+  "audio_file": "syn-016.m4a",
+  "recording": {
+    "condition": "street",
+    "delivery": "fast",
+    "target_seconds": 30,
+    "speaker": "to-fill",
+    "recorded_by": "to-fill"
+  },
+  "roster": [
+    {
+      "id": "s01",
+      "display_name": "أحمد سمير",
+      "nicknames": []
+    },
+    {
+      "id": "s02",
+      "display_name": "أحمد سامي",
+      "nicknames": []
+    },
+    {
+      "id": "s03",
+      "display_name": "مريم حسن",
+      "nicknames": [
+        "ميمي"
+      ]
+    },
+    {
+      "id": "s04",
+      "display_name": "مريم حسين",
+      "nicknames": []
+    },
+    {
+      "id": "s05",
+      "display_name": "محمود عادل",
+      "nicknames": [
+        "حودة"
+      ]
+    },
+    {
+      "id": "s06",
+      "display_name": "يوسف فؤاد",
+      "nicknames": []
+    },
+    {
+      "id": "s07",
+      "display_name": "سلمى طارق",
+      "nicknames": []
+    },
+    {
+      "id": "s08",
+      "display_name": "عمر خالد",
+      "nicknames": []
+    },
+    {
+      "id": "s09",
+      "display_name": "نور علي",
+      "nicknames": []
+    },
+    {
+      "id": "s10",
+      "display_name": "سارة شريف",
+      "nicknames": []
+    },
+    {
+      "id": "s11",
+      "display_name": "ياسين نبيل",
+      "nicknames": []
+    },
+    {
+      "id": "s12",
+      "display_name": "هنا وائل",
+      "nicknames": []
+    },
+    {
+      "id": "s13",
+      "display_name": "مصطفى هشام",
+      "nicknames": []
+    },
+    {
+      "id": "s14",
+      "display_name": "ملك إيهاب",
+      "nicknames": []
+    },
+    {
+      "id": "s15",
+      "display_name": "عبد الرحمن فادي",
+      "nicknames": []
+    },
+    {
+      "id": "s16",
+      "display_name": "حبيبة شادي",
+      "nicknames": []
+    },
+    {
+      "id": "s17",
+      "display_name": "زياد عاصم",
+      "nicknames": []
+    },
+    {
+      "id": "s18",
+      "display_name": "جنى عمرو",
+      "nicknames": []
+    }
+  ],
+  "assessment": {
+    "name": "Sign rules · Practice quiz",
+    "max": 20
+  },
+  "reference_transcript": "أحمد سامي جه متأخر عشر دقايق، وبعد ما دخل بدأ الحل مع المجموعة من السؤال التاني. أحمد سمير كان حاضر من بداية الحصة، وأنا متأكد من الاسم كامل في الاتنين. الكويز النهارده كان قصير ومن عشرين، بس أنا مش هقول درجات لحد ما أراجع الورق. اشتغلنا على موجب في سالب وبعدين سالب في سالب، وفي آخر الوقت كل واحد كتب تفسيره جنب الإجابة عشان نعرف إذا كان الحل بالفهم ولا بالحفظ بس.",
+  "expected_mentions": [
+    {
+      "start": 0,
+      "end": 9,
+      "text": "أحمد سامي",
+      "status": "unique",
+      "student_id": "s02",
+      "candidates": [
+        "s02"
+      ]
+    },
+    {
+      "start": 81,
+      "end": 90,
+      "text": "أحمد سمير",
+      "status": "unique",
+      "student_id": "s01",
+      "candidates": [
+        "s01"
+      ]
+    }
+  ],
+  "expected_items": [
+    {
+      "student_id": "s02",
+      "field": "attendance",
+      "value": "late"
+    },
+    {
+      "student_id": "s02",
+      "field": "late_minutes",
+      "value": 10
+    },
+    {
+      "student_id": "s01",
+      "field": "attendance",
+      "value": "present"
+    }
+  ],
+  "expected_needs_identity": [],
+  "expected_unmentioned": [
+    "s03",
+    "s04",
+    "s05",
+    "s06",
+    "s07",
+    "s08",
+    "s09",
+    "s10",
+    "s11",
+    "s12",
+    "s13",
+    "s14",
+    "s15",
+    "s16",
+    "s17",
+    "s18"
+  ],
+  "hard_case_tags": [
+    "similar_full_names",
+    "lateness",
+    "explicit_present"
+  ],
+  "annotation": {
+    "method": "independent_hand_authored",
+    "span_basis": "reference_transcript",
+    "version": "v0",
+    "review_status": "native_speaker_review_pending",
+    "notes": ""
+  }
+}

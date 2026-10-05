@@ -1,0 +1,168 @@
+{
+  "id": "syn-008",
+  "data_class": "synthetic",
+  "group": "تانية ثانوي · رياضة",
+  "audio_file": "syn-008.m4a",
+  "recording": {
+    "condition": "fan",
+    "delivery": "slow",
+    "target_seconds": 40,
+    "speaker": "to-fill",
+    "recorded_by": "to-fill"
+  },
+  "roster": [
+    {
+      "id": "s01",
+      "display_name": "أحمد سمير",
+      "nicknames": []
+    },
+    {
+      "id": "s02",
+      "display_name": "أحمد سامي",
+      "nicknames": []
+    },
+    {
+      "id": "s03",
+      "display_name": "مريم حسن",
+      "nicknames": [
+        "ميمي"
+      ]
+    },
+    {
+      "id": "s04",
+      "display_name": "مريم حسين",
+      "nicknames": []
+    },
+    {
+      "id": "s05",
+      "display_name": "محمود عادل",
+      "nicknames": [
+        "حودة"
+      ]
+    },
+    {
+      "id": "s06",
+      "display_name": "يوسف فؤاد",
+      "nicknames": []
+    },
+    {
+      "id": "s07",
+      "display_name": "سلمى طارق",
+      "nicknames": []
+    },
+    {
+      "id": "s08",
+      "display_name": "عمر خالد",
+      "nicknames": []
+    },
+    {
+      "id": "s09",
+      "display_name": "نور علي",
+      "nicknames": []
+    },
+    {
+      "id": "s10",
+      "display_name": "سارة شريف",
+      "nicknames": []
+    },
+    {
+      "id": "s11",
+      "display_name": "ياسين نبيل",
+      "nicknames": []
+    },
+    {
+      "id": "s12",
+      "display_name": "هنا وائل",
+      "nicknames": []
+    },
+    {
+      "id": "s13",
+      "display_name": "مصطفى هشام",
+      "nicknames": []
+    },
+    {
+      "id": "s14",
+      "display_name": "ملك إيهاب",
+      "nicknames": []
+    },
+    {
+      "id": "s15",
+      "display_name": "عبد الرحمن فادي",
+      "nicknames": []
+    },
+    {
+      "id": "s16",
+      "display_name": "حبيبة شادي",
+      "nicknames": []
+    },
+    {
+      "id": "s17",
+      "display_name": "زياد عاصم",
+      "nicknames": []
+    },
+    {
+      "id": "s18",
+      "display_name": "جنى عمرو",
+      "nicknames": []
+    }
+  ],
+  "assessment": {
+    "name": "Sign rules · Practice quiz",
+    "max": 20
+  },
+  "reference_transcript": "في كشف درجات الكويز كتبت إن مريم جابت خمستاشر من عشرين، بس أنا دلوقتي بقول الاسم الأول ومش محدد أنهي واحدة. ما تربطوش الدرجة بحد لحد ما أرجع للورقة وأقول الاسم كامل. في الحصة راجعنا ترتيب الحل وسبب تغيير الإشارة، وكان فيه وقت للأسئلة في الآخر. باقي الدرجات لسه تحت المراجعة، وأي ورقة ما اتصححتش هتفضل من غير درجة عشان ما نعتمدش رقم مؤقت وننساه بعد كده.",
+  "expected_mentions": [
+    {
+      "start": 28,
+      "end": 32,
+      "text": "مريم",
+      "status": "ambiguous",
+      "student_id": null,
+      "candidates": [
+        "s03",
+        "s04"
+      ]
+    }
+  ],
+  "expected_items": [],
+  "expected_needs_identity": [
+    {
+      "text": "مريم",
+      "candidates": [
+        "s03",
+        "s04"
+      ],
+      "field": "score",
+      "value": 15
+    }
+  ],
+  "expected_unmentioned": [
+    "s01",
+    "s02",
+    "s05",
+    "s06",
+    "s07",
+    "s08",
+    "s09",
+    "s10",
+    "s11",
+    "s12",
+    "s13",
+    "s14",
+    "s15",
+    "s16",
+    "s17",
+    "s18"
+  ],
+  "hard_case_tags": [
+    "ambiguous_first_name",
+    "spoken_scores"
+  ],
+  "annotation": {
+    "method": "independent_hand_authored",
+    "span_basis": "reference_transcript",
+    "version": "v0",
+    "review_status": "native_speaker_review_pending",
+    "notes": ""
+  }
+}
