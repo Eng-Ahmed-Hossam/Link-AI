@@ -114,6 +114,7 @@ if (aiReady)
       AI_SERVICE_TOKEN: aiToken,
       AI_SERVICE_HOST: '127.0.0.1',
       AI_PRELOAD: realSttSaved ? '1' : '0',
+      AI_SCORE_PREFILL: '1', // demo only: the pilot keeps voice scores in the "check" band
       PYTHONUTF8: '1',
     },
     'uv',
