@@ -12,6 +12,8 @@ dependencies = [
   "python-multipart>=0.0.12",
   "numpy>=1.26",
   "jsonschema>=4.23",
+  # The NLP core (py/link_nlp, Codex track): clean-up, roster match, tokens, rules, schema.
+  "link-nlp",
   # faster-whisper 1.2 passes `metadata_errors` to av.open, which PyAV 16+ removed.
   "av>=11,<16",
 ]
@@ -25,6 +27,9 @@ dev = ["pytest>=8.3", "ruff>=0.7", "mypy>=1.13"]
 
 [tool.uv]
 package = false
+
+[tool.uv.sources]
+link-nlp = { path = "../../py/link_nlp", editable = true }
 
 [tool.ruff]
 line-length = 100

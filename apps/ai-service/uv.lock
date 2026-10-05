@@ -354,6 +354,7 @@ dependencies = [
     { name = "faster-whisper" },
     { name = "httpx" },
     { name = "jsonschema" },
+    { name = "link-nlp" },
     { name = "numpy" },
     { name = "pydantic" },
     { name = "python-multipart" },
@@ -380,6 +381,7 @@ requires-dist = [
     { name = "faster-whisper", specifier = ">=1.1" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "jsonschema", specifier = ">=4.23" },
+    { name = "link-nlp", editable = "../../py/link_nlp" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "nvidia-cublas-cu12", marker = "extra == 'gpu'", specifier = ">=12.4" },
     { name = "nvidia-cudnn-cu12", marker = "extra == 'gpu'", specifier = ">=9.1,<10" },
@@ -394,6 +396,26 @@ dev = [
     { name = "mypy", specifier = ">=1.13" },
     { name = "pytest", specifier = ">=8.3" },
     { name = "ruff", specifier = ">=0.7" },
+]
+
+[[package]]
+name = "link-nlp"
+version = "0.1.0"
+source = { editable = "../../py/link_nlp" }
+dependencies = [
+    { name = "jsonschema" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "jsonschema", specifier = ">=4.23,<5" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "link-eval", editable = "../../evals" },
+    { name = "mypy", specifier = ">=1.15,<2" },
+    { name = "pytest", specifier = ">=8,<10" },
+    { name = "ruff", specifier = ">=0.11,<1" },
+    { name = "types-jsonschema", specifier = ">=4.23" },
 ]
 
 [[package]]

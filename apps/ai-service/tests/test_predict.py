@@ -48,5 +48,6 @@ def test_text_mode_writes_predictions_and_resumes(tmp_path, capsys):
     assert "reference-transcript" in p["model_version"]
     # Resumable: the second run skips what exists.
     assert main(["--gold", str(gold), "--out", str(out), "--no-llm"]) == 0
-    run = json.loads((out / "run.json").read_text("utf-8"))
+    run = json.loads((tmp_path / "preds.run.json").read_text("utf-8"))
+    assert [p.name for p in out.glob("*.json") if not p.name.endswith(".pred.json")] == []
     assert run["skipped"] == 2 and run["written"] == 0

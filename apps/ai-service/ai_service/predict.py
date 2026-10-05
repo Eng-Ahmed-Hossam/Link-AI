@@ -13,9 +13,9 @@
 - Resumable: notes that already have a prediction are skipped (unless --force). Long runs can be
   stopped and started again; progress is printed per note.
 
-Gold files are read from `<gold>/*.json` (the eval kit's references). Field names are looked up
-tolerantly (`transcript` / `reference_transcript`, `roster`, `assessment` / `assessment_max`) until the
-kit's format is final; a shared roster can be given with --roster.
+Gold files are read from `<gold>/*.json` (evals/gold/synthetic: `reference_transcript`, `roster`,
+`assessment.max`); a shared roster can be given with --roster. Run metadata goes to `<out>.run.json`
+beside the folder (link_eval accepts only `<id>.pred.json` inside it).
 """
 
 from __future__ import annotations
@@ -157,6 +157,8 @@ def main(argv: list[str] | None = None) -> int:
             pred = res.prediction(note_id)
             if res.llm_error:
                 pred["llm_error"] = res.llm_error
+            if res.leak_blocked:
+                pred["leak_blocked"] = True
             target.write_text(json.dumps(pred, ensure_ascii=False, indent=2), "utf-8")
             done += 1
             print(f"✔ {note_id}: {len(pred['items'])} items, {pred['latency_ms']} ms", flush=True)
@@ -173,7 +175,10 @@ def main(argv: list[str] | None = None) -> int:
         "failed": failed,
         "seconds": round(time.perf_counter() - t_all, 1),
     }
-    (out / "run.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), "utf-8")
+    # Beside the folder, not in it: link_eval accepts only <id>.pred.json files there.
+    out.with_name(out.name + ".run.json").write_text(
+        json.dumps(meta, ensure_ascii=False, indent=2), "utf-8"
+    )
     print(json.dumps(meta, ensure_ascii=False))
     return 1 if failed and not done else 0
 

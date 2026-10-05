@@ -62,6 +62,10 @@ class Gateway:
         else:
             print(line, file=sys.stderr)
 
+    def log_event(self, *, task: str, data_class: str, **counts: int | bool) -> None:
+        """A pipeline event (e.g. the leak check): counts and flags only — never text or names."""
+        self._log(task=task, data_class=data_class, **counts)
+
     def transcribe(
         self, audio: bytes | str, data_class: str, hints: list[str] | None = None
     ) -> Any:

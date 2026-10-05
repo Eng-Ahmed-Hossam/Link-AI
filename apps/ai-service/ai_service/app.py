@@ -168,7 +168,7 @@ def create_app(cfg: Config | None = None, gw: Gateway | None = None) -> FastAPI:
         return {
             "stt": {"version": stt.version, "loaded": getattr(stt, "loaded", True)},
             "llm": {"version": gw.llm.version if gw.llm else None, "ready": llm_ready},
-            "nlp": {"version": nlp.NLP_VERSION, "stub": nlp.STUB},
+            "nlp": {"version": nlp.NLP_VERSION},
             "modelVersion": gw.model_version,
         }
 

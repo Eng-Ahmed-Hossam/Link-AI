@@ -94,4 +94,4 @@ def test_extract_text_and_ready(cfg, monkeypatch):
     )
     assert r.status_code == 200 and r.json()["items"][0]["field"] == "attendance"
     ready = c.get("/ready").json()
-    assert ready["nlp"]["stub"] in (True, False) and "fake-stt@1" in ready["modelVersion"]
+    assert ready["nlp"]["version"].startswith("link_nlp@") and "fake-stt@1" in ready["modelVersion"]

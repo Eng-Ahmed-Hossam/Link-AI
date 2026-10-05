@@ -10,6 +10,16 @@ from ai_service.pipeline import run_audio, run_text
 NOTE = "مريم غابت النهارده، وأحمد جاب ١٤ من ٢٠، ويوسف اتأخر ١٠ دقايق. نراجع الكسور الحصة الجاية"
 
 
+def _item(student, field, value, conf=0.9):
+    return {
+        "student": student,
+        "field": field,
+        "value": value,
+        "confidence": conf,
+        "span": {"start": 0, "end": 1},
+    }
+
+
 def by(items, field, student=None):
     return [
         i for i in items if i["field"] == field and (student is None or i["studentId"] == student)
@@ -51,45 +61,36 @@ def test_llm_items_are_validated_and_rules_win(make_gw):
     def reply(prompt):
         return {
             "items": [
-                {
-                    "student": "<S1>",
-                    "field": "observation",
-                    "value": "نراجع الكسور",
-                    "confidence": 0.8,
-                    "span": {"start": 0, "end": 4},
-                },
-                {
-                    "student": "<S1>",
-                    "field": "attendance",
-                    "value": "present",  # rules said absent
-                    "confidence": 0.99,
-                    "span": {"start": 0, "end": 4},
-                },
-                {
-                    "student": "<S9>",
-                    "field": "score",
-                    "value": 3,  # invented token: dropped
-                    "confidence": 0.9,
-                    "span": {"start": 0, "end": 4},
-                },
-                {
-                    "student": "<S2>",
-                    "field": "participation",
-                    "value": "excellent",  # bad enum
-                    "confidence": 0.9,
-                    "span": {"start": 0, "end": 4},
-                },
+                _item("<S1>", "observation", "نراجع الكسور", 0.8),
+                _item("<S1>", "attendance", "present", 0.99),  # rules said absent
             ],
             "unassigned": ["نراجع الكسور الحصة الجاية"],
         }
 
     res = run_text(NOTE, ROSTER, None, "synthetic", make_gw(FakeStt(), FakeLlm(reply)))
-    assert by(res.items, "attendance", "stu-mariam")[0]["value"] == "absent"
+    assert [a["value"] for a in by(res.items, "attendance", "stu-mariam")] == ["absent"]
     assert by(res.items, "observation", "stu-mariam")[0]["value"] == "نراجع الكسور"
-    assert not by(res.items, "participation")
     group = [i for i in res.items if i["identity"] == "group"]
     assert group and group[0]["value"] == "نراجع الكسور الحصة الجاية"
     assert res.llm_used is True
+
+
+def test_one_invalid_llm_item_rejects_the_whole_reply(make_gw):
+    # link_nlp's validate_extraction is all-or-nothing: an invented token or a bad enum makes the
+    # reply invalid; it is retried once, then the note keeps the rule items only (docs/09 §9).
+    llm = FakeLlm(
+        reply={
+            "items": [
+                _item("<S1>", "observation", "نراجع الكسور", 0.8),
+                _item("<S9>", "score", 3),  # invented token
+                _item("<S2>", "participation", "excellent"),  # bad enum
+            ]
+        }
+    )
+    res = run_text(NOTE, ROSTER, None, "synthetic", make_gw(FakeStt(), llm))
+    assert len(llm.prompts) == 2 and res.llm_used is False
+    assert not by(res.items, "observation")
+    assert by(res.items, "attendance", "stu-mariam")
 
 
 def test_invalid_llm_output_twice_falls_back_to_rule_items(make_gw):
@@ -126,7 +127,8 @@ def test_score_above_the_maximum_is_flagged_not_capped(make_gw):
     assert s["value"] == 25 and s["outOfRange"] is True
 
 
-def test_bands_and_the_eval_prediction_shape(make_gw):
+def test_bands_and_the_eval_prediction_shape(make_gw, cfg):
+    cfg.score_prefill = True  # the demo: bands straight from link_nlp
     res = run_text(NOTE, ROSTER, None, "synthetic", make_gw(FakeStt(), None))
     for it in res.items:
         c = it["confidence"]
@@ -141,7 +143,12 @@ def test_bands_and_the_eval_prediction_shape(make_gw):
         "needs_identity",
         "latency_ms",
     }
-    assert all(set(i) == {"student_id", "field", "value", "confidence"} for i in p["items"])
+    assert all(
+        set(i) == {"student_id", "field", "value", "confidence", "out_of_range"} for i in p["items"]
+    )
+    assert all(i["student_id"] for i in p["items"])  # resolved only
+    # Unresolved items go to needs_identity, never with a student id.
+    assert p["needs_identity"] and all(u["student_id"] is None for u in p["needs_identity"])
     assert p["id"] == "note-07" and isinstance(p["latency_ms"], int)
 
 
@@ -198,16 +205,6 @@ def test_llm_items_must_be_grounded_in_the_note(make_gw):
     ]
 
 
-def _item(student, field, value, conf=0.9):
-    return {
-        "student": student,
-        "field": field,
-        "value": value,
-        "confidence": conf,
-        "span": {"start": 0, "end": 0},
-    }
-
-
 def test_present_must_be_said_and_a_one_word_class_line_is_dropped(make_gw):
     # Seen with qwen3:8b: "عمر ونور حلوا كل الواجب" → both "present" (homework is not attendance);
     # a misheard word ("ماجاشا،") returned as a whole-class observation.
@@ -249,14 +246,13 @@ def test_one_student_twice_rules_win_and_llm_disagreements_cancel(make_gw):
 
 
 def test_llm_spans_are_not_trusted(make_gw):
-    # Seen on the real stack: the LLM pointed "late" for يوسف at "ها رده، و" (the clause before).
-    note = "مريم غابت أنها رده، ويوسف تأخر عشر دقائق. الباقي كلهم حضروا."
+    # Seen on the real stack: the LLM pointed an item for يوسف at the clause before his name.
+    note = "مريم غابت أنها رده، ويوسف شارك كتير النهارده."
 
     def reply(prompt):
-        return {
-            "items": [{**_item("<S2>", "attendance", "late"), "span": {"start": 12, "end": 22}}]
-        }
+        item = _item("<S2>", "participation", "high")
+        return {"items": [{**item, "span": {"start": 2, "end": 9}}]}
 
     res = run_text(note, ROSTER, None, "synthetic", make_gw(FakeStt(), FakeLlm(reply=reply)))
-    late = by(res.items, "attendance", "stu-youssef")
-    assert late and late[0]["sourceText"].startswith("ويوسف تأخر عشر دقائق")
+    p = by(res.items, "participation", "stu-youssef")
+    assert p and p[0]["sourceText"].startswith("ويوسف شارك كتير")

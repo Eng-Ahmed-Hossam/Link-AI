@@ -36,6 +36,9 @@ class Config:
     llm_budget_s: int = 90
     # Load the Whisper model at start (the pilot), or on the first note (the demo, when fixtures are on).
     preload: bool = True
+    # Pilot safety: voice-extracted scores are never pre-filled (always the "check" band) until the
+    # audio eval on the team's recordings shows score exact match >= 95%. Only the demo sets it on.
+    score_prefill: bool = False
     max_audio_bytes: int = 15_000_000
 
 
@@ -65,4 +68,5 @@ def load_config(env: dict[str, str] | None = None) -> Config:
         job_timeout_s=int(e.get("AI_JOB_TIMEOUT_S", "180")),
         llm_budget_s=int(e.get("AI_LLM_BUDGET_S", "90")),
         preload=e.get("AI_PRELOAD", "1") != "0",
+        score_prefill=e.get("AI_SCORE_PREFILL", "0") == "1",
     )

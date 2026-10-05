@@ -1,44 +1,51 @@
-"""Adapter to the NLP core (`link_nlp`, docs/09 §2.3–2.5).
+"""The NLP core: `link_nlp` (py/link_nlp, owned by the Codex track; docs/ai/link-nlp.md).
 
-`link_nlp` is built on the Codex track (branch `codex/nlp-eval`, `py/link_nlp`). Until it is merged and
-added as a uv path dependency, this module falls back to `_nlp_stub` with the same contract. Every
-other module imports from here only, so swapping the stub for the real package touches this file.
+Every other module imports from here only. `link_nlp/__init__` re-exports nothing yet, so the names
+come from its submodules (a public API is requested in docs/ai/handoff-to-codex.md).
 """
 
 from __future__ import annotations
 
-from typing import Any
+from importlib.metadata import version
 
-try:  # the real package (uv path dependency on py/link_nlp, once merged)
-    import link_nlp as _impl  # type: ignore[import-not-found]
+from link_nlp.normalize import (
+    CleanedTranscript,
+    clean_transcript,
+    normalize_digits,
+    normalize_for_match,
+)
+from link_nlp.roster import NameMention, RosterStudent, find_name_mentions
+from link_nlp.rules import rule_extract
+from link_nlp.schema import (
+    VOICE_EXTRACTION_SCHEMA,
+    ValidationResult,
+    confidence_band,
+    validate_extraction,
+)
+from link_nlp.tokens import ResolvedItem, Tokenised, detokenise_items, tokenise
 
-    STUB = False
-except ImportError:  # pragma: no cover - exercised until the merge
-    from . import _nlp_stub as _impl
+NLP_VERSION = f"link_nlp@{version('link-nlp')}"
 
-    STUB = True
+# link_nlp bands → the app's ConfidenceBand (docs/ai/link-nlp.md "Rule extraction and confidence").
+UI_BAND = {"prefill": "high", "check": "medium", "blank": "low"}
 
-normalize_for_match = _impl.normalize_for_match
-normalize_digits = _impl.normalize_digits
-clean_transcript = _impl.clean_transcript
-RosterStudent = _impl.RosterStudent
-find_name_mentions = _impl.find_name_mentions
-tokenise = _impl.tokenise
-detokenise_items = _impl.detokenise_items
-rule_extract = _impl.rule_extract
-VOICE_EXTRACTION_SCHEMA = _impl.VOICE_EXTRACTION_SCHEMA
-validate_extraction = _impl.validate_extraction
-confidence_band = _impl.confidence_band
-
-NLP_VERSION = f"link_nlp@{getattr(_impl, '__version__', 'stub' if STUB else 'unknown')}"
-
-
-def display_span(cleaned: Any, start: int, end: int) -> tuple[int, int]:
-    """Map a span in the cleaned text back to the display transcript (the receipt the teacher sees)."""
-    om = getattr(cleaned, "offset_map", None)
-    if isinstance(om, list) and om:
-        clamp = lambda i: max(0, min(i, len(om) - 1))  # noqa: E731
-        return om[clamp(start)], om[clamp(end)]
-    if callable(om):
-        return om(start), om(end)
-    return start, end
+__all__ = [
+    "NLP_VERSION",
+    "UI_BAND",
+    "VOICE_EXTRACTION_SCHEMA",
+    "CleanedTranscript",
+    "NameMention",
+    "ResolvedItem",
+    "RosterStudent",
+    "Tokenised",
+    "ValidationResult",
+    "clean_transcript",
+    "confidence_band",
+    "detokenise_items",
+    "find_name_mentions",
+    "normalize_digits",
+    "normalize_for_match",
+    "rule_extract",
+    "tokenise",
+    "validate_extraction",
+]
