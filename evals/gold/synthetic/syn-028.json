@@ -1,0 +1,189 @@
+{
+  "id": "syn-028",
+  "data_class": "synthetic",
+  "group": "تانية ثانوي · رياضة",
+  "audio_file": "syn-028.m4a",
+  "recording": {
+    "condition": "classroom_noise",
+    "delivery": "fast",
+    "target_seconds": 30,
+    "speaker": "to-fill",
+    "recorded_by": "to-fill"
+  },
+  "roster": [
+    {
+      "id": "s01",
+      "display_name": "أحمد سمير",
+      "nicknames": []
+    },
+    {
+      "id": "s02",
+      "display_name": "أحمد سامي",
+      "nicknames": []
+    },
+    {
+      "id": "s03",
+      "display_name": "مريم حسن",
+      "nicknames": [
+        "ميمي"
+      ]
+    },
+    {
+      "id": "s04",
+      "display_name": "مريم حسين",
+      "nicknames": []
+    },
+    {
+      "id": "s05",
+      "display_name": "محمود عادل",
+      "nicknames": [
+        "حودة"
+      ]
+    },
+    {
+      "id": "s06",
+      "display_name": "يوسف فؤاد",
+      "nicknames": []
+    },
+    {
+      "id": "s07",
+      "display_name": "سلمى طارق",
+      "nicknames": []
+    },
+    {
+      "id": "s08",
+      "display_name": "عمر خالد",
+      "nicknames": []
+    },
+    {
+      "id": "s09",
+      "display_name": "نور علي",
+      "nicknames": []
+    },
+    {
+      "id": "s10",
+      "display_name": "سارة شريف",
+      "nicknames": []
+    },
+    {
+      "id": "s11",
+      "display_name": "ياسين نبيل",
+      "nicknames": []
+    },
+    {
+      "id": "s12",
+      "display_name": "هنا وائل",
+      "nicknames": []
+    },
+    {
+      "id": "s13",
+      "display_name": "مصطفى هشام",
+      "nicknames": []
+    },
+    {
+      "id": "s14",
+      "display_name": "ملك إيهاب",
+      "nicknames": []
+    },
+    {
+      "id": "s15",
+      "display_name": "عبد الرحمن فادي",
+      "nicknames": []
+    },
+    {
+      "id": "s16",
+      "display_name": "حبيبة شادي",
+      "nicknames": []
+    },
+    {
+      "id": "s17",
+      "display_name": "زياد عاصم",
+      "nicknames": []
+    },
+    {
+      "id": "s18",
+      "display_name": "جنى عمرو",
+      "nicknames": []
+    }
+  ],
+  "assessment": {
+    "name": "Sign rules · Practice quiz",
+    "max": 20
+  },
+  "reference_transcript": "زياد عاصم اتأخر ٧ دقايق وجاب ١١ من ٢٠ في الكويز، وسارة شريف جابت ١٩ من ٢٠. الدرجات دي من الورق بعد التصحيح، ووقت التأخير متسجل عند الدخول، فمش بنحسبه من مدة التسجيل. الحصة كانت سريعة شوية في البداية، وبعدها بطأنا عند فتح الأقواس. لسه مش هسجل مشاركة للباقي لأن دي ملاحظة درجات ووقت دخول بس، والمرة الجاية هنراجع سؤال الكويز الأول ونشوف ترتيب العمليات قبل ما نكمل التدريب الجديد.",
+  "expected_mentions": [
+    {
+      "start": 0,
+      "end": 9,
+      "text": "زياد عاصم",
+      "status": "unique",
+      "student_id": "s17",
+      "candidates": [
+        "s17"
+      ]
+    },
+    {
+      "start": 50,
+      "end": 59,
+      "text": "سارة شريف",
+      "status": "unique",
+      "student_id": "s10",
+      "candidates": [
+        "s10"
+      ]
+    }
+  ],
+  "expected_items": [
+    {
+      "student_id": "s17",
+      "field": "attendance",
+      "value": "late"
+    },
+    {
+      "student_id": "s17",
+      "field": "late_minutes",
+      "value": 7
+    },
+    {
+      "student_id": "s17",
+      "field": "score",
+      "value": 11
+    },
+    {
+      "student_id": "s10",
+      "field": "score",
+      "value": 19
+    }
+  ],
+  "expected_needs_identity": [],
+  "expected_unmentioned": [
+    "s01",
+    "s02",
+    "s03",
+    "s04",
+    "s05",
+    "s06",
+    "s07",
+    "s08",
+    "s09",
+    "s11",
+    "s12",
+    "s13",
+    "s14",
+    "s15",
+    "s16",
+    "s18"
+  ],
+  "hard_case_tags": [
+    "digit_scores",
+    "lateness",
+    "multiple_fields"
+  ],
+  "annotation": {
+    "method": "independent_hand_authored",
+    "span_basis": "reference_transcript",
+    "version": "v0",
+    "review_status": "native_speaker_review_pending",
+    "notes": ""
+  }
+}

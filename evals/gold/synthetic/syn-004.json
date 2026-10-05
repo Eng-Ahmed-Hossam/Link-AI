@@ -1,0 +1,195 @@
+{
+  "id": "syn-004",
+  "data_class": "synthetic",
+  "group": "تانية ثانوي · رياضة",
+  "audio_file": "syn-004.m4a",
+  "recording": {
+    "condition": "quiet",
+    "delivery": "natural",
+    "target_seconds": 35,
+    "speaker": "to-fill",
+    "recorded_by": "to-fill"
+  },
+  "roster": [
+    {
+      "id": "s01",
+      "display_name": "أحمد سمير",
+      "nicknames": []
+    },
+    {
+      "id": "s02",
+      "display_name": "أحمد سامي",
+      "nicknames": []
+    },
+    {
+      "id": "s03",
+      "display_name": "مريم حسن",
+      "nicknames": [
+        "ميمي"
+      ]
+    },
+    {
+      "id": "s04",
+      "display_name": "مريم حسين",
+      "nicknames": []
+    },
+    {
+      "id": "s05",
+      "display_name": "محمود عادل",
+      "nicknames": [
+        "حودة"
+      ]
+    },
+    {
+      "id": "s06",
+      "display_name": "يوسف فؤاد",
+      "nicknames": []
+    },
+    {
+      "id": "s07",
+      "display_name": "سلمى طارق",
+      "nicknames": []
+    },
+    {
+      "id": "s08",
+      "display_name": "عمر خالد",
+      "nicknames": []
+    },
+    {
+      "id": "s09",
+      "display_name": "نور علي",
+      "nicknames": []
+    },
+    {
+      "id": "s10",
+      "display_name": "سارة شريف",
+      "nicknames": []
+    },
+    {
+      "id": "s11",
+      "display_name": "ياسين نبيل",
+      "nicknames": []
+    },
+    {
+      "id": "s12",
+      "display_name": "هنا وائل",
+      "nicknames": []
+    },
+    {
+      "id": "s13",
+      "display_name": "مصطفى هشام",
+      "nicknames": []
+    },
+    {
+      "id": "s14",
+      "display_name": "ملك إيهاب",
+      "nicknames": []
+    },
+    {
+      "id": "s15",
+      "display_name": "عبد الرحمن فادي",
+      "nicknames": []
+    },
+    {
+      "id": "s16",
+      "display_name": "حبيبة شادي",
+      "nicknames": []
+    },
+    {
+      "id": "s17",
+      "display_name": "زياد عاصم",
+      "nicknames": []
+    },
+    {
+      "id": "s18",
+      "display_name": "جنى عمرو",
+      "nicknames": []
+    }
+  ],
+  "assessment": {
+    "name": "Sign rules · Practice quiz",
+    "max": 20
+  },
+  "reference_transcript": "وأنا بجمع درجات الكويز لقيت مكتوب إن نور علي جاب واحد وعشرين من عشرين. زياد عاصم جاب سالب واحد من عشرين، ودي كمان درجة محتاجة مراجعة. الدرجة الأولى دي أعلى من النهاية، فسيبوها زي ما اتقالت وماتنزلوهاش لعشرين؛ لازم أرجع للورقة وأراجع الجمع الأول. سارة شريف جابت سبعتاشر من عشرين ودي اتراجعت خلاص. باقي المجموعة لسه ما خلصتش تصحيح ورقها، فمش هحط لهم أرقام مؤقتة، وهقول النتيجة بعد ما أخلص المراجعة وأتأكد إن كل سؤال اتحسب مرة واحدة.",
+  "expected_mentions": [
+    {
+      "start": 37,
+      "end": 44,
+      "text": "نور علي",
+      "status": "unique",
+      "student_id": "s09",
+      "candidates": [
+        "s09"
+      ]
+    },
+    {
+      "start": 71,
+      "end": 80,
+      "text": "زياد عاصم",
+      "status": "unique",
+      "student_id": "s17",
+      "candidates": [
+        "s17"
+      ]
+    },
+    {
+      "start": 246,
+      "end": 255,
+      "text": "سارة شريف",
+      "status": "unique",
+      "student_id": "s10",
+      "candidates": [
+        "s10"
+      ]
+    }
+  ],
+  "expected_items": [
+    {
+      "student_id": "s09",
+      "field": "score",
+      "value": 21,
+      "out_of_range": true
+    },
+    {
+      "student_id": "s17",
+      "field": "score",
+      "value": -1,
+      "out_of_range": true
+    },
+    {
+      "student_id": "s10",
+      "field": "score",
+      "value": 17
+    }
+  ],
+  "expected_needs_identity": [],
+  "expected_unmentioned": [
+    "s01",
+    "s02",
+    "s03",
+    "s04",
+    "s05",
+    "s06",
+    "s07",
+    "s08",
+    "s11",
+    "s12",
+    "s13",
+    "s14",
+    "s15",
+    "s16",
+    "s18"
+  ],
+  "hard_case_tags": [
+    "score_out_of_range",
+    "negative_score",
+    "spoken_scores"
+  ],
+  "annotation": {
+    "method": "independent_hand_authored",
+    "span_basis": "reference_transcript",
+    "version": "v0",
+    "review_status": "native_speaker_review_pending",
+    "notes": ""
+  }
+}

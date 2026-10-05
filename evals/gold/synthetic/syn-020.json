@@ -1,0 +1,178 @@
+{
+  "id": "syn-020",
+  "data_class": "synthetic",
+  "group": "تانية ثانوي · رياضة",
+  "audio_file": "syn-020.m4a",
+  "recording": {
+    "condition": "quiet",
+    "delivery": "natural",
+    "target_seconds": 35,
+    "speaker": "to-fill",
+    "recorded_by": "to-fill"
+  },
+  "roster": [
+    {
+      "id": "s01",
+      "display_name": "أحمد سمير",
+      "nicknames": []
+    },
+    {
+      "id": "s02",
+      "display_name": "أحمد سامي",
+      "nicknames": []
+    },
+    {
+      "id": "s03",
+      "display_name": "مريم حسن",
+      "nicknames": [
+        "ميمي"
+      ]
+    },
+    {
+      "id": "s04",
+      "display_name": "مريم حسين",
+      "nicknames": []
+    },
+    {
+      "id": "s05",
+      "display_name": "محمود عادل",
+      "nicknames": [
+        "حودة"
+      ]
+    },
+    {
+      "id": "s06",
+      "display_name": "يوسف فؤاد",
+      "nicknames": []
+    },
+    {
+      "id": "s07",
+      "display_name": "سلمى طارق",
+      "nicknames": []
+    },
+    {
+      "id": "s08",
+      "display_name": "عمر خالد",
+      "nicknames": []
+    },
+    {
+      "id": "s09",
+      "display_name": "نور علي",
+      "nicknames": []
+    },
+    {
+      "id": "s10",
+      "display_name": "سارة شريف",
+      "nicknames": []
+    },
+    {
+      "id": "s11",
+      "display_name": "ياسين نبيل",
+      "nicknames": []
+    },
+    {
+      "id": "s12",
+      "display_name": "هنا وائل",
+      "nicknames": []
+    },
+    {
+      "id": "s13",
+      "display_name": "مصطفى هشام",
+      "nicknames": []
+    },
+    {
+      "id": "s14",
+      "display_name": "ملك إيهاب",
+      "nicknames": []
+    },
+    {
+      "id": "s15",
+      "display_name": "عبد الرحمن فادي",
+      "nicknames": []
+    },
+    {
+      "id": "s16",
+      "display_name": "حبيبة شادي",
+      "nicknames": []
+    },
+    {
+      "id": "s17",
+      "display_name": "زياد عاصم",
+      "nicknames": []
+    },
+    {
+      "id": "s18",
+      "display_name": "جنى عمرو",
+      "nicknames": []
+    }
+  ],
+  "assessment": {
+    "name": "Sign rules · Practice quiz",
+    "max": 20
+  },
+  "reference_transcript": "ملك إيهاب مشاركتها عادية النهارده، جاوبت لما سألتها بس ما طلبتش تجاوب من نفسها. نور علي مشارك كويس وكان بيشرح سبب كل إشارة في الحل. أنا بس بسجل المشاركة أثناء المناقشة، ومفيش عندي درجات مصححة في التسجيل ده. هنبدأ المرة الجاية بمثال فيه أقواس كتير ونقسم الحل لخطوات صغيرة، وبعدها كل واحد يحل سؤال لوحده قبل ما نشوف الإجابة على السبورة عشان يبقى فيه وقت كفاية للتفكير والمراجعة.",
+  "expected_mentions": [
+    {
+      "start": 0,
+      "end": 9,
+      "text": "ملك إيهاب",
+      "status": "unique",
+      "student_id": "s14",
+      "candidates": [
+        "s14"
+      ]
+    },
+    {
+      "start": 80,
+      "end": 87,
+      "text": "نور علي",
+      "status": "unique",
+      "student_id": "s09",
+      "candidates": [
+        "s09"
+      ]
+    }
+  ],
+  "expected_items": [
+    {
+      "student_id": "s14",
+      "field": "participation",
+      "value": "normal"
+    },
+    {
+      "student_id": "s09",
+      "field": "participation",
+      "value": "high"
+    }
+  ],
+  "expected_needs_identity": [],
+  "expected_unmentioned": [
+    "s01",
+    "s02",
+    "s03",
+    "s04",
+    "s05",
+    "s06",
+    "s07",
+    "s08",
+    "s10",
+    "s11",
+    "s12",
+    "s13",
+    "s15",
+    "s16",
+    "s17",
+    "s18"
+  ],
+  "hard_case_tags": [
+    "participation",
+    "normal_participation"
+  ],
+  "annotation": {
+    "method": "independent_hand_authored",
+    "span_basis": "reference_transcript",
+    "version": "v0",
+    "review_status": "native_speaker_review_pending",
+    "notes": ""
+  }
+}

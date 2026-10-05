@@ -1,0 +1,179 @@
+{
+  "id": "syn-022",
+  "data_class": "synthetic",
+  "group": "تانية ثانوي · رياضة",
+  "audio_file": "syn-022.m4a",
+  "recording": {
+    "condition": "fan",
+    "delivery": "slow",
+    "target_seconds": 40,
+    "speaker": "to-fill",
+    "recorded_by": "to-fill"
+  },
+  "roster": [
+    {
+      "id": "s01",
+      "display_name": "أحمد سمير",
+      "nicknames": []
+    },
+    {
+      "id": "s02",
+      "display_name": "أحمد سامي",
+      "nicknames": []
+    },
+    {
+      "id": "s03",
+      "display_name": "مريم حسن",
+      "nicknames": [
+        "ميمي"
+      ]
+    },
+    {
+      "id": "s04",
+      "display_name": "مريم حسين",
+      "nicknames": []
+    },
+    {
+      "id": "s05",
+      "display_name": "محمود عادل",
+      "nicknames": [
+        "حودة"
+      ]
+    },
+    {
+      "id": "s06",
+      "display_name": "يوسف فؤاد",
+      "nicknames": []
+    },
+    {
+      "id": "s07",
+      "display_name": "سلمى طارق",
+      "nicknames": []
+    },
+    {
+      "id": "s08",
+      "display_name": "عمر خالد",
+      "nicknames": []
+    },
+    {
+      "id": "s09",
+      "display_name": "نور علي",
+      "nicknames": []
+    },
+    {
+      "id": "s10",
+      "display_name": "سارة شريف",
+      "nicknames": []
+    },
+    {
+      "id": "s11",
+      "display_name": "ياسين نبيل",
+      "nicknames": []
+    },
+    {
+      "id": "s12",
+      "display_name": "هنا وائل",
+      "nicknames": []
+    },
+    {
+      "id": "s13",
+      "display_name": "مصطفى هشام",
+      "nicknames": []
+    },
+    {
+      "id": "s14",
+      "display_name": "ملك إيهاب",
+      "nicknames": []
+    },
+    {
+      "id": "s15",
+      "display_name": "عبد الرحمن فادي",
+      "nicknames": []
+    },
+    {
+      "id": "s16",
+      "display_name": "حبيبة شادي",
+      "nicknames": []
+    },
+    {
+      "id": "s17",
+      "display_name": "زياد عاصم",
+      "nicknames": []
+    },
+    {
+      "id": "s18",
+      "display_name": "جنى عمرو",
+      "nicknames": []
+    }
+  ],
+  "assessment": {
+    "name": "Sign rules · Practice quiz",
+    "max": 20
+  },
+  "reference_transcript": "ياسين نبيل جاب صفر من عشرين في الكويز، وهنا وائل جابت عشرة من عشرين. الصفر هو درجة الورقة اللي قدامي مش معناها إن الطالب غاب، فماتربطوش النتيجة بالحضور من غير كلام واضح. لسه هراجع سؤال الإشارات مع المجموعة عشان كانت فيه خطوات ناقصة في حلول كتير. الواجب الجديد هيبقى مسألتين بس مع شرح السبب جنب كل خطوة، وهنبدأ الحصة الجاية بتصحيحهم بهدوء قبل ما ندخل على فكرة جديدة أو نعمل كويز تاني.",
+  "expected_mentions": [
+    {
+      "start": 0,
+      "end": 10,
+      "text": "ياسين نبيل",
+      "status": "unique",
+      "student_id": "s11",
+      "candidates": [
+        "s11"
+      ]
+    },
+    {
+      "start": 40,
+      "end": 48,
+      "text": "هنا وائل",
+      "status": "unique",
+      "student_id": "s12",
+      "candidates": [
+        "s12"
+      ]
+    }
+  ],
+  "expected_items": [
+    {
+      "student_id": "s11",
+      "field": "score",
+      "value": 0
+    },
+    {
+      "student_id": "s12",
+      "field": "score",
+      "value": 10
+    }
+  ],
+  "expected_needs_identity": [],
+  "expected_unmentioned": [
+    "s01",
+    "s02",
+    "s03",
+    "s04",
+    "s05",
+    "s06",
+    "s07",
+    "s08",
+    "s09",
+    "s10",
+    "s13",
+    "s14",
+    "s15",
+    "s16",
+    "s17",
+    "s18"
+  ],
+  "hard_case_tags": [
+    "zero_score",
+    "spoken_scores",
+    "missing_not_absent"
+  ],
+  "annotation": {
+    "method": "independent_hand_authored",
+    "span_basis": "reference_transcript",
+    "version": "v0",
+    "review_status": "native_speaker_review_pending",
+    "notes": ""
+  }
+}

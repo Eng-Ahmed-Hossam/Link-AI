@@ -1,0 +1,174 @@
+{
+  "id": "syn-011",
+  "data_class": "synthetic",
+  "group": "تانية ثانوي · رياضة",
+  "audio_file": "syn-011.m4a",
+  "recording": {
+    "condition": "classroom_noise",
+    "delivery": "natural",
+    "target_seconds": 35,
+    "speaker": "to-fill",
+    "recorded_by": "to-fill"
+  },
+  "roster": [
+    {
+      "id": "s01",
+      "display_name": "أحمد سمير",
+      "nicknames": []
+    },
+    {
+      "id": "s02",
+      "display_name": "أحمد سامي",
+      "nicknames": []
+    },
+    {
+      "id": "s03",
+      "display_name": "مريم حسن",
+      "nicknames": [
+        "ميمي"
+      ]
+    },
+    {
+      "id": "s04",
+      "display_name": "مريم حسين",
+      "nicknames": []
+    },
+    {
+      "id": "s05",
+      "display_name": "محمود عادل",
+      "nicknames": [
+        "حودة"
+      ]
+    },
+    {
+      "id": "s06",
+      "display_name": "يوسف فؤاد",
+      "nicknames": []
+    },
+    {
+      "id": "s07",
+      "display_name": "سلمى طارق",
+      "nicknames": []
+    },
+    {
+      "id": "s08",
+      "display_name": "عمر خالد",
+      "nicknames": []
+    },
+    {
+      "id": "s09",
+      "display_name": "نور علي",
+      "nicknames": []
+    },
+    {
+      "id": "s10",
+      "display_name": "سارة شريف",
+      "nicknames": []
+    },
+    {
+      "id": "s11",
+      "display_name": "ياسين نبيل",
+      "nicknames": []
+    },
+    {
+      "id": "s12",
+      "display_name": "هنا وائل",
+      "nicknames": []
+    },
+    {
+      "id": "s13",
+      "display_name": "مصطفى هشام",
+      "nicknames": []
+    },
+    {
+      "id": "s14",
+      "display_name": "ملك إيهاب",
+      "nicknames": []
+    },
+    {
+      "id": "s15",
+      "display_name": "عبد الرحمن فادي",
+      "nicknames": []
+    },
+    {
+      "id": "s16",
+      "display_name": "حبيبة شادي",
+      "nicknames": []
+    },
+    {
+      "id": "s17",
+      "display_name": "زياد عاصم",
+      "nicknames": []
+    },
+    {
+      "id": "s18",
+      "display_name": "جنى عمرو",
+      "nicknames": []
+    }
+  ],
+  "assessment": {
+    "name": "Sign rules · Practice quiz",
+    "max": 20
+  },
+  "reference_transcript": "مريم... لا قصدي مريم حسين، غابت النهارده. أول اسم قلته كان ناقص وأنا بصححه دلوقتي، فخدوا المعلومة على الاسم الكامل اللي قولته بعد التصحيح. شرحنا أول جزئية في الدرس وحلينا مثالين، وورقة التدريب موجودة عشان اللي فاته الشرح يراجعها. باقي الحضور مش هسجله من الذاكرة في الملاحظة دي، ولسه درجات الكويز تحت التصحيح، فهسيبها لحد ما أراجع الورق وأتأكد من نهاية كل سؤال ومن جمع الدرجة كلها.",
+  "expected_mentions": [
+    {
+      "start": 0,
+      "end": 4,
+      "text": "مريم",
+      "status": "ambiguous",
+      "student_id": null,
+      "candidates": [
+        "s03",
+        "s04"
+      ]
+    },
+    {
+      "start": 16,
+      "end": 25,
+      "text": "مريم حسين",
+      "status": "unique",
+      "student_id": "s04",
+      "candidates": [
+        "s04"
+      ]
+    }
+  ],
+  "expected_items": [
+    {
+      "student_id": "s04",
+      "field": "attendance",
+      "value": "absent"
+    }
+  ],
+  "expected_needs_identity": [],
+  "expected_unmentioned": [
+    "s01",
+    "s02",
+    "s05",
+    "s06",
+    "s07",
+    "s08",
+    "s09",
+    "s10",
+    "s11",
+    "s12",
+    "s13",
+    "s14",
+    "s15",
+    "s16",
+    "s17",
+    "s18"
+  ],
+  "hard_case_tags": [
+    "self_correction",
+    "ambiguous_first_name"
+  ],
+  "annotation": {
+    "method": "independent_hand_authored",
+    "span_basis": "reference_transcript",
+    "version": "v0",
+    "review_status": "native_speaker_review_pending",
+    "notes": "The abandoned first-name mention is tokenised but has no identity item: explicit correction owns the absent fact."
+  }
+}

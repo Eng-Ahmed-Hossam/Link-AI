@@ -1,0 +1,29 @@
+# Real records are private. Only the explanatory README is tracked.
+gold/real/**
+!gold/real/README.md
+
+# Recordings never enter git, including synthetic team takes.
+*.[mM]4[aA]
+*.[wW][aA][vV]
+*.[mM][pP]3
+*.[fF][lL][aA][cC]
+*.[aA][aA][cC]
+*.[oO][gG][gG]
+*.[oO][pP][uU][sS]
+*.[wW][mM][aA]
+*.[aA][iI][fF]
+*.[aA][iI][fF][fF]
+*.[cC][aA][fF]
+*.[wW][eE][bB][mM]
+gold/audio/**
+
+# Local metadata belongs beside private recordings.
+gold/recording-metadata/**
+**/__pycache__/
+.pytest_cache/
+.venv/
+# Prediction transcripts and reports can contain real identities; keep local by default.
+predictions/**
+reports/**
+.ruff_cache/
+.mypy_cache/

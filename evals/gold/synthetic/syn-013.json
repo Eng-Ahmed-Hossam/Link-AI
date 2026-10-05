@@ -1,0 +1,189 @@
+{
+  "id": "syn-013",
+  "data_class": "synthetic",
+  "group": "تانية ثانوي · رياضة",
+  "audio_file": "syn-013.m4a",
+  "recording": {
+    "condition": "fan",
+    "delivery": "natural",
+    "target_seconds": 35,
+    "speaker": "to-fill",
+    "recorded_by": "to-fill"
+  },
+  "roster": [
+    {
+      "id": "s01",
+      "display_name": "أحمد سمير",
+      "nicknames": []
+    },
+    {
+      "id": "s02",
+      "display_name": "أحمد سامي",
+      "nicknames": []
+    },
+    {
+      "id": "s03",
+      "display_name": "مريم حسن",
+      "nicknames": [
+        "ميمي"
+      ]
+    },
+    {
+      "id": "s04",
+      "display_name": "مريم حسين",
+      "nicknames": []
+    },
+    {
+      "id": "s05",
+      "display_name": "محمود عادل",
+      "nicknames": [
+        "حودة"
+      ]
+    },
+    {
+      "id": "s06",
+      "display_name": "يوسف فؤاد",
+      "nicknames": []
+    },
+    {
+      "id": "s07",
+      "display_name": "سلمى طارق",
+      "nicknames": []
+    },
+    {
+      "id": "s08",
+      "display_name": "عمر خالد",
+      "nicknames": []
+    },
+    {
+      "id": "s09",
+      "display_name": "نور علي",
+      "nicknames": []
+    },
+    {
+      "id": "s10",
+      "display_name": "سارة شريف",
+      "nicknames": []
+    },
+    {
+      "id": "s11",
+      "display_name": "ياسين نبيل",
+      "nicknames": []
+    },
+    {
+      "id": "s12",
+      "display_name": "هنا وائل",
+      "nicknames": []
+    },
+    {
+      "id": "s13",
+      "display_name": "مصطفى هشام",
+      "nicknames": []
+    },
+    {
+      "id": "s14",
+      "display_name": "ملك إيهاب",
+      "nicknames": []
+    },
+    {
+      "id": "s15",
+      "display_name": "عبد الرحمن فادي",
+      "nicknames": []
+    },
+    {
+      "id": "s16",
+      "display_name": "حبيبة شادي",
+      "nicknames": []
+    },
+    {
+      "id": "s17",
+      "display_name": "زياد عاصم",
+      "nicknames": []
+    },
+    {
+      "id": "s18",
+      "display_name": "جنى عمرو",
+      "nicknames": []
+    }
+  ],
+  "assessment": {
+    "name": "Sign rules · Practice quiz",
+    "max": 20
+  },
+  "reference_transcript": "عبد الرحمن فادي فاهم سبب تغيير الإشارة وشرح الخطوة لزمايله من غير ما يبص في الحل. حبيبة شادي محتاجة نرجع معاها لفتح الأقواس، خصوصًا لما يبقى قدام القوس علامة سالب. دي ملاحظات على تدريب النهارده، مش درجات للكويز ولا حكم عام على المستوى. هجهز مثال بسيط في بداية الحصة الجاية، وبعده مسألتين تدريب عشان نراجع الفكرة خطوة بخطوة، وباقي الحضور لسه هيتراجع من الكشف بدل ما نسجله من الذاكرة.",
+  "expected_mentions": [
+    {
+      "start": 0,
+      "end": 15,
+      "text": "عبد الرحمن فادي",
+      "status": "unique",
+      "student_id": "s15",
+      "candidates": [
+        "s15"
+      ]
+    },
+    {
+      "start": 82,
+      "end": 92,
+      "text": "حبيبة شادي",
+      "status": "unique",
+      "student_id": "s16",
+      "candidates": [
+        "s16"
+      ]
+    }
+  ],
+  "expected_items": [
+    {
+      "student_id": "s15",
+      "field": "observation",
+      "value": "فاهم سبب تغيير الإشارة وشرح الخطوة لزمايله من غير ما يبص في الحل"
+    },
+    {
+      "student_id": "s15",
+      "field": "observation_tag",
+      "value": "understanding"
+    },
+    {
+      "student_id": "s16",
+      "field": "observation",
+      "value": "محتاجة نرجع معاها لفتح الأقواس، خصوصًا لما يبقى قدام القوس علامة سالب"
+    },
+    {
+      "student_id": "s16",
+      "field": "observation_tag",
+      "value": "needs_revisit"
+    }
+  ],
+  "expected_needs_identity": [],
+  "expected_unmentioned": [
+    "s01",
+    "s02",
+    "s03",
+    "s04",
+    "s05",
+    "s06",
+    "s07",
+    "s08",
+    "s09",
+    "s10",
+    "s11",
+    "s12",
+    "s13",
+    "s14",
+    "s17",
+    "s18"
+  ],
+  "hard_case_tags": [
+    "observations",
+    "understanding",
+    "needs_revisit"
+  ],
+  "annotation": {
+    "method": "independent_hand_authored",
+    "span_basis": "reference_transcript",
+    "version": "v0",
+    "review_status": "native_speaker_review_pending",
+    "notes": ""
+  }
+}
