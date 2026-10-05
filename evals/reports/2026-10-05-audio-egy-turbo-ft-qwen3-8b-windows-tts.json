@@ -1,0 +1,449 @@
+{
+  "format_version": 1,
+  "gold_dir": "D:\\Link_Edu\\apps\\ai-service\\bench\\gold",
+  "predictions_dir": "D:\\Link_Edu\\evals-runs\\2026-10-05-audio-egy-turbo-ft-qwen3-8b-windows-tts",
+  "release_gate": "PASS",
+  "metrics": {
+    "wer": 0.22085889570552147,
+    "cer": 0.07088331515812432,
+    "word_edits": 36,
+    "reference_words": 163,
+    "character_edits": 65,
+    "reference_characters": 917,
+    "names": {
+      "precision": 1.0,
+      "recall": 0.7307692307692307,
+      "f1": 0.8444444444444444,
+      "true_positive": 19,
+      "false_positive": 0,
+      "false_negative": 7,
+      "predicted": 19,
+      "expected": 26
+    },
+    "wrong_student_rate": 0.0,
+    "wrong_student_count": 0,
+    "alignment_uncertain_count": 0,
+    "unsafe_item_identity_count": 0,
+    "autoassigned_names": 19,
+    "fields": {
+      "attendance": {
+        "precision": 1.0,
+        "recall": 0.7777777777777778,
+        "f1": 0.875,
+        "true_positive": 7,
+        "false_positive": 0,
+        "false_negative": 2,
+        "predicted": 7,
+        "expected": 9
+      },
+      "late_minutes": {
+        "precision": 1.0,
+        "recall": 0.3333333333333333,
+        "f1": 0.5,
+        "true_positive": 1,
+        "false_positive": 0,
+        "false_negative": 2,
+        "predicted": 1,
+        "expected": 3
+      },
+      "score": {
+        "precision": 1.0,
+        "recall": 0.25,
+        "f1": 0.4,
+        "true_positive": 2,
+        "false_positive": 0,
+        "false_negative": 6,
+        "predicted": 2,
+        "expected": 8
+      },
+      "participation": {
+        "precision": null,
+        "recall": 0.0,
+        "f1": 0.0,
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 3,
+        "predicted": 0,
+        "expected": 3
+      },
+      "homework": {
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 0,
+        "predicted": 0,
+        "expected": 0
+      },
+      "observation": {
+        "precision": 0.0,
+        "recall": null,
+        "f1": 0.0,
+        "true_positive": 0,
+        "false_positive": 9,
+        "false_negative": 0,
+        "predicted": 9,
+        "expected": 0
+      },
+      "observation_tag": {
+        "precision": 0.0,
+        "recall": null,
+        "f1": 0.0,
+        "true_positive": 0,
+        "false_positive": 7,
+        "false_negative": 0,
+        "predicted": 7,
+        "expected": 0
+      }
+    },
+    "score_exact_match": 0.25,
+    "score_exact_denominator": 8,
+    "abstain_rate": 0.0,
+    "blank_items": 0,
+    "emitted_items": 26,
+    "unmentioned_handling_errors": 0,
+    "latency_p50_ms": 5165.0,
+    "latency_p95_ms": 9265.149999999998,
+    "latency_observations": 10
+  },
+  "wrong_student_cases": [],
+  "alignment_uncertain_cases": [],
+  "unsafe_item_identity_cases": [],
+  "missing_prediction_ids": [],
+  "breakdowns": {
+    "hard_case_tags": {
+      "windows_tts": {
+        "wer": 0.22085889570552147,
+        "cer": 0.07088331515812432,
+        "word_edits": 36,
+        "reference_words": 163,
+        "character_edits": 65,
+        "reference_characters": 917,
+        "names": {
+          "precision": 1.0,
+          "recall": 0.7307692307692307,
+          "f1": 0.8444444444444444,
+          "true_positive": 19,
+          "false_positive": 0,
+          "false_negative": 7,
+          "predicted": 19,
+          "expected": 26
+        },
+        "wrong_student_rate": 0.0,
+        "wrong_student_count": 0,
+        "alignment_uncertain_count": 0,
+        "unsafe_item_identity_count": 0,
+        "autoassigned_names": 19,
+        "fields": {
+          "attendance": {
+            "precision": 1.0,
+            "recall": 0.7777777777777778,
+            "f1": 0.875,
+            "true_positive": 7,
+            "false_positive": 0,
+            "false_negative": 2,
+            "predicted": 7,
+            "expected": 9
+          },
+          "late_minutes": {
+            "precision": 1.0,
+            "recall": 0.3333333333333333,
+            "f1": 0.5,
+            "true_positive": 1,
+            "false_positive": 0,
+            "false_negative": 2,
+            "predicted": 1,
+            "expected": 3
+          },
+          "score": {
+            "precision": 1.0,
+            "recall": 0.25,
+            "f1": 0.4,
+            "true_positive": 2,
+            "false_positive": 0,
+            "false_negative": 6,
+            "predicted": 2,
+            "expected": 8
+          },
+          "participation": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 3,
+            "predicted": 0,
+            "expected": 3
+          },
+          "homework": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 0,
+            "predicted": 0,
+            "expected": 0
+          },
+          "observation": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 9,
+            "false_negative": 0,
+            "predicted": 9,
+            "expected": 0
+          },
+          "observation_tag": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 7,
+            "false_negative": 0,
+            "predicted": 7,
+            "expected": 0
+          }
+        },
+        "score_exact_match": 0.25,
+        "score_exact_denominator": 8,
+        "abstain_rate": 0.0,
+        "blank_items": 0,
+        "emitted_items": 26,
+        "unmentioned_handling_errors": 0,
+        "latency_p50_ms": 5165.0,
+        "latency_p95_ms": 9265.149999999998,
+        "latency_observations": 10,
+        "notes": 10
+      }
+    },
+    "recording_condition": {
+      "windows_tts": {
+        "wer": 0.22085889570552147,
+        "cer": 0.07088331515812432,
+        "word_edits": 36,
+        "reference_words": 163,
+        "character_edits": 65,
+        "reference_characters": 917,
+        "names": {
+          "precision": 1.0,
+          "recall": 0.7307692307692307,
+          "f1": 0.8444444444444444,
+          "true_positive": 19,
+          "false_positive": 0,
+          "false_negative": 7,
+          "predicted": 19,
+          "expected": 26
+        },
+        "wrong_student_rate": 0.0,
+        "wrong_student_count": 0,
+        "alignment_uncertain_count": 0,
+        "unsafe_item_identity_count": 0,
+        "autoassigned_names": 19,
+        "fields": {
+          "attendance": {
+            "precision": 1.0,
+            "recall": 0.7777777777777778,
+            "f1": 0.875,
+            "true_positive": 7,
+            "false_positive": 0,
+            "false_negative": 2,
+            "predicted": 7,
+            "expected": 9
+          },
+          "late_minutes": {
+            "precision": 1.0,
+            "recall": 0.3333333333333333,
+            "f1": 0.5,
+            "true_positive": 1,
+            "false_positive": 0,
+            "false_negative": 2,
+            "predicted": 1,
+            "expected": 3
+          },
+          "score": {
+            "precision": 1.0,
+            "recall": 0.25,
+            "f1": 0.4,
+            "true_positive": 2,
+            "false_positive": 0,
+            "false_negative": 6,
+            "predicted": 2,
+            "expected": 8
+          },
+          "participation": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 3,
+            "predicted": 0,
+            "expected": 3
+          },
+          "homework": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 0,
+            "predicted": 0,
+            "expected": 0
+          },
+          "observation": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 9,
+            "false_negative": 0,
+            "predicted": 9,
+            "expected": 0
+          },
+          "observation_tag": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 7,
+            "false_negative": 0,
+            "predicted": 7,
+            "expected": 0
+          }
+        },
+        "score_exact_match": 0.25,
+        "score_exact_denominator": 8,
+        "abstain_rate": 0.0,
+        "blank_items": 0,
+        "emitted_items": 26,
+        "unmentioned_handling_errors": 0,
+        "latency_p50_ms": 5165.0,
+        "latency_p95_ms": 9265.149999999998,
+        "latency_observations": 10,
+        "notes": 10
+      }
+    },
+    "model_version": {
+      "faster-whisper:egy-turbo-ft@float16/cuda|link_nlp@0.1.0|ollama:qwen3:8b+extract-v7": {
+        "wer": 0.22085889570552147,
+        "cer": 0.07088331515812432,
+        "word_edits": 36,
+        "reference_words": 163,
+        "character_edits": 65,
+        "reference_characters": 917,
+        "names": {
+          "precision": 1.0,
+          "recall": 0.7307692307692307,
+          "f1": 0.8444444444444444,
+          "true_positive": 19,
+          "false_positive": 0,
+          "false_negative": 7,
+          "predicted": 19,
+          "expected": 26
+        },
+        "wrong_student_rate": 0.0,
+        "wrong_student_count": 0,
+        "alignment_uncertain_count": 0,
+        "unsafe_item_identity_count": 0,
+        "autoassigned_names": 19,
+        "fields": {
+          "attendance": {
+            "precision": 1.0,
+            "recall": 0.7777777777777778,
+            "f1": 0.875,
+            "true_positive": 7,
+            "false_positive": 0,
+            "false_negative": 2,
+            "predicted": 7,
+            "expected": 9
+          },
+          "late_minutes": {
+            "precision": 1.0,
+            "recall": 0.3333333333333333,
+            "f1": 0.5,
+            "true_positive": 1,
+            "false_positive": 0,
+            "false_negative": 2,
+            "predicted": 1,
+            "expected": 3
+          },
+          "score": {
+            "precision": 1.0,
+            "recall": 0.25,
+            "f1": 0.4,
+            "true_positive": 2,
+            "false_positive": 0,
+            "false_negative": 6,
+            "predicted": 2,
+            "expected": 8
+          },
+          "participation": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 3,
+            "predicted": 0,
+            "expected": 3
+          },
+          "homework": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 0,
+            "predicted": 0,
+            "expected": 0
+          },
+          "observation": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 9,
+            "false_negative": 0,
+            "predicted": 9,
+            "expected": 0
+          },
+          "observation_tag": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 7,
+            "false_negative": 0,
+            "predicted": 7,
+            "expected": 0
+          }
+        },
+        "score_exact_match": 0.25,
+        "score_exact_denominator": 8,
+        "abstain_rate": 0.0,
+        "blank_items": 0,
+        "emitted_items": 26,
+        "unmentioned_handling_errors": 0,
+        "latency_p50_ms": 5165.0,
+        "latency_p95_ms": 9265.149999999998,
+        "latency_observations": 10,
+        "notes": 10
+      }
+    }
+  },
+  "model_versions": [
+    "faster-whisper:egy-turbo-ft@float16/cuda|link_nlp@0.1.0|ollama:qwen3:8b+extract-v7"
+  ],
+  "sample_sizes": {
+    "notes": 10,
+    "synthetic_notes": 10,
+    "real_notes": 0,
+    "predictions": 10,
+    "speakers": 0,
+    "missing_recordings": 10,
+    "latency_observations": 10
+  }
+}

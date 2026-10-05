@@ -19,10 +19,10 @@ On 30 synthetic notes, 30 predictions were evaluated; 0 identified speakers have
 | score_exact_denominator | 24 |
 | abstain_rate | 0.0000 |
 | blank_items | 0 |
-| emitted_items | 139 |
+| emitted_items | 140 |
 | unmentioned_handling_errors | 0 |
-| latency_p50_ms | 10691.5000 |
-| latency_p95_ms | 12035.4500 |
+| latency_p50_ms | 10919.5000 |
+| latency_p95_ms | 12939.4500 |
 | latency_observations | 30 |
 | name_precision | 1.0000 |
 | name_recall | 0.9592 |
@@ -80,13 +80,13 @@ On 30 synthetic notes, 30 predictions were evaluated; 0 identified speakers have
 | observation_false_negative | 3 |
 | observation_predicted | 47 |
 | observation_expected | 5 |
-| observation_tag_precision | 0.0889 |
+| observation_tag_precision | 0.0870 |
 | observation_tag_recall | 0.8000 |
-| observation_tag_f1 | 0.1600 |
+| observation_tag_f1 | 0.1569 |
 | observation_tag_true_positive | 4 |
-| observation_tag_false_positive | 41 |
+| observation_tag_false_positive | 42 |
 | observation_tag_false_negative | 1 |
-| observation_tag_predicted | 45 |
+| observation_tag_predicted | 46 |
 | observation_tag_expected | 5 |
 
 ## Sample sizes
@@ -121,41 +121,41 @@ None.
 
 | Group | Notes | WER | CER | Name precision | Name recall | Wrong-student rate | Score exact | Abstain | Unmentioned errors | p95 ms |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| absence_context | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 10580.0000 |
-| all_present_except | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 13419.3000 |
-| ambiguous_first_name | 3 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 8828.8000 |
-| attendance_retraction | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 11033.0000 |
-| behaviour | 1 | 0.0000 | 0.0000 | 1.0000 | 0.5000 | 0.0000 | N/A | 0.0000 | 0 | 9566.0000 |
-| code_switching | 4 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11212.1000 |
-| digit_scores | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11303.4500 |
-| digit_variants | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 7178.0000 |
-| durations | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 10968.7000 |
-| egyptian_absence | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 10868.0000 |
-| explicit_present | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 11580.0000 |
-| half_score | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11114.0500 |
-| lateness | 4 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11575.5000 |
-| long_full_name | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 12080.0000 |
-| missing_not_absent | 6 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 13116.5000 |
-| multiple_fields | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11265.1000 |
-| needs_revisit | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 11237.0000 |
-| negative_score | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 0.6667 | 0.0000 | 0 | 8025.0000 |
-| nicknames | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11487.6500 |
-| no_names | 1 | 0.0000 | 0.0000 | N/A | N/A | 0.0000 | N/A | N/A | 0 | 2723.0000 |
-| normal_participation | 1 | 0.0000 | 0.0000 | 1.0000 | 0.5000 | 0.0000 | N/A | 0.0000 | 0 | 11786.0000 |
-| observations | 3 | 0.0000 | 0.0000 | 1.0000 | 0.8000 | 0.0000 | N/A | 0.0000 | 0 | 11171.3000 |
-| participation | 3 | 0.0000 | 0.0000 | 1.0000 | 0.8333 | 0.0000 | N/A | 0.0000 | 0 | 11762.4000 |
-| positive | 1 | 0.0000 | 0.0000 | 1.0000 | 0.5000 | 0.0000 | N/A | 0.0000 | 0 | 9566.0000 |
-| repeated_mentions | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 10262.0000 |
-| score_out_of_range | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 0.6667 | 0.0000 | 0 | 8025.0000 |
-| self_correction | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 10942.7000 |
-| similar_full_names | 3 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11547.5000 |
-| spoken_scores | 8 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 0.9286 | 0.0000 | 0 | 11753.4500 |
-| teacher_guardian_names | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 10933.6500 |
-| understanding | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 11237.0000 |
-| unknown_full_name | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 6218.0000 |
-| unknown_identity_block | 2 | 0.0000 | 0.0000 | N/A | N/A | 0.0000 | N/A | N/A | 0 | 2763.7000 |
-| unknown_name | 3 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 10898.3000 |
-| zero_score | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 9326.0000 |
+| absence_context | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 10250.0000 |
+| all_present_except | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 19443.9500 |
+| ambiguous_first_name | 3 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 8900.3000 |
+| attendance_retraction | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 11242.0000 |
+| behaviour | 1 | 0.0000 | 0.0000 | 1.0000 | 0.5000 | 0.0000 | N/A | 0.0000 | 0 | 9782.0000 |
+| code_switching | 4 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11431.4500 |
+| digit_scores | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11485.7000 |
+| digit_variants | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11002.0000 |
+| durations | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11009.0000 |
+| egyptian_absence | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 10867.0000 |
+| explicit_present | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 11618.0000 |
+| half_score | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11325.5500 |
+| lateness | 4 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11719.1500 |
+| long_full_name | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 12236.0000 |
+| missing_not_absent | 6 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 18195.7500 |
+| multiple_fields | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11463.3000 |
+| needs_revisit | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 11249.0000 |
+| negative_score | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 0.6667 | 0.0000 | 0 | 8140.0000 |
+| nicknames | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11695.4500 |
+| no_names | 1 | 0.0000 | 0.0000 | N/A | N/A | 0.0000 | N/A | N/A | 0 | 2741.0000 |
+| normal_participation | 1 | 0.0000 | 0.0000 | 1.0000 | 0.5000 | 0.0000 | N/A | 0.0000 | 0 | 10782.0000 |
+| observations | 3 | 0.0000 | 0.0000 | 1.0000 | 0.8000 | 0.0000 | N/A | 0.0000 | 0 | 11149.1000 |
+| participation | 3 | 0.0000 | 0.0000 | 1.0000 | 0.8333 | 0.0000 | N/A | 0.0000 | 0 | 11641.5000 |
+| positive | 1 | 0.0000 | 0.0000 | 1.0000 | 0.5000 | 0.0000 | N/A | 0.0000 | 0 | 9782.0000 |
+| repeated_mentions | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 10464.0000 |
+| score_out_of_range | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 0.6667 | 0.0000 | 0 | 8140.0000 |
+| self_correction | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 11145.0500 |
+| similar_full_names | 3 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11602.3000 |
+| spoken_scores | 8 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 0.9286 | 0.0000 | 0 | 11923.1000 |
+| teacher_guardian_names | 2 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11224.0000 |
+| understanding | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | N/A | 0.0000 | 0 | 11249.0000 |
+| unknown_full_name | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 6618.0000 |
+| unknown_identity_block | 2 | 0.0000 | 0.0000 | N/A | N/A | 0.0000 | N/A | N/A | 0 | 2756.9000 |
+| unknown_name | 3 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11184.0000 |
+| zero_score | 1 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 9481.0000 |
 
 | Group | Field | Expected | Predicted | Precision | Recall | F1 |
 |---|---|---:|---:|---:|---:|---:|
@@ -221,7 +221,7 @@ None.
 | durations | participation | 1 | 0 | N/A | 0.0000 | 0.0000 |
 | durations | homework | 0 | 0 | N/A | N/A | N/A |
 | durations | observation | 0 | 4 | 0.0000 | N/A | 0.0000 |
-| durations | observation_tag | 0 | 3 | 0.0000 | N/A | 0.0000 |
+| durations | observation_tag | 0 | 4 | 0.0000 | N/A | 0.0000 |
 | egyptian_absence | attendance | 2 | 2 | 1.0000 | 1.0000 | 1.0000 |
 | egyptian_absence | late_minutes | 0 | 0 | N/A | N/A | N/A |
 | egyptian_absence | score | 0 | 0 | N/A | N/A | N/A |
@@ -242,7 +242,7 @@ None.
 | half_score | participation | 1 | 0 | N/A | 0.0000 | 0.0000 |
 | half_score | homework | 0 | 0 | N/A | N/A | N/A |
 | half_score | observation | 0 | 4 | 0.0000 | N/A | 0.0000 |
-| half_score | observation_tag | 0 | 3 | 0.0000 | N/A | 0.0000 |
+| half_score | observation_tag | 0 | 4 | 0.0000 | N/A | 0.0000 |
 | lateness | attendance | 6 | 6 | 1.0000 | 1.0000 | 1.0000 |
 | lateness | late_minutes | 5 | 5 | 1.0000 | 1.0000 | 1.0000 |
 | lateness | score | 2 | 2 | 1.0000 | 1.0000 | 1.0000 |
@@ -270,7 +270,7 @@ None.
 | multiple_fields | participation | 1 | 0 | N/A | 0.0000 | 0.0000 |
 | multiple_fields | homework | 0 | 0 | N/A | N/A | N/A |
 | multiple_fields | observation | 0 | 4 | 0.0000 | N/A | 0.0000 |
-| multiple_fields | observation_tag | 0 | 3 | 0.0000 | N/A | 0.0000 |
+| multiple_fields | observation_tag | 0 | 4 | 0.0000 | N/A | 0.0000 |
 | needs_revisit | attendance | 0 | 0 | N/A | N/A | N/A |
 | needs_revisit | late_minutes | 0 | 0 | N/A | N/A | N/A |
 | needs_revisit | score | 0 | 0 | N/A | N/A | N/A |
@@ -409,10 +409,10 @@ None.
 
 | Group | Notes | WER | CER | Name precision | Name recall | Wrong-student rate | Score exact | Abstain | Unmentioned errors | p95 ms |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| classroom_noise | 7 | 0.0000 | 0.0000 | 1.0000 | 0.9231 | 0.0000 | 1.0000 | 0.0000 | 0 | 13070.5000 |
-| fan | 7 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11126.3000 |
-| quiet | 11 | 0.0000 | 0.0000 | 1.0000 | 0.9444 | 0.0000 | 0.9286 | 0.0000 | 0 | 11520.5000 |
-| street | 5 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11574.0000 |
+| classroom_noise | 7 | 0.0000 | 0.0000 | 1.0000 | 0.9231 | 0.0000 | 1.0000 | 0.0000 | 0 | 17883.7000 |
+| fan | 7 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11178.2000 |
+| quiet | 11 | 0.0000 | 0.0000 | 1.0000 | 0.9444 | 0.0000 | 0.9286 | 0.0000 | 0 | 11401.5000 |
+| street | 5 | 0.0000 | 0.0000 | 1.0000 | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0 | 11713.2000 |
 
 | Group | Field | Expected | Predicted | Precision | Recall | F1 |
 |---|---|---:|---:|---:|---:|---:|
@@ -429,7 +429,7 @@ None.
 | fan | participation | 1 | 0 | N/A | 0.0000 | 0.0000 |
 | fan | homework | 0 | 0 | N/A | N/A | N/A |
 | fan | observation | 3 | 11 | 0.0909 | 0.3333 | 0.1429 |
-| fan | observation_tag | 3 | 10 | 0.3000 | 1.0000 | 0.4615 |
+| fan | observation_tag | 3 | 11 | 0.2727 | 1.0000 | 0.4286 |
 | quiet | attendance | 1 | 0 | N/A | 0.0000 | 0.0000 |
 | quiet | late_minutes | 0 | 0 | N/A | N/A | N/A |
 | quiet | score | 14 | 13 | 1.0000 | 0.9286 | 0.9630 |
@@ -449,7 +449,7 @@ None.
 
 | Group | Notes | WER | CER | Name precision | Name recall | Wrong-student rate | Score exact | Abstain | Unmentioned errors | p95 ms |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| reference-transcript\|link_nlp@0.1.0\|ollama:qwen3:8b+extract-v7 | 30 | 0.0000 | 0.0000 | 1.0000 | 0.9592 | 0.0000 | 0.9583 | 0.0000 | 0 | 12035.4500 |
+| reference-transcript\|link_nlp@0.1.0\|ollama:qwen3:8b+extract-v7 | 30 | 0.0000 | 0.0000 | 1.0000 | 0.9592 | 0.0000 | 0.9583 | 0.0000 | 0 | 12939.4500 |
 
 | Group | Field | Expected | Predicted | Precision | Recall | F1 |
 |---|---|---:|---:|---:|---:|---:|
@@ -459,7 +459,7 @@ None.
 | reference-transcript\|link_nlp@0.1.0\|ollama:qwen3:8b+extract-v7 | participation | 7 | 4 | 1.0000 | 0.5714 | 0.7273 |
 | reference-transcript\|link_nlp@0.1.0\|ollama:qwen3:8b+extract-v7 | homework | 0 | 0 | N/A | N/A | N/A |
 | reference-transcript\|link_nlp@0.1.0\|ollama:qwen3:8b+extract-v7 | observation | 5 | 47 | 0.0426 | 0.4000 | 0.0769 |
-| reference-transcript\|link_nlp@0.1.0\|ollama:qwen3:8b+extract-v7 | observation_tag | 5 | 45 | 0.0889 | 0.8000 | 0.1600 |
+| reference-transcript\|link_nlp@0.1.0\|ollama:qwen3:8b+extract-v7 | observation_tag | 5 | 46 | 0.0870 | 0.8000 | 0.1569 |
 
 ## Metric definitions and caveats
 

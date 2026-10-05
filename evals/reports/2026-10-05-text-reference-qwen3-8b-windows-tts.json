@@ -1,0 +1,449 @@
+{
+  "format_version": 1,
+  "gold_dir": "D:\\Link_Edu\\apps\\ai-service\\bench\\gold",
+  "predictions_dir": "D:\\Link_Edu\\evals-runs\\2026-10-05-text-reference-qwen3-8b-windows-tts",
+  "release_gate": "PASS",
+  "metrics": {
+    "wer": 0.0,
+    "cer": 0.0,
+    "word_edits": 0,
+    "reference_words": 163,
+    "character_edits": 0,
+    "reference_characters": 917,
+    "names": {
+      "precision": 1.0,
+      "recall": 0.7692307692307693,
+      "f1": 0.8695652173913043,
+      "true_positive": 20,
+      "false_positive": 0,
+      "false_negative": 6,
+      "predicted": 20,
+      "expected": 26
+    },
+    "wrong_student_rate": 0.0,
+    "wrong_student_count": 0,
+    "alignment_uncertain_count": 0,
+    "unsafe_item_identity_count": 0,
+    "autoassigned_names": 20,
+    "fields": {
+      "attendance": {
+        "precision": 1.0,
+        "recall": 0.8888888888888888,
+        "f1": 0.9411764705882353,
+        "true_positive": 8,
+        "false_positive": 0,
+        "false_negative": 1,
+        "predicted": 8,
+        "expected": 9
+      },
+      "late_minutes": {
+        "precision": 1.0,
+        "recall": 0.6666666666666666,
+        "f1": 0.8,
+        "true_positive": 2,
+        "false_positive": 0,
+        "false_negative": 1,
+        "predicted": 2,
+        "expected": 3
+      },
+      "score": {
+        "precision": 1.0,
+        "recall": 0.625,
+        "f1": 0.7692307692307693,
+        "true_positive": 5,
+        "false_positive": 0,
+        "false_negative": 3,
+        "predicted": 5,
+        "expected": 8
+      },
+      "participation": {
+        "precision": null,
+        "recall": 0.0,
+        "f1": 0.0,
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 3,
+        "predicted": 0,
+        "expected": 3
+      },
+      "homework": {
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 0,
+        "predicted": 0,
+        "expected": 0
+      },
+      "observation": {
+        "precision": 0.0,
+        "recall": null,
+        "f1": 0.0,
+        "true_positive": 0,
+        "false_positive": 8,
+        "false_negative": 0,
+        "predicted": 8,
+        "expected": 0
+      },
+      "observation_tag": {
+        "precision": 0.0,
+        "recall": null,
+        "f1": 0.0,
+        "true_positive": 0,
+        "false_positive": 6,
+        "false_negative": 0,
+        "predicted": 6,
+        "expected": 0
+      }
+    },
+    "score_exact_match": 0.625,
+    "score_exact_denominator": 8,
+    "abstain_rate": 0.0,
+    "blank_items": 0,
+    "emitted_items": 29,
+    "unmentioned_handling_errors": 0,
+    "latency_p50_ms": 3405.5,
+    "latency_p95_ms": 7988.549999999997,
+    "latency_observations": 10
+  },
+  "wrong_student_cases": [],
+  "alignment_uncertain_cases": [],
+  "unsafe_item_identity_cases": [],
+  "missing_prediction_ids": [],
+  "breakdowns": {
+    "hard_case_tags": {
+      "windows_tts": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "word_edits": 0,
+        "reference_words": 163,
+        "character_edits": 0,
+        "reference_characters": 917,
+        "names": {
+          "precision": 1.0,
+          "recall": 0.7692307692307693,
+          "f1": 0.8695652173913043,
+          "true_positive": 20,
+          "false_positive": 0,
+          "false_negative": 6,
+          "predicted": 20,
+          "expected": 26
+        },
+        "wrong_student_rate": 0.0,
+        "wrong_student_count": 0,
+        "alignment_uncertain_count": 0,
+        "unsafe_item_identity_count": 0,
+        "autoassigned_names": 20,
+        "fields": {
+          "attendance": {
+            "precision": 1.0,
+            "recall": 0.8888888888888888,
+            "f1": 0.9411764705882353,
+            "true_positive": 8,
+            "false_positive": 0,
+            "false_negative": 1,
+            "predicted": 8,
+            "expected": 9
+          },
+          "late_minutes": {
+            "precision": 1.0,
+            "recall": 0.6666666666666666,
+            "f1": 0.8,
+            "true_positive": 2,
+            "false_positive": 0,
+            "false_negative": 1,
+            "predicted": 2,
+            "expected": 3
+          },
+          "score": {
+            "precision": 1.0,
+            "recall": 0.625,
+            "f1": 0.7692307692307693,
+            "true_positive": 5,
+            "false_positive": 0,
+            "false_negative": 3,
+            "predicted": 5,
+            "expected": 8
+          },
+          "participation": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 3,
+            "predicted": 0,
+            "expected": 3
+          },
+          "homework": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 0,
+            "predicted": 0,
+            "expected": 0
+          },
+          "observation": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 8,
+            "false_negative": 0,
+            "predicted": 8,
+            "expected": 0
+          },
+          "observation_tag": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 6,
+            "false_negative": 0,
+            "predicted": 6,
+            "expected": 0
+          }
+        },
+        "score_exact_match": 0.625,
+        "score_exact_denominator": 8,
+        "abstain_rate": 0.0,
+        "blank_items": 0,
+        "emitted_items": 29,
+        "unmentioned_handling_errors": 0,
+        "latency_p50_ms": 3405.5,
+        "latency_p95_ms": 7988.549999999997,
+        "latency_observations": 10,
+        "notes": 10
+      }
+    },
+    "recording_condition": {
+      "windows_tts": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "word_edits": 0,
+        "reference_words": 163,
+        "character_edits": 0,
+        "reference_characters": 917,
+        "names": {
+          "precision": 1.0,
+          "recall": 0.7692307692307693,
+          "f1": 0.8695652173913043,
+          "true_positive": 20,
+          "false_positive": 0,
+          "false_negative": 6,
+          "predicted": 20,
+          "expected": 26
+        },
+        "wrong_student_rate": 0.0,
+        "wrong_student_count": 0,
+        "alignment_uncertain_count": 0,
+        "unsafe_item_identity_count": 0,
+        "autoassigned_names": 20,
+        "fields": {
+          "attendance": {
+            "precision": 1.0,
+            "recall": 0.8888888888888888,
+            "f1": 0.9411764705882353,
+            "true_positive": 8,
+            "false_positive": 0,
+            "false_negative": 1,
+            "predicted": 8,
+            "expected": 9
+          },
+          "late_minutes": {
+            "precision": 1.0,
+            "recall": 0.6666666666666666,
+            "f1": 0.8,
+            "true_positive": 2,
+            "false_positive": 0,
+            "false_negative": 1,
+            "predicted": 2,
+            "expected": 3
+          },
+          "score": {
+            "precision": 1.0,
+            "recall": 0.625,
+            "f1": 0.7692307692307693,
+            "true_positive": 5,
+            "false_positive": 0,
+            "false_negative": 3,
+            "predicted": 5,
+            "expected": 8
+          },
+          "participation": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 3,
+            "predicted": 0,
+            "expected": 3
+          },
+          "homework": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 0,
+            "predicted": 0,
+            "expected": 0
+          },
+          "observation": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 8,
+            "false_negative": 0,
+            "predicted": 8,
+            "expected": 0
+          },
+          "observation_tag": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 6,
+            "false_negative": 0,
+            "predicted": 6,
+            "expected": 0
+          }
+        },
+        "score_exact_match": 0.625,
+        "score_exact_denominator": 8,
+        "abstain_rate": 0.0,
+        "blank_items": 0,
+        "emitted_items": 29,
+        "unmentioned_handling_errors": 0,
+        "latency_p50_ms": 3405.5,
+        "latency_p95_ms": 7988.549999999997,
+        "latency_observations": 10,
+        "notes": 10
+      }
+    },
+    "model_version": {
+      "reference-transcript|link_nlp@0.1.0|ollama:qwen3:8b+extract-v7": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "word_edits": 0,
+        "reference_words": 163,
+        "character_edits": 0,
+        "reference_characters": 917,
+        "names": {
+          "precision": 1.0,
+          "recall": 0.7692307692307693,
+          "f1": 0.8695652173913043,
+          "true_positive": 20,
+          "false_positive": 0,
+          "false_negative": 6,
+          "predicted": 20,
+          "expected": 26
+        },
+        "wrong_student_rate": 0.0,
+        "wrong_student_count": 0,
+        "alignment_uncertain_count": 0,
+        "unsafe_item_identity_count": 0,
+        "autoassigned_names": 20,
+        "fields": {
+          "attendance": {
+            "precision": 1.0,
+            "recall": 0.8888888888888888,
+            "f1": 0.9411764705882353,
+            "true_positive": 8,
+            "false_positive": 0,
+            "false_negative": 1,
+            "predicted": 8,
+            "expected": 9
+          },
+          "late_minutes": {
+            "precision": 1.0,
+            "recall": 0.6666666666666666,
+            "f1": 0.8,
+            "true_positive": 2,
+            "false_positive": 0,
+            "false_negative": 1,
+            "predicted": 2,
+            "expected": 3
+          },
+          "score": {
+            "precision": 1.0,
+            "recall": 0.625,
+            "f1": 0.7692307692307693,
+            "true_positive": 5,
+            "false_positive": 0,
+            "false_negative": 3,
+            "predicted": 5,
+            "expected": 8
+          },
+          "participation": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 3,
+            "predicted": 0,
+            "expected": 3
+          },
+          "homework": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 0,
+            "predicted": 0,
+            "expected": 0
+          },
+          "observation": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 8,
+            "false_negative": 0,
+            "predicted": 8,
+            "expected": 0
+          },
+          "observation_tag": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "true_positive": 0,
+            "false_positive": 6,
+            "false_negative": 0,
+            "predicted": 6,
+            "expected": 0
+          }
+        },
+        "score_exact_match": 0.625,
+        "score_exact_denominator": 8,
+        "abstain_rate": 0.0,
+        "blank_items": 0,
+        "emitted_items": 29,
+        "unmentioned_handling_errors": 0,
+        "latency_p50_ms": 3405.5,
+        "latency_p95_ms": 7988.549999999997,
+        "latency_observations": 10,
+        "notes": 10
+      }
+    }
+  },
+  "model_versions": [
+    "reference-transcript|link_nlp@0.1.0|ollama:qwen3:8b+extract-v7"
+  ],
+  "sample_sizes": {
+    "notes": 10,
+    "synthetic_notes": 10,
+    "real_notes": 0,
+    "predictions": 10,
+    "speakers": 0,
+    "missing_recordings": 10,
+    "latency_observations": 10
+  }
+}
