@@ -35,6 +35,21 @@ TRUTH: dict[str, tuple[list[str], list[tuple[str, str, object]], int]] = {
 }  # fmt: skip
 
 
+def mentions(text: str, mentioned: list[str]) -> list[dict[str, object]]:
+    """Each name occurrence with its offsets in the reference transcript (in order), so link_eval
+    can place it even with an attached conjunction ("ويوسف")."""
+    out, cursor = [], 0
+    for s in mentioned:
+        start = text.find(NAME[s], cursor)
+        if start < 0:
+            raise ValueError(f"{NAME[s]} not found in: {text}")
+        end = start + len(NAME[s])
+        out.append({"start": start, "end": end, "text": NAME[s], "status": "unique",
+                    "student_id": s, "candidates": [s]})  # fmt: skip
+        cursor = end
+    return out
+
+
 def main() -> None:
     out = HERE / "gold"
     out.mkdir(exist_ok=True)
@@ -48,10 +63,7 @@ def main() -> None:
             "roster": [{"id": i, "display_name": n, "nicknames": []} for i, n in ROSTER],
             "assessment": {"name": "كويز", "max": max_score},
             "reference_transcript": note["text"],
-            "expected_mentions": [
-                {"text": NAME[s], "status": "unique", "student_id": s, "candidates": [s]}
-                for s in mentioned
-            ],
+            "expected_mentions": mentions(note["text"], mentioned),
             "expected_items": [{"student_id": s, "field": f, "value": v} for s, f, v in items],
             "expected_needs_identity": [],
             "expected_unmentioned": [i for i, _ in ROSTER if i not in mentioned],

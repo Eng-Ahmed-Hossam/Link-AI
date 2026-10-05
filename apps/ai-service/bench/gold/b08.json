@@ -65,6 +65,8 @@
   "reference_transcript": "الحصة كانت عن الهندسة. ليلى اتأخرت خمس دقايق. عمر ونور حلوا كل الواجب. زياد ما عملش الواجب.",
   "expected_mentions": [
     {
+      "start": 23,
+      "end": 27,
       "text": "ليلى",
       "status": "unique",
       "student_id": "s5",
@@ -73,6 +75,8 @@
       ]
     },
     {
+      "start": 46,
+      "end": 49,
       "text": "عمر",
       "status": "unique",
       "student_id": "s8",
@@ -81,6 +85,8 @@
       ]
     },
     {
+      "start": 51,
+      "end": 54,
       "text": "نور",
       "status": "unique",
       "student_id": "s7",
@@ -89,6 +95,8 @@
       ]
     },
     {
+      "start": 71,
+      "end": 75,
       "text": "زياد",
       "status": "unique",
       "student_id": "s6",

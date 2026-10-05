@@ -213,3 +213,20 @@ def test_the_llm_is_not_offered_unknown_spans(make_gw):
                    None, "synthetic", make_gw(FakeStt(), llm))  # fmt: skip
     assert "<U1>" not in llm.prompts[0].split("TOKENS:")[1].splitlines()[0]
     assert res.unresolved == []
+
+
+def test_an_llm_number_must_be_in_the_students_own_clause(make_gw):
+    # Windows-TTS run: "ليلى" was heard as "ليلة" (not matched) and the LLM put her 5 minutes on زياد.
+    note = "زياد حل الواجب. ليلة تأخرت خمس دقائق."
+    llm = FakeLlm(reply={"items": [_item("<S1>", "late_minutes", 5)]})
+    res = run_text(note, [*ROSTER, pipeline.RosterEntry("stu-ziad", "زياد")], None, "synthetic",
+                   make_gw(FakeStt(), llm))  # fmt: skip
+    assert res.llm_used is True and by(res.items, "late_minutes") == []
+
+
+def test_a_decimal_score_stays_in_its_clause(make_gw):
+    # syn-030: "وجاب تسعتاشر ونص من عشرين" → "19.5/20"; the "." is not a clause boundary.
+    note = "يوسف كان حاضر وجاب تسعتاشر ونص من عشرين، وكان مركز"
+    llm = FakeLlm(reply={"items": [_item("<S1>", "score", 19.5)]})
+    res = run_text(note, ROSTER, {"maxScore": 20}, "synthetic", make_gw(FakeStt(), llm))
+    assert [i["value"] for i in by(res.items, "score", "stu-youssef")] == [19.5]

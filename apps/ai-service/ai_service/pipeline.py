@@ -39,7 +39,8 @@ SINGLE_VALUE_FIELDS = frozenset({"attendance", "late_minutes", "score", "partici
 _TOKEN_RE = re.compile(r"<[SAU]\d+>")
 # "Present" must be said: حضر / حاضر / موجود / جه / جت / جا (normalised forms).
 _PRESENT_RE = re.compile(r"حضر|حاضر|موجود|(?:^|\s)(?:جه|جت|جا)(?:\s|$)")
-_CLAUSE_RE = re.compile(r"[.،,؛;!?\n]")
+# A full stop followed by a digit is a decimal point ("19.5/20"), not a clause boundary.
+_CLAUSE_RE = re.compile(r"[،,؛;!?\n]|\.(?!\d)")
 
 
 def _grounded(phrase: str, note: str) -> bool:
@@ -90,13 +91,14 @@ def with_spans(raw: Any, text: str) -> Any:
 
 def ground_llm_items(items: list[dict[str, Any]], text: str) -> list[dict[str, Any]]:
     """Keep only validated LLM items the note supports (on top of validate_extraction)."""
+
     # clean_transcript writes scores as "N/M" and durations as "N min": an LLM number must appear in
-    # that form (a "10" from "10 min" is not a score of 10).
-    plain = nlp.normalize_digits(text)
-    said = {
-        "score": set(re.findall(r"(\d+(?:\.\d+)?)/\d", plain)),
-        "late_minutes": set(re.findall(r"(\d+) min", plain)),
-    }
+    # that form (a "10" from "10 min" is not a score of 10), and in the student's own clause (a
+    # Windows-TTS run put "ليلة تأخرت 5 min" on زياد, the only matched name nearby).
+    def said(field: str, clause: str) -> set[str]:
+        pattern = r"(\d+(?:\.\d+)?)/\d" if field == "score" else r"(\d+) min"
+        return set(re.findall(pattern, nlp.normalize_digits(clause)))
+
     out, seen = [], set()
     for it in items:
         key = (it["student"], it["field"])
@@ -109,12 +111,13 @@ def ground_llm_items(items: list[dict[str, Any]], text: str) -> list[dict[str, A
             continue  # unknown spans are not LLM targets (see run_text)
         if it["field"] in RULES_ONLY_FIELDS:
             continue  # owned by link_nlp's explicit-phrase rules (see llm._VALUES)
-        if it["field"] in said:
-            if not isinstance(v, (int, float)) or f"{v:g}" not in said[it["field"]]:
-                continue  # a number the teacher did not say (as a score / as minutes)
+        own = text[slice(*_clause_span(it["student"], text))]
+        if it["field"] in ("score", "late_minutes"):
+            if not isinstance(v, (int, float)) or f"{v:g}" not in said(it["field"], own):
+                continue  # not said as a score / as minutes in this student's clause
         if it["field"] == "observation" and (not isinstance(v, str) or not _grounded(v, text)):
             continue  # not the teacher's words
-        clause = nlp.normalize_for_match(text[slice(*_clause_span(it["student"], text))])
+        clause = nlp.normalize_for_match(own)
         if it["field"] == "attendance" and v == "present" and not _PRESENT_RE.search(clause):
             continue  # "حلوا الواجب" is not "was here": presence must be said
         seen.add(key)

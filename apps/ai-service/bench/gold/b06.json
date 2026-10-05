@@ -65,6 +65,8 @@
   "reference_transcript": "عمل الطلبة امتحان قصير من خمستاشر درجة. نور جابت أربعتاشر، وسيف جاب عشرة، وهنا جابت تمانية.",
   "expected_mentions": [
     {
+      "start": 40,
+      "end": 43,
       "text": "نور",
       "status": "unique",
       "student_id": "s7",
@@ -73,6 +75,8 @@
       ]
     },
     {
+      "start": 60,
+      "end": 63,
       "text": "سيف",
       "status": "unique",
       "student_id": "s10",
@@ -81,6 +85,8 @@
       ]
     },
     {
+      "start": 75,
+      "end": 78,
       "text": "هنا",
       "status": "unique",
       "student_id": "s9",

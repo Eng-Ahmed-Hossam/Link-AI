@@ -65,6 +65,8 @@
   "reference_transcript": "ليلى جابت سبعتاشر من عشرين في الكويز، وزياد جاب تلتاشر من عشرين. عمر محتاج يراجع الكسور.",
   "expected_mentions": [
     {
+      "start": 0,
+      "end": 4,
       "text": "ليلى",
       "status": "unique",
       "student_id": "s5",
@@ -73,6 +75,8 @@
       ]
     },
     {
+      "start": 39,
+      "end": 43,
       "text": "زياد",
       "status": "unique",
       "student_id": "s6",
@@ -81,6 +85,8 @@
       ]
     },
     {
+      "start": 65,
+      "end": 68,
       "text": "عمر",
       "status": "unique",
       "student_id": "s8",

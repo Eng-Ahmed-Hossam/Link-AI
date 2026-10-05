@@ -65,6 +65,8 @@
   "reference_transcript": "النهارده خلصنا الدرس التاني. نور شاركت كويس جدا، وهنا كانت ساكتة طول الحصة. الحصة الجاية هنراجع المعادلات.",
   "expected_mentions": [
     {
+      "start": 29,
+      "end": 32,
       "text": "نور",
       "status": "unique",
       "student_id": "s7",
@@ -73,6 +75,8 @@
       ]
     },
     {
+      "start": 50,
+      "end": 53,
       "text": "هنا",
       "status": "unique",
       "student_id": "s9",

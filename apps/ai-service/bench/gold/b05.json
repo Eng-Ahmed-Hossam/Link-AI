@@ -65,6 +65,8 @@
   "reference_transcript": "كل الطلبة حضروا ما عدا يوسف وليلى. زياد بيلخبط في إشارات الضرب، لازم نعيد معاه مثالين.",
   "expected_mentions": [
     {
+      "start": 23,
+      "end": 27,
       "text": "يوسف",
       "status": "unique",
       "student_id": "s2",
@@ -73,6 +75,8 @@
       ]
     },
     {
+      "start": 29,
+      "end": 33,
       "text": "ليلى",
       "status": "unique",
       "student_id": "s5",
@@ -81,6 +85,8 @@
       ]
     },
     {
+      "start": 35,
+      "end": 39,
       "text": "زياد",
       "status": "unique",
       "student_id": "s6",

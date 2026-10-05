@@ -65,6 +65,8 @@
   "reference_transcript": "هنا جابت عشرين من عشرين في الكويز. مريم حضرت بس مشاركتها كانت قليلة. يوسف جاب اتناشر من عشرين، ولازم يراجع الدرس الأول كويس قبل الأسبوع الجاي.",
   "expected_mentions": [
     {
+      "start": 0,
+      "end": 3,
       "text": "هنا",
       "status": "unique",
       "student_id": "s9",
@@ -73,6 +75,8 @@
       ]
     },
     {
+      "start": 35,
+      "end": 39,
       "text": "مريم",
       "status": "unique",
       "student_id": "s1",
@@ -81,6 +85,8 @@
       ]
     },
     {
+      "start": 69,
+      "end": 73,
       "text": "يوسف",
       "status": "unique",
       "student_id": "s2",

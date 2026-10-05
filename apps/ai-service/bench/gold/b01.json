@@ -65,6 +65,8 @@
   "reference_transcript": "مريم غابت النهارده، ويوسف اتأخر عشر دقايق. الباقي كلهم حضروا.",
   "expected_mentions": [
     {
+      "start": 0,
+      "end": 4,
       "text": "مريم",
       "status": "unique",
       "student_id": "s1",
@@ -73,6 +75,8 @@
       ]
     },
     {
+      "start": 21,
+      "end": 25,
       "text": "يوسف",
       "status": "unique",
       "student_id": "s2",

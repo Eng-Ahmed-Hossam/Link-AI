@@ -65,6 +65,8 @@
   "reference_transcript": "ملاحظة عامة: الفصل كله محتاج يراجع قانون فيثاغورس قبل الامتحان. سيف كان بيتكلم كتير في الحصة.",
   "expected_mentions": [
     {
+      "start": 64,
+      "end": 67,
       "text": "سيف",
       "status": "unique",
       "student_id": "s10",

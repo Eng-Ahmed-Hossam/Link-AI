@@ -65,6 +65,8 @@
   "reference_transcript": "مريم غايبة للمرة التانية على التوالي، محتاجين نطمن عليها. يوسف كان مركز جدا النهارده.",
   "expected_mentions": [
     {
+      "start": 0,
+      "end": 4,
       "text": "مريم",
       "status": "unique",
       "student_id": "s1",
@@ -73,6 +75,8 @@
       ]
     },
     {
+      "start": 58,
+      "end": 62,
       "text": "يوسف",
       "status": "unique",
       "student_id": "s2",
