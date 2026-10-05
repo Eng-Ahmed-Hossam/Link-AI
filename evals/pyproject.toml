@@ -1,0 +1,12 @@
+[project]
+name = "link-eval"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["link-nlp"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+link-nlp = { path = "../py/link_nlp", editable = true }
