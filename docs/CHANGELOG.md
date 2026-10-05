@@ -2,6 +2,12 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-05 — Merge of `codex/nlp-eval` round 1
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | ai/link-nlp.md, py/link_nlp, evals | Merged `codex/nlp-eval` round 1 (merge `f76110a`): the `link_nlp` package (normalisation, roster matching, tokens, rules, schema), 30 fictional gold notes, the `link_eval` runner and identity gates. Checked on `main`: ruff, strict mypy, 311 tests, selftest. | Real NLP core replaces ai-service's stand-in |
+
 ## 2026-10-05 — Part B: local speech-to-text and extraction (pilot and demo)
 
 | # | File | What changed | Why |
