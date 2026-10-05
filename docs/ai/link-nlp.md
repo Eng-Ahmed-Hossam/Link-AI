@@ -22,6 +22,25 @@ Runtime dependency: `jsonschema` validates the exact Draft 2020-12 wire schema. 
 
 ## Processing order and API
 
+### Stable public API since round 2
+
+Import the supported surface from `link_nlp`; `__all__` is authoritative and the package ships `py.typed`. These signatures and shapes are stable since round 2:
+
+- `normalize_digits(str) -> str`, `normalize_for_match(str) -> str`, and `clean_transcript(str) -> CleanedTranscript`.
+- `CleanedTranscript(display: str, clean: str, offset_map: tuple[tuple[int, int], ...])`, with `display_span(start, end) -> tuple[int, int]`.
+- `RosterStudent(id: str, display_name: str, nicknames: tuple[str, ...] = ())`.
+- `NameMention(start: int, end: int, text: str, status: Literal['unique', 'ambiguous', 'unknown'], student_id: str | None, candidates: tuple[tuple[str, float], ...])` and `find_name_mentions(clean_text, roster, threshold=.85, margin=.15) -> list[NameMention]`.
+- `RedactedSpan(start: int, end: int, text: str, replacement: str, kind: Literal['mobile', 'landline', 'email', 'handle'])`; coordinates refer to the input. `Redacted(text: str, spans: tuple[RedactedSpan, ...])` is returned by `redact_contacts(text)`.
+- `Leak(start: int, end: int, text: str, kind: Literal['roster_name', 'nickname', 'first_name', 'extra_name', 'contact'])` and `find_pii_leaks(text, roster, extra_names=()) -> list[Leak]`.
+- `Tokenised(text: str, token_map: dict[str, NameMention], offset_map: tuple[tuple[int, int], ...])`, with `clean_span(start, end)`; `tokenise(clean_text, mentions) -> Tokenised`.
+- `ResolvedItem(status: Literal['resolved', 'needs_identity', 'who_is_this', 'rejected'], student_id: str | None, candidates: tuple[tuple[str, float], ...], item: dict[str, Any], mention: NameMention | None = None, reason: str | None = None)`; `detokenise_items(items, token_map) -> list[ResolvedItem]`.
+- `RuleItem` is a `dict[str, Any]` with local boolean `.out_of_range`; `rule_extract(tokenised_text, assessment_max) -> list[RuleItem]`.
+- `VOICE_EXTRACTION_SCHEMA: dict[str, Any]` is the packaged Draft 2020-12 schema.
+- `ValidationResult(valid: bool, items: list[dict[str, Any]], errors: tuple[str, ...], out_of_range: tuple[int, ...] = (), dropped_topics: int = 0, unassigned: tuple[str, ...] = ())`; `validate_extraction(obj, sent_tokens, assessment_max) -> ValidationResult`.
+- `confidence_band(c, high=.85, low=.60) -> Literal['prefill', 'check', 'blank']`.
+
+No round-1 public signature was removed or changed, so there is no deprecation in round 2.
+
 ```python
 from link_nlp.normalize import clean_transcript
 from link_nlp.roster import RosterStudent, find_name_mentions
@@ -76,7 +95,7 @@ Exact full names/nicknames score 1; exact first-name evidence scores .92. Nonexa
 
 `threshold` and `margin` still gate every unique result. Do not lower them without a separate development set and then a locked evaluation. Changing the roster can make previously unique names ambiguous; pass the actual session roster on every call. Names inside other words are not matched. Bare names that are also ordinary Arabic words (such as هنا, نور and ملك) require explicit student evidence before unique assignment. Extra surname evidence vetoes a shorter exact roster prefix; punctuation cannot join alias words. Conjunctions attached to detected first names are kept outside the redacted span.
 
-The lexicon plus cue detector is bounded. It cannot guarantee detection of every arbitrary adult name, unusual surname, indirect role reference, or adversarial transcript. **Do not treat tokenisation as a universal PII redactor.** The service must block external LLM calls until a stronger name/contact redaction gate or human redaction review establishes that the payload contains no names or contacts. Keep the token map local to ai-service. Never put roster display names, token maps or raw reference text into LLM context or model logs. The package does not redact phone numbers; that is a required service integration step.
+The lexicon plus cue detector is bounded. It cannot guarantee detection of every arbitrary adult name, unusual surname, indirect role reference, or adversarial transcript. **Do not treat tokenisation as a universal PII redactor.** Keep the token map local to ai-service. Never put roster display names, token maps or raw reference text into LLM context or model logs. Call `redact_contacts` before tokenisation and call `find_pii_leaks` on the exact outbound payload immediately before every LLM call. Abort the call when it returns any leak. Pass known teacher and adult names through `extra_names`.
 
 ## Rule extraction and confidence
 
@@ -103,7 +122,7 @@ The `topic` field is schema-valid but dropped for Phase 2. A Phase 3 topic-map c
 
 `evals/reference_rules.py --gold <dir> --predictions <dir>` produces reproducible reference-text rule predictions; run it through the package environment. It supplies no artificial latency and declares `stt:reference-text` in its model version. Generated predictions and reports are ignored by default because real evaluations contain private identities.
 
-`evals/gold/SCRIPTS.md` contains 30 fictional notes and the 18-person roster. The JSON references are independently annotated, not generated from matcher/rule outputs. `RECORDING_GUIDE.md` explains team recordings and metadata. No audio is committed. `gold/real` ignores all real material except its README; real predictions and reports must remain local too.
+`evals/dev` contains 15 development-only cases used for rules and thresholds. Gold v1 contains 35 fictional notes: the original 30 plus five accuracy regressions. `gold/LOCK.json` records SHA-256 hashes for every gold file; selftest rejects drift unless run with `--unlock-gold`. `REVIEW.csv` contains every script for native-speaker approval. `python -m link_eval apply-review evals/gold/REVIEW.csv` applies safe transcript edits, updates offsets, and bumps/re-locks the version. `python -m link_eval calibrate --predictions DIR --gold DIR` reports reliability buckets and suggested thresholds without changing defaults. `RECORDING_GUIDE.md` explains team recordings and metadata. No audio is committed.
 
 The runner reports WER/CER after matching normalization, name metrics aligned through reference and predicted transcript word context, wrong identity assignments with cases, per-field precision/recall/F1, score exact match, blank-band abstention, unmentioned-student errors, observed latency percentiles, and condition/hard-case breakdowns. Missing prediction files reduce recall and are explicitly reported. Malformed or mismatched files are errors. Offsets must locate each mention in its own transcript. A unique phrase can recover missing offsets, but repeated names cannot be paired by list order; uncertain occurrence alignment yields `INCOMPLETE`, never `PASS`. Assignments on unresolved identities block release, and student IDs outside the roster are rejected. The report stores a JSON sidecar for comparison.
 

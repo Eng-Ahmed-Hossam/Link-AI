@@ -230,3 +230,24 @@ def test_suffix_action_does_not_guess_near_roster_identity() -> None:
     mention = find_name_mentions("نجاتي غاب", roster)[0]
     assert mention.status == "unknown"
     assert mention.student_id is None
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["هنا", "نور", "أمل", "هدى", "سماح", "حسن", "كريم", "سعيد", "أمير", "جميلة", "منى", "رحمة"],
+)
+def test_everyday_word_first_names_need_person_cue(name: str) -> None:
+    roster = [RosterStudent("s1", f"{name} عادل")]
+    assert find_name_mentions(f"الشرح {name} كان واضح", roster) == []
+    assert find_name_mentions(f"يا {name} ركزي", roster)[0].status == "unique"
+    assert find_name_mentions(f"{name} غابت", roster)[0].status == "unique"
+    assert find_name_mentions(f"{name} عادل فهمت", roster)[0].status == "unique"
+
+
+def test_misheard_layla_is_unknown_with_ranked_candidate() -> None:
+    roster = [RosterStudent("s1", "ليلى حسن"), RosterStudent("s2", "مريم علي")]
+    mention = find_name_mentions("ليلة غابت", roster)[0]
+    assert mention.status == "unknown"
+    assert mention.student_id is None
+    assert mention.candidates[0][0] == "s1"
+    assert mention.candidates[0][1] < 0.85

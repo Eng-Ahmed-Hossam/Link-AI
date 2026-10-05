@@ -185,7 +185,7 @@ def test_bad_inputs_fail_early(tmp_path: Path, mutation: str) -> None:
 
 def test_selftest_checks_deliberately_broken_metrics(tmp_path: Path) -> None:
     g, _ = files(tmp_path, [gold()], [])
-    assert runner().selftest(g)["broken_gate"] == "FAIL"
+    assert runner().selftest(g, unlock_gold=True)["broken_gate"] == "FAIL"
 
 
 def test_coordinate_label_without_matching_transcript_requires_review(

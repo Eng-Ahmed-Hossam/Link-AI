@@ -1,0 +1,69 @@
+{
+  "id": "dev-001",
+  "data_class": "synthetic",
+  "group": "development",
+  "audio_file": "dev-001.m4a",
+  "recording": {
+    "condition": "development_text",
+    "delivery": "natural",
+    "target_seconds": 10,
+    "speaker": "to-fill",
+    "recorded_by": "to-fill"
+  },
+  "roster": [
+    {
+      "id": "s1",
+      "display_name": "هنا عادل",
+      "nicknames": []
+    },
+    {
+      "id": "s2",
+      "display_name": "نور علي",
+      "nicknames": []
+    },
+    {
+      "id": "s3",
+      "display_name": "ليلى حسن",
+      "nicknames": []
+    }
+  ],
+  "assessment": {
+    "name": "development quiz",
+    "max": 20
+  },
+  "reference_transcript": "هنا غابت",
+  "expected_mentions": [
+    {
+      "start": 0,
+      "end": 3,
+      "text": "هنا",
+      "status": "unique",
+      "student_id": "s1",
+      "candidates": [
+        "s1"
+      ]
+    }
+  ],
+  "expected_items": [
+    {
+      "student_id": "s1",
+      "field": "attendance",
+      "value": "absent"
+    }
+  ],
+  "expected_needs_identity": [],
+  "expected_unmentioned": [
+    "s2",
+    "s3"
+  ],
+  "hard_case_tags": [
+    "common_word",
+    "names"
+  ],
+  "annotation": {
+    "method": "independent_hand_authored",
+    "span_basis": "reference_transcript",
+    "version": "dev-v1",
+    "review_status": "development"
+  }
+}

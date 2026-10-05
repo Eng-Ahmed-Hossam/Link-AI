@@ -4,6 +4,8 @@ import argparse
 import json
 from pathlib import Path
 
+from .calibration import calibrate
+from .review import apply_review
 from .runner import compare_reports, evaluate, selftest, write_report
 
 
@@ -23,6 +25,12 @@ def main() -> int:
         type=Path,
         default=Path(__file__).resolve().parents[1] / "gold" / "synthetic",
     )
+    test.add_argument("--unlock-gold", action="store_true")
+    review = commands.add_parser("apply-review")
+    review.add_argument("review_csv", type=Path)
+    calibration = commands.add_parser("calibrate")
+    calibration.add_argument("--predictions", type=Path, required=True)
+    calibration.add_argument("--gold", type=Path, required=True)
     args = parser.parse_args()
     try:
         if args.command == "run":
@@ -38,8 +46,12 @@ def main() -> int:
             )
         if args.command == "compare":
             print(compare_reports(args.left, args.right))
+        elif args.command == "selftest":
+            print(json.dumps(selftest(args.gold, unlock_gold=args.unlock_gold), ensure_ascii=False, indent=2))
+        elif args.command == "apply-review":
+            print(f"Applied {apply_review(args.review_csv)} reviewed scripts and re-locked gold.")
         else:
-            print(json.dumps(selftest(args.gold), ensure_ascii=False, indent=2))
+            print(calibrate(args.predictions, args.gold))
         return 0
     except (ValueError, OSError, AssertionError) as exc:
         parser.exit(2, f"Evaluation error: {exc}\n")

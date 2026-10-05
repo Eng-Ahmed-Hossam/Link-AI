@@ -1,0 +1,53 @@
+{
+  "id": "dev-002",
+  "data_class": "synthetic",
+  "group": "development",
+  "audio_file": "dev-002.m4a",
+  "recording": {
+    "condition": "development_text",
+    "delivery": "natural",
+    "target_seconds": 10,
+    "speaker": "to-fill",
+    "recorded_by": "to-fill"
+  },
+  "roster": [
+    {
+      "id": "s1",
+      "display_name": "هنا عادل",
+      "nicknames": []
+    },
+    {
+      "id": "s2",
+      "display_name": "نور علي",
+      "nicknames": []
+    },
+    {
+      "id": "s3",
+      "display_name": "ليلى حسن",
+      "nicknames": []
+    }
+  ],
+  "assessment": {
+    "name": "development quiz",
+    "max": 20
+  },
+  "reference_transcript": "الشرح هنا كان واضح",
+  "expected_mentions": [],
+  "expected_items": [],
+  "expected_needs_identity": [],
+  "expected_unmentioned": [
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "hard_case_tags": [
+    "common_word",
+    "negative"
+  ],
+  "annotation": {
+    "method": "independent_hand_authored",
+    "span_basis": "reference_transcript",
+    "version": "dev-v1",
+    "review_status": "development"
+  }
+}

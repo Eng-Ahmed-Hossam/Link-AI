@@ -23,6 +23,7 @@ extend-exclude = [".uv-cache"]
 [tool.mypy]
 strict = true
 files = ["link_nlp", "../../evals/link_eval", "../../evals/reference_rules.py"]
+exclude = ["tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "../../evals/tests"]
