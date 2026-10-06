@@ -1,28 +1,34 @@
-"""The NLP core: `link_nlp` (py/link_nlp, owned by the Codex track; docs/ai/link-nlp.md).
+"""The NLP core: `link_nlp` (py/link_nlp; docs/ai/link-nlp.md). Every other module imports from here.
 
-Every other module imports from here only. `link_nlp/__init__` re-exports nothing yet, so the names
-come from its submodules (a public API is requested in docs/ai/handoff-to-codex.md).
+Names come from the package's public API (`link_nlp.__all__`, stable since round 2).
 """
 
 from __future__ import annotations
 
 from importlib.metadata import version
 
-from link_nlp.normalize import (
+from link_nlp import (
+    VOICE_EXTRACTION_SCHEMA,
     CleanedTranscript,
+    Leak,
+    NameMention,
+    Redacted,
+    ResolvedItem,
+    RosterStudent,
+    Tokenised,
+    ValidationResult,
     clean_transcript,
+    confidence_band,
+    detokenise_items,
+    find_name_mentions,
+    find_pii_leaks,
     normalize_digits,
     normalize_for_match,
-)
-from link_nlp.roster import NameMention, RosterStudent, find_name_mentions
-from link_nlp.rules import rule_extract
-from link_nlp.schema import (
-    VOICE_EXTRACTION_SCHEMA,
-    ValidationResult,
-    confidence_band,
+    redact_contacts,
+    rule_extract,
+    tokenise,
     validate_extraction,
 )
-from link_nlp.tokens import ResolvedItem, Tokenised, detokenise_items, tokenise
 
 NLP_VERSION = f"link_nlp@{version('link-nlp')}"
 
@@ -34,7 +40,9 @@ __all__ = [
     "UI_BAND",
     "VOICE_EXTRACTION_SCHEMA",
     "CleanedTranscript",
+    "Leak",
     "NameMention",
+    "Redacted",
     "ResolvedItem",
     "RosterStudent",
     "Tokenised",
@@ -43,8 +51,10 @@ __all__ = [
     "confidence_band",
     "detokenise_items",
     "find_name_mentions",
+    "find_pii_leaks",
     "normalize_digits",
     "normalize_for_match",
+    "redact_contacts",
     "rule_extract",
     "tokenise",
     "validate_extraction",

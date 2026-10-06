@@ -9,7 +9,6 @@ from conftest import ROSTER, FakeLlm, FakeStt
 
 from ai_service import pipeline
 from ai_service.pipeline import run_text
-from ai_service.redact import find_leaks, redact_contacts
 
 NOTE = "مريم غابت النهارده، وأحمد جاب ١٤ من ٢٠، ويوسف اتأخر ١٠ دقايق. نراجع الكسور الحصة الجاية"
 
@@ -34,52 +33,49 @@ def test_pipeline_order(make_gw, monkeypatch):
         return wrapped
 
     nlp = pipeline.nlp
-    for name in ("clean_transcript", "find_name_mentions", "tokenise", "rule_extract",
-                 "validate_extraction", "detokenise_items", "confidence_band"):  # fmt: skip
+    for name in ("redact_contacts", "clean_transcript", "find_name_mentions", "tokenise",
+                 "rule_extract", "validate_extraction", "find_pii_leaks", "detokenise_items",
+                 "confidence_band"):  # fmt: skip
         monkeypatch.setattr(nlp, name, spy(name, getattr(nlp, name)))
-    monkeypatch.setattr(pipeline, "redact_contacts", spy("redact_contacts", redact_contacts))
-    monkeypatch.setattr(pipeline, "find_leaks", spy("find_leaks", find_leaks))
     gw = make_gw(FakeStt(), FakeLlm(reply={"items": []}))
     monkeypatch.setattr(gw, "extract", spy("llm", gw.extract))
     run_text(NOTE, ROSTER, {"maxScore": 20}, "synthetic", gw)
 
     first = [c for i, c in enumerate(calls) if c not in calls[:i]]
     assert first == [
+        "redact_contacts",  # on the raw transcript, before anything else (link_nlp guide)
         "clean_transcript",
         "find_name_mentions",
         "tokenise",
-        "redact_contacts",
-        "find_leaks",
         "rule_extract",
         "validate_extraction",  # the rule items
-        "llm",
+        "find_pii_leaks",  # on the exact outbound text …
+        "llm",  # … immediately before the call
         "detokenise_items",
         "confidence_band",
     ]
+    assert all(calls[i - 1] == "find_pii_leaks" for i, c in enumerate(calls) if c == "llm")
     # The LLM reply is validated after the call and before detokenising.
     assert calls.index("llm") < len(calls) - 1 - calls[::-1].index("validate_extraction")
     assert calls[::-1].index("validate_extraction") > calls[::-1].index("detokenise_items")
 
 
-def test_contacts_are_redacted_before_the_llm_and_scores_survive():
-    text, n = redact_contacts("<S1> جاب 12/20، رقم ولي الأمر 0101 234 5678 والإيميل a.b@x.com")
-    assert n == 2
-    assert "12/20" in text and "0101" not in text and "@" not in text
-    assert len(text) == len("<S1> جاب 12/20، رقم ولي الأمر 0101 234 5678 والإيميل a.b@x.com")
-
-
-def test_a_phone_number_never_reaches_the_llm(make_gw):
+def test_a_phone_number_or_email_never_reaches_the_llm_or_the_transcript(make_gw):
     llm = FakeLlm()
-    run_text(
-        "مريم غابت، وولي أمرها قال كلموني على 01012345678",
+    res = run_text(
+        "مريم غابت، وولي أمرها قال كلموني على 01012345678 أو a.b@x.com",
         ROSTER, None, "synthetic", make_gw(FakeStt(), llm),
     )  # fmt: skip
-    assert llm.prompts and "01012345678" not in llm.prompts[0] and "###########" in llm.prompts[0]
+    assert llm.prompts and "01012345678" not in llm.prompts[0] and "a.b@x.com" not in llm.prompts[0]
+    assert "<CONTACT1>" in llm.prompts[0] and res.contacts_redacted == 2
+    assert "01012345678" not in res.transcript  # the stored receipt never keeps it either
+    assert by(res.items, "attendance", "stu-mariam")
 
 
 def test_a_name_left_in_the_text_skips_the_llm_and_keeps_the_rules(make_gw, cfg, monkeypatch):
-    # The matcher is bounded (docs/ai/link-nlp.md): simulate it missing يوسف. The gate must catch
-    # the name, skip the LLM, keep the rule results and log the event without any text.
+    # The matcher is bounded (docs/ai/link-nlp.md): simulate it missing يوسف. find_pii_leaks on
+    # the outbound text must catch the name, skip the LLM, keep the rule results and log the
+    # event without any text.
     real = pipeline.nlp.find_name_mentions
 
     def miss_youssef(clean, roster, **k):
@@ -93,18 +89,17 @@ def test_a_name_left_in_the_text_skips_the_llm_and_keeps_the_rules(make_gw, cfg,
     assert by(res.items, "attendance", "stu-mariam")  # rules kept
     log = [json.loads(line) for line in cfg.usage_log.read_text("utf-8").splitlines()]
     event = [r for r in log if r.get("task") == "leak_check"]
-    assert event and event[0]["leaks"] >= 1
+    assert event and event[0]["leaks"] >= 1 and event[0]["leaks_roster_name"] >= 1
     raw = cfg.usage_log.read_text("utf-8")
     assert "يوسف" not in raw and "مريم" not in raw
 
 
-def test_leak_check_counts_names_with_attached_conjunctions():
-    from ai_service.nlp import RosterStudent
-
-    roster = [RosterStudent("s1", "مريم حسن"), RosterStudent("s2", "يوسف", ("جو",))]
-    assert find_leaks("<S1> غابت وحسن جه", roster, []) == 1
-    assert find_leaks("ويوسف اتأخر", roster, []) == 1
-    assert find_leaks("<S1> غابت و<S2> اتأخر", roster, []) == 0
+def test_an_adult_name_given_as_extra_name_blocks_the_llm(make_gw):
+    # The teacher's own name said in the note is not a student and must not reach the LLM either.
+    llm = FakeLlm()
+    res = run_text("مريم غابت، ومستر سامح هيكلم أهلها", ROSTER, None, "synthetic",
+                   make_gw(FakeStt(), llm), extra_names=("سامح",))  # fmt: skip
+    assert res.leak_blocked is True or "سامح" not in (llm.prompts[0] if llm.prompts else "")
 
 
 def test_rules_win_on_attendance_late_and_scores_for_the_same_student(make_gw):
@@ -258,3 +253,29 @@ def test_the_llm_can_be_kept_off_the_gpu(monkeypatch):
     assert sent["options"]["num_gpu"] == 0
     OllamaLlm("http://x", "qwen3:8b").extract("p", {})
     assert "num_gpu" not in sent["options"]
+
+
+def test_the_fixed_system_prompt_carries_no_names_or_contacts():
+    import re
+
+    from ai_service.llm import SYSTEM
+    from ai_service.nlp import RosterStudent, find_pii_leaks
+
+    roster = [RosterStudent(r.id, r.display_name) for r in ROSTER]
+    arabic = " ، ".join(re.findall(r"[؀-ۿ][؀-ۿ ]*", SYSTEM))
+    assert arabic and find_pii_leaks(arabic, roster) == []
+    assert not any(r.display_name in SYSTEM for r in ROSTER)
+
+
+def test_a_misheard_name_is_unknown_with_suggestions_never_attached(make_gw):
+    # Whisper wrote "ليلة" for ليلى: stays "Who is this?"; ليلى is offered as a suggestion only.
+    roster = [
+        pipeline.RosterEntry("s-laila", "ليلى حسن"),
+        pipeline.RosterEntry("s-mariam", "مريم علي"),
+    ]
+    res = run_text("ليلة غابت النهارده", roster, None, "synthetic", make_gw(FakeStt(), None))
+    absent = [i for i in res.items if i["field"] == "attendance"]
+    assert absent and absent[0]["identity"] == "unknown" and absent[0]["studentId"] is None
+    assert absent[0]["suggestions"] == ["s-laila"]
+    assert res.prediction("n")["items"] == []  # nothing attached to a student
+    assert res.unresolved and res.unresolved[0]["status"] == "who_is_this"

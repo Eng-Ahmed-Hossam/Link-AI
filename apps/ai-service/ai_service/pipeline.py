@@ -24,7 +24,6 @@ from . import nlp
 from .gateway import Gateway
 from .llm import build_user_prompt, llm_schema
 from .providers import DataSafetyError
-from .redact import find_leaks, redact_contacts
 
 # ResolvedItem.status → the app's VoiceItem.identity.
 IDENTITY = {"resolved": "matched", "needs_identity": "ambiguous", "who_is_this": "unknown"}
@@ -137,7 +136,7 @@ def ground_unassigned(lines: list[str], text: str) -> list[str]:
         for s in lines
         if len(s.split()) >= 2  # one misheard word ("ماجاشا،") is not a class observation
         and not _TOKEN_RE.search(s)  # about a student, not the whole class
-        and "#" not in s  # redacted contact data
+        and "<CONTACT" not in s  # redacted contact data
         and not re.search(r"[A-Za-z]", s)  # prompt text (e.g. "maximum 20") echoed back
         and _grounded(s, text)
     ]
@@ -185,6 +184,19 @@ def contenders(candidates: tuple[tuple[str, float], ...]) -> list[str]:
         return []
     top = max(score for _sid, score in candidates)
     return [sid for sid, score in candidates if score > 0 and score >= top - MATCH_MARGIN]
+
+
+SUGGEST_FLOOR = 0.5  # a roster name at least this close to a misheard one may be suggested
+
+
+def suggestions_for(candidates: tuple[tuple[str, float], ...], limit: int = 3) -> list[str]:
+    """Students a misheard (unknown) name sounds like: close enough and contending. Suggestions
+    only: the teacher picks, Link never attaches them."""
+    close = [(sid, score) for sid, score in candidates if score >= SUGGEST_FLOOR]
+    if not close:
+        return []
+    top = max(score for _sid, score in close)
+    return [sid for sid, score in close if score >= top - MATCH_MARGIN][:limit]
 
 
 @dataclass
@@ -254,19 +266,21 @@ def run_text(
     gw: Gateway,
     use_llm: bool = True,
     timings: dict[str, int] | None = None,
+    extra_names: tuple[str, ...] = (),
 ) -> PipelineResult:
     t0 = time.perf_counter()
     timings = dict(timings or {})
     students = [nlp.RosterStudent(r.id, r.display_name, tuple(r.nicknames)) for r in roster]
+    # Contacts out first, on the raw transcript (link_nlp: "call redact_contacts before
+    # tokenisation"): a guardian's phone number never reaches the stored transcript or the LLM.
+    redacted = nlp.redact_contacts(transcript)
     # 1–3: clean-up, the session roster only, tokens.
-    cleaned = nlp.clean_transcript(transcript)
+    cleaned = nlp.clean_transcript(redacted.text)
     mentions = nlp.find_name_mentions(cleaned.clean, students, threshold=0.85, margin=MATCH_MARGIN)
     tok = nlp.tokenise(cleaned.clean, mentions)
     sent_tokens = set(tok.token_map)
     max_score = (assessment or {}).get("maxScore")
-    # 4: contacts out (length-preserving, so every offset stays valid). 5: the leak check.
-    text, contacts = redact_contacts(tok.text)
-    leaks = find_leaks(text, students, mentions)
+    text = tok.text
     # 6: rules, validated like any other extractor output.
     rules = nlp.validate_extraction(
         {"items": nlp.rule_extract(text, max_score)}, sent_tokens, max_score
@@ -286,11 +300,7 @@ def run_text(
     llm_error: str | None = None
     llm_used = False
     leak_blocked = False
-    if use_llm and gw.llm is not None and leaks:
-        leak_blocked = True
-        llm_error = "leak_check: a name was still in the text; LLM skipped"
-        gw.log_event(task="leak_check", data_class=data_class, leaks=leaks, ok=False)
-    elif use_llm and gw.llm is not None:
+    if use_llm and gw.llm is not None:
         t1 = time.perf_counter()
         already = [(it["student"], it["field"]) for it in rule_items]
         # Not <U#>: an unknown span is often not a person ("على كشف"), and an LLM item on it can only
@@ -299,6 +309,23 @@ def run_text(
         prompt = build_user_prompt(text, llm_tokens, assessment, already)
         deadline = time.monotonic() + gw.cfg.llm_budget_s  # one budget for the step (B3)
         for _attempt in range(2):
+            # 5: the leak check on the exact outbound note text, right before every call. Any name
+            # or contact left → no LLM for this note; rule results only; logged without text. The
+            # system prompt is a fixed constant with no student data (tested name-free); it is not
+            # re-scanned because link_nlp's detector reads plain English words as names.
+            leaks = nlp.find_pii_leaks(prompt, students, extra_names)
+            if leaks:
+                leak_blocked = True
+                llm_error = "leak_check: a name or contact was still in the LLM text; LLM skipped"
+                kinds = sorted({x.kind for x in leaks})
+                gw.log_event(
+                    task="leak_check",
+                    data_class=data_class,
+                    leaks=len(leaks),
+                    **{f"leaks_{k}": sum(1 for x in leaks if x.kind == k) for k in kinds},
+                    ok=False,
+                )
+                break
             try:
                 raw = gw.extract(prompt, llm_schema(llm_tokens), data_class, deadline)
                 vr = nlp.validate_extraction(with_spans(raw, text), sent_tokens, max_score)
@@ -341,11 +368,17 @@ def run_text(
             band = "medium"  # pilot: a voice score is always checked by the teacher
         ds, de = _display_span(cleaned, tok, it.get("span") or {})
         candidates = contenders(r.candidates) if r.status == "needs_identity" else []
+        # A misheard name ("ليلة" for ليلى) stays unknown; its close roster names are shown in
+        # "Who is this?" as suggestions only, never attached (AI-02).
+        suggestions = (
+            suggestions_for(r.mention.candidates) if r.status == "who_is_this" and r.mention else []
+        )
         out = {
             "id": f"vi-{len(items) + 1}",
             "identity": IDENTITY[r.status],
             "studentId": r.student_id if r.status == "resolved" else None,
             "candidates": candidates,
+            "suggestions": suggestions,
             "mention": r.mention.text if r.mention else None,
             "field": it["field"],
             "value": it.get("value"),
@@ -377,6 +410,7 @@ def run_text(
                 "identity": "group",
                 "studentId": None,
                 "candidates": [],
+                "suggestions": [],
                 "mention": None,
                 "field": "observation",
                 "value": line,
@@ -414,7 +448,7 @@ def run_text(
         llm_used=llm_used,
         llm_error=llm_error,
         leak_blocked=leak_blocked,
-        contacts_redacted=contacts,
+        contacts_redacted=len(redacted.spans),
     )
 
 
@@ -425,6 +459,7 @@ def run_audio(
     data_class: str,
     gw: Gateway,
     use_llm: bool = True,
+    extra_names: tuple[str, ...] = (),
 ) -> PipelineResult:
     t = time.perf_counter()
     hints = [r.display_name for r in roster] + [n for r in roster for n in r.nicknames]
@@ -437,4 +472,5 @@ def run_audio(
         gw,
         use_llm,
         timings={"stt": round((time.perf_counter() - t) * 1000)},
+        extra_names=extra_names,
     )

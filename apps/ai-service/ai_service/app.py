@@ -42,6 +42,8 @@ class JobMeta(BaseModel):
     assessment: dict[str, Any] | None = None
     callbackUrl: str
     durationS: float = 60
+    # Adults' names that may be said in a note (the teacher, staff): never sent to the LLM.
+    extraNames: list[str] = []
 
 
 class TextIn(BaseModel):
@@ -50,6 +52,7 @@ class TextIn(BaseModel):
     roster: list[RosterIn]
     assessment: dict[str, Any] | None = None
     useLlm: bool = True
+    extraNames: list[str] = []
 
 
 def _roster(rs: list[RosterIn]) -> list[RosterEntry]:
@@ -97,7 +100,12 @@ class Jobs:
             t = time.perf_counter()
             try:
                 res = run_audio(
-                    audio, _roster(meta.roster), meta.assessment, meta.dataClass, self.gw
+                    audio,
+                    _roster(meta.roster),
+                    meta.assessment,
+                    meta.dataClass,
+                    self.gw,
+                    extra_names=tuple(meta.extraNames),
                 )
                 took = time.perf_counter() - t
                 if meta.durationS > 0:
@@ -231,6 +239,7 @@ def create_app(cfg: Config | None = None, gw: Gateway | None = None) -> FastAPI:
                 body.dataClass,
                 gw,
                 use_llm=body.useLlm,
+                extra_names=tuple(body.extraNames),
             )
         except DataSafetyError as e:
             raise HTTPException(422, str(e)) from e
