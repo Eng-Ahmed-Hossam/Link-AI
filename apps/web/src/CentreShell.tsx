@@ -18,10 +18,10 @@ import {
   UserCog,
   Wallet,
 } from 'lucide-react';
-import { Logo, SideNav, StatusBadge, type SideNavSection } from '@link/ui';
+import { Card, ErrorState, Logo, SideNav, StatusBadge, type SideNavSection } from '@link/ui';
 import { createTranslator, type Locale } from '@link/i18n';
 import { useQuery } from '@tanstack/react-query';
-import { pilotApi, useMe } from '@link/api-client';
+import { ApiError, ownerApi, pilotApi, useMe } from '@link/api-client';
 import { RequireStaff } from './owner/common';
 import { AssistantPanel } from './owner/AssistantPanel';
 import { useFlag } from './flags';
@@ -55,6 +55,14 @@ export function CentreShell({
   const marketplace = useFlag('marketplace.enabled');
   const { session, signOut } = useSession();
   const me = useMe({ enabled: !!session });
+  // An unknown centre id is "not found", not an empty workspace (one centre per world, 10 §2).
+  const centre = useQuery({
+    queryKey: ['centre-known', centreId],
+    queryFn: () => ownerApi.staff(centreId),
+    enabled: !!session,
+    retry: false,
+  });
+  const unknownCentre = centre.error instanceof ApiError && centre.error.problem.status === 404;
   const [assistantOpen, setAssistantOpen] = useState(false);
 
   const sections: SideNavSection[] = [];
@@ -149,6 +157,31 @@ export function CentreShell({
   // A message belongs to its follow-up (A06/A09 are reached from A03), so Follow-ups stays highlighted.
   const path = pathname.replace(`${base}/messages`, `${base}/follow-ups`);
   const activeId = all.find((i) => path.startsWith(i.href))?.id ?? all[0]?.id ?? 'staff';
+
+  if (unknownCentre)
+    return (
+      <RequireStaff>
+        <main id="main" className="flex min-h-dvh items-center justify-center bg-bg p-6">
+          <Card padding="lg" className="flex w-full max-w-md flex-col items-center gap-2">
+            <Logo variant="lockup-light" size={32} label={t('common.appName')} />
+            <div data-testid="centre-not-found">
+              <ErrorState
+                title={t('owner.centreNotFound.title')}
+                body={t('owner.centreNotFound.body')}
+                action={
+                  <Link
+                    href={`/${locale}/centre`}
+                    className="inline-flex min-h-11 items-center justify-center rounded-12 bg-blue px-5 text-label text-navy shadow-glow hover:brightness-95"
+                  >
+                    {t('owner.centreNotFound.back')}
+                  </Link>
+                }
+              />
+            </div>
+          </Card>
+        </main>
+      </RequireStaff>
+    );
 
   return (
     <RequireStaff>

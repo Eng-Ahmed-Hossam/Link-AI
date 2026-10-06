@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Card } from '@link/ui';
 import { getT, parseLocale } from '@/i18n';
+import { PILOT } from '@/api-mode';
 
 const SECTIONS = {
   profile: 'centre.nav.publicProfile',
@@ -12,14 +13,14 @@ const SECTIONS = {
   staff: 'centre.nav.staff',
 } as const;
 
-/** Placeholder for C02–C07 and A16 until Batch 2. */
+/** Placeholder for C02–C07 and A16 until Batch 2. Not in the pilot: the marketplace is off there (CF-29). */
 export default async function CentreSectionPage({
   params,
 }: {
   params: Promise<{ lang: string; section: string }>;
 }) {
   const { lang, section } = await params;
-  if (!(section in SECTIONS)) notFound();
+  if (PILOT || !(section in SECTIONS)) notFound();
   const t = getT(parseLocale(lang));
   return (
     <Card padding="lg">

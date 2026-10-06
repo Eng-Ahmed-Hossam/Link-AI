@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { ApiError, pilotApi } from '@link/api-client';
 import { Button, Callout, Card, Input, Logo } from '@link/ui';
@@ -12,6 +12,7 @@ import { useFlag } from '../../flags';
 import { API_MODE, PILOT } from '../../api-mode';
 import { isStaff, num } from '../common';
 import { formatTime } from '@link/i18n';
+import { centreNext } from '../../centre-routes';
 
 const CENTRE = 'cen-nour';
 
@@ -19,14 +20,18 @@ const CENTRE = 'cen-nour';
  * Centre workspace entry. Phone sign-in for owners (A18) is a Phase 1 screen (Batch 2, parked);
  * in mock modes this page offers the sample owner and Reception accounts (dev shortcut). The
  * concierge pilot signs in with the person's name and 6-digit PIN (A3).
+ *
+ * `?next=/follow-ups/case-110` (a link that left the centre id out, proxy.ts) lands on that page of
+ * the person's own centre once they are signed in.
  */
 export function CentreSignIn() {
   const { locale, t } = useI18n();
   const router = useRouter();
   const { session, ready } = useSession();
   const followUp = useFlag('followup.owner_nav');
+  const next = centreNext(useSearchParams().get('next'));
   const centre = session?.centreId ?? CENTRE;
-  const landing = `/${locale}/centre/${centre}/${followUp ? 'today' : 'staff'}`;
+  const landing = `/${locale}/centre/${centre}${next ?? (followUp ? '/today' : '/staff')}`;
 
   useEffect(() => {
     if (ready && isStaff(session?.roles)) router.replace(landing);
@@ -37,7 +42,7 @@ export function CentreSignIn() {
       <Card padding="lg" className="flex w-full max-w-md flex-col gap-4">
         <Logo variant="lockup-light" size={32} label={t('common.appName')} />
         {PILOT ? (
-          <PilotSignIn />
+          <PilotSignIn next={next} />
         ) : (
           <>
             <h1 className="text-title text-navy">{t('owner.signIn.title')}</h1>
@@ -55,7 +60,7 @@ export function CentreSignIn() {
 }
 
 /** Pilot (A3): pick your name, enter your PIN. Teachers use the teacher app on their phone. */
-function PilotSignIn() {
+function PilotSignIn({ next }: { next: string | null }) {
   const { locale, t } = useI18n();
   const router = useRouter();
   const { signIn } = useSession();
@@ -90,7 +95,7 @@ function PilotSignIn() {
         centreId: me.centreId,
         name: me.name,
       });
-      router.replace(`/${locale}/centre/${me.centreId}/today`);
+      router.replace(`/${locale}/centre/${me.centreId}${next ?? '/today'}`);
     } catch (err) {
       const p = err instanceof ApiError ? err.problem : null;
       setPin('');
