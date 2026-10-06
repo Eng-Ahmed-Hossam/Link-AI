@@ -95,3 +95,23 @@ def test_extract_text_and_ready(cfg, monkeypatch):
     assert r.status_code == 200 and r.json()["items"][0]["field"] == "attendance"
     ready = c.get("/ready").json()
     assert ready["nlp"]["version"].startswith("link_nlp@") and "fake-stt@1" in ready["modelVersion"]
+
+
+def test_rules_only_routing_starts_without_an_llm(tmp_path):
+    # A CPU-only laptop that must meet 60 s per note: {"llm": {"provider": "none"}} (ADR-0007).
+    from fastapi.testclient import TestClient
+
+    from ai_service.app import create_app
+    from ai_service.config import load_config
+
+    cfg = load_config(
+        {
+            "AI_SERVICE_TOKEN": "t",
+            "AI_PRELOAD": "0",
+            "AI_MODELS_DIR": str(tmp_path),
+            "MODEL_ROUTING_CONFIG": '{"llm": {"provider": "none"}}',
+        }
+    )
+    ready = TestClient(create_app(cfg)).get("/ready").json()
+    assert ready["llm"] == {"version": None, "ready": False}
+    assert ready["modelVersion"].endswith("|no-llm")
