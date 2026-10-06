@@ -55,6 +55,33 @@ class TextIn(BaseModel):
     extraNames: list[str] = []
 
 
+# Seconds for a 60-second note per speech profile, measured on the build laptop (ADR-0007, round
+# 3): RTX 2070 Whisper + qwen3:8b about 3 + 11 s; CPU Whisper + rules 37 s; CPU + qwen3:4b 95 s.
+PROFILE_SECONDS = {"gpu": 15, "cpu_rules": 40, "cpu_llm": 100}
+
+
+def voice_profile(gw: Gateway) -> dict[str, Any]:
+    """The active profile and its time estimate (shown to the owner, and the queue's first ETA)."""
+    stt = gw.stt
+    device = getattr(stt, "device", "cpu")
+    if device == "auto":  # not resolved until the model loads; assume the slower case
+        device = "cpu"
+    llm_model = getattr(gw.llm, "model", None) if gw.llm else None
+    llm_cpu = getattr(gw.llm, "device", "auto") == "cpu"
+    if device == "cuda" and not llm_cpu:
+        key = "gpu"
+    elif gw.llm is None:
+        key = "cpu_rules"
+    else:
+        key = "cpu_llm"
+    return {
+        "key": key,
+        "sttDevice": device,
+        "llm": llm_model,
+        "secondsPerMinute": PROFILE_SECONDS[key],
+    }
+
+
 def _roster(rs: list[RosterIn]) -> list[RosterEntry]:
     return [RosterEntry(r.id, r.displayName, list(r.nicknames)) for r in rs]
 
@@ -66,7 +93,9 @@ class Jobs:
         self.gw, self.cfg = gw, cfg
         self.q: queue.Queue[tuple[JobMeta, bytes]] = queue.Queue()
         self.status: dict[str, dict[str, Any]] = {}
-        self.rtf = 0.6  # seconds of processing per second of audio (updated as notes finish)
+        # Seconds of processing per second of audio: starts from the active profile's estimate and
+        # follows the notes as they finish.
+        self.rtf = voice_profile(gw)["secondsPerMinute"] / 60
         threading.Thread(target=self._work, daemon=True).start()
 
     def eta(self, duration_s: float) -> int:
@@ -184,6 +213,7 @@ def create_app(cfg: Config | None = None, gw: Gateway | None = None) -> FastAPI:
             "llm": {"version": gw.llm.version if gw.llm else None, "ready": llm_ready},
             "nlp": {"version": nlp.NLP_VERSION},
             "modelVersion": gw.model_version,
+            "profile": {**voice_profile(gw), "secondsPerMinute": round(jobs.rtf * 60)},
         }
 
     @app.post("/v1/jobs", status_code=202)

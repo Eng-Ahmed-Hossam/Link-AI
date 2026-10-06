@@ -115,3 +115,18 @@ def test_rules_only_routing_starts_without_an_llm(tmp_path):
     ready = TestClient(create_app(cfg)).get("/ready").json()
     assert ready["llm"] == {"version": None, "ready": False}
     assert ready["modelVersion"].endswith("|no-llm")
+
+
+def test_ready_reports_the_speech_profile_and_its_estimate(cfg, monkeypatch):
+    from ai_service.app import PROFILE_SECONDS, voice_profile
+    from ai_service.gateway import Gateway
+
+    class GpuStt(FakeStt):
+        device = "cuda"
+
+    assert voice_profile(Gateway(cfg, GpuStt(), FakeLlm()))["key"] == "gpu"
+    assert voice_profile(Gateway(cfg, FakeStt(), None))["key"] == "cpu_rules"
+    cpu = voice_profile(Gateway(cfg, FakeStt(), FakeLlm()))
+    assert cpu["key"] == "cpu_llm" and cpu["secondsPerMinute"] == PROFILE_SECONDS["cpu_llm"]
+    c = _client(cfg, FakeStt(), monkeypatch, [])
+    assert c.get("/ready").json()["profile"]["key"] in PROFILE_SECONDS

@@ -73,6 +73,7 @@ def main() -> int:
                     "llm_used": res.llm_used,
                     "llm_error": res.llm_error,
                     "items": len(res.items),
+                    "chars": len(res.transcript.strip()),
                 },
                 ensure_ascii=False,
             ),
