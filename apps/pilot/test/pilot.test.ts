@@ -72,6 +72,13 @@ describe('A1 start-up check', () => {
     expect(p).toHaveLength(1);
     expect(p[0]).toContain('bad.js');
   });
+  it('finds the dev route index (/{lang}/dev) in an app bundle', () => {
+    const d = tempDir();
+    writeFileSync(join(d, 'page.js'), 'jsx("main",{"data-dev-index":true})');
+    expect(bundleProblems([d])).toEqual([
+      `Demo code in the app bundle: "data-dev-index" in ${join(d, 'page.js')}`,
+    ]);
+  });
 });
 
 describe('A3 access', () => {

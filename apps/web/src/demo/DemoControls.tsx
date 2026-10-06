@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { demoApi } from '@link/api-client/demo';
 import { Button, Sheet } from '@link/ui';
@@ -17,6 +17,12 @@ export function DemoControls() {
   const [note, setNote] = useState<string | null>(null);
   const s = useDemoState();
   const qc = useQueryClient();
+  // The dev index (`/{lang}/dev`) opens the panel with a `link:demo-controls` event.
+  useEffect(() => {
+    const show = () => setOpen(true);
+    window.addEventListener('link:demo-controls', show);
+    return () => window.removeEventListener('link:demo-controls', show);
+  }, []);
 
   if (!DEMO_CONTROLS) return null;
 

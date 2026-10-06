@@ -8,8 +8,14 @@ import { extname, join } from 'node:path';
 import { pilotHandlers, pilotStartupProblems } from '@link/mocks/pilot';
 import type { WorldData } from '@link/mocks/world';
 
-/** Strings that only demo or mock code contains. */
-export const BUNDLE_MARKERS = ['/__demo/', 'usr-salma', 'mock.usr-', 'link.mock.fu'];
+/** Strings that only demo or mock code contains (`data-dev-index`: the `/{lang}/dev` route index). */
+export const BUNDLE_MARKERS = [
+  '/__demo/',
+  'usr-salma',
+  'mock.usr-',
+  'link.mock.fu',
+  'data-dev-index',
+];
 
 function* walk(dir: string): Generator<string> {
   for (const n of readdirSync(dir)) {
