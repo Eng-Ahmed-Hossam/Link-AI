@@ -7,7 +7,7 @@ import { Avatar, Button, Callout, Card, Checkbox, Input, Select, StatusBadge } f
 import { useI18n } from '../../i18n-client';
 import { useSession } from '../../session';
 import { QueryState } from '../../parent/QueryState';
-import { num } from '../common';
+import { dateTime, num } from '../common';
 
 /**
  * A16 in the concierge pilot (A3): the owner adds people and sets their 6-digit PIN, which is shown
@@ -20,6 +20,7 @@ export function PilotPeople() {
   const owner = session?.roles.includes('centre_owner');
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ['pilot-users', locale], queryFn: pilotApi.users });
+  const vq = useQuery({ queryKey: ['pilot-voice'], queryFn: pilotApi.voiceStatus });
   const [name, setName] = useState('');
   const [role, setRole] = useState<PilotPerson['role'] | ''>('');
   const [groups, setGroups] = useState<string[]>([]);
@@ -27,6 +28,7 @@ export function PilotPeople() {
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmPause, setConfirmPause] = useState(false);
   const roleLabel = (r: PilotPerson['role']) =>
     r === 'owner'
       ? t('owner.staff.roleOwner')
@@ -69,6 +71,97 @@ export function PilotPeople() {
             {t('owner.pilot.pinOnce')}
           </span>
         </Callout>
+      ) : null}
+      {vq.data ? (
+        <Card data-testid="voice-card">
+          <div className="flex flex-col gap-3">
+            <h2 className="text-heading text-navy">{t('owner.pilot.voiceCardTitle')}</h2>
+            {!vq.data.available ? (
+              <p className="text-body text-muted" data-testid="voice-unavailable">
+                {t('owner.pilot.voiceUnavailable')}
+              </p>
+            ) : (
+              <>
+                <p className="text-body" data-testid="voice-profile">
+                  {vq.data.profile
+                    ? t('owner.pilot.voiceProfile', {
+                        profile: t(
+                          vq.data.profile.key === 'gpu'
+                            ? 'owner.pilot.profileGpu'
+                            : vq.data.profile.key === 'cpu_rules'
+                              ? 'owner.pilot.profileCpuRules'
+                              : 'owner.pilot.profileCpuLlm',
+                        ),
+                        seconds: num(vq.data.profile.secondsPerMinute, locale),
+                      })
+                    : t('owner.pilot.profileUnknown')}
+                </p>
+                <p className="text-body text-muted">{t('owner.pilot.voicePerTeacher')}</p>
+                <p className="text-body text-muted">{t('owner.pilot.voiceScoresCheck')}</p>
+                {vq.data.paused ? (
+                  <Callout tone="warning" role="status">
+                    <span data-testid="voice-paused">
+                      {t('owner.pilot.voicePausedBody', {
+                        date: vq.data.pausedAt ? dateTime(vq.data.pausedAt, locale) : '',
+                      })}
+                    </span>
+                  </Callout>
+                ) : null}
+                {owner ? (
+                  vq.data.paused ? (
+                    <div>
+                      <Button
+                        variant="secondary"
+                        disabled={busy}
+                        data-testid="voice-kill-switch"
+                        onClick={() => run(() => pilotApi.setVoicePaused(false))}
+                      >
+                        {t('owner.pilot.voiceResumeAll')}
+                      </Button>
+                    </div>
+                  ) : confirmPause ? (
+                    <Callout tone="warning" title={t('owner.pilot.voicePauseConfirmTitle')}>
+                      <span className="flex flex-col gap-3">
+                        {t('owner.pilot.voicePauseConfirmBody')}
+                        <span className="flex flex-wrap gap-2">
+                          <Button
+                            variant="secondary"
+                            danger
+                            disabled={busy}
+                            data-testid="voice-kill-confirm"
+                            onClick={() =>
+                              run(async () => {
+                                await pilotApi.setVoicePaused(true);
+                                setConfirmPause(false);
+                              })
+                            }
+                          >
+                            {t('owner.pilot.voicePauseAll')}
+                          </Button>
+                          <Button variant="quiet" onClick={() => setConfirmPause(false)}>
+                            {t('common.cancel')}
+                          </Button>
+                        </span>
+                      </span>
+                    </Callout>
+                  ) : (
+                    <div>
+                      <Button
+                        variant="secondary"
+                        danger
+                        disabled={busy}
+                        data-testid="voice-kill-switch"
+                        onClick={() => setConfirmPause(true)}
+                      >
+                        {t('owner.pilot.voicePauseAll')}
+                      </Button>
+                    </div>
+                  )
+                ) : null}
+              </>
+            )}
+          </div>
+        </Card>
       ) : null}
       <QueryState query={q}>
         {(people) => (
@@ -123,9 +216,22 @@ export function PilotPeople() {
                         <span className="flex flex-wrap items-center gap-2">
                           <StatusBadge tone={p.voiceConsent ? 'success' : 'neutral'}>
                             {p.voiceConsent
-                              ? t('owner.pilot.voiceSigned')
+                              ? p.voiceConsentAt
+                                ? t('owner.pilot.voiceSignedOn', {
+                                    date: dateTime(p.voiceConsentAt, locale),
+                                  })
+                                : t('owner.pilot.voiceSigned')
                               : t('owner.pilot.voiceNone')}
                           </StatusBadge>
+                          <span data-testid={`voice-state-${p.id}`}>
+                            <StatusBadge
+                              tone={p.voiceOn && !vq.data?.paused ? 'success' : 'neutral'}
+                            >
+                              {p.voiceOn && !vq.data?.paused
+                                ? t('owner.pilot.voiceOn')
+                                : t('owner.pilot.voiceOff')}
+                            </StatusBadge>
+                          </span>
                           {owner && p.active ? (
                             <Button
                               variant="quiet"
@@ -138,6 +244,21 @@ export function PilotPeople() {
                               {p.voiceConsent
                                 ? t('owner.pilot.voiceWithdraw')
                                 : t('owner.pilot.voiceGrant')}
+                            </Button>
+                          ) : null}
+                          {owner && p.active && vq.data?.available ? (
+                            <Button
+                              variant="secondary"
+                              disabled={busy || (!p.voiceOn && !p.voiceConsent)}
+                              title={
+                                !p.voiceConsent ? t('owner.pilot.voiceNeedsConsent') : undefined
+                              }
+                              data-testid={`voice-switch-${p.id}`}
+                              onClick={() => run(() => pilotApi.setTeacherVoice(p.id, !p.voiceOn))}
+                            >
+                              {p.voiceOn
+                                ? t('owner.pilot.voiceTurnOff')
+                                : t('owner.pilot.voiceTurnOn')}
                             </Button>
                           ) : null}
                         </span>

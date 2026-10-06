@@ -208,7 +208,11 @@ function Review({ m, base }: { m: ParentMessage; base: string }) {
                 })
               }
             >
-              {smsOnly ? t('owner.msg.approveSms') : t('owner.msg.approve')}
+              {PILOT
+                ? t('owner.pilot.approve') // the pilot sends nothing itself: Reception does
+                : smsOnly
+                  ? t('owner.msg.approveSms')
+                  : t('owner.msg.approve')}
             </Button>
             <Button
               variant="secondary"
