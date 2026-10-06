@@ -42,7 +42,13 @@ test('a voice note on the real local pipeline becomes a confirmed record', async
   await expect(owner.getByText('رمز سلوى')).toBeVisible();
   const pin = (await owner.getByTestId('shown-pin').textContent())!.trim();
   await salwa.getByRole('button', { name: 'الموافقة موقّعة' }).click();
-  await expect(salwa).toContainText('موقّعة');
+  await expect(salwa).toContainText('موقّعة بتاريخ');
+  // 4.2: consent alone does not switch voice on; the owner switches it on for this teacher.
+  await expect(salwa).toContainText('الصوت متوقف');
+  await salwa.getByRole('button', { name: 'تشغيل الصوت' }).click();
+  await expect(salwa).toContainText('الصوت مفعّل');
+  await expect(owner.getByTestId('voice-profile')).toBeVisible();
+  await owner.screenshot({ path: join(SHOTS, 'A16-voice-per-teacher.ar.png'), fullPage: true });
   await ownerCtx.close();
 
   // Teacher: record by voice.

@@ -4,6 +4,7 @@
  */
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { isPractice } from './practice';
 import { fileURLToPath } from 'node:url';
 
 export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
@@ -75,7 +76,8 @@ export function pilotConfig(env: NodeJS.ProcessEnv = process.env): PilotConfig {
     webUpstream: env.PILOT_WEB_UPSTREAM ?? 'http://127.0.0.1:3100',
     teacherDist: env.PILOT_TEACHER_DIST ?? join(REPO_ROOT, 'apps', 'teacher-app', 'dist-pilot'),
     allowedOrigins: [...new Set(origins)],
-    voice: env.PILOT_VOICE === '1',
+    // Never in the practice centre: staff practising would record their real voices.
+    voice: env.PILOT_VOICE === '1' && !isPractice(dataDir),
     aiUrl: env.AI_SERVICE_URL ?? 'http://127.0.0.1:8090',
     aiToken: env.AI_SERVICE_TOKEN || null,
   };

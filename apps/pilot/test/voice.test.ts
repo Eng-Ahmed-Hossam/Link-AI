@@ -50,6 +50,32 @@ async function owner(p: ReturnType<typeof openApp>, pins: Record<string, string>
   return p.signIn('usr-p001', pins['usr-p001']!);
 }
 
+/** 4.2: the owner records the teacher's signed consent, then switches voice on for them. */
+async function enableVoice(p: ReturnType<typeof openApp>, ownerCookie: string, id = 'usr-p002') {
+  const c = await p.call('POST', `/v1/pilot/users/${id}/voice-consent`, {
+    cookie: ownerCookie,
+    body: { granted: true },
+  });
+  const v = await p.call('POST', `/v1/pilot/users/${id}/voice`, {
+    cookie: ownerCookie,
+    body: { on: true },
+  });
+  return [c.status, v.status];
+}
+
+async function uploadNote(p: ReturnType<typeof openApp>, teacher: string, bytes: number[]) {
+  const note = await (await recordAndUpload(p, teacher)).vn.json();
+  await p.app.api(
+    new Request(`http://127.0.0.1:18443${note.uploadUrl}`, {
+      method: 'PUT',
+      headers: { cookie: teacher, 'content-type': 'audio/webm' },
+      body: new Uint8Array(bytes),
+    }),
+  );
+  await p.call('POST', `/v1/voice-notes/${note.id}/uploaded`, { cookie: teacher });
+  return note as { id: string; uploadUrl: string };
+}
+
 describe('B3 voice notes in the pilot', () => {
   it('no signed consent → no voice note ("Type the note instead"); /v1/me says so', async () => {
     const dir = tempDir();
@@ -70,14 +96,7 @@ describe('B3 voice notes in the pilot', () => {
     const pins = seedPilot(dir);
     const p = openApp(dir, VOICE_ENV);
     const o = await owner(p, pins);
-    expect(
-      (
-        await p.call('POST', '/v1/pilot/users/usr-p002/voice-consent', {
-          cookie: o,
-          body: { granted: true },
-        })
-      ).status,
-    ).toBe(200);
+    expect(await enableVoice(p, o)).toEqual([200, 200]);
     const teacher = await p.signIn('usr-p002', pins['usr-p002']);
     expect((await (await p.call('GET', '/v1/me', { cookie: teacher })).json()).voiceNotes).toBe(
       true,
@@ -172,10 +191,7 @@ describe('B3 voice notes in the pilot', () => {
     const dir = tempDir();
     const pins = seedPilot(dir);
     const p = openApp(dir, VOICE_ENV);
-    await p.call('POST', '/v1/pilot/users/usr-p002/voice-consent', {
-      cookie: await owner(p, pins),
-      body: { granted: true },
-    });
+    await enableVoice(p, await owner(p, pins));
     const teacher = await p.signIn('usr-p002', pins['usr-p002']);
     const note = await (await recordAndUpload(p, teacher)).vn.json();
     await p.app.api(
@@ -206,10 +222,7 @@ describe('B3 voice notes in the pilot', () => {
     const pins = seedPilot(dir);
     const p = openApp(dir, VOICE_ENV);
     const o = await owner(p, pins);
-    await p.call('POST', '/v1/pilot/users/usr-p002/voice-consent', {
-      cookie: o,
-      body: { granted: true },
-    });
+    await enableVoice(p, o);
     const teacher = await p.signIn('usr-p002', pins['usr-p002']);
     const note = await (await recordAndUpload(p, teacher)).vn.json();
     await p.app.api(
@@ -227,6 +240,8 @@ describe('B3 voice notes in the pilot', () => {
     });
     expect(existsSync(file)).toBe(false);
     expect(p.store.snap!.voice!.audio[note.id]!.deletedAt).not.toBeNull();
+    // Withdrawal also switches voice off for that teacher (re-consent does not switch it back on).
+    expect(p.store.snap!.voice!.enabled!['usr-p002']!.on).toBe(false);
     // Reception cannot record consent; only the owner.
     const r = await p.signIn('usr-p003', pins['usr-p003']);
     expect(
@@ -237,6 +252,108 @@ describe('B3 voice notes in the pilot', () => {
         })
       ).status,
     ).toBe(403);
+  });
+});
+
+describe('4.2 voice per teacher, never by default, and the kill switch', () => {
+  it('consent alone does not switch voice on; on needs consent; the list shows the consent date', async () => {
+    const dir = tempDir();
+    const pins = seedPilot(dir);
+    const p = openApp(dir, VOICE_ENV);
+    const o = await owner(p, pins);
+    const teacher = await p.signIn('usr-p002', pins['usr-p002']);
+    const me = async () =>
+      (await (await p.call('GET', '/v1/me', { cookie: teacher })).json()).voiceNotes;
+    const row = async () =>
+      (await (await p.call('GET', '/v1/pilot/users', { cookie: o })).json()).find(
+        (u: { id: string }) => u.id === 'usr-p002',
+      );
+    // Switching on before consent is refused.
+    const early = await p.call('POST', '/v1/pilot/users/usr-p002/voice', {
+      cookie: o,
+      body: { on: true },
+    });
+    expect(early.status).toBe(409);
+    expect((await early.json()).code).toBe('consent_required');
+    await p.call('POST', '/v1/pilot/users/usr-p002/voice-consent', {
+      cookie: o,
+      body: { granted: true },
+    });
+    expect(await me()).toBe(false); // off by default, even with consent
+    expect((await row()).voiceConsent).toBe(true);
+    expect(typeof (await row()).voiceConsentAt).toBe('string');
+    expect((await row()).voiceOn).toBe(false);
+    await p.call('POST', '/v1/pilot/users/usr-p002/voice', { cookie: o, body: { on: true } });
+    expect(await me()).toBe(true);
+    expect((await row()).voiceOn).toBe(true);
+    // Reception sees the status but cannot switch anything; a teacher sees neither.
+    const r = await p.signIn('usr-p003', pins['usr-p003']);
+    expect((await p.call('GET', '/v1/pilot/voice', { cookie: r })).status).toBe(200);
+    const sw = await p.call('POST', '/v1/pilot/users/usr-p002/voice', {
+      cookie: r,
+      body: { on: false },
+    });
+    expect(sw.status).toBe(403);
+    const ks = await p.call('POST', '/v1/pilot/voice', { cookie: r, body: { paused: true } });
+    expect(ks.status).toBe(403);
+    expect((await p.call('GET', '/v1/pilot/voice', { cookie: teacher })).status).toBe(403);
+  });
+
+  it('kill switch: off for everyone, waiting notes deleted and never processed; back on for new notes only', async () => {
+    const jobs = fakeAi();
+    const dir = tempDir();
+    const pins = seedPilot(dir);
+    const p = openApp(dir, VOICE_ENV);
+    const o = await owner(p, pins);
+    await enableVoice(p, o);
+    const teacher = await p.signIn('usr-p002', pins['usr-p002']);
+    const note = await uploadNote(p, teacher, [4, 5, 6]);
+    await vi.waitFor(() => expect(jobs).toHaveLength(1)); // handed to ai-service, no answer yet
+    const file = join(dir, 'audio', `${note.id}.bin`);
+    expect(existsSync(file)).toBe(true);
+
+    const off = await p.call('POST', '/v1/pilot/voice', { cookie: o, body: { paused: true } });
+    expect(await off.json()).toEqual({ paused: true, stopped: 1 });
+    expect(existsSync(file)).toBe(false); // deleted now (earlier than the 30 days), never processed
+    const me = async () =>
+      (await (await p.call('GET', '/v1/me', { cookie: teacher })).json()).voiceNotes;
+    expect(await me()).toBe(false);
+    const waiting = await p.call('GET', `/v1/voice-notes/${note.id}/extraction`, {
+      cookie: teacher,
+    });
+    expect(waiting.status).toBe(503);
+    const problem = await waiting.json();
+    expect(problem.code).toBe('stt_unavailable'); // the app says "Type the note instead"
+    expect(problem.reason).toBe('voice_paused');
+    // A late answer from ai-service for that note is refused: it is never processed.
+    const late = await p.app.api(
+      new Request(`http://127.0.0.1:18443/v1/internal/voice-results/${note.id}`, {
+        method: 'POST',
+        headers: { 'x-link-internal-token': 'internal-t', 'content-type': 'application/json' },
+        body: JSON.stringify({
+          status: 'ready',
+          result: { transcript: 'مريم غابت', modelVersion: 't', items: [] },
+        }),
+      }),
+      '127.0.0.1',
+    );
+    expect(late.status).toBe(409);
+    // No new note and no retry while voice is off.
+    expect((await recordAndUpload(p, teacher)).vn.status).toBe(503);
+    const retry = await p.call('POST', `/v1/voice-notes/${note.id}/retry`, { cookie: teacher });
+    expect(retry.status).toBe(503);
+    const status = await (await p.call('GET', '/v1/pilot/voice', { cookie: o })).json();
+    expect(status.paused).toBe(true);
+    expect(typeof status.pausedAt).toBe('string');
+
+    // Back on: new notes work again; the deleted note stays deleted and unprocessed.
+    await p.call('POST', '/v1/pilot/voice', { cookie: o, body: { paused: false } });
+    expect(await me()).toBe(true);
+    expect(existsSync(file)).toBe(false);
+    const again = await p.call('GET', `/v1/voice-notes/${note.id}/extraction`, {
+      cookie: teacher,
+    });
+    expect(again.status).toBe(503);
   });
 });
 

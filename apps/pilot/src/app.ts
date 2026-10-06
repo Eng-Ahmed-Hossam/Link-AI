@@ -66,9 +66,18 @@ export function createPilotApp(cfg: PilotConfig, store: PilotStore): PilotApp {
 
   // ── voice notes (Part B): local ai-service, consented_real only, audio encrypted here ──────────
   const voice = (store.snap!.voice ??= { consent: {}, audio: {} });
+  voice.enabled ??= {};
+  voice.paused ??= null;
   const vault = new AudioVault(cfg.dataDir);
+  const voiceAvailable = () => cfg.voice && !!cfg.aiToken;
+  // 4.2: voice is off by default. A teacher gets it only when the laptop has it (PILOT_VOICE),
+  // the owner has not switched it off for everyone, the teacher's consent is recorded, and the
+  // owner switched it on for that teacher.
   const voiceOn = (userId: string) =>
-    cfg.voice && !!cfg.aiToken && !!voice.consent[userId]?.granted;
+    voiceAvailable() &&
+    !voice.paused?.on &&
+    !!voice.consent[userId]?.granted &&
+    !!voice.enabled?.[userId]?.on;
   const ai = cfg.aiToken
     ? {
         url: cfg.aiUrl,
@@ -89,6 +98,22 @@ export function createPilotApp(cfg: PilotConfig, store: PilotStore): PilotApp {
     uploadPath: (id) => `/v1/voice-notes/${id}/audio`,
   });
   configureBridge({ internalToken: cfg.aiToken, audioStore: null, assistantStt: null });
+
+  // The active speech profile (GPU, CPU with rules only, CPU with an LLM) and its time estimate,
+  // from ai-service (/ready). Cached for a minute; null when ai-service does not answer.
+  let profileCache: { at: number; value: unknown } | null = null;
+  async function voiceProfile(): Promise<unknown> {
+    if (profileCache && Date.now() - profileCache.at < 60_000) return profileCache.value;
+    let value: unknown = null;
+    try {
+      const r = await fetch(`${cfg.aiUrl}/ready`, { signal: AbortSignal.timeout(2000) });
+      if (r.ok) value = ((await r.json()) as { profile?: unknown }).profile ?? null;
+    } catch {
+      value = null;
+    }
+    profileCache = { at: Date.now(), value };
+    return value;
+  }
 
   function runRetention(now = new Date()) {
     const gone = purgeAudio(voice.audio, vault, store.snap!.meta.endDate, now);
@@ -214,6 +239,7 @@ export function createPilotApp(cfg: PilotConfig, store: PilotStore): PilotApp {
       const granted = (await body()).granted === true;
       voice.consent[target.id] = { granted, at: new Date().toISOString(), by: me };
       if (!granted) {
+        voice.enabled![target.id] = { on: false, at: new Date().toISOString(), by: me };
         // Withdrawn: the teacher's recordings and their text are deleted (teacher consent §6).
         for (const [, e] of Object.entries(voice.audio))
           if (e.teacherId === target.id && !e.deletedAt) {
@@ -238,6 +264,77 @@ export function createPilotApp(cfg: PilotConfig, store: PilotStore): PilotApp {
       );
       return json(200, { userId: target.id, voiceConsent: granted });
     }
+    // ── 4.2: the owner switches voice on or off for one teacher (only after consent) ─────────
+    const perTeacher = /^\/v1\/pilot\/users\/([^/]+)\/voice$/.exec(p);
+    if (perTeacher && req.method === 'POST') {
+      if (!me) return problem(401, 'unauthenticated', 'Sign in to continue.');
+      if (userOf(me)?.role !== 'owner')
+        return problem(403, 'forbidden', 'Only the owner switches voice notes on or off.');
+      const target = userOf(perTeacher[1]!);
+      if (!target || target.role !== 'teacher')
+        return problem(404, 'not_found', 'Teacher not found.');
+      const on = (await body()).on === true;
+      if (on && !voice.consent[target.id]?.granted)
+        return problem(409, 'consent_required', "Record the teacher's signed consent first.");
+      voice.enabled![target.id] = { on, at: new Date().toISOString(), by: me };
+      store.write();
+      fu.recordSystemEvent(
+        on ? 'voice.enabled' : 'voice.disabled',
+        on
+          ? { en: 'Voice notes switched on for a teacher', ar: 'شُغّلت الملاحظات الصوتية لمعلّم' }
+          : { en: 'Voice notes switched off for a teacher', ar: 'أُوقفت الملاحظات الصوتية لمعلّم' },
+        { userId: target.id, by: me },
+      );
+      return json(200, { userId: target.id, voiceOn: voiceOn(target.id) });
+    }
+    // ── 4.2: voice for the whole centre — status, profile estimate and the kill switch ───────
+    if (p === '/v1/pilot/voice') {
+      if (!me) return problem(401, 'unauthenticated', 'Sign in to continue.');
+      const role = userOf(me)?.role;
+      if (req.method === 'GET') {
+        if (role !== 'owner' && role !== 'reception')
+          return problem(403, 'forbidden', 'Centre staff only.');
+        return json(200, {
+          available: voiceAvailable(),
+          paused: !!voice.paused?.on,
+          pausedAt: voice.paused?.on ? voice.paused.at : null,
+          profile: voiceAvailable() ? await voiceProfile() : null,
+        });
+      }
+      if (req.method === 'POST') {
+        if (role !== 'owner')
+          return problem(403, 'forbidden', 'Only the owner switches voice notes off.');
+        const paused = (await body()).paused === true;
+        const at = new Date().toISOString();
+        voice.paused = { on: paused, at, by: me };
+        let stopped = 0;
+        if (paused) {
+          // Notes handed over but not processed yet are never processed, and their audio is
+          // deleted now (earlier than the consent's 30 days, never later). Processed notes keep
+          // the normal retention.
+          for (const id of fu.pauseQueuedVoice()) {
+            const e = voice.audio[id];
+            if (e && !e.deletedAt) {
+              vault.delete(e.file);
+              e.deletedAt = at;
+            }
+            stopped++;
+          }
+        }
+        store.write();
+        fu.recordSystemEvent(
+          paused ? 'voice.paused' : 'voice.resumed',
+          paused
+            ? {
+                en: 'Voice notes switched off for everyone; waiting notes deleted',
+                ar: 'أُوقفت الملاحظات الصوتية للجميع؛ حُذفت الملاحظات المنتظرة',
+              }
+            : { en: 'Voice notes switched back on', ar: 'أُعيد تشغيل الملاحظات الصوتية' },
+          { by: me, stopped },
+        );
+        return json(200, { paused, stopped });
+      }
+    }
     // ── people (A16 in the pilot: staff see the list, only the owner changes it) ────
     const users = /^\/v1\/pilot\/users(?:\/([^/]+))?(\/pin)?$/.exec(p);
     if (users) {
@@ -257,6 +354,8 @@ export function createPilotApp(cfg: PilotConfig, store: PilotStore): PilotApp {
               active: u.active,
               hasPin: !!store.snap!.auth.pins[u.id],
               voiceConsent: !!voice.consent[u.id]?.granted,
+              voiceConsentAt: voice.consent[u.id]?.granted ? voice.consent[u.id]!.at : null,
+              voiceOn: !!voice.enabled?.[u.id]?.on && !!voice.consent[u.id]?.granted,
               groups: w.groups
                 .filter((g) => g.teacherUserId === u.id)
                 .map((g) => ({ id: g.id, name: g.name[lang] })),

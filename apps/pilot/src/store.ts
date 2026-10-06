@@ -45,6 +45,13 @@ export interface VoiceState {
   consent: Record<string, { granted: boolean; at: string; by: string }>;
   /** voiceId → the encrypted recording on this laptop (audio.ts). */
   audio: Record<string, import('./audio').AudioEntry>;
+  /**
+   * 4.2: userId → voice switched on for that teacher by the owner (only after consent). Off by
+   * default. Absent in data created before this field.
+   */
+  enabled?: Record<string, { on: boolean; at: string; by: string }>;
+  /** 4.2 kill switch: voice off for everyone (the owner, one toggle). */
+  paused?: { on: boolean; at: string; by: string } | null;
 }
 export interface Snapshot {
   version: 1;

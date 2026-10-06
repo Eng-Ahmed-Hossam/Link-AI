@@ -7,6 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO_ROOT } from '../config';
 import { computeMetrics, metricsCsv, metricsMarkdown } from '../metrics';
+import { isPractice } from '../practice';
 import { PilotStore, readLog } from '../store';
 import { args, config, fail, userPath } from './common';
 
@@ -14,6 +15,8 @@ const { opts } = args();
 const cfg = config();
 const store = new PilotStore(cfg.dataDir);
 if (!store.exists) fail(`No pilot data in ${cfg.dataDir}.`);
+// The practice centre is training only: it is never measured (4.3).
+if (isPractice(cfg.dataDir)) fail(`${cfg.dataDir} is the practice centre: it is never measured.`);
 const snap = store.open();
 store.close();
 const m = computeMetrics(readLog(cfg.dataDir), snap.fu.world!);
