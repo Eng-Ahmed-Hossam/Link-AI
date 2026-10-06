@@ -104,3 +104,29 @@ def test_invalid_highlight_offsets_are_rejected() -> None:
         result.display_span(-1, 3)
     with pytest.raises(ValueError):
         result.display_span(3, 2)
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("أحمد جاب سبعة تاشر من عشرين", "أحمد جاب 17/20"),
+        ("أحمد جاب سبعتاشر من عشرين", "أحمد جاب 17/20"),
+        ("أحمد جاب سبعطاشر من عشرين", "أحمد جاب 17/20"),
+        ("أحمد جاب سبعة عشر على عشرين", "أحمد جاب 17/20"),
+        ("أحمد جاب خمس تاشر من ٢٠", "أحمد جاب 15/20"),
+        ("أحمد جاب تناشر /٢٠", "أحمد جاب 12/20"),
+        ("أحمد جاب خمسة وعشرين من ٣٠", "أحمد جاب 25/30"),
+        ("أحمد جاب اربعتاشر و نص من عشرين", "أحمد جاب 14.5/20"),
+        ("أحمد جاب نص على عشرين", "أحمد جاب 0.5/20"),
+    ],
+)
+def test_whisper_score_forms(source: str, expected: str) -> None:
+    assert clean_transcript(source).clean == expected
+
+
+@pytest.mark.parametrize(
+    "source",
+    ["الساعة اتنين", "يوم خمسة وعشرين أكتوبر", "الصفحة عشرين", "حضر عشرين طالب"],
+)
+def test_non_score_numbers_never_form_a_ratio(source: str) -> None:
+    assert "/" not in clean_transcript(source).clean

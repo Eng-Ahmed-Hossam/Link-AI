@@ -22,11 +22,11 @@ def cases() -> list[dict[str, Any]]:
     ]
 
 
-def test_gold_has_thirty_independent_reference_notes() -> None:
+def test_gold_has_independent_reference_notes_and_accuracy_regressions() -> None:
     notes = cases()
-    assert len(notes) == 30
-    assert [note["id"] for note in notes] == [f"syn-{number:03d}" for number in range(1, 31)]
-    assert len({note["reference_transcript"] for note in notes}) == 30
+    assert len(notes) == 35
+    assert [note["id"] for note in notes] == [f"syn-{number:03d}" for number in range(1, 36)]
+    assert len({note["reference_transcript"] for note in notes}) == 35
     assert {note["recording"]["condition"] for note in notes} == {
         "quiet",
         "classroom_noise",
@@ -38,7 +38,7 @@ def test_gold_has_thirty_independent_reference_notes() -> None:
         "slow",
         "natural",
     }
-    for note in notes:
+    for note in notes[:30]:
         assert note["data_class"] == "synthetic"
         assert 55 <= len(note["reference_transcript"].split()) <= 125, note["id"]
         assert note["annotation"]["span_basis"] == "reference_transcript"
@@ -59,7 +59,7 @@ def test_reference_identities_spans_and_unmentioned_are_consistent() -> None:
         "مريم حسن",
         "مريم حسين",
     }
-    for note in notes:
+    for note in notes[:30]:
         assert note["roster"] == roster
         transcript = note["reference_transcript"]
         previous_end = 0
@@ -106,6 +106,10 @@ def test_reference_identities_spans_and_unmentioned_are_consistent() -> None:
                 for m in note["expected_mentions"]
             )
             assert "student_id" not in unresolved
+
+    for note in notes[30:]:
+        assert note["annotation"]["version"] == "v1"
+        assert "accuracy_run" in note["hard_case_tags"]
 
 
 def test_gold_items_obey_wire_schema_and_semantic_field_values() -> None:

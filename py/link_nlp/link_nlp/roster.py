@@ -89,7 +89,17 @@ _ROLES = frozenset(
 )
 _CUES = frozenset(
     normalize_for_match(word)
-    for word in ("الطالب", "الطالبة", "طالب", "طالبة", "اسمه", "اسمها", "الطلاب", "student")
+    for word in (
+        "الطالب",
+        "الطالبة",
+        "طالب",
+        "طالبة",
+        "اسمه",
+        "اسمها",
+        "الطلاب",
+        "student",
+        "يا",
+    )
 )
 _STOPS = (
     frozenset(
@@ -177,6 +187,7 @@ _STOPS = (
             "مشغول",
             "ركز",
             "ركزت",
+            "ركزي",
             "شرح",
             "شرحت",
             "قال",
@@ -255,6 +266,12 @@ _HOMOGRAPHS = frozenset(
         "صلاح",
         "سحر",
         "هدى",
+        "سماح",
+        "سعيد",
+        "أمير",
+        "جميلة",
+        "منى",
+        "رحمة",
         "بسمة",
         "شهد",
         "سما",
@@ -359,7 +376,10 @@ def _bare_name_evidence(text: str, words: list[_Word], index: int) -> bool:
 
 
 def _phonetic(text: str) -> str:
-    return normalize_for_match(text).translate(_PHONETIC_FORMS)
+    key = normalize_for_match(text).translate(_PHONETIC_FORMS)
+    extra_forms: dict[str, str | int | None] = {"ت": "س", "د": "ز", "ض": "ظ"}
+    key = key.translate(str.maketrans(extra_forms))
+    return re.sub(r"[اهي]$", "ا", key)
 
 
 def _alias_keys(text: str) -> tuple[str, ...]:
@@ -489,11 +509,15 @@ def find_name_mentions(
         start, end = word.start, words[index + length - 1].end
         text = clean_text[start:end]
         key = normalize_for_match(text)
+        has_person_cue = after_cue or suffix_cue or length > 1
+        if word.key in _HOMOGRAPHS and not has_person_cue:
+            index += length
+            continue
         candidates = _candidate_scores(key, aliases, firsts)
         eligible = any(key in names for names in aliases.values()) or (
             " " not in key and key in firsts.values()
         )
-        if key in _HOMOGRAPHS and not _bare_name_evidence(clean_text, words, index):
+        if key in _HOMOGRAPHS and not has_person_cue:
             eligible = False
         status: Literal["unique", "ambiguous", "unknown"] = "unknown"
         student_id: str | None = None

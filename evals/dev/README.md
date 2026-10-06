@@ -1,0 +1,1 @@
+Development-only tuning corpus. These 15 fictional text cases exercise Whisper number forms, common-word names, candidate-only mishearings, and negative score contexts. Never report this directory as locked gold or recorded speech accuracy.

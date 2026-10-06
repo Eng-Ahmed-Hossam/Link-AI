@@ -278,3 +278,6 @@ Condition: `fan` · Delivery: `natural` · Target: 35 seconds · Words: 72
 Cases: half_score, durations, multiple_fields
 
 نور علي كان حاضر من أول الحصة وجاب تسعتاشر ونص من عشرين، وكان مشارك كويس في حل مثال الإشارات. سلمى طارق اتأخرت تلت ساعة، لكن أنا مش هقول لها درجة لأن ورقتها لسه ما اتصححتش. راجعنا sign rules وبعدين ترتيب العمليات، وفي آخر الوقت كل واحد كتب الحل على ورقة منفصلة. المرة الجاية هنبدأ بمراجعة سؤال الكويز الأخير، ونسيب وقت للأسئلة قبل التدريب عشان الخطوات اللي فيها قوس وعلامة سالب تتشرح بوضوح.
+## Gold v1 accuracy regressions
+
+Gold v1 adds `syn-031` through `syn-035` for Whisper's split teen, the ordinary word `هنا`, candidate-only `ليلة`/`ليلى`, `ماجاشا`, and split `ما عدا`. `REVIEW.csv` is the native-speaker approval surface for every script.

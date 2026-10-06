@@ -592,7 +592,12 @@ def compare_reports(left: Path, right: Path) -> str:
     return "\n".join(lines)
 
 
-def selftest(gold_dir: Path) -> Json:
+def selftest(gold_dir: Path, *, unlock_gold: bool = False) -> Json:
+    gold_root = gold_dir.parent if gold_dir.name in {"synthetic", "real"} else gold_dir
+    if not unlock_gold:
+        from .gold_lock import verify_lock
+
+        verify_lock(gold_root)
     notes = load_gold(gold_dir)
     with tempfile.TemporaryDirectory(prefix="link-eval-") as temp:
         root = Path(temp)

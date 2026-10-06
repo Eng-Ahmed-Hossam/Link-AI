@@ -1,0 +1,76 @@
+{
+  "id": "syn-031",
+  "data_class": "synthetic",
+  "group": "accuracy regressions",
+  "audio_file": "syn-031.m4a",
+  "recording": {
+    "condition": "quiet",
+    "delivery": "natural",
+    "target_seconds": 10,
+    "speaker": "to-fill",
+    "recorded_by": "to-fill"
+  },
+  "roster": [
+    {
+      "id": "s1",
+      "display_name": "هنا عادل",
+      "nicknames": []
+    },
+    {
+      "id": "s2",
+      "display_name": "نور علي",
+      "nicknames": []
+    },
+    {
+      "id": "s3",
+      "display_name": "ليلى حسن",
+      "nicknames": []
+    }
+  ],
+  "assessment": {
+    "name": "quiz",
+    "max": 20
+  },
+  "reference_transcript": "هنا غابت وجابت سبعة تاشر من عشرين",
+  "expected_mentions": [
+    {
+      "start": 0,
+      "end": 3,
+      "text": "هنا",
+      "status": "unique",
+      "student_id": "s1",
+      "candidates": [
+        "s1"
+      ]
+    }
+  ],
+  "expected_items": [
+    {
+      "student_id": "s1",
+      "field": "attendance",
+      "value": "absent"
+    },
+    {
+      "student_id": "s1",
+      "field": "score",
+      "value": 17
+    }
+  ],
+  "expected_needs_identity": [],
+  "expected_unmentioned": [
+    "s2",
+    "s3"
+  ],
+  "hard_case_tags": [
+    "accuracy_run",
+    "split_teen",
+    "common_word"
+  ],
+  "annotation": {
+    "method": "independent_hand_authored",
+    "span_basis": "reference_transcript",
+    "version": "v1",
+    "review_status": "native_speaker_review_pending",
+    "notes": "Added from docs/pilot/accuracy.md."
+  }
+}

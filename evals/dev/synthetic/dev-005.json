@@ -1,0 +1,71 @@
+{
+  "id": "dev-005",
+  "data_class": "synthetic",
+  "group": "development",
+  "audio_file": "dev-005.m4a",
+  "recording": {
+    "condition": "development_text",
+    "delivery": "natural",
+    "target_seconds": 10,
+    "speaker": "to-fill",
+    "recorded_by": "to-fill"
+  },
+  "roster": [
+    {
+      "id": "s1",
+      "display_name": "هنا عادل",
+      "nicknames": []
+    },
+    {
+      "id": "s2",
+      "display_name": "نور علي",
+      "nicknames": []
+    },
+    {
+      "id": "s3",
+      "display_name": "ليلى حسن",
+      "nicknames": []
+    }
+  ],
+  "assessment": {
+    "name": "development quiz",
+    "max": 20
+  },
+  "reference_transcript": "ليلة غابت",
+  "expected_mentions": [
+    {
+      "start": 0,
+      "end": 4,
+      "text": "ليلة",
+      "status": "unknown",
+      "student_id": null,
+      "candidates": [
+        "s3"
+      ]
+    }
+  ],
+  "expected_items": [],
+  "expected_needs_identity": [
+    {
+      "text": "ليلة",
+      "candidates": [
+        "s3"
+      ]
+    }
+  ],
+  "expected_unmentioned": [
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "hard_case_tags": [
+    "misheard_name",
+    "candidate_only"
+  ],
+  "annotation": {
+    "method": "independent_hand_authored",
+    "span_basis": "reference_transcript",
+    "version": "dev-v1",
+    "review_status": "development"
+  }
+}
