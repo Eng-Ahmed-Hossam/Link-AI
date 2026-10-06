@@ -2,6 +2,13 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-06 — Merge of `codex/nlp-eval` round 2; single agent from now on
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | py/link_nlp, evals, ai/link-nlp.md | Merged `codex/nlp-eval` round 2 (`dc04cea`, merge `e2f5f0e`):<br>• the public API;<br>• `redact_contacts` / `find_pii_leaks`;<br>• split teens, common-word and misheard names;<br>• `evals/dev` (15 cases);<br>• gold v1 (35 notes) with `LOCK.json`;<br>• `REVIEW.csv`;<br>• `link_eval calibrate`. | Round 2 of the NLP core |
+| 2 | evals/gold/LOCK.json, evals/link_eval/gold_lock.py, evals/.gitattributes | Gold v1 lock **re-hashed with LF-normalised content; no content change; verified against `dc04cea`**.<br>• All 40 files under `evals/gold/` are identical to `dc04cea` after LF normalisation.<br>• Every old hash equals the current content in its LF or CRLF form.<br>• The lock now hashes content with CRLF and lone CR turned into LF, and nothing else changed.<br>• `evals/.gitattributes` sets `* text eol=lf`, with recordings binary.<br>• Version stays 1. | The round-2 lock had hashed CRLF bytes from a Windows worktree, so `selftest` failed on `main`'s LF checkout of the same content |
+
 ## 2026-10-05 — `link_nlp` integrated into ai-service; text-only and Windows-TTS evals; CPU profile
 
 | # | File | What changed | Why |

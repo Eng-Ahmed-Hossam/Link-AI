@@ -17,11 +17,20 @@ def _files(root: Path) -> list[Path]:
     )
 
 
+def lf_normalised(data: bytes) -> bytes:
+    """CRLF and lone CR become LF; nothing else changes (BOM, whitespace, Arabic text kept as is).
+
+    The lock must not depend on how git checked the files out (core.autocrlf on Windows wrote CRLF
+    in one worktree and LF in another for the same committed content)."""
+    return data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+
+
+def content_hash(path: Path) -> str:
+    return hashlib.sha256(lf_normalised(path.read_bytes())).hexdigest()
+
+
 def hashes(root: Path) -> dict[str, str]:
-    return {
-        path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
-        for path in _files(root)
-    }
+    return {path.relative_to(root).as_posix(): content_hash(path) for path in _files(root)}
 
 
 def read_lock(root: Path) -> dict[str, Any]:
@@ -44,11 +53,18 @@ def verify_lock(root: Path) -> None:
         raise ValueError("Gold lock mismatch: " + ", ".join(changed))
 
 
-def write_lock(root: Path, *, bump: bool = False) -> int:
+def write_lock(root: Path, *, bump: bool = False, note: str | None = None) -> int:
     path = root / LOCK_NAME
     version = 1
     if path.exists():
         version = int(read_lock(root)["version"]) + (1 if bump else 0)
-    payload = {"version": version, "algorithm": "sha256", "files": hashes(root)}
+    payload: dict[str, Any] = {
+        "version": version,
+        "algorithm": "sha256",
+        "line_endings": "lf",
+        "files": hashes(root),
+    }
+    if note:
+        payload["note"] = note
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return version

@@ -1,0 +1,17 @@
+# Every text file here (the gold set, scripts, references, reports) is checked out with LF on every
+# machine, so gold/LOCK.json can't drift with core.autocrlf again (2026-10-06).
+* text eol=lf
+
+# Recordings stay binary (and git-ignored: see .gitignore).
+*.[wW][aA][vV] binary
+*.[mM]4[aA] binary
+*.[mM][pP]3 binary
+*.[fF][lL][aA][cC] binary
+*.[aA][aA][cC] binary
+*.[oO][gG][gG] binary
+*.[oO][pP][uU][sS] binary
+*.[wW][mM][aA] binary
+*.[aA][iI][fF] binary
+*.[aA][iI][fF][fF] binary
+*.[cC][aA][fF] binary
+*.[wW][eE][bB][mM] binary
