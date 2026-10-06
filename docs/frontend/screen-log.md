@@ -101,3 +101,12 @@ Pilot builds (`pnpm pilot:build`: `NEXT_PUBLIC_LINK_MODE` / `EXPO_PUBLIC_LINK_MO
 | A16 Staff (pilot) | "Voice consent" column: "Signed" / "Not signed"; the owner presses "Consent signed" or "Withdraw (deletes recordings)" | E15-01, OD-52 | — |
 | V07 Ask Link (demo) | With real STT on, the question is transcribed for real; answers stay scripted with a "Demo answer (scripted)" badge. Still hidden in the pilot | OD-57 | — |
 | Demo controls (web + teacher dev panel) | Toggle "Speech-to-text: local Whisper (real) \| fixture" | §5.2 docs/14 | — |
+
+### Part C: pilot readiness (2026-10-06)
+
+| Screen | Difference | Stories / decisions | Screenshots |
+|---|---|---|---|
+| V02 / T07 Who is this? | An unknown (misheard) name blocks like an ambiguous one, with a «مَن هذا الطالب؟» badge. T07 shows its suggestions first («اسم قريب في النطق — تأكّد قبل الاختيار»), then every other student of the group. Nothing is pre-selected or attached | AI-02, FUP-VOI-04 | `batch-5/T07-who-is-this.ar` |
+| A16 People (pilot) | **Voice notes** card: whether the laptop has voice, the active profile and its estimate («حوالي … ثانية لملاحظة مدتها دقيقة»), voice off by default, scores always «راجِع», and the owner's **kill switch** («إيقاف الصوت للجميع», with a confirmation). Per teacher: «موقّعة بتاريخ …», then «تشغيل الصوت / إيقاف الصوت», which is disabled until consent | 4.2, OD-52 | `pilot/A16-voice-per-teacher.ar` (from the voice e2e) |
+| A06 Parent message (pilot) | The approve button reads «اعتمد (ثم ترسلها أنت)»: the pilot sends nothing itself | OD-56 | — |
+| T04 «اكتب الملاحظة بدلًا من ذلك» (pilot) | Body says the owner switches voice on after consent | 4.2 | — |

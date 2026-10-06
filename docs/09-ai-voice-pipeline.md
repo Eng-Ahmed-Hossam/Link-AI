@@ -106,16 +106,16 @@ Validation after the call (in ai-service, before the proposal is stored):
 - `score` must be between 0 and the assessment maximum. Otherwise keep the value, mark it `out_of_range`, and show it as a blocking error (AI-06).
 - `topic` is kept only in Phase 3, and only if it matches a topic in the teacher's topic map (CF-07).
 
-### 2.6 As built for the pilot and the demo (Part B, ADR-0007; `link_nlp` merged 2026-10-05)
-- **NLP core:** `py/link_nlp` (Codex track; [docs/ai/link-nlp.md](ai/link-nlp.md)) owns normalisation, roster matching (0.85 / margin 0.15), tokens, rules, the wire schema and `validate_extraction`. ai-service depends on it as a uv path dependency; its own code is the order below, the LLM step, grounding and the proposal.
+### 2.6 As built for the pilot and the demo (Part B, ADR-0007; `link_nlp` round 3, 2026-10-06)
+- **NLP core:** `py/link_nlp` ([docs/ai/link-nlp.md](ai/link-nlp.md); single agent since 2026-10-06; imported through its public `__all__`) owns normalisation, roster matching (0.85 / margin 0.15), tokens, rules, the wire schema and `validate_extraction`. ai-service depends on it as a uv path dependency; its own code is the order below, the LLM step, grounding and the proposal.
 - **Order** (`apps/ai-service/ai_service/pipeline.py`):
-  1. `clean_transcript`;
-  2. `find_name_mentions`, with the session roster only;
-  3. `tokenise`;
-  4. contact redaction: phones and emails masked, length-preserving (a shim until `link_nlp` ships one);
-  5. **leak check:** if a roster name, nickname or detected name is still in the text meant for the LLM, the LLM step is skipped, the rule results are kept, and the event is logged without text;
-  6. `rule_extract`, itself validated;
-  7. the LLM, only for what the rules did not cover;
+  1. `redact_contacts` on the raw transcript (phones, emails and handles become `<CONTACT#>`, so they never reach the stored transcript or the LLM);
+  2. `clean_transcript`;
+  3. `find_name_mentions`, with the session roster only;
+  4. `tokenise`;
+  5. `rule_extract`, itself validated, and `rule_abstentions` (where the rules deliberately asserted nothing, and why);
+  6. **leak check:** `find_pii_leaks` on the exact outbound note text, **immediately before every LLM call** (adults' names can be added as `extraNames`). Any leak skips the LLM step: the rule results are kept, and the event is logged as counts per kind, never text. It fails closed: a student called «هنا» skips the LLM when the word «هنا» ("here") is in the note;
+  7. the LLM, only for what the rules did not cover. Abstained clauses are sent as "NOT A FACT FOR THIS SESSION" (observations only), and LLM attendance, late minutes or scores on those tokens are dropped;
   8. `validate_extraction`, all-or-nothing; one retry, then rules only;
   9. the merge: **rules win** on attendance, late minutes and scores;
   10. `detokenise_items`;
@@ -133,9 +133,10 @@ Validation after the call (in ai-service, before the proposal is stored):
   - Whole-class lines (`unassigned`) may not contain a token, Latin text or redacted data, and must be two or more words.
   - LLM confidence is capped at 0.80, so an LLM item is never pre-filled as sure.
 - **Bands:** `prefill/check/blank` → high/medium/low. **Pilot safety:** a voice-extracted score is never pre-filled; it is always "check" (`AI_SCORE_PREFILL`, off by default; only `pnpm demo` turns it on). This holds until the audio eval on the team's recordings shows score exact match ≥ 95 %. The value is still kept as said, and an out-of-range score still blocks.
-- **T07 candidates:** the students within the matcher's margin (0.15) of the best score.
-- **Limits:** prompt `extract-v7`, temperature 0, at most 800 output tokens, thinking off. One time budget for the whole LLM step (`AI_LLM_BUDGET_S`, 90 s); a timeout is not retried. The whole note is given up after 3 minutes ("Type the note instead", with the audio kept for "Try again").
-- **Model version** on every result: `faster-whisper:<model>@<compute>/<device>|link_nlp@<version>|ollama:<model>+extract-v7`.
+- **T07 candidates:** for an ambiguous name, `link_nlp` returns only the contenders (within the margin of the best score).
+- **Misheard names:** an unknown name («ليلة» for ليلى) stays "Who is this?". Its close roster names (score ≥ 0.5, within the margin) are shown first in T07 as **suggestions**, never pre-selected or attached. Any student of the group can be picked.
+- **Limits:** prompt `extract-v8`, temperature 0, at most 800 output tokens, thinking off. One time budget for the whole LLM step (`AI_LLM_BUDGET_S`, 90 s); a timeout is not retried. The whole note is given up after 3 minutes ("Type the note instead", with the audio kept for "Try again").
+- **Model version** on every result: `faster-whisper:<model>@<compute>/<device>|link_nlp@<version>|ollama:<model>+extract-v8`.
 
 ## 3. Confidence handling
 

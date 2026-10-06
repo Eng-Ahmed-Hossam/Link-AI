@@ -41,11 +41,21 @@ uv --directory apps/ai-service run pytest -q           # ai-service tests pass
 pnpm ai:bench --models large-v3-turbo --devices cpu     # optional: this laptop's speed (writes apps/ai-service/bench/out)
 ```
 
-Turn voice on for the pilot: add `PILOT_VOICE=1` to `apps\pilot\.env.pilot`. `pnpm pilot:start` then also starts ai-service on 127.0.0.1 (never the LAN) with a fresh shared token. Voice is still **per teacher**: the owner records each teacher's signed voice consent in Staff & access → "Consent signed" (OD-52). Without it the teacher sees "Type the note instead". Withdrawing consent deletes that teacher's recordings and their text at once.
+Make voice available on the laptop: add `PILOT_VOICE=1` to `apps\pilot\.env.pilot`. `pnpm pilot:start` then also starts ai-service on 127.0.0.1 (never the LAN) with a fresh shared token.
+
+**Voice stays off for every teacher until the owner switches it on, one teacher at a time.** In Staff & access:
+1. «الموافقة موقّعة» ("Consent signed") once the teacher has signed the voice consent. The date is shown (OD-52).
+2. «تشغيل الصوت» ("Switch voice on") for that teacher.
+
+Without both, the teacher sees "Type the note instead". Two more controls:
+- **Withdrawing consent** deletes that teacher's recordings and their text at once, and switches voice off for them.
+- **«إيقاف الصوت للجميع» ("Switch voice off for everyone")** is the kill switch. Teachers type their notes, and notes still waiting are deleted, never processed. «إعادة تشغيل الصوت» ("Switch voice back on") brings it back for new notes only.
+
+Before switching voice on for a teacher, see the gate in [accuracy.md](accuracy.md): 0 wrong students on the team's recordings.
 
 Speed (measured on the build laptop, i7-9750H, 16 GB; a 60-second note): `large-v3-turbo` on the CPU about **43 s**, on an RTX 2070 about **3 s**; the LLM step adds 3–14 s on the GPU. **On a laptop without an NVIDIA GPU** (measured with the GPU switched off, [ADR-0007](../adr/ADR-0007-local-speech-to-text-and-llm.md) "CPU-only laptop profile"), choose one in `apps\pilot\.env.pilot`:
-- **Rules only, about 37 s per 60-second note.** Attendance, late minutes and scores; no observations. Set `MODEL_ROUTING_CONFIG={"llm":{"provider":"none"}}`.
-- **`qwen3:4b`, about 95 s per note,** adding observations. Run `ollama pull qwen3:4b` (2.5 GB) and set `MODEL_ROUTING_CONFIG={"llm":{"model":"qwen3:4b"}}`.
+- **Rules only, about 37 s per 60-second note (recommended).** Attendance, late minutes, scores and participation, with the same accuracy as with an LLM (ADR-0007, round 3); no observations. Set `MODEL_ROUTING_CONFIG={"llm":{"provider":"none"}}`.
+- **`qwen3:4b`, 60–100 s per note,** adding observations only. Run `ollama pull qwen3:4b` (2.5 GB) and set `MODEL_ROUTING_CONFIG={"llm":{"model":"qwen3:4b"}}`.
 
 `qwen3:8b` on the CPU runs out of time on a 60-second note. Voice scores are always shown as "check" in the pilot (never pre-filled). A note waits at most 3 minutes; after that the teacher sees "Type the note instead" and can try again (the audio is kept). Recordings are encrypted on the laptop and deleted 30 days after upload or at the end of the pilot, whichever is first.
 
@@ -111,12 +121,23 @@ Forgotten PIN: the owner presses **Set a new PIN** in Staff & access. The owner 
 
 | When | What |
 |---|---|
-| Before the first session | Laptop on, `pnpm pilot:start`; open Today on the laptop. |
+| Before the first session | Laptop on. **`pnpm pilot:preflight`**: every line must be ✅ (each ❌ prints its fix in Arabic and English; `--quick` skips the voice trial). Then `pnpm pilot:start`, and open Today on the laptop. |
 | After each session | The teacher confirms the record on the phone (attendance by tap; the note typed). |
 | During the day | Reception opens **Today**, works each follow-up: draft → tick → approve → **Copy message** → send from the centre's WhatsApp → **I sent it** → later **Log the guardian's reply**. |
 | End of day | [daily-check-in.md](daily-check-in.md); `pnpm pilot:metrics` (safe while running). Leave the laptop on or Ctrl+C. |
 
 Backups happen every hour and on every stop (48 kept, in `<data>\backups`). `pnpm pilot:backup` takes one now.
+
+## 8b. Day one: training on the practice centre
+
+Run [day-one-training.md](day-one-training.md) (25 minutes) **before** the real start. Commands:
+- `pnpm pilot:practice` creates a practice centre («مركز تدريب») next to the real data, with the synthetic sample roster, and starts it on the usual addresses (voice always off).
+- Ctrl+C when done, then `pnpm pilot:practice-wipe`, which deletes only a folder marked as practice.
+
+The practice data never mixes with the real data, and `pilot:metrics` refuses it. Print the guides with `pnpm pilot:guides` (`docs/pilot/guides/*.pdf`):
+- [quick-guide-teacher.md](quick-guide-teacher.md);
+- [quick-guide-reception.md](quick-guide-reception.md);
+- [quick-guide-owner.md](quick-guide-owner.md).
 
 ## 9. Backup and restore
 

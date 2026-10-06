@@ -12,6 +12,10 @@ The pseudonymised follow-up pilot at one centre (OD-50 to OD-57 in [docs/13](../
 | [daily-check-in.md](daily-check-in.md) | Us: what to ask and observe each day | Arabic questions, English notes |
 | [end-of-pilot-interview.md](end-of-pilot-interview.md) | Us: value, what they would stop using, and the price question | Arabic script, English notes |
 | [accuracy.md](accuracy.md) | Demo Day and the team: what we learned about speech-to-text and extraction accuracy (synthetic audio only) | English |
+| [go-no-go.md](go-no-go.md) | Ahmed: every item before day one, done or waiting | English |
+| [quick-guide-teacher.md](quick-guide-teacher.md), [quick-guide-reception.md](quick-guide-reception.md), [quick-guide-owner.md](quick-guide-owner.md) | Staff: one page each, the screens' own words; printable PDFs in [guides/](guides/) (`pnpm pilot:guides`) | Arabic, then English |
+| [day-one-training.md](day-one-training.md) | Ahmed: the 25-minute training on the practice centre (`pnpm pilot:practice`) | English (Arabic screen words) |
+| [arabic-review.md](arabic-review.md) | Ahmed + a native reviewer: screen strings (most seen first), the guides and the gold scripts in one sitting | Arabic |
 | [strings-to-review.csv](strings-to-review.csv) | The founder: Arabic review of the pilot screens and the demo path | — |
 | [sample/](sample/) | Synthetic roster and schedule CSVs (the template the centre fills in) | — |
 | `metrics-<date>.md` / `.csv` | Results from `pnpm pilot:metrics` (git-ignored: check before sharing) | English |

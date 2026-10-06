@@ -95,6 +95,21 @@ Both CPU options make 0 wrong-student assignments, and neither adds a wrong fact
 - rules only, which meets the 60-second target (`MODEL_ROUTING_CONFIG={"llm":{"provider":"none"}}`);
 - or `qwen3:4b`, which is about 1.5 minutes per note and gives observations (`MODEL_ROUTING_CONFIG={"llm":{"model":"qwen3:4b"}}`).
 
+### CPU-only profile after `link_nlp` round 3 (2026-10-06)
+
+Same method, round-3 pipeline (`evals/reports/2026-10-06-*-cpu-r3*`, `bench/out/cpu-profile-r3/`).
+
+| Configuration | Time per 60-second note | Gold v1 text: wrong students / score exact / attendance F1 (P) / participation F1 | TTS audio: score exact / attendance F1 | LLM answered |
+|---|---|---|---|---|
+| `large-v3-turbo` (CPU) + **rules only** | **37–38 s** ✓ | 0/51 / **25/25** / 0.95 (1.00) / 1.00 | 6/8 / 0.88 | — |
+| `large-v3-turbo` (CPU) + `qwen3:4b` (CPU) | 37 s + LLM p50 24 s, p95 60 s, about 60–100 s ✗ | 0/51 / 25/25 / 0.95 (1.00) / 1.00 | 6/8 / 0.88 | 20 of 35 gold notes (8 skipped by the leak check, 7 out of time) |
+
+**What changed:**
+- **Rules only is now the recommendation for a CPU-only laptop.** After round 3 the rules alone reach the same structured accuracy as rules + LLM: every gold score, all attendance found with no false positive, participation. They also meet the 60-second target.
+- **The LLM adds only observations,** at about one extra minute per note.
+
+**Fail-closed leak check:** when a student's name is also an everyday word in the note («هنا», «نور»), the LLM is skipped for that note. The 60-second bench note is one such case, so its "4b" timing equals rules only.
+
 ## Consequences
 
 - ✅ Real audio never leaves the laptop, and the guard proves it with tests; no paid service, no cloud.

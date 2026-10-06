@@ -434,7 +434,10 @@ Owner-side endpoints (cases, messages, assistant, demo controls) are in §2c.
 | Method | Path | Body → response | Rules |
 |---|---|---|---|
 | GET | `/v1/me` | `PilotMe.voiceNotes` (boolean) | True only when `PILOT_VOICE=1` **and** the signed-in teacher's voice consent is recorded; the app hides the microphone otherwise |
-| POST | `/v1/pilot/users/{id}/voice-consent` | `{granted}` → `{userId, voiceConsent}` | Owner only; teachers only. Withdrawal deletes that teacher's recordings and their text at once. Writes `consent.voice_granted` / `consent.voice_withdrawn` |
+| POST | `/v1/pilot/users/{id}/voice-consent` | `{granted}` → `{userId, voiceConsent}` | Owner only; teachers only. Withdrawal deletes that teacher's recordings and their text at once, and switches voice off for them. Writes `consent.voice_granted` / `consent.voice_withdrawn` |
+| POST | `/v1/pilot/users/{id}/voice` | `{on}` → `{userId, voiceOn}` | 4.2. Owner only; teachers only. **Voice is off by default**; `on` needs the consent first (409 `consent_required`). Writes `voice.enabled` / `voice.disabled` |
+| GET | `/v1/pilot/voice` | → `PilotVoiceStatus` (`available`, `paused`, `pausedAt`, `profile {key: gpu\|cpu_rules\|cpu_llm, sttDevice, llm, secondsPerMinute}`) | 4.2. Owner and Reception. The profile and its estimate come from ai-service `/ready` |
+| POST | `/v1/pilot/voice` | `{paused}` → `{paused, stopped}` | 4.2 kill switch. Owner only. Pausing makes `/v1/me.voiceNotes` false for everyone. Notes handed over but not processed are never processed: their audio is deleted now, their extraction answers 503 `stt_unavailable` with `reason: voice_paused`, and a late ai-service answer gets 409 `voice_paused`. New notes and «Try again» get 503. Writes `voice.paused` / `voice.resumed` |
 | GET | `/v1/pilot/users` | `PilotStaffRow.voiceConsent` | — |
 | POST | `/v1/voice-notes` | as §2b; `uploadUrl` = `/v1/voice-notes/{id}/audio` | 503 `stt_unavailable` without voice or consent |
 | PUT | `/v1/voice-notes/{id}/audio` | audio bytes (`content-type` of the recording) → 200 | The note's author; 413 `bad_audio` (empty or > 15 MB). Stored encrypted (AES-256-GCM) on the laptop; deleted 30 days after upload or at the pilot's end |

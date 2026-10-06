@@ -2,6 +2,22 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-06 — NLP round 3 and pilot readiness
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | ai/link-nlp.md, ai/handoff-*.md | The round-3 section: API additions (`RuleAbstention`, `rule_abstentions`), the behaviour change for ambiguous candidates (contenders only), the status of every A/B item, before/after metrics. The handoff files are closed (single agent). | Codex stopped; Claude Code owns `link_nlp` |
+| 2 | 09 §2.6 | `redact_contacts` first; `find_pii_leaks` immediately before every LLM call (fail-closed); rule abstentions handed to the LLM as "not a fact"; misheard-name suggestions; prompt `extract-v8`. | Shims retired; A3 |
+| 3 | 07 §2d | `POST /v1/pilot/users/{id}/voice` (per teacher, off by default, consent first); `GET/POST /v1/pilot/voice` (profile estimate, kill switch). | 4.2 |
+| 4 | 14 | `pilot:preflight`, `pilot:practice` / `pilot:practice-wipe`, `pilot:guides`, `ai:ingest-recordings`, `ai:eval --calibrate`; `PILOT_PRACTICE_DIR`. | 4.1, 4.3, 4.4 |
+| 5 | adr/ADR-0007 | The round-3 CPU-only profile: rules only now matches rules + LLM on the structured facts at 37 s per note, so it is recommended. | §3 |
+| 6 | pilot/runbook | Preflight in the daily routine; voice per teacher and the kill switch; the CPU recommendation; §8b, training on the practice centre. | 4.1–4.3 |
+| 7 | pilot/accuracy.md | Round-3 numbers (text and Windows TTS); **the gate**: voice for a teacher needs 0 wrong students on the team's recordings; pre-filled scores also need ≥ 95% score exact match. | 4.4 |
+| 8 | pilot/quick-guide-*.md, day-one-training.md, guides/*.pdf | New: the staff quick guides (Arabic first, the screens' words) and the 25-minute training script; PDFs. | 4.3 |
+| 9 | pilot/strings-to-review.csv, arabic-review.md | Pilot screens and the guides only, most-seen first (`how_often`); one review pack with the guides and the 35 gold scripts. | 4.5 |
+| 10 | pilot/go-no-go.md, pilot/README.md | New: the go/no-go checklist (done vs waiting on Ahmed). | §5 |
+| 11 | frontend/screen-log.md | Part C rows: "Who is this?" suggestions; A16 voice per teacher and the kill switch; the pilot approve label. | 4.2 |
+
 ## 2026-10-06 — Merge of `codex/nlp-eval` round 2; single agent from now on
 
 | # | File | What changed | Why |
