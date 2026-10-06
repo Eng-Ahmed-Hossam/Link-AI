@@ -110,3 +110,15 @@ Pilot builds (`pnpm pilot:build`: `NEXT_PUBLIC_LINK_MODE` / `EXPO_PUBLIC_LINK_MO
 | A16 People (pilot) | **Voice notes** card: whether the laptop has voice, the active profile and its estimate («حوالي … ثانية لملاحظة مدتها دقيقة»), voice off by default, scores always «راجِع», and the owner's **kill switch** («إيقاف الصوت للجميع», with a confirmation). Per teacher: «موقّعة بتاريخ …», then «تشغيل الصوت / إيقاف الصوت», which is disabled until consent | 4.2, OD-52 | `pilot/A16-voice-per-teacher.ar` (from the voice e2e) |
 | A06 Parent message (pilot) | The approve button reads «اعتمد (ثم ترسلها أنت)»: the pilot sends nothing itself | OD-56 | — |
 | T04 «اكتب الملاحظة بدلًا من ذلك» (pilot) | Body says the owner switches voice on after consent | 4.2 | — |
+
+### Routes, not-found pages and the dev index (2026-10-07)
+
+| Screen | Difference | Stories / decisions | Screenshots |
+|---|---|---|---|
+| Links without a centre id | `/{lang}/centre/today` (or any centre page without its id) → the centre entry with `?next=` → after sign-in, that page of the person's own centre. `/{lang}/centre/{id}` alone → Today (Staff with Phase 2 off). `/{lang}` → welcome (pilot: the centre). | Fixes the 404 from the demo's printed link | — |
+| Not found (web) | Any unknown path, and an unknown section, shows the app's own page («لم نجد هذه الصفحة» / "We couldn't find this page", "Go to the start") in the URL's language, HTTP 404; no Figma frame, follows the system (card + error state) | 11 §4 | — |
+| Unknown centre | An unknown centre id shows «لم نجد هذا المركز» with "Go to my centre", never an empty workspace; no Figma frame | 10 §2 | — |
+| Not found (teacher app) | Unknown paths show «لم نجد هذه الصفحة» with a way back to the start; V02 and T07 opened without their voice note go to T04 / T05 instead of waiting forever | — | — |
+| C02–C07 (pilot) | The marketplace placeholders are "not found" in the pilot (marketplace off, CF-29) | CF-29 | — |
+| Dev index `/{lang}/dev` (demo only) | Every screen of both apps from the route manifest (`apps/web/src/screens.ts`): ID, name, link, modes, status, Figma node; one-click sign-in as the sample owner, Reception, parent and teacher; opens the Demo controls. English only, like the Demo controls. Not built into the pilot (stub + start-up check) | Developer tool | — |
+

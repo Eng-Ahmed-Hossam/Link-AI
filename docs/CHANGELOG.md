@@ -2,6 +2,14 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-07 — Every route reachable; hands-on walkthrough
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | frontend/screen-log.md | Links without a centre id go through sign-in to the person's own centre; the app's own not-found pages (web, teacher app, unknown centre); C02–C07 not found in the pilot; the `/{lang}/dev` route index (demo only). | `/ar/centre/today` (printed by `pnpm demo`) was a bare Next.js 404 |
+| 2 | 14 | The route crawler and the guide spec in the demo and pilot e2e suites; `/{lang}/dev`; `pnpm testing:walkthrough`. | Part 1 |
+| 3 | testing/walkthrough.md, walkthrough.pdf, findings.md | New: the hands-on guide (four tours, Arabic and English, the rule behind each step, every step tested or marked Manual) and the findings template. | Ahmed tests every feature himself |
+
 ## 2026-10-06 — NLP round 3 and pilot readiness
 
 | # | File | What changed | Why |
