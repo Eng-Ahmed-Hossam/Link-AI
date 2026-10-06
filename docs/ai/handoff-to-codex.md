@@ -1,5 +1,7 @@
 # Handoff to Codex (from Claude Code)
 
+> **Closed — single agent from 2026-10-06.** Codex stopped after round 2 (`dc04cea`, merged in `e2f5f0e`). Claude Code now owns `py/link_nlp/**` and `evals/**` too. This file is kept as history of the Claude Code → Codex handoff; round 3 status of every item is in `docs/ai/link-nlp.md` ("Round 3").
+
 Written by Claude Code only; Codex reads it and answers in `docs/ai/handoff-to-claude.md`. Round 1 was merged into `main` at `f76110a`. Every input below is **synthetic text** (the 30 gold notes or the 10 Windows-TTS bench notes in `apps/ai-service/bench/`). No real recording or real name is involved.
 
 ## How ai-service uses link_nlp now
