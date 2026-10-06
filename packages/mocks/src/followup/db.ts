@@ -1782,6 +1782,8 @@ export function retryVoice(userId: string, id: string): VoiceNote {
   const v = voiceById(id);
   requireTeacher(userId, recordById(v.recordId).groupId);
   if (!voiceHook) throw new MockProblem(409, 'not_real_stt', 'Nothing to retry.');
+  if (isPilot() && !(voicePolicy?.(userId) ?? false))
+    throw new MockProblem(503, 'stt_unavailable', 'Voice notes are not available.');
   if (v.status === 'queued')
     throw new MockProblem(409, 'not_uploaded', 'Upload the recording first.');
   if (v.result) return voiceDto(v);
@@ -1794,6 +1796,9 @@ export function retryVoice(userId: string, id: string): VoiceNote {
 export function setVoiceResult(id: string, body: VoiceResultIn) {
   const v = voiceById(id);
   const at = new Date().toISOString();
+  // Stopped by the kill switch (4.2): a late answer is never used — the note is not processed.
+  if (v.failure?.code === 'voice_paused')
+    throw new MockProblem(409, 'voice_paused', 'Voice notes were switched off for this note.');
   if (body.status === 'ready' && body.result) {
     const groupId = recordById(v.recordId).groupId;
     // Never trust ids blindly: only students of this group can be attached or offered.
@@ -1860,6 +1865,14 @@ export function voiceExtraction(userId: string, id: string, lang: Lang): VoiceEx
   if (v.status === 'queued')
     throw new MockProblem(409, 'not_uploaded', 'Upload the recording first.');
   if (v.submittedAt != null && !v.result) {
+    // Voice switched off for everyone while this note waited: never processed (4.2 kill switch).
+    if (v.failure?.code === 'voice_paused')
+      throw new MockProblem(
+        503,
+        'stt_unavailable',
+        'Voice notes are switched off. Type the note instead.',
+        { reason: 'voice_paused' },
+      );
     if (v.failure)
       throw new MockProblem(
         503,
@@ -2022,6 +2035,22 @@ export function discardItem(userId: string, extractionId: string, itemId: string
  * Consent withdrawn (teacher consent §6): that teacher's transcripts and proposals are removed;
  * confirmed record values the teacher already reviewed stay (they are the teacher's own record).
  */
+/**
+ * Kill switch (4.2): every note handed over but not yet processed is never processed. Returns
+ * their ids so the caller deletes the audio; the teacher sees "Type the note instead".
+ */
+export function pauseQueuedVoice(): string[] {
+  const at = new Date().toISOString();
+  const ids: string[] = [];
+  for (const v of load().voice)
+    if (v.submittedAt != null && !v.result && !v.failure) {
+      v.failure = { code: 'voice_paused', at };
+      ids.push(v.id);
+    }
+  if (ids.length) save(); // the caller records the activity event (who switched it off)
+  return ids;
+}
+
 export function forgetVoiceOf(teacherId: string): string[] {
   const ids: string[] = [];
   for (const v of load().voice)

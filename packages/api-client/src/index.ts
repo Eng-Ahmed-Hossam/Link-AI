@@ -39,6 +39,7 @@ import type {
   PilotMe,
   PilotPerson,
   PilotStaffRow,
+  PilotVoiceStatus,
   Correction,
   CorrectionBody,
   FollowupCase,
@@ -418,6 +419,15 @@ export const pilotApi = {
       `/v1/pilot/users/${userId}/voice-consent`,
       { body: { granted } },
     ),
+  /** 4.2: the owner switches voice on or off for one teacher (on needs the consent first). */
+  setTeacherVoice: (userId: string, on: boolean) =>
+    request<{ userId: string; voiceOn: boolean }>('POST', `/v1/pilot/users/${userId}/voice`, {
+      body: { on },
+    }),
+  /** 4.2: voice for the whole centre: availability, profile estimate, kill switch. */
+  voiceStatus: () => request<PilotVoiceStatus>('GET', '/v1/pilot/voice'),
+  setVoicePaused: (paused: boolean) =>
+    request<{ paused: boolean; stopped: number }>('POST', '/v1/pilot/voice', { body: { paused } }),
 };
 
 export const isExtractionReady = (

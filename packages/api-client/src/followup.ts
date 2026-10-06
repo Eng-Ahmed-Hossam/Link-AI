@@ -533,7 +533,27 @@ export interface PilotStaffRow extends PilotPerson {
   hasPin: boolean;
   /** Part B: the teacher's signed voice consent (E15-01), recorded by the owner. */
   voiceConsent?: boolean;
+  /** When the consent was recorded (ISO), or null. */
+  voiceConsentAt?: string | null;
+  /** 4.2: voice switched on for this teacher by the owner (off by default; needs consent). */
+  voiceOn?: boolean;
   groups: { id: string; name: string }[];
+}
+
+/** 4.2: voice notes for the whole centre (owner and Reception see it; only the owner changes it). */
+export interface PilotVoiceStatus {
+  /** The laptop runs speech-to-text (PILOT_VOICE=1 and ai-service started). */
+  available: boolean;
+  /** The owner switched voice off for everyone (kill switch). */
+  paused: boolean;
+  pausedAt: string | null;
+  /** The active speech profile and its estimate for a 1-minute note; null if not answering. */
+  profile: {
+    key: 'gpu' | 'cpu_rules' | 'cpu_llm';
+    sttDevice: string;
+    llm: string | null;
+    secondsPerMinute: number;
+  } | null;
 }
 
 /** CF-39: a child's follow-up group at the centre (P09 when the marketplace is off). */
