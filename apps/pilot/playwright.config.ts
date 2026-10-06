@@ -31,7 +31,9 @@ export default defineConfig({
   },
   webServer: {
     command: 'node e2e/serve.mjs',
-    url: 'http://127.0.0.1:9443/v1/pilot/info',
+    // A page through the proxy: /v1/pilot/info answers before Next.js (3101) is up, and the first
+    // test then met "The owner web is not running" (502 until Next.js serves).
+    url: 'http://127.0.0.1:9443/ar/centre',
     reuseExistingServer: false,
     timeout: 180_000,
   },
