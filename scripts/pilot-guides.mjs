@@ -1,9 +1,11 @@
 // pnpm pilot:guides — the staff quick guides and the day-one training script as printable A4 PDFs
 // (docs/pilot/guides/*.pdf), rendered offline with Playwright's Chromium. The Markdown subset the
 // guides use is converted here (headings, paragraphs, bold, lists, tables, code, links, the RTL div).
+// pnpm testing:walkthrough — the same for docs/testing/walkthrough.md (Arabic and English lines side
+// by side, so each paragraph takes its own direction).
 import { mkdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { ROOT } from './lib/env.mjs';
 
 const GUIDES = [
@@ -14,6 +16,9 @@ const GUIDES = [
 ];
 const SRC = join(ROOT, 'docs', 'pilot');
 const OUT = join(SRC, 'guides');
+const DOCS = process.argv.includes('--walkthrough')
+  ? [{ md: join(ROOT, 'docs', 'testing', 'walkthrough.md'), pdf: join(ROOT, 'docs', 'testing') }]
+  : GUIDES.map((name) => ({ md: join(SRC, `${name}.md`), pdf: OUT }));
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 function inline(s) {
@@ -51,7 +56,7 @@ export function markdownToHtml(md) {
             (r) =>
               '<tr>' +
               cells(r)
-                .map((c) => `<td>${c}</td>`)
+                .map((c) => `<td dir="auto">${c}</td>`)
                 .join('') +
               '</tr>',
           )
@@ -89,12 +94,12 @@ export function markdownToHtml(md) {
         out.push(`<${kind}>`);
         list = kind;
       }
-      out.push(`<li>${inline((ol ?? ul)[1])}</li>`);
+      out.push(`<li dir="auto">${inline((ol ?? ul)[1])}</li>`);
     } else if (!line.trim()) {
       closeList();
     } else {
       closeList();
-      out.push(`<p>${inline(line)}</p>`);
+      out.push(`<p dir="auto">${inline(line)}</p>`);
     }
   }
   closeList();
@@ -120,14 +125,15 @@ const CSS = `
 
 const require = createRequire(join(ROOT, 'apps', 'pilot', 'package.json'));
 const { chromium } = require('@playwright/test');
-mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch();
 const page = await browser.newPage();
-for (const name of GUIDES) {
-  const md = readFileSync(join(SRC, `${name}.md`), 'utf8');
+for (const doc of DOCS) {
+  mkdirSync(doc.pdf, { recursive: true });
+  const name = basename(doc.md, '.md');
+  const md = readFileSync(doc.md, 'utf8');
   const html = `<!doctype html><html lang="ar"><head><meta charset="utf-8"><style>${CSS}</style></head><body>${markdownToHtml(md)}</body></html>`;
   await page.setContent(html, { waitUntil: 'load' });
-  const pdf = join(OUT, `${name}.pdf`);
+  const pdf = join(doc.pdf, `${name}.pdf`);
   await page.pdf({ path: pdf, format: 'A4', printBackground: true });
   console.log(`✔ ${pdf}`);
 }

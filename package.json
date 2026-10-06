@@ -43,6 +43,7 @@
     "pilot:practice": "pnpm --filter @link/pilot run practice",
     "pilot:practice-wipe": "pnpm --filter @link/pilot run practice-wipe",
     "pilot:guides": "node scripts/pilot-guides.mjs",
+    "testing:walkthrough": "node scripts/pilot-guides.mjs --walkthrough",
     "pilot:start": "node apps/pilot/scripts/start.mjs",
     "pilot:backup": "pnpm --filter @link/pilot run backup",
     "pilot:restore": "pnpm --filter @link/pilot run restore",

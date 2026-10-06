@@ -146,9 +146,11 @@ start(
 
 console.log(`
 Link demo (sample data only)
-  Teacher app  http://localhost:8081   sign in as the sample teacher (Ms Salma)
-  Owner web    http://localhost:3000/ar/centre/today   (Batch 6)
-  Parent PWA   http://localhost:3000/ar/children       sign in: +20 10 0000 0001, code 123456
+  Every screen http://localhost:3000/ar/dev           one-click sign-in, links, Figma frames
+  Owner web    http://localhost:3000/ar/centre        sign in as the sample owner or Reception
+  Teacher app  http://localhost:8081                  sign in as the sample teacher (Ms Salma)
+  Parent PWA   http://localhost:3000/ar/welcome       sign in: +20 10 0000 0001, code 123456
   Mock server  ${MOCK}/__demo/state
+  Walkthrough  docs/testing/walkthrough.md
   Speech-to-text  ${aiReady ? 'local Whisper ready (Demo controls → "Speech-to-text" to use it)' : 'fixtures only (pnpm ai:models, then restart, for local Whisper)'}
 `);

@@ -8,6 +8,7 @@ const MOCK = process.env.MOCK_SERVER_URL ?? 'http://localhost:4010';
 const C = '/centre/cen-nour';
 
 const webPages = ['ar', 'en'].flatMap((l) => [
+  `/${l}/dev`,
   `/${l}/centre`,
   `/${l}${C}/today`,
   `/${l}${C}/follow-ups`,
