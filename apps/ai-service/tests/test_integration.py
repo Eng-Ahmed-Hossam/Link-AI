@@ -216,7 +216,11 @@ def test_an_llm_number_must_be_in_the_students_own_clause(make_gw):
     llm = FakeLlm(reply={"items": [_item("<S1>", "late_minutes", 5)]})
     res = run_text(note, [*ROSTER, pipeline.RosterEntry("stu-ziad", "زياد")], None, "synthetic",
                    make_gw(FakeStt(), llm))  # fmt: skip
-    assert res.llm_used is True and by(res.items, "late_minutes") == []
+    assert res.llm_used is True
+    assert by(res.items, "late_minutes", "stu-ziad") == []  # never moved to زياد
+    # Round 3: «ليلة» is now a detected unknown name, so the rules keep her 5 minutes on a
+    # "Who is this?" item instead of losing them.
+    assert [i["identity"] for i in by(res.items, "late_minutes")] == ["unknown"]
 
 
 def test_a_decimal_score_stays_in_its_clause(make_gw):
@@ -279,3 +283,25 @@ def test_a_misheard_name_is_unknown_with_suggestions_never_attached(make_gw):
     assert absent[0]["suggestions"] == ["s-laila"]
     assert res.prediction("n")["items"] == []  # nothing attached to a student
     assert res.unresolved and res.unresolved[0]["status"] == "who_is_this"
+
+
+def test_a3_the_llm_may_not_assert_a_fact_where_the_rules_abstained(make_gw):
+    # «يوسف لو غاب بكره» is a plan, not today's attendance: the rules abstain, and an LLM "absent"
+    # on that token is dropped; the clause is handed to the LLM as "not a fact".
+    llm = FakeLlm(
+        reply={
+            "items": [
+                _item("<S1>", "attendance", "absent"),
+                _item("<S1>", "observation", "لو غاب بكره هنكلم أهله"),
+            ]
+        }
+    )
+    res = run_text(
+        "يوسف لو غاب بكره هنكلم أهله", ROSTER, None, "synthetic", make_gw(FakeStt(), llm)
+    )
+    assert (
+        "NOT A FACT FOR THIS SESSION" in llm.prompts[0]
+        and "negation_or_hypothetical" in llm.prompts[0]
+    )
+    assert by(res.items, "attendance") == []
+    assert by(res.items, "observation", "stu-youssef")

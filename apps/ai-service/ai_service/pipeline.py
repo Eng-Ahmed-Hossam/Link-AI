@@ -281,6 +281,9 @@ def run_text(
     sent_tokens = set(tok.token_map)
     max_score = (assessment or {}).get("maxScore")
     text = tok.text
+    # A3: where (and why) the rules deliberately asserted nothing.
+    abstained = nlp.rule_abstentions(text, max_score)
+    abstained_tokens = {a.token for a in abstained}
     # 6: rules, validated like any other extractor output.
     rules = nlp.validate_extraction(
         {"items": nlp.rule_extract(text, max_score)}, sent_tokens, max_score
@@ -306,7 +309,8 @@ def run_text(
         # Not <U#>: an unknown span is often not a person ("على كشف"), and an LLM item on it can only
         # become a blocking "Who is this?" for the teacher. Rule items on <U#> still go through.
         llm_tokens = sorted(t for t in sent_tokens if not t.startswith("<U"))
-        prompt = build_user_prompt(text, llm_tokens, assessment, already)
+        unsure = [(a.token, text[a.start : a.end], a.reason) for a in abstained]
+        prompt = build_user_prompt(text, llm_tokens, assessment, already, unsure)
         deadline = time.monotonic() + gw.cfg.llm_budget_s  # one budget for the step (B3)
         for _attempt in range(2):
             # 5: the leak check on the exact outbound note text, right before every call. Any name
@@ -334,7 +338,12 @@ def run_text(
                 oor = set(vr.out_of_range)
                 for i, it in enumerate(vr.items):
                     it["_out_of_range"] = i in oor
-                llm_items = ground_llm_items(vr.items, text)
+                llm_items = [
+                    it
+                    for it in ground_llm_items(vr.items, text)
+                    # A3: where the rules abstained, the LLM may not assert a structured fact.
+                    if not (it["field"] in RULE_FIELDS and it["student"] in abstained_tokens)
+                ]
                 unassigned = ground_unassigned(list(vr.unassigned), text)
                 llm_used, llm_error = True, None
                 break

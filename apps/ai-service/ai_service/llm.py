@@ -6,11 +6,12 @@ the result against the full wire schema (link_nlp `validate_extraction`). Temper
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from typing import Any
 
 import httpx
 
-PROMPT_VERSION = "extract-v7"
+PROMPT_VERSION = "extract-v8"
 
 SYSTEM = """You extract facts from an Egyptian Arabic note a teacher recorded after one class session.
 Student names are replaced by tokens such as <S1>, <A1>, <U1>.
@@ -88,8 +89,13 @@ def build_user_prompt(
     tokens: list[str],
     assessment: dict[str, Any] | None,
     already: list[tuple[str, str]],
+    unsure: Sequence[tuple[str, str, str]] | None = None,
 ) -> str:
+    """`unsure`: (token, clause, reason) where link_nlp's rules abstained (A3). The model may take
+    observations from them; attendance, late minutes and scores there are dropped by the
+    pipeline whatever it says."""
     done = "\n".join(f"- {t} {f}" for t, f in already) or "- (none)"
+    hard = "".join(f"- {t}: «{c.strip()}» ({r})\n" for t, c, r in unsure or [])
     a = (
         f"{assessment.get('title') or 'assessment'}, maximum {assessment['maxScore']}"
         if assessment and assessment.get("maxScore") is not None
@@ -98,6 +104,12 @@ def build_user_prompt(
     return (
         f"NOTE:\n{tokenised_text}\n\nTOKENS: {', '.join(tokens) or '(none)'}\n"
         f"ASSESSMENT: {a}\n\nALREADY EXTRACTED:\n{done}\n"
+        + (
+            "\nNOT A FACT FOR THIS SESSION (a correction, a negation, a plan or another session): "
+            "take observations only, never attendance, late_minutes or score:\n" + hard
+            if hard
+            else ""
+        )
     )
 
 
