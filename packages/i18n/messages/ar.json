@@ -1135,5 +1135,9 @@
   "owner.pilot.voiceGrant": "الموافقة موقّعة",
   "owner.pilot.voiceWithdraw": "سحب (يحذف التسجيلات)",
   "owner.assistant.demoAnswer": "إجابة تجريبية (مكتوبة مسبقًا)",
-  "owner.assistant.realQuestion": "سؤالك كما سمعه تحويل الكلام المحلي"
+  "owner.assistant.realQuestion": "سؤالك كما سمعه تحويل الكلام المحلي",
+  "teacher.identity.unknownSubtitle": "ذُكر \"{mention}\" في الملاحظة ولم يتعرّف Link على الاسم. اختر الطالب أو تخطَّ هذا العنصر.",
+  "teacher.identity.suggested": "اسم قريب في النطق — تأكّد قبل الاختيار",
+  "teacher.identity.others": "باقي طلاب المجموعة",
+  "teacher.understood.whoIsThis": "مَن هذا الطالب؟"
 }

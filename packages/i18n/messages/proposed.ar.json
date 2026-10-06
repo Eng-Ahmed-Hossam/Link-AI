@@ -1132,5 +1132,9 @@
   "owner.pilot.voiceGrant",
   "owner.pilot.voiceWithdraw",
   "owner.assistant.demoAnswer",
-  "owner.assistant.realQuestion"
+  "owner.assistant.realQuestion",
+  "teacher.identity.unknownSubtitle",
+  "teacher.identity.suggested",
+  "teacher.identity.others",
+  "teacher.understood.whoIsThis"
 ]

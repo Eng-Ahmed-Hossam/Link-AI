@@ -192,6 +192,61 @@ test.describe('T07 Check the student', () => {
   });
 });
 
+test.describe('T07 Who is this? (a misheard name)', () => {
+  test('AI-02: "ليلة" stays unknown; ليلى is a suggestion first, nothing pre-selected or attached', async ({
+    page,
+  }) => {
+    await toUnderstood(page);
+    // What ai-service returns when Whisper writes «ليلة» for ليلى (link_nlp: unknown + candidates).
+    const transcript = 'ليلة غابت النهارده';
+    const r = await fetch(`${MOCK}/__demo/voice-result`, {
+      method: 'POST',
+      body: JSON.stringify({
+        transcript,
+        modelVersion: 'e2e',
+        items: [
+          {
+            id: 'vi-1',
+            identity: 'unknown',
+            studentId: null,
+            candidates: [],
+            suggestions: ['stu-laila', 'stu-not-in-this-group'],
+            mention: 'ليلة',
+            field: 'attendance',
+            value: 'absent',
+            confidence: 0.93,
+            band: 'high',
+            span: { start: 0, end: transcript.length },
+            sourceText: transcript,
+            outOfRange: false,
+          },
+        ],
+      }),
+    });
+    expect(r.ok).toBe(true);
+    await page.reload();
+    await expect(id(page, 'screen-v02')).toBeVisible({ timeout: 30_000 });
+    const card = id(page, 'item-vi-1');
+    await expect(card).toContainText('مَن هذا الطالب؟');
+    await expect(card).not.toContainText('ليلى'); // never attached
+    await id(page, 'identity-vi-1').click();
+    await expect(id(page, 'screen-t07')).toBeVisible();
+    await expect(id(page, 'suggested-heading')).toBeVisible();
+    await expect(id(page, 'others-heading')).toBeVisible();
+    const radios = id(page, 'screen-t07').getByRole('radio');
+    await expect(radios.first()).toContainText('ليلى مصطفى'); // the suggestion comes first …
+    await expect(id(page, 'screen-t07').getByRole('radio', { checked: true })).toHaveCount(0); // … not chosen
+    await expect(id(page, 'candidate-stu-not-in-this-group')).toHaveCount(0); // outside the group: dropped
+    await expect(id(page, 'use-candidate')).toBeDisabled();
+    expect(await radios.count()).toBeGreaterThan(5); // every other student of the group is offered too
+    await shot(page, 'T07-who-is-this.ar');
+    await id(page, 'candidate-stu-laila').click();
+    await id(page, 'use-candidate').click();
+    await expect(id(page, 'screen-v02')).toBeVisible();
+    await expect(id(page, 'item-vi-1')).toContainText('ليلى مصطفى');
+  });
+});
+
 test.describe('T05 Review before saving', () => {
   test('FUP-REC-05 AC2: Confirm is disabled while an identity item is open', async ({ page }) => {
     await toUnderstood(page);

@@ -237,6 +237,11 @@ export interface VoiceItem {
   student: PersonRef | null;
   /** For `ambiguous`: the close roster candidates. Never a default (FUP-VOI-04). */
   candidates: PersonRef[];
+  /**
+   * For `unknown`: roster students the misheard name sounds like ("ليلة" → ليلى). Suggestions only:
+   * shown first in "Who is this?", never pre-selected or attached (AI-02).
+   */
+  suggestions: PersonRef[];
   /** How the name was said ("أحمد"). */
   mention: string | null;
   field: VoiceField;

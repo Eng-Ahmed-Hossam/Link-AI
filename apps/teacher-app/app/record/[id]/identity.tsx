@@ -87,17 +87,28 @@ export default function Identity() {
           : d.observations,
     }));
   };
-  const chosen = it?.candidates.find((c) => c.id === choice);
+  // Ambiguous: the close candidates only. Unknown (a misheard name): its suggestions first, then
+  // every other student of the group — the teacher may pick anyone in the group, never no one
+  // pre-selected (FUP-VOI-04, AI-02).
+  const unknown = it?.identity === 'unknown';
+  const suggested = unknown ? (it?.suggestions ?? []) : (it?.candidates ?? []);
+  const others = unknown
+    ? (draft?.roster ?? []).filter((p) => !suggested.some((s) => s.id === p.id))
+    : [];
+  const options = [...suggested, ...others];
+  const chosen = options.find((c) => c.id === choice);
 
   return (
     <Screen
       title={t('teacher.identity.title')}
       subtitle={
         it
-          ? t('teacher.identity.subtitle', {
-              mention: isolate(it.mention ?? ''),
-              count: it.candidates.length,
-            })
+          ? unknown
+            ? t('teacher.identity.unknownSubtitle', { mention: isolate(it.mention ?? '') })
+            : t('teacher.identity.subtitle', {
+                mention: isolate(it.mention ?? ''),
+                count: it.candidates.length,
+              })
           : undefined
       }
       back
@@ -170,10 +181,25 @@ export default function Identity() {
             accessibilityLabel={t('teacher.identity.title')}
             style={{ gap: space[12] }}
           >
-            {it.candidates.map((c, i) => {
+            {options.map((c, i) => {
               const on = c.id === choice;
+              const heading =
+                unknown && i === 0 && suggested.length
+                  ? t('teacher.identity.suggested')
+                  : unknown && i === suggested.length
+                    ? t('teacher.identity.others')
+                    : null;
               return (
                 <View key={c.id} style={{ gap: space[4] }}>
+                  {heading ? (
+                    <Text
+                      accessibilityRole="header"
+                      testID={i === 0 && suggested.length ? 'suggested-heading' : 'others-heading'}
+                      style={[textStyle(locale, 'label'), { marginTop: space[8] }]}
+                    >
+                      {heading}
+                    </Text>
+                  ) : null}
                   <Text style={[textStyle(locale, 'caption'), { color: color.muted }]}>
                     {t('teacher.identity.option', { n: i + 1 })}
                   </Text>

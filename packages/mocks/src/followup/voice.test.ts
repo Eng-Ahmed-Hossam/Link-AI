@@ -57,6 +57,47 @@ const item = (over: Record<string, unknown>) => ({
 });
 
 describe('B3 voice notes with real speech-to-text', () => {
+  it('keeps ai-service\'s band: a sure voice score stays "check" in the pilot (AI_SCORE_PREFILL off)', () => {
+    const v = uploadNote();
+    setVoiceResult(v.id, {
+      status: 'ready',
+      result: {
+        transcript: 'مريم جابت ١٤ من ٢٠',
+        modelVersion: 'test',
+        items: [item({ field: 'score', value: 14, confidence: 0.93, band: 'medium' })],
+      },
+    });
+    const x = voiceExtraction(T, v.id, 'en')!;
+    expect(x.items[0]!.confidence).toBe(0.93);
+    expect(x.items[0]!.band).toBe('medium'); // not recomputed to "high" from the confidence
+  });
+
+  it('a misheard name keeps its in-group suggestions only, never attached; any group student resolves it', () => {
+    const v = uploadNote();
+    setVoiceResult(v.id, {
+      status: 'ready',
+      result: {
+        transcript: 'ليلة غابت',
+        modelVersion: 'test',
+        items: [
+          item({
+            identity: 'unknown',
+            studentId: null,
+            mention: 'ليلة',
+            suggestions: ['stu-laila', 'stu-somewhere-else'],
+          }),
+        ],
+      },
+    });
+    const x = voiceExtraction(T, v.id, 'en')!;
+    expect(x.items[0]!.student).toBeNull();
+    expect(x.items[0]!.suggestions.map((p) => p.id)).toEqual(['stu-laila']);
+    expect(x.status).toBe('clarification_needed');
+    const y = resolveIdentity(T, x.id, { itemId: 'vi-1', studentId: 'stu-omar' }, 'en');
+    expect(y.items[0]!.student?.id).toBe('stu-omar'); // the teacher's pick, not the suggestion
+    expect(y.items[0]!.suggestions).toEqual([]);
+  });
+
   it('the dispatch carries the group roster as hints and waits (202) with an estimate', () => {
     const v = uploadNote();
     expect(sent).toHaveLength(1);

@@ -164,10 +164,14 @@ export interface StoredVoiceItem {
   identity: VoiceItem['identity'];
   studentId: string | null;
   candidates: string[];
+  /** For `unknown` (a misheard name): close roster names, offered in "Who is this?" only. */
+  suggestions?: string[];
   mention: string | null;
   field: VoiceItem['field'];
   value: string | number | null;
   confidence: number;
+  /** ai-service's band (it applies the pilot's "a voice score is always checked"). */
+  band?: VoiceItem['band'];
   span: { start: number; end: number };
   sourceText: string;
   outOfRange: boolean;
@@ -1794,9 +1798,12 @@ export function setVoiceResult(id: string, body: VoiceResultIn) {
     const groupId = recordById(v.recordId).groupId;
     // Never trust ids blindly: only students of this group can be attached or offered.
     const ok = (sid: string | null) => !sid || inGroup(groupId, sid);
-    const items = body.result.items.filter(
-      (it) => ok(it.studentId) && it.candidates.every((c) => inGroup(groupId, c)),
-    );
+    const items = body.result.items
+      .filter((it) => ok(it.studentId) && it.candidates.every((c) => inGroup(groupId, c)))
+      .map((it) => ({
+        ...it,
+        suggestions: (it.suggestions ?? []).filter((sid) => inGroup(groupId, sid)),
+      }));
     v.result = {
       transcript: body.result.transcript,
       items,
@@ -1923,11 +1930,15 @@ function extractionDto(v: Voice, lang: Lang): VoiceExtraction {
           : it.identity,
       student: studentId ? person(studentId, lang) : null,
       candidates: it.candidates.map((c) => person(c, lang)),
+      suggestions:
+        it.identity === 'unknown' && !chosen
+          ? (it.suggestions ?? []).map((c) => person(c, lang))
+          : [],
       mention: it.mention,
       field: it.field,
       value: it.value,
       confidence: it.confidence,
-      band: bandOf(it.confidence),
+      band: it.band ?? bandOf(it.confidence),
       span: it.span,
       sourceText: it.sourceText,
       outOfRange: it.outOfRange,
@@ -2498,6 +2509,18 @@ let demoListener: ((d: DemoState) => void) | null = null;
 export const onDemoChange = (fn: (d: DemoState) => void) => {
   demoListener = fn;
 };
+/**
+ * Demo / e2e only: give the latest voice note an ai-service-shaped result, through the same
+ * `setVoiceResult` the real callback uses (group checks included). Lets the suites show cases the
+ * fixture has none of — e.g. a misheard name with suggestions — without running Whisper.
+ */
+export function demoVoiceResult(result: NonNullable<VoiceResultIn['result']>) {
+  const v = load().voice.at(-1);
+  if (!v) throw new MockProblem(409, 'no_voice_note', 'Record a voice note first.');
+  setVoiceResult(v.id, { status: 'ready', result });
+  return { voiceId: v.id, items: v.result?.items.length ?? 0 };
+}
+
 export function setDemo(patch: Partial<DemoState>) {
   Object.assign(load().demo, patch);
   save();

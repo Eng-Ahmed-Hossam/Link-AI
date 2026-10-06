@@ -222,13 +222,19 @@ export default function Understood() {
   function card(it: VoiceItem) {
     const dec = decisions[it.id] ?? { kind: 'pending' };
     const value = dec.kind === 'accepted' ? display(it, dec.value) : display(it, shownValue(it));
+    // An ambiguous name (two close students) and an unknown one (a misheard name, "ليلة") both
+    // block until the teacher picks: Link never attaches a student by itself (AI-02).
     const blocking =
-      it.identity === 'ambiguous' ? (
+      it.identity === 'ambiguous' || it.identity === 'unknown' ? (
         <View style={{ gap: space[8] }}>
           <StatusBadge
             locale={locale}
             tone="warning"
-            label={t('teacher.understood.confirmIdentity')}
+            label={
+              it.identity === 'unknown'
+                ? t('teacher.understood.whoIsThis')
+                : t('teacher.understood.confirmIdentity')
+            }
           />
           <Button
             locale={locale}

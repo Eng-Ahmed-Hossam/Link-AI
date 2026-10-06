@@ -395,6 +395,10 @@ export const demoHandlers = [
     }),
   ),
   http.post(
+    '*/__demo/voice-result',
+    demoCall((b) => fu.demoVoiceResult(b as unknown as Parameters<typeof fu.demoVoiceResult>[0])),
+  ),
+  http.post(
     '*/__demo/new-day',
     demoCall(() => fu.simulateNewDay()),
   ),

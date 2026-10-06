@@ -1135,5 +1135,9 @@
   "owner.pilot.voiceGrant": "Consent signed",
   "owner.pilot.voiceWithdraw": "Withdraw (deletes recordings)",
   "owner.assistant.demoAnswer": "Demo answer (scripted)",
-  "owner.assistant.realQuestion": "Your question, as local speech-to-text heard it"
+  "owner.assistant.realQuestion": "Your question, as local speech-to-text heard it",
+  "teacher.identity.unknownSubtitle": "A note mentioned \"{mention}\" — Link didn't recognise this name. Pick the student, or skip this item.",
+  "teacher.identity.suggested": "Sounds like — check before you choose",
+  "teacher.identity.others": "Other students in this group",
+  "teacher.understood.whoIsThis": "Who is this?"
 }
