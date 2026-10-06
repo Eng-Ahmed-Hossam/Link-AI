@@ -1,4 +1,5 @@
-import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Text } from 'react-native';
 import { Button, Callout, textStyle } from '@link/ui-native';
 import { color } from '@link/tokens';
@@ -22,6 +23,14 @@ function SampleSignIn() {
   const { locale, t } = useLocale();
   const { signIn } = useSession();
   const router = useRouter();
+  // `/sign-in?sample=1` (the web dev index's one-click sign-in): straight in as the sample teacher.
+  const { sample } = useLocalSearchParams<{ sample?: string }>();
+  useEffect(() => {
+    if (sample === '1' && API_MODE !== 'live' && SAMPLE_TEACHER) {
+      signIn(SAMPLE_TEACHER);
+      router.replace('/');
+    }
+  }, [sample, signIn, router]);
   return (
     <Screen title={t('teacher.signIn.title')}>
       <Callout locale={locale} tone="info" body={t('teacher.signIn.pending')} />

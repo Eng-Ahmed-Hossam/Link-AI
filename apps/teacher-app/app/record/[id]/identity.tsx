@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fuApi, isExtractionReady } from '@link/api-client';
 import { Button, Callout, StateView, textStyle } from '@link/ui-native';
@@ -29,6 +29,7 @@ export default function Identity() {
   const q = useQuery({
     queryKey: ['extraction', voice, locale],
     queryFn: () => track(fuApi.extraction(voice)),
+    enabled: !!voice,
   });
   const [choice, setChoice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -97,6 +98,9 @@ export default function Identity() {
     : [];
   const options = [...suggested, ...others];
   const chosen = options.find((c) => c.id === choice);
+
+  // Opened without the voice item (a bare link or a stale bookmark): T05 lists the open checks.
+  if (!voice || !extraction || !item) return <Redirect href={`/record/${id}/review`} />;
 
   return (
     <Screen

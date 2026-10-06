@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Text, TextInput, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import {
@@ -56,6 +56,7 @@ export default function Understood() {
   const q = useQuery({
     queryKey: ['extraction', voice, locale],
     queryFn: () => track(fuApi.extraction(voice)),
+    enabled: !!voice,
     refetchInterval: (query) =>
       query.state.data && isExtractionReady(query.state.data) ? false : 1000,
   });
@@ -67,6 +68,9 @@ export default function Understood() {
 
   // Back to the T04 already in the stack (its text field is the typed alternative).
   const typeInstead = () => router.back();
+
+  // Opened without a voice note (a bare link or a stale bookmark): voice notes start on T04.
+  if (!voice) return <Redirect href={`/record/${id}/observation`} />;
 
   if (q.isError) {
     const stt = q.error instanceof ApiError && q.error.code === 'stt_unavailable';
