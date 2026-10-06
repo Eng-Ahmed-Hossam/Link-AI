@@ -106,12 +106,36 @@ Validation after the call (in ai-service, before the proposal is stored):
 - `score` must be between 0 and the assessment maximum. Otherwise keep the value, mark it `out_of_range`, and show it as a blocking error (AI-06).
 - `topic` is kept only in Phase 3, and only if it matches a topic in the teacher's topic map (CF-07).
 
-### 2.6 As built for the pilot and the demo (Part B, ADR-0007)
-- **Order:** clean-up → roster match → tokenise → `rule_extract` (attendance, late minutes, scores) → the LLM **only** for observations and what the rules missed (the prompt lists what is already extracted) → `validate_extraction` → grounding → detokenise. Rules win when both give the same student and field.
-- **Grounding** (added after tests with `qwen3:8b`, which invented a score of 0, observations that were not said and a confidence of 1.0): an LLM number must appear in the note; an observation must reuse the teacher's own words; whole-class lines (`unassigned`) may not contain a token or Latin text; "present" must be said in the student's clause; two different LLM values for one student and field cancel out (rules win over the LLM); one-word whole-class lines are dropped; LLM confidence is capped at 0.80, so an LLM item is never pre-filled as sure (OD-36 bands: "check" or blank).
-- **Limits:** prompt `extract-v3`, temperature 0, at most 800 output tokens, thinking off. One time budget for the whole LLM step (`AI_LLM_BUDGET_S`, 90 s); a timeout is not retried. Out of time or invalid twice → the rule items only (§9). The whole note is given up after 3 minutes ("Type the note instead", the audio kept for "Try again").
-- **Model version** on every result: `faster-whisper:<model>@<compute>/<device>|link_nlp@<version>|ollama:<model>+extract-v3`.
-- **NLP core:** `py/link_nlp` (Codex track) owns normalisation, matching (0.85 / margin 0.15), tokenisation, rules, the schema and its validator. Until it is merged, ai-service uses a stub with the same contract (`link_nlp@stub` in the model version).
+### 2.6 As built for the pilot and the demo (Part B, ADR-0007; `link_nlp` merged 2026-10-05)
+- **NLP core:** `py/link_nlp` (Codex track; [docs/ai/link-nlp.md](ai/link-nlp.md)) owns normalisation, roster matching (0.85 / margin 0.15), tokens, rules, the wire schema and `validate_extraction`. ai-service depends on it as a uv path dependency; its own code is the order below, the LLM step, grounding and the proposal.
+- **Order** (`apps/ai-service/ai_service/pipeline.py`):
+  1. `clean_transcript`;
+  2. `find_name_mentions`, with the session roster only;
+  3. `tokenise`;
+  4. contact redaction: phones and emails masked, length-preserving (a shim until `link_nlp` ships one);
+  5. **leak check:** if a roster name, nickname or detected name is still in the text meant for the LLM, the LLM step is skipped, the rule results are kept, and the event is logged without text;
+  6. `rule_extract`, itself validated;
+  7. the LLM, only for what the rules did not cover;
+  8. `validate_extraction`, all-or-nothing; one retry, then rules only;
+  9. the merge: **rules win** on attendance, late minutes and scores;
+  10. `detokenise_items`;
+  11. `confidence_band`;
+  12. the proposal.
+- **The LLM step:**
+  - The model decodes to a per-note subset of the wire schema (`llm_schema`): per-field value types and enums, only the `<S#>`/`<A#>` tokens that were sent, no spans, at most 12 items. Spans are computed locally, then the reply is checked against the full schema.
+  - The LLM never fills **participation**: on the gold set its precision was 0.38, against 1.00 for the explicit-phrase rules.
+  - It is not offered `<U#>` spans: those produced blocking "Who is this?" items on words that were not people.
+- **Grounding:**
+  - A score must appear as `N/M`, and late minutes as `N min`, **in that student's clause**.
+  - An observation must reuse the teacher's own words.
+  - "present" must be said.
+  - Two different LLM values for one student and field cancel out.
+  - Whole-class lines (`unassigned`) may not contain a token, Latin text or redacted data, and must be two or more words.
+  - LLM confidence is capped at 0.80, so an LLM item is never pre-filled as sure.
+- **Bands:** `prefill/check/blank` → high/medium/low. **Pilot safety:** a voice-extracted score is never pre-filled; it is always "check" (`AI_SCORE_PREFILL`, off by default; only `pnpm demo` turns it on). This holds until the audio eval on the team's recordings shows score exact match ≥ 95 %. The value is still kept as said, and an out-of-range score still blocks.
+- **T07 candidates:** the students within the matcher's margin (0.15) of the best score.
+- **Limits:** prompt `extract-v7`, temperature 0, at most 800 output tokens, thinking off. One time budget for the whole LLM step (`AI_LLM_BUDGET_S`, 90 s); a timeout is not retried. The whole note is given up after 3 minutes ("Type the note instead", with the audio kept for "Try again").
+- **Model version** on every result: `faster-whisper:<model>@<compute>/<device>|link_nlp@<version>|ollama:<model>+extract-v7`.
 
 ## 3. Confidence handling
 

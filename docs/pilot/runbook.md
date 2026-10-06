@@ -43,7 +43,11 @@ pnpm ai:bench --models large-v3-turbo --devices cpu     # optional: this laptop'
 
 Turn voice on for the pilot: add `PILOT_VOICE=1` to `apps\pilot\.env.pilot`. `pnpm pilot:start` then also starts ai-service on 127.0.0.1 (never the LAN) with a fresh shared token. Voice is still **per teacher**: the owner records each teacher's signed voice consent in Staff & access → "Consent signed" (OD-52). Without it the teacher sees "Type the note instead". Withdrawing consent deletes that teacher's recordings and their text at once.
 
-Speed (measured on the build laptop, i7-9750H, 16 GB; a 60-second note): `large-v3-turbo` on the CPU about **43 s**, on an RTX 2070 about **3 s**; the LLM step adds 3–14 s on the GPU. **On a laptop without an NVIDIA GPU**, `qwen3:8b` usually runs out of its time (a note then takes about 1 min 45 s and keeps the rule results only): pull `qwen3:4b` instead and set `MODEL_ROUTING_CONFIG={"llm":{"model":"qwen3:4b"}}` in `.env.pilot`, and measure it before the visit ([ADR-0007](../adr/ADR-0007-local-speech-to-text-and-llm.md)). A note waits at most 3 minutes; after that the teacher sees "Type the note instead" and can try again (the audio is kept). Recordings are encrypted on the laptop and deleted 30 days after upload or at the end of the pilot, whichever is first.
+Speed (measured on the build laptop, i7-9750H, 16 GB; a 60-second note): `large-v3-turbo` on the CPU about **43 s**, on an RTX 2070 about **3 s**; the LLM step adds 3–14 s on the GPU. **On a laptop without an NVIDIA GPU** (measured with the GPU switched off, [ADR-0007](../adr/ADR-0007-local-speech-to-text-and-llm.md) "CPU-only laptop profile"), choose one in `apps\pilot\.env.pilot`:
+- **Rules only, about 37 s per 60-second note.** Attendance, late minutes and scores; no observations. Set `MODEL_ROUTING_CONFIG={"llm":{"provider":"none"}}`.
+- **`qwen3:4b`, about 95 s per note,** adding observations. Run `ollama pull qwen3:4b` (2.5 GB) and set `MODEL_ROUTING_CONFIG={"llm":{"model":"qwen3:4b"}}`.
+
+`qwen3:8b` on the CPU runs out of time on a 60-second note. Voice scores are always shown as "check" in the pilot (never pre-filled). A note waits at most 3 minutes; after that the teacher sees "Type the note instead" and can try again (the audio is kept). Recordings are encrypted on the laptop and deleted 30 days after upload or at the end of the pilot, whichever is first.
 
 ## 2. Check the encryption
 

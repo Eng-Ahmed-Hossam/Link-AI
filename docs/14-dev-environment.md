@@ -105,6 +105,7 @@ Names and purpose only. **Never commit values.** `.env.example` lists every name
 | `AI_USAGE_LOG` | One JSON line per STT/LLM call (task, model, data class, seconds; no text) |
 | `AI_JOB_TIMEOUT_S` | Per-note limit (180 s); after it the teacher sees "Type the note instead" |
 | `AI_PRELOAD` | `0` = load the Whisper model on the first note instead of at start (`pnpm demo` sets it unless real speech-to-text was left on) |
+| `AI_SCORE_PREFILL` | `1` lets a sure voice-extracted score be pre-filled (`pnpm demo` sets it). Default `0`: scores are always in the "check" band (the pilot, until the audio eval on the team's recordings shows score exact match ≥ 95 %) |
 | `AI_LLM_BUDGET_S` | The LLM step's share of a note, all attempts together (90 s); a timeout is not retried and the note keeps the rule results |
 | `PILOT_VOICE` | `1` turns voice notes on in the pilot (still per teacher consent, OD-52) |
 | `AI_BUDGET_DEFAULT_PER_CENTRE` | Monthly cost budget used for alerts (09 §7) |
@@ -166,7 +167,7 @@ All commands are Node scripts, so they run the same in PowerShell, cmd and bash.
 | `pnpm openapi:check` | OpenAPI drift check; regenerates `packages/api-client` | *planned* (Part 2) |
 | `pnpm events:check` | Event-contract (schema registry) compatibility check | *planned* (Part 2) |
 | `pnpm i18n:check` | Missing AR/EN keys fail (RTL-11) | real |
-| `pnpm ai:eval` | Write one `<id>.pred.json` per gold note with ai-service (`--mode text` or `--mode audio --models a,b`; resumable, into `evals-runs/`), then score them with `python -m link_eval run` when the eval kit (Codex track) is present | real (predictions); scoring when `evals/` is merged |
+| `pnpm ai:eval` | Write one `<id>.pred.json` per gold note with ai-service (`--mode text` or `--mode audio --models a,b [--stt-device cpu]`, `--llm qwen3:8b` or `--no-llm`, `--label`; resumable, into `evals-runs/`), then score them with `link_eval run` into `evals/reports/<date>-<mode>-<model>-<llm>.md` (+ JSON). `--gold apps/ai-service/bench/gold --audio-dir apps/ai-service/bench/audio` runs the Windows-TTS clips | real |
 | `pnpm ai:models [name…]` | Download the Whisper models into `apps/ai-service/.models` (resumable; no name = all three) | real |
 | `pnpm ai:bench --models … --devices cuda,cpu` | STT speed and quick WER on the synthetic bench notes (resumable, `apps/ai-service/bench/out`; ADR-0007) | real |
 | `uv --directory apps/ai-service run python -m ai_service` | ai-service alone (needs `AI_SERVICE_TOKEN`); `pilot:start` (with `PILOT_VOICE=1`) and `pnpm demo` start it for you | real |

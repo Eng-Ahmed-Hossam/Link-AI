@@ -2,6 +2,16 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-05 — `link_nlp` integrated into ai-service; text-only and Windows-TTS evals; CPU profile
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | 09 §2.6 | Rewritten for the real `link_nlp`:<br>• the 12-step order;<br>• contact redaction (shim) and the leak check;<br>• the constrained per-note LLM schema;<br>• no LLM participation, no LLM on `<U#>`;<br>• grounding in the student's own clause;<br>• the pilot score band;<br>• T07 contenders;<br>• prompt `extract-v7`. | ai-service now runs on `link_nlp`; the stand-in is gone |
+| 2 | 14 | `AI_SCORE_PREFILL`; `pnpm ai:eval` scores with `link_eval` into `evals/reports/` (`--stt-device`, `--llm-device`, `--label`, the TTS bench). | Measure and keep the pilot safe |
+| 3 | ai/handoff-to-codex.md | New: requests A1–A5 (public API, contact redaction, rule abstentions, candidates, run-on unknown spans) and failure cases B1–B20 from the runs. | Agent protocol: requests to Codex go here |
+| 4 | adr/ADR-0007, pilot/accuracy.md, pilot/runbook.md | The `link_nlp` results, the CPU-only profile, the advice for a laptop without a GPU. | Part C §3 |
+| 5 | evals/reports/2026-10-05-* | New report files: the text-only eval (rules + `qwen3:8b`, rules only, `qwen3:4b` on the CPU) and the Windows-TTS audio runs (labelled; not real speech). | Part C §3 |
+
 ## 2026-10-05 — Merge of `codex/nlp-eval` round 1
 
 | # | File | What changed | Why |
