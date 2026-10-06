@@ -23,3 +23,8 @@ evals-runs
 apps/ai-service/.pytest_cache
 apps/ai-service/.ruff_cache
 apps/ai-service/.mypy_cache
+
+# Python trees with their own formatter (ruff): the NLP core and the eval kit (Codex track), generated bench gold
+py
+evals
+apps/ai-service/bench/gold
