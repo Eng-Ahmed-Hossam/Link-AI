@@ -1160,5 +1160,11 @@
   "owner.pilot.voicePausedBody": "الملاحظات الصوتية متوقفة للجميع منذ {date}. حُذفت الملاحظات التي كانت تنتظر ولم تُعالَج. يكتب المعلّمون ملاحظاتهم.",
   "owner.pilot.voicePauseConfirmTitle": "إيقاف الصوت لكل المعلّمين؟",
   "owner.pilot.voicePauseConfirmBody": "سيكتب المعلّمون ملاحظاتهم. الملاحظات الصوتية التي ما زالت تنتظر تُحذف ولا تُعالَج. الملاحظات التي عولجت تبقى كما هي.",
-  "owner.pilot.approve": "اعتمد (ثم ترسلها أنت)"
+  "owner.pilot.approve": "اعتمد (ثم ترسلها أنت)",
+  "states.notFound.title": "لم نجد هذه الصفحة",
+  "states.notFound.body": "ربما الرابط قديم أو فيه خطأ في الكتابة.",
+  "states.notFound.home": "اذهب إلى البداية",
+  "owner.centreNotFound.title": "لم نجد هذا المركز",
+  "owner.centreNotFound.body": "هذا المركز غير موجود، أو لا يمكن لحسابك فتحه.",
+  "owner.centreNotFound.back": "اذهب إلى مركزي"
 }

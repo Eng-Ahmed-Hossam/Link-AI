@@ -1160,5 +1160,11 @@
   "owner.pilot.voicePausedBody": "Voice notes are off for everyone since {date}. Notes that were waiting were deleted, not processed. Teachers type their notes.",
   "owner.pilot.voicePauseConfirmTitle": "Switch voice off for every teacher?",
   "owner.pilot.voicePauseConfirmBody": "Teachers will type their notes. Voice notes that are still waiting are deleted and never processed. Notes already processed stay as they are.",
-  "owner.pilot.approve": "Approve (you send it next)"
+  "owner.pilot.approve": "Approve (you send it next)",
+  "states.notFound.title": "We couldn't find this page",
+  "states.notFound.body": "The link may be old or have a typo.",
+  "states.notFound.home": "Go to the start",
+  "owner.centreNotFound.title": "We couldn't find this centre",
+  "owner.centreNotFound.body": "This centre doesn't exist, or your account can't open it.",
+  "owner.centreNotFound.back": "Go to my centre"
 }

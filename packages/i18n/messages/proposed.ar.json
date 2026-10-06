@@ -1157,5 +1157,11 @@
   "owner.pilot.voicePausedBody",
   "owner.pilot.voicePauseConfirmTitle",
   "owner.pilot.voicePauseConfirmBody",
-  "owner.pilot.approve"
+  "owner.pilot.approve",
+  "states.notFound.title",
+  "states.notFound.body",
+  "states.notFound.home",
+  "owner.centreNotFound.title",
+  "owner.centreNotFound.body",
+  "owner.centreNotFound.back"
 ]
