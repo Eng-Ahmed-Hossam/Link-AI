@@ -46,6 +46,8 @@ _MOBILE = re.compile(
 _LANDLINE = re.compile(
     r"(?<!\d)(?:(?:(?:\+20|0020)[\s-]*2)|(?:02))(?:[\s-]*\d){8}(?!\d)"
 )
+# A placeholder, with a conjunction attached to it («و<A1>»): masked as a whole.
+_PLACEHOLDER = re.compile(r"(?:(?<!\w)و)?<(?:[SAU]\d+|CONTACT\d+)>")
 _FIRST_NAMES = tuple(
     name.strip()
     for name in files("link_nlp").joinpath("data/first_names.txt").read_text(encoding="utf-8").splitlines()
@@ -102,6 +104,9 @@ def find_pii_leaks(
     text: str, roster: Sequence[RosterStudent], extra_names: Sequence[str] = ()
 ) -> list[Leak]:
     """Return remaining names or contacts immediately before an LLM boundary."""
+    # Round 3: the placeholders themselves (<S1>, <U2>, <CONTACT1>) are not names. Mask them with
+    # spaces (offsets unchanged) so "<U1> غاب" is not read as a person called "U".
+    text = _PLACEHOLDER.sub(lambda match: " " * len(match.group()), text)
     leaks: list[Leak] = []
     for start, end, _ in _contact_matches(text):
         leaks.append(Leak(start, end, text[start:end], "contact"))

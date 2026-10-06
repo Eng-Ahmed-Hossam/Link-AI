@@ -1,8 +1,11 @@
 import link_nlp
 
 
-def test_round_two_public_api_is_explicit() -> None:
+def test_public_api_is_explicit() -> None:
+    # Round 3 adds RuleAbstention and rule_abstentions; nothing from round 2 changed or went away.
     expected = {
+        "RuleAbstention",
+        "rule_abstentions",
         "CleanedTranscript",
         "Leak",
         "NameMention",

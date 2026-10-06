@@ -94,11 +94,18 @@ def _number_aliases() -> dict[str, int]:
 
 
 _NUMBERS = _number_aliases()
+# Round 3: a bare «واحد/واحدة» is usually "one person" («كل واحد كتب الحل»), not a number. It
+# becomes 1 only in a number context (below); compounds («واحد وعشرين») are unaffected.
+_ONE = ("واحد", "واحدة", "واحده")
 _NUMBER_RE = re.compile(
     r"(?<!\w)(?:"
-    + "|".join(re.escape(word) for word in sorted(_NUMBERS, key=len, reverse=True))
+    + "|".join(
+        re.escape(word) for word in sorted(_NUMBERS, key=len, reverse=True) if word not in _ONE
+    )
     + r")(?!\w)"
 )
+_ONE_RE = "(?:" + "|".join(_ONE) + ")"
+_HOUR = r"(?:ساعة|ساعه)"
 
 
 def clean_transcript(text: str) -> CleanedTranscript:
@@ -129,9 +136,24 @@ def clean_transcript(text: str) -> CleanedTranscript:
         clean, offsets = "".join(pieces), mapped
 
     replace(_MARKS, "")
-    replace(re.compile(r"(?<!\w)ربع\s+ساعة(?!\w)"), "15 min")
-    replace(re.compile(r"(?<!\w)(?:نص|نصف)\s+ساعة(?!\w)"), "30 min")
+    replace(re.compile(rf"(?<!\w){_HOUR}\s+(?:إلا|الا)\s+ربع(?!\w)"), "45 min")
+    replace(re.compile(rf"(?<!\w)ربع\s+{_HOUR}(?!\w)"), "15 min")
+    replace(re.compile(rf"(?<!\w)(?:تلت|ثلث|تلث)\s+{_HOUR}(?!\w)"), "20 min")
+    replace(re.compile(rf"(?<!\w)(?:نص|نصف)\s+{_HOUR}(?!\w)"), "30 min")
     replace(_NUMBER_RE, lambda match: str(_NUMBERS[match.group()]))
+    # «واحد» as a number: before a denominator, or after a score verb or «سالب».
+    replace(re.compile(rf"(?<!\w){_ONE_RE}(?=\s*(?:من|على|/)\s*\d)"), "1")
+    replace(
+        re.compile(rf"((?:جاب|جابت|خد|خدت|سالب|درجته|درجتها)\s+){_ONE_RE}(?!\w)"),
+        lambda match: f"{match[1]}1",
+    )
+    # Whisper writes split teens with a digit: «7 تاشر» → 17.
+    replace(
+        re.compile(r"(?<![\w.])([1-9])\s*(?:تاشر|طاشر)(?!\w)"),
+        lambda match: str(10 + int(match[1])),
+    )
+    # A spoken negative score («سالب واحد من عشرين») keeps its sign; validation flags it.
+    replace(re.compile(r"(?<!\w)سالب\s+(?=\d)"), "-")
     replace(
         re.compile(r"(?<!\w)(\d+)\s*(?:و\s*نص|و\s*نصف)(?=\s+من\s+\d)"),
         lambda match: f"{match[1]}.5",
@@ -146,9 +168,7 @@ def clean_transcript(text: str) -> CleanedTranscript:
         lambda match: f"{match[1]}{match[2]}.5",
     )
     replace(
-        re.compile(
-            r"(?<!\w)(\d+(?:\.\d+)?)\s*(?:من|على|/)\s*(\d+(?:\.\d+)?)(?!\w)"
-        ),
+        re.compile(r"(?<!\w)(\d+(?:\.\d+)?)\s*(?:من|على|/)\s*(\d+(?:\.\d+)?)(?!\w)"),
         lambda match: f"{match[1]}/{match[2]}",
     )
     replace(

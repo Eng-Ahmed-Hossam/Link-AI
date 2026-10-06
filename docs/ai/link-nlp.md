@@ -144,6 +144,76 @@ For each note write `<id>.pred.json` with `id`, `model_version` (STT/model/promp
 
 On 30 synthetic reference texts, the deterministic matcher made 47 automatic assignments with **0 wrong student identities**, no unresolved occurrence alignments, and no unmentioned-student handling errors. Score exact match was 19/24 (79.2%); missed scores remain missing rather than guessed. This is a rules-only text check: the reference transcript supplies the STT input, observations are intentionally not extracted, there are no recordings, and speech accuracy or latency has not been measured. Regenerate with `evals/reference_rules.py` and evaluate its output; the local report is `evals/reports/2026-10-05-reference-rules.md`.
 
+## Round 3 (Claude Code, single agent from 2026-10-06)
+
+Codex stopped after round 2. The work below follows the round-2 handoff list (now history: [handoff-to-codex.md](handoff-to-codex.md), [handoff-to-claude.md](handoff-to-claude.md)). All of it was tuned on `evals/dev` and synthetic regression tests (`py/link_nlp/tests/test_round3.py`); gold v1 stays locked.
+
+### API: additions only, plus one documented behaviour change
+
+- **New** `RuleAbstention(token, start, end, reason)` and `rule_abstentions(tokenised_text, assessment_max=None) -> list[RuleAbstention]`. `reason` is one of `name_corrected`, `correction_unclear`, `negation_or_hypothetical`, `other_session`; offsets are in the tokenised text. `rule_extract` is unchanged.
+- **Behaviour change (deprecation note):** for an **ambiguous** mention, `NameMention.candidates` now holds only the contenders, i.e. scores within `margin` of the best. Until round 2 it held the whole roster. No signature changed. A consumer that relied on the full list should call `find_name_mentions` on the same text and read `unknown`/`unique` mentions, whose candidates are unchanged and still ranked.
+- **New data file** `data/name_words.txt`: common Egyptian first names and surnames, about 300. It is wider than the PII lexicon `first_names.txt`, which is unchanged. It is used only by the matcher (see below), never as a leak list.
+
+### What changed
+
+| Area | Change |
+|---|---|
+| Names | **A verb is never part of a name.** A first name followed by a predicate, particle or verb-shaped word ends there:<br>• an expanded stop-list with Whisper's spellings («ماجاشا», «تأخر», «أتأخر», «جهه»);<br>• Egyptian shapes («ما…ش», «بي…/بت…/هي…», «ات…», possessive «…تها»);<br>• known names are never treated as verb-shaped («بيشوي», «بيومي»). |
+| Names | «و» + a predicate («وكان») is not a name. «X كان/كانت + state» («هنا كانت ساكتة») is person evidence for a common-word name. |
+| Names (A5) | A span that does not start with a roster name stops at:<br>• a definite noun («على السبورة»);<br>• another script («على sign rules»);<br>• an English function word. |
+| Names (A5) | A compound name («عبد الرحمن») still takes its second part. After a roster first name, any other non-verb word still extends the span, so a different surname vetoes the roster match as before. |
+| Names (A4) | Ambiguous candidates are the contenders only (above). |
+| Clean-up | • «تلت/ثلث ساعة» = 20 min and «ساعة إلا ربع» = 45 min;<br>• «سالب N» keeps its sign (flagged, never capped);<br>• «7 تاشر» (digit + تاشر, as Whisper writes it) = 17;<br>• a bare «واحد/واحدة» stays a word unless it is in a number context («كل واحد» ≠ 1). |
+| Rules (A3) | Self-corrections are handled in code:<br>• a corrected *name* moves the fact to the corrected mention («مريم... لا قصدي مريم حسين، غابت»);<br>• a corrected *predicate* keeps the final statement («غاب، لا استنى، هو حاضر»);<br>• anything less clear abstains, and the abstention is exposed. |
+| Rules | • Topic–comment clauses («<S1>، غابت النهارده»).<br>• Participation phrases (high/normal/low), also in a following clause about the same student («لكنه … كان مشارك كويس»).<br>• Bare «جاب N» once the maximum is known (assessment or «من N درجة» in the note).<br>• Whisper's absence and lateness spellings.<br>• A full stop after a digit ends a clause («جابت 8.»). |
+| Leak check | `find_pii_leaks` masks the placeholders (with an attached «و») before detection: «<U1> غاب» is not a person called "U". |
+
+### Status of the round-2 handoff list
+
+| Item | Status | Note |
+|---|---|---|
+| A1 public API | fixed (round 2) | ai-service imports from `link_nlp` |
+| A2 contact redaction | fixed (round 2) | `redact_contacts` + `find_pii_leaks`; the ai-service shim is gone |
+| A3 rule abstentions | **fixed** | `rule_abstentions`; corrections in code; ai-service hands the abstained clauses to the LLM as "not a fact" and drops LLM attendance, late minutes and scores there |
+| A4 candidates | **fixed** | contenders only for ambiguous mentions |
+| A5 run-on unknown spans | **fixed** | bounded as above |
+| B1 negative score | **fixed** | −1 kept and flagged |
+| B2 corrected name | **fixed** | |
+| B3 «ملك إيهاب مشاركتها عادية» | **fixed** | unique + participation normal |
+| B4 participation in a following clause | **fixed** | |
+| B5 corrected predicate | **fixed** | |
+| B6 «تلت ساعة» | **fixed** | 20 min |
+| B7 «وكان» as a name | **fixed** | |
+| B8 «كل واحد» | **fixed** | |
+| B9 «على …» spans | **fixed** | |
+| B10 «ليلة» for «ليلى» | **fixed as a suggestion** | stays unknown; ليلى is ranked first and shown in "Who is this?", never attached |
+| B11 split teens | **fixed** | including «7 تاشر» |
+| B12 «التاشر» | **not fixed, by design** | a misspelling; guessing 13 could be wrong, so there is no score and the teacher types it |
+| B13 «سيف ماجاشا», «عمر جهه» | **fixed** | |
+| B14 «زياد بيلخبط» | **fixed** | |
+| B15 «يوسف تأخر» | **fixed** | |
+| B16 «وهنا كانت ساكتة» | **fixed** | |
+| B17 bare «جاب N» with the maximum said earlier | **fixed** | |
+| B18 «شاركت كويس جدا» | **fixed** | |
+| B19 «مشاركتها كانت قليلة» | **fixed** | |
+| B20 «عمر ونور حلوا كل» | **partly** | no run-on span and nothing invented; «عمر»/«نور» without a person cue are still not mentions (common-word names, by design) |
+| English text read as names (seen in the LLM prompt) | **fixed** | English function words never start a name |
+
+### Measured (text only, reference transcripts; `evals/reports/2026-10-06-text-reference-*`)
+
+| Set, pipeline | Wrong students | Score exact | Attendance F1 (P) | Late F1 | Participation F1 | Unknown-name rate |
+|---|---|---|---|---|---|---|
+| gold v1, rules only, round 2 → round 3 | 0/49 → **0/51** | 19/25 → **25/25** | 0.83 → **0.95** (1.00) | 0.91 → **1.00** | 0.73 → **1.00** | 51% → **33%** |
+| gold v1, rules + qwen3:8b, round 2 → round 3 | 0/49 → **0/51** | 24/25 → **25/25** | 0.89 → **0.95** (1.00) | 0.91 → **1.00** | 0.73 → **1.00** | 51% → **33%** |
+| dev, either pipeline | 0/12 → 0/12 | 6/6 → 6/6 | 1.00 → 1.00 | — | — | 14% → 14% |
+
+Caveats:
+- **Not speech accuracy:** the input is the reference transcript.
+- **Partly in-sample:** cases B1–B9 came from failures on the 30 original gold texts, so part of the gold gain is in-sample, even though no rule was tuned against a gold score.
+- **Dev is small** (15 notes) and was already at its ceiling.
+- **The leak check fails closed:** it skips the LLM on 8 of 35 gold notes, where a common word that is also a student's name («هنا», «نور», «كريم») appears in the text sent to the LLM.
+
 ## Changelog
 
 - 2026-10-05: Added the offline Arabic NLP contracts, exact schema validation, reversible name tokens, conservative rules, 30 independently annotated fictional scripts, accuracy runner and identity gates; verified Python 3.12 with 311 passing tests, Ruff, strict mypy, packaged resources, and evaluator selftest.
+- 2026-10-06 (round 3, Claude Code): verb/particle name boundaries, bounded unknown spans, contender-only ambiguous candidates, `rule_abstentions` and self-corrections in code, clean-up and rule additions, placeholder masking in `find_pii_leaks`; gold lock hashes LF-normalised content (no content change). 394 tests.

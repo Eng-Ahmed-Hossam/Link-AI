@@ -311,11 +311,100 @@ _STUDENT_ACTIONS = frozenset(
         "مشاركة",
         "ساكت",
         "ساكتة",
+        # Round 3: attendance verbs as Whisper writes them, and «جه/جت» (came).
+        "جه",
+        "جهه",
+        "جت",
+        "ماجاشا",
+        "ماجاشي",
+        "مجاشي",
+        "ماجتش",
+        "تأخر",
+        "تأخرت",
+        "تاخر",
+        "أتأخر",
         "absent",
         "late",
         "scored",
     )
 )
+
+
+# Common Egyptian first names and surnames (wider than the PII lexicon above). Used only to keep a
+# real name from looking like a verb, and to let an unknown name run on over a surname.
+_NAME_WORDS = _FIRST_NAMES | frozenset(
+    normalize_for_match(name)
+    for name in files("link_nlp")
+    .joinpath("data/name_words.txt")
+    .read_text(encoding="utf-8")
+    .splitlines()
+    if name.strip()
+)
+
+# Round 3: predicates that end a name, including the spellings Whisper writes. A first-name
+# roster match followed by one of these is the student, not a two-word unknown name
+# («سيف ماجاشا», «يوسف تأخر», «زياد بيلخبط»).
+# fmt: off
+_VERB_STOPS = frozenset(
+    normalize_for_match(word)
+    for word in (
+        # absent / did not come
+        "ماجاشا", "ماجاشي", "ماجاشه", "مجاشي", "ماجتش", "مجتش", "ماجتشي", "مجيش", "ماجيش",
+        "غايبه", "غايبين", "غيب", "اتغيب", "اتغيبت", "هيغيب", "هتغيب",
+        # late / came
+        "تأخر", "تأخرت", "تاخر", "تاخرت", "أتأخر", "أتأخرت", "اتأخرو", "اتأخروا", "متأخره",
+        "جهه", "جاء", "جات", "جاي", "جايه", "دخل", "دخلت", "وصل", "وصلت",
+        # scores / work
+        "جابه", "خدت", "حل", "حلت", "حلوا", "حلو", "ماحلش", "محلش", "عمل", "عملت", "عملوا",
+        "ماعملش", "معملش", "سلم", "سلمت", "سلموا", "ذاكر", "ذاكرت", "راجع", "راجعت",
+        # behaviour / participation
+        "بيلخبط", "بتلخبط", "لخبط", "لخبطت", "بيتكلم", "بتتكلم", "اتكلم", "اتكلمت", "بيشارك",
+        "بتشارك", "شاركوا", "مشاركته", "مشاركتها", "مشاركتهم", "مشاركش", "ماشاركش", "عادي",
+        "عاديه", "مركز", "مركزه", "مركزة", "فاهم", "فاهمه", "نايم", "نايمه", "بيلعب", "بتلعب",
+        "زعلان", "زعلانه", "تعبان", "تعبانه", "قليله", "ضعيفه",
+        # time / place words that follow a name
+        "طول", "النهارده", "اليوم", "متأخر", "كمان", "برضه", "بردو", "جدا", "اوي",
+        "قوي", "خالص", "تاني", "تانيه", "لسه", "دلوقتي", "بعد", "قبل", "اول", "اخر",
+        # pronouns / particles / prepositions
+        "وكان", "وكانت", "لكنه", "لكنها", "انه", "انها", "اللي", "بتاع", "بتاعه", "بتاعتها",
+        "عند", "عن", "ل", "لل", "بال", "عشان", "علشان", "لان", "زي", "غير", "او", "ولا", "كل",
+        # conditional, hedging and time particles («أحمد سمير لو غاب بكره»)
+        "لو", "لما", "إذا", "اذا", "إن", "ان", "يمكن", "احتمال", "أكيد", "اكيد", "بكره", "بكرة",
+        "الأسبوع", "الاسبوع", "الشهر", "قبلها", "بعدها",
+        # English function words (notes mix English in; prompt labels too): «student and field».
+        "and", "or", "the", "a", "an", "of", "to", "in", "on", "at", "for", "with", "is", "are",
+        "was", "were", "be", "this", "that", "it", "not", "no", "only", "never", "most", "once",
+    )
+)
+# fmt: on
+# Egyptian verb and possessive shapes. Never applied to a known name (see _verbish).
+_VERB_SHAPES = (
+    re.compile(r"^(?:ما|م)\w{2,}(?:ش|شي|شا|شه)$"),  # negation circumfix: ماجاش, ماجاشا, معملش
+    re.compile(r"^(?:بي|بت|بن|هي|هت|هن)\w{3,}$"),  # habitual / future: بيلخبط, بتشارك, هيغيب
+    re.compile(r"^(?:ات|است)\w{3,}$"),  # اتأخر (normalised), اتعلم, استنى
+    re.compile(r"^\w{3,}(?:تها|تهم|تهن)$"),  # possessive noun: مشاركتها
+)
+
+
+_COMPOUND_FIRST = frozenset(normalize_for_match(word) for word in ("عبد", "أبو", "ابو", "أم"))
+
+
+def _latin(key: str) -> bool:
+    return bool(re.match(r"[a-z]", key))
+
+
+def _verbish(key: str, names: frozenset[str] = frozenset()) -> bool:
+    """A predicate, particle or verb-shaped word: it ends a name and never starts one.
+
+    Known names (the name-word list and the session roster's own words) are never verbish, so a
+    real surname that looks like a verb («بيشوي», «بيومي») still extends the name."""
+    key = key.rstrip(".")
+    forms = (key, key[1:]) if key.startswith("و") and len(key) > 3 else (key,)
+    if any(form in _STOPS or form in _VERB_STOPS for form in forms):
+        return True
+    if any(form in _NAME_WORDS or form in names for form in forms):
+        return False
+    return any(shape.match(form) for shape in _VERB_SHAPES for form in forms)
 
 
 _NONPERSON_SUBJECTS = frozenset(
@@ -359,11 +448,27 @@ def _matches_sequence(text: str, words: list[_Word], index: int, sequence: tuple
     )
 
 
+_STATE_AFTER_KAN = _STUDENT_ACTIONS | frozenset(
+    normalize_for_match(word)
+    for word in ("حاضر", "حاضرة", "موجود", "موجودة", "مركز", "مركزة", "غايب", "غايبة")
+)
+
+
 def _bare_name_evidence(text: str, words: list[_Word], index: int) -> bool:
     word = words[index]
     if index and words[index - 1].key.rstrip(".") in _CUES:
         return text[words[index - 1].end : word.start].isspace()
-    if index + 1 >= len(words) or words[index + 1].key not in _STUDENT_ACTIONS:
+    if index + 1 >= len(words):
+        return False
+    action = words[index + 1].key in _STUDENT_ACTIONS
+    # Round 3: «هنا كانت ساكتة» — كان/كانت followed by a student state is also clause-subject
+    # evidence for a bare common-word name.
+    if not action and words[index + 1].key in {"كان", "كانت"} and index + 2 < len(words):
+        action = (
+            words[index + 2].key in _STATE_AFTER_KAN
+            and text[words[index + 1].end : words[index + 2].start].isspace()
+        )
+    if not action:
         return False
     if not text[word.end : words[index + 1].start].isspace():
         return False
@@ -469,9 +574,9 @@ def find_name_mentions(
         for name in (student.display_name, *student.nicknames)
         if _alias_keys(name)
     }
-    starts = {name.split()[0] for name in _FIRST_NAMES} | {
-        sequence[0] for sequence in exact_sequences
-    }
+    roster_starts = {sequence[0] for sequence in exact_sequences}
+    roster_words = frozenset(word for sequence in exact_sequences for word in sequence)
+    starts = {name.split()[0] for name in _FIRST_NAMES} | roster_starts
     words = _words(clean_text, starts)
     mentions: list[NameMention] = []
     index = 0
@@ -486,7 +591,8 @@ def find_name_mentions(
         if word.key not in starts and not after_cue and not suffix_cue:
             index += 1
             continue
-        if word.key.rstrip(".") in _STOPS and word.key not in _HOMOGRAPHS:
+        # A predicate or particle never starts a name («وكان مشارك» is not a person).
+        if _verbish(word.key, roster_words) and word.key not in _HOMOGRAPHS:
             index += 1
             continue
         length = max(
@@ -498,12 +604,35 @@ def find_name_mentions(
             default=0,
         )
         length = max(length, 1)
-        # Extend a roster prefix when there is further surname evidence. A known
-        # action/cue is a hard boundary; a first name can also be a surname.
+        # Extend a roster prefix when there is further surname evidence. A predicate, particle or
+        # verb-shaped word is a hard boundary (round 3: «سيف ماجاشا», «يوسف تأخر»). After a roster
+        # first name any other word still extends (a different surname vetoes the roster match);
+        # a span that does not start with a roster name stops at a definite noun or another script
+        # (A5: «على السبورة قبل أي» is not a name).
+        from_roster = word.key in roster_starts
         while index + length < len(words):
             next_word = words[index + length]
             between = clean_text[words[index + length - 1].end : next_word.start]
-            if not between.isspace() or next_word.key.rstrip(".") in _STOPS:
+            if not between.isspace():
+                break
+            # «عبد الرحمن», «أبو بكر»: a compound name always takes its second part.
+            if word.key in _COMPOUND_FIRST and length == 1:
+                length += 1
+                continue
+            if _verbish(next_word.key, roster_words):
+                break
+            nxt = next_word.key.rstrip(".")
+            known = nxt in _NAME_WORDS or nxt in roster_words
+            if (
+                not from_roster
+                and not known
+                and (
+                    # «على السبورة», «على الاسم الكامل»: a definite noun is not a surname …
+                    (nxt.startswith("ال") and len(nxt) > 3)
+                    # … and neither is a word in another script («على sign rules»).
+                    or _latin(nxt) != _latin(word.key)
+                )
+            ):
                 break
             length += 1
         start, end = word.start, words[index + length - 1].end
@@ -529,6 +658,10 @@ def find_name_mentions(
                     status, student_id = "unique", candidates[0][0]
                 else:
                     status = "ambiguous"
+                    # A4: only the contenders (within the margin of the best) are candidates.
+                    candidates = tuple(
+                        pair for pair in candidates if pair[1] > 0 and pair[1] >= best - margin
+                    )
         mentions.append(NameMention(start, end, text, status, student_id, candidates))
         index += length
     return mentions
