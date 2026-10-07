@@ -6,11 +6,11 @@ Every role → app → screen → status: the quickest way to find your way arou
 
 ## Visitor: Website (`apps/web`, route group `(site)`)
 
-3 of 4 built.
+4 of 4 built.
 
 | ID | Screen | Route | Figma | Status | Screenshot |
 |---|---|---|---|---|---|
-| W00 | Landing page | `/{lang}` | [68:616](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=68-616) | rebuilding from Figma (Step 1) | — |
+| W00 | Landing page (copy of Figma) | `/{lang}` | [68:616](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=68-616) | built | <img src="../frontend/screenshots/landing/W00-landing.ar.desktop.png" width="96" alt=""> |
 | W-TRY | Try Link (becomes the role chooser, Step 2) | `/{lang}/try` | — | built | <img src="../frontend/screenshots/landing/W-TRY-demo.ar.mobile.png" width="96" alt=""> |
 | W-PILOT | Request a free pilot | `/{lang}/pilot` | — | built | <img src="../frontend/screenshots/landing/W-PILOT.ar.mobile.png" width="96" alt=""> |
 | W-SIGNIN | Sign in (pilot centres) | `/{lang}/sign-in` | — | built | <img src="../frontend/screenshots/landing/W-SIGNIN.en.mobile.png" width="96" alt=""> |

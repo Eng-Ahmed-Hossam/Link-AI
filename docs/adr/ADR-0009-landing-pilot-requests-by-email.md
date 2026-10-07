@@ -30,3 +30,5 @@ There must be no passwords, no accounts and no paid service. Leads must not be s
 - ⚠️ Resend's shared sender only reaches the account owner. To send elsewhere (for example a team inbox), verify a domain first.
 - ⚠️ The rate limit resets when a serverless instance is recycled. Acceptable for a landing form; revisit if spam appears.
 - ⚠️ Vercel's Hobby plan is for non-commercial use (Stage 3 note): move to a paid plan or our own hosting before charging centres.
+
+**Update 2026-10-08:** the landing page is rebuilt from Figma 68:616 (PRODUCT_BRIEF). Its "Get started" form (section 11: name, centre, area, teachers, WhatsApp number, plus the consent tick) sends the same request to the same route; nothing else changes. The "Request a free pilot" page stays for the demo's pilot card.

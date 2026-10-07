@@ -2,6 +2,15 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-08 — The landing page, rebuilt from Figma 68:616
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | frontend/screen-log.md, 11 §7, product/app-map.md | The landing page is a copy of Figma 68:616 (13 frames, IDs in 11 §7): Figma's words, Figma's renders and icons; no §3 fact needed changing; the additions (consent tick, Arabic, alt text, the two undrawn tabs) are listed in the screen log. Section comparisons in `frontend/compare/landing/`. | PRODUCT_BRIEF §4, Step 1 |
+| 2 | 13 | CF-40 ("rooms by the session" vs hall slots) and CF-41 ("Create my free account" on a request form): kept as in Figma, open for Ahmed. | Not §3 facts |
+| 3 | adr/ADR-0009 | The landing's "Get started" form uses the same email route. | Step 1 |
+| 4 | pilot/strings-to-review.csv, pilot/arabic-review.md | The 214 landing strings (`site.*`), by Figma section, for review; the old landing strings removed. | Arabic review |
+
 ## 2026-10-07 — Reset to the product brief
 
 | # | File | What changed | Why |

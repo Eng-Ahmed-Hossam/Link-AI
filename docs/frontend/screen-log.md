@@ -128,10 +128,32 @@ Next.js pages in `app/[lang]/(site)`, with no app providers (ADR-0009). Built fr
 
 | Screen | Route | Status | Differs from Figma | Screenshots |
 |---|---|---|---|---|
-| W00 Landing page | `/{lang}` | built | Leads with the problem and the two ways in (OD-48 decided, CF-19 resolved). Kept: hero with the four animated cards (8-second loop, still with reduced motion), the four promises, "The problem" with Omar's month, the trust flow and FAQ. Changed: "How it works" has six steps with the **real app screens** in phone and laptop frames (not the four illustrated cards and product tabs); trust has the four promises asked for; "How a pilot works" is new; the request section's form is the pilot request. Hidden: marketplace, pricing (flag off), the video slot (until `public/landing/promo.mp4` exists). No WhatsApp/LinkedIn/Instagram links or contact number (none given yet). Arabic is designed from the English frame (no Arabic frame) | `docs/frontend/screenshots/landing/W00-landing.{ar,en}.{desktop,mobile}` |
+| W00 Landing page | `/{lang}` | built | **Rebuilt 2026-10-08 as a copy of Figma 68:616** (PRODUCT_BRIEF, OD-48 reversed): the 13 Figma frames in order, every English word from Figma, the UI pictures are Figma's own renders, the icons Figma's SVGs. See "Landing page rebuilt from Figma" below for what differs | `docs/frontend/screenshots/landing/W00-landing.{ar,en}.{desktop,mobile}`, comparisons in `docs/frontend/compare/landing/` |
 | Try Link with your centre | `/{lang}/try` | built | No Figma frame; follows the website system (card on the soft background, RadioCards) | `W-TRY.ar.mobile`, `W-TRY-demo.ar.mobile`, `W-TRY-card.ar.mobile` |
 | Request a free pilot | `/{lang}/pilot` | built | The Figma "Get started" card, with the fields asked for (centre, name, phone/WhatsApp, area, teachers, consent) | `W-PILOT.ar.mobile`, `W-PILOT-done.ar.mobile` |
 | Sign in (pilot centres) | `/{lang}/sign-in` | built | No Figma frame; points to the pilot request until the hosted pilot (Stage 5) | `W-SIGNIN.en.mobile` |
 | Demo banner and pilot card | every app page during path A | built | No Figma frame: "Demo — sample data · <centre> · Reset demo"; after two minutes, on Today or Follow-ups only, "Want this for your real centre?" | `W-TRY-card.ar.mobile` |
 | Teacher app `/try` | `/try?centre=…&lang=…` | built | Opens Today as the sample teacher under the visitor's centre name, with the same banner | — |
+
+## Landing page rebuilt from Figma (2026-10-08)
+
+The landing page (`/{lang}`) is a copy of Figma frame 68:616, section by section (`docs/frontend/compare/landing/`: Figma | build EN | build AR at 1440, made by `node scripts/landing-compare.mjs`). Desktop 1440 follows Figma; on phones the sections stack in the same order.
+
+**Facts changed for PRODUCT_BRIEF §3 (money, payments, curricula):** none. Every money, payment and curriculum statement in the frame agrees with the brief (free to join; 5–10% of hall rent from centres; a commission on paid bookings from the teacher's fee; parents pay no fee; card, Fawry, mobile wallet; paid extras as a monthly subscription; National, IGCSE, American, Nile).
+
+**Kept as in Figma, for Ahmed to confirm** (not §3 facts, so not changed): "rent rooms by the session" (CF-40) and "Create my free account" on a form that sends a request, not an account (CF-41).
+
+**Not in the Figma frame, added:**
+
+| What | Why |
+|---|---|
+| The consent tick in the "Get started" form (section 11) | PDPL: the request is emailed to the Link team (ADR-0009); the server refuses a request without it |
+| Arabic version, RTL (layout mirrored; Figma's pictures not mirrored) | Arabic first; Figma has only the English desktop frame |
+| Alt text for every Figma picture | Accessibility (axe clean) |
+| "Teacher app" and "Parent updates" tab content | Figma draws only "Owner dashboard"; the other tabs show Figma's own phone (V02) and the WhatsApp update card |
+| "Message us on WhatsApp" goes to the form until `NEXT_PUBLIC_CONTACT_WHATSAPP` is set; About, Privacy, Terms, Data & consent, LinkedIn and Instagram are text | No number, pages or accounts yet (Figma note 80:691, items 5 and 6) |
+
+**Removed from the old landing:** the follow-up-first copy, the "How a pilot works" section, the separate privacy line under the form (the consent text says what the details are used for) and the empty video slot (not in Figma).
+
+**Performance:** the picture renders are 2x WebP; the icons come from one SVG sprite (`scripts/landing-sprite.mjs`); the hero's pictures appear after load (they fade in on Figma's loop anyway); the product tabs need no JavaScript. Lighthouse mobile on a production build: Arabic 90–91, English 90; accessibility, best practices and SEO 100.
 

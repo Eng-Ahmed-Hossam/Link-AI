@@ -154,23 +154,23 @@ The file has **two pages**: "Link MVP • Editable screens" (`0:1`, all app scre
 | W02 | Link Web / FAQ item (component set) | 1 | [76:657](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=76-657) |
 | W03 | Note · Content to confirm (9 items to clear before go-live) | 1 | [80:691](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=80-691) |
 
-Sections inside `68:616`, top to bottom. The MCP does not expose them as separate layers, so link to `68:616` and find them by order:
+Sections inside `68:616`, top to bottom (frame IDs read with the plugin API; `get_design_context` works on each). The landing page is built as a copy of this frame (PRODUCT_BRIEF, OD-48).
 
-| # | Section | Content | Phase of the features it shows |
+| # | Frame | Section | Content |
 |---|---|---|---|
-| 1 | Navigation | Logo; How it works, Features, Marketplace, Pricing, FAQ; عربي; Log in; Join Link | 1 |
-| 2 | Hero | "Speak after class. Link does the follow-up."; Join for free / See how it works; animated cards (voice note → record → WhatsApp → flag) | 2 (OD-48) |
-| 3 | Trust strip | Arabic-first · People decide · Rules you can read · WhatsApp-native | 2 |
-| 4 | The problem | "A concern is noticed. Then nobody follows up." + Omar's month timeline | 2 |
-| 5 | How it works | Speak → Confirm → Flag → Follow up (4 steps) | 2 |
-| 6 | The product | Tabs: Owner dashboard · Teacher app · Parent updates | 2 |
-| 7 | Features | Readable rules, voice notes, records, follow-up with an owner, owner dashboard, approved parent updates, Arabic and English | 2 |
-| 8 | Marketplace | "Parents find teachers. Teachers find rooms." Map + for parents / teachers / centres; payment methods | 1 |
-| 9 | Trust & control | AI drafts → teacher confirms → staff approve → parent receives; data separate per centre; logged; opt-in | 1–2 |
-| 10 | Pricing | Free for centres, teachers and parents; Link's fee examples (5–10% of rent; commission on bookings) | 1 (OD-01, OD-02, OD-05) |
-| 11 | FAQ | 6 questions (FAQ item component) | 1–2 |
-| 12 | Join Link | "Give every concern an owner…" + "Get started" form → `POST /v1/leads` | 1 |
-| 13 | Footer | Product, Company, Legal (Privacy, Terms, Data & consent); EN / عربي; social links | 1 |
+| 1 | `68:617` | Nav | Logo; How it works, Features, Marketplace, Pricing, FAQ; عربي; Log in; Join Link |
+| 1 | `68:618` | Hero | "Speak after class. Link does the follow-up."; Join for free / See how it works; animated cards (voice note → record → flag → WhatsApp) |
+| 2 | `68:619` | Principles (proof row) | Arabic-first · People decide · Rules you can read · WhatsApp-native |
+| 3 | `68:620` | The problem | "A concern is noticed. Then nobody follows up." + Omar's month |
+| 4 | `68:621` | How it works | Speak → Confirm → Flag → Follow up |
+| 5 | `68:622` | The product | Tabs: Owner dashboard · Teacher app · Parent updates (only the first is drawn) |
+| 6 | `68:623` | Features | The bento: rules, voice notes, records, follow-up with an owner, owner dashboard, approved parent updates, Arabic and English |
+| 7 | `68:624` | Marketplace | "Parents find teachers. Teachers find rooms." Map + parents / teachers / centres; payment methods |
+| 8 | `68:625` | Trust & control | AI drafts → teacher confirms → staff approve → parent receives; three trust cards |
+| 9 | `68:626` | Pricing | Free for centres, teachers and parents; Link's fees |
+| 10 | `68:627` | FAQ | 6 questions (FAQ item component) |
+| 11 | `68:628` | Final CTA | "Give every concern an owner…" + the "Get started" form |
+| 12 | `68:629` | Footer | Product, Company, Legal; English / عربي; WhatsApp, LinkedIn, Instagram |
 
 ### Foundations (section `14:82`)
 | ID | Name | Phase | Node |
