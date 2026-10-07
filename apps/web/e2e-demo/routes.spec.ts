@@ -194,6 +194,32 @@ test('teacher app /try (path A as a teacher): Today under my centre name, with t
   await ctx.close();
 });
 
+test('website path A as a centre, on the shared mock server: "List your centre" → try → Today under my centre name', async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(180_000);
+  const errors = watch(page);
+  const failed: string[] = [];
+  page.on('response', (r) => r.status() >= 400 && failed.push(`${r.status()} ${r.url()}`));
+  await page.goto('/ar');
+  await page.locator('#pricing a[href="/ar/try?role=centre"]').click();
+  await page.getByLabel('اسم مركزك').fill('مركز الأمل');
+  await page.getByRole('radio', { name: /المالك/ }).click();
+  await page.getByTestId('try-submit').click();
+  // The website pages load no app providers: the try flow must still reach the mock server (it
+  // once called the web app instead: HTTP 404).
+  await expect(page).toHaveURL(/\/ar\/centre\/cen-nour\/today$/, { timeout: 60_000 });
+  await expect(page.getByTestId('try-centre')).toHaveText('مركز الأمل');
+  expect(failed).toEqual([]);
+  expect(errors).toEqual([]);
+  // Put the shared sample scenario back for the other tests and for the people using the demo.
+  const back = await request.post('http://localhost:4010/__demo/reset', {
+    data: { scenario: 'demo-followup' },
+  });
+  expect(back.ok()).toBe(true);
+});
+
 test('links without the centre id and unknown pages', async ({ page }) => {
   test.setTimeout(180_000);
   await signIn(page, 'owner');

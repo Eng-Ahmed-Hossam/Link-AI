@@ -7,12 +7,13 @@
  * "Reset demo" wipes it all. Demo-only code: the pilot build swaps this module for a stub.
  */
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import { setApiBaseUrl } from '@link/api-client';
 import { demoApi } from '@link/api-client/demo';
 import { resetMockDb } from '@link/mocks';
 import { resetFollowupDb, setDemo } from '@link/mocks/followup';
 import type { Locale } from '@link/i18n';
 import type { Session } from '../session';
-import { API_MODE } from '../api-mode';
+import { API_BASE_URL, API_MODE } from '../api-mode';
 
 export type TryRole = 'owner' | 'reception' | 'teacher';
 export interface TrySession {
@@ -78,6 +79,9 @@ export async function startTry(input: {
     resetFollowupDb({ centreName: input.centreName });
     setDemo(settings);
   } else {
+    // The website pages do not load the app providers, which set the API address: set it here,
+    // or these calls would go to the web app itself (404).
+    setApiBaseUrl(API_BASE_URL);
     await demoApi.reset(input.centreName);
     await demoApi.settings(settings);
   }
