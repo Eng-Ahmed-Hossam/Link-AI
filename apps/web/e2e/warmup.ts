@@ -3,6 +3,11 @@
  * does not spend its 60 s timeout waiting for Turbopack.
  */
 const ROUTES = [
+  '',
+  'try',
+  'pilot',
+  'sign-in',
+  'centre',
   'welcome',
   'search',
   'search/results',

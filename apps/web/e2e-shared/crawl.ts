@@ -25,8 +25,8 @@ const segs = (rel: string) =>
     .map((s) => (/^\[.*\]$/.test(s) ? '*' : s));
 
 /**
- * Web routes from `app/[lang]/**\/page.tsx`. Left out: redirects (`/{lang}`, `/centre/{id}`), the
- * not-found catch-all, and the generic `[section]` page (its sections are C02–C07 in the manifest).
+ * Web routes from `app/[lang]/**\/page.tsx`. Left out: the centre home redirect (`/centre/{id}`),
+ * the not-found catch-all, and the generic `[section]` page (its sections are C02–C07).
  */
 export function webRoutes(appDir: string): string[] {
   const root = join(appDir, '[lang]');
@@ -34,7 +34,7 @@ export function webRoutes(appDir: string): string[] {
   for (const f of files(root)) {
     if (!f.endsWith(`${sep}page.tsx`)) continue;
     const route = `/${segs(relative(root, f)).slice(0, -1).join('/')}`;
-    if (['/', '/*', '/centre/*', '/centre/*/*'].includes(route)) continue;
+    if (['/*', '/centre/*', '/centre/*/*'].includes(route)) continue;
     out.push(route);
   }
   return out.sort();

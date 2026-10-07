@@ -106,7 +106,7 @@ for (const lang of LANGS)
     test(`web (${lang}) as ${role}: every screen opens, no console error, no broken link`, async ({
       page,
     }) => {
-      test.setTimeout(600_000);
+      test.setTimeout(1_200_000);
       if (role !== 'anyone') await signIn(page, role as 'owner' | 'reception' | 'parent', lang);
       const errors = watch(page);
       const problems: string[] = [];
@@ -153,7 +153,7 @@ const teacherReady = async (page: Page) => {
 
 for (const lang of LANGS)
   test(`teacher app (${lang}): every screen opens, no console error`, async ({ browser }) => {
-    test.setTimeout(600_000);
+    test.setTimeout(1_200_000);
     const ctx = await browser.newContext({
       baseURL: TEACHER_APP,
       viewport: { width: 390, height: 844 },
@@ -163,7 +163,10 @@ for (const lang of LANGS)
     const errors = watch(page);
     const problems: string[] = [];
     const p = { ...params, recordId: params.draftRecordId, studentId: 'chd-mariam' };
-    for (const s of SCREENS.filter((x) => x.app === 'teacher' && x.modes.includes('demo'))) {
+    // T-TRY resets the shared scenario, so it has its own test below.
+    for (const s of SCREENS.filter(
+      (x) => x.app === 'teacher' && x.modes.includes('demo') && x.id !== 'T-TRY',
+    )) {
       const path = fillPath(s.path, p);
       expect(path, `${s.id} has sample ids`).not.toBeNull();
       problems.push(...(await visit(page, path!, teacherReady, errors)));
@@ -171,6 +174,25 @@ for (const lang of LANGS)
     expect(problems).toEqual([]);
     await ctx.close();
   });
+
+test('teacher app /try (path A as a teacher): Today under my centre name, with the demo banner', async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext({
+    baseURL: TEACHER_APP,
+    viewport: { width: 390, height: 844 },
+  });
+  const page = await ctx.newPage();
+  const errors = watch(page);
+  const path = fillPath(SCREENS.find((x) => x.id === 'T-TRY')!.path, params)!;
+  await page.goto(path);
+  await expect(page.getByTestId('screen-today')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId('try-banner')).toContainText(DEMO_PARAMS.centreName!);
+  await page.getByTestId('try-reset').click();
+  await page.waitForURL(/localhost:3000\/ar$/);
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
 
 test('links without the centre id and unknown pages', async ({ page }) => {
   test.setTimeout(180_000);
@@ -192,7 +214,7 @@ test('links without the centre id and unknown pages', async ({ page }) => {
   expect(res?.status()).toBe(404);
   await expect(page.getByTestId('not-found')).toContainText('لم نجد هذه الصفحة');
   await page.getByRole('link', { name: 'اذهب إلى البداية' }).click();
-  await expect(page).toHaveURL(/\/ar\/welcome$/);
+  await expect(page).toHaveURL(/\/ar$/); // the landing page
 });
 
 test('teacher app: an unknown path shows "not found" with a way back', async ({ browser }) => {

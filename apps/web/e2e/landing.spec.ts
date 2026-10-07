@@ -1,0 +1,304 @@
+// The public website (Stage 1): the landing page, path A "Try Link with your centre" (a
+// personalised demo in the browser) and path B "Request a free pilot" (emailed to the Link team).
+// Runs in API mode `mock` (the in-browser MSW backend), the mode the public demo ships in.
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { expect, test, type Page, type Request } from '@playwright/test';
+import { axe, prepare, type Lang } from './helpers';
+
+const SHOTS = join(__dirname, '..', '..', '..', 'docs', 'frontend', 'screenshots', 'landing');
+mkdirSync(SHOTS, { recursive: true });
+const LANGS: Lang[] = ['ar', 'en'];
+const VIEWPORTS = { desktop: { width: 1440, height: 900 }, mobile: { width: 390, height: 844 } };
+
+/** Scroll the whole page once so lazy images load, then capture it for the report. */
+async function capture(page: Page, name: string) {
+  await page.evaluate(async () => {
+    for (let y = 0; y < document.body.scrollHeight; y += 600) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 60));
+    }
+    window.scrollTo(0, 0);
+  });
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.evaluate(() => document.fonts.ready);
+  // Sections below the fold render only near the screen (content-visibility); a full-page
+  // capture needs them all drawn.
+  await page.addStyleTag({ content: '.site-lazy { content-visibility: visible !important; }' });
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: join(SHOTS, `${name}.png`), fullPage: true });
+}
+
+const errorsOf = (page: Page) => {
+  const errors: string[] = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(e.message));
+  return errors;
+};
+
+for (const lang of LANGS)
+  for (const [vp, size] of Object.entries(VIEWPORTS))
+    test(`landing (${lang}, ${vp}): every section, axe clean, no console error`, async ({
+      browser,
+    }) => {
+      const page = await (
+        await browser.newContext({
+          viewport: size,
+          deviceScaleFactor: vp === 'desktop' ? 1 : 2,
+          isMobile: vp === 'mobile',
+          reducedMotion: 'reduce',
+        })
+      ).newPage();
+      const errors = errorsOf(page);
+      await page.goto(`/${lang}`);
+      await expect(page.locator('html')).toHaveAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+      await expect(page.getByRole('heading', { level: 1 })).toContainText(
+        lang === 'ar' ? 'الطلاب يبتعدون بهدوء' : 'Students drift away',
+      );
+      await expect(page.getByTestId('cta-try-hero')).toBeVisible();
+      await expect(page.getByTestId('cta-pilot-hero')).toBeVisible();
+      for (const id of ['how', 'trust', 'pilot', 'faq', 'request'])
+        await expect(page.locator(`#${id}`)).toBeAttached();
+      for (let i = 1; i <= 6; i++) await expect(page.getByTestId(`how-step-${i}`)).toBeAttached();
+      // No marketplace, pricing or promo video yet (flag off; no video file).
+      await expect(page.getByText(/Marketplace|Pricing|السوق|الأسعار/)).toHaveCount(0);
+      await expect(page.getByTestId('promo-video')).toHaveCount(0);
+      // The website never starts the app's mock backend.
+      expect(await page.evaluate(() => navigator.serviceWorker.controller)).toBeNull();
+      await axe(page);
+      await capture(page, `W00-landing.${lang}.${vp}`);
+      expect(errors).toEqual([]);
+    });
+
+test('FAQ: one answer open at a time, no JavaScript needed', async ({ page }) => {
+  await page.goto('/en#faq');
+  const items = page.locator('#faq details');
+  await expect(items).toHaveCount(6);
+  await expect(items.nth(0)).toHaveAttribute('open', '');
+  await items.nth(2).locator('summary').click();
+  await expect(items.nth(2)).toHaveAttribute('open', '');
+  await expect(items.nth(0)).not.toHaveAttribute('open', '');
+  await expect(items.nth(2)).toContainText('Link drafts the message');
+});
+
+test('SEO: description, canonical, hreflang, Open Graph and the social card, per language', async ({
+  page,
+}) => {
+  for (const lang of LANGS) {
+    await page.goto(`/${lang}`);
+    const meta = (sel: string) => page.locator(sel).first().getAttribute('content');
+    expect(await meta('meta[name="description"]')).toBeTruthy();
+    expect(await meta('meta[property="og:image"]')).toContain(`/og/landing-${lang}.png`);
+    expect(await meta('meta[property="og:locale"]')).toBe(lang === 'ar' ? 'ar_EG' : 'en_GB');
+    expect(await meta('meta[name="twitter:card"]')).toBe('summary_large_image');
+    expect(await page.locator('link[rel="canonical"]').getAttribute('href')).toMatch(
+      new RegExp(`/${lang}$`),
+    );
+    for (const alt of ['ar', 'en'])
+      await expect(page.locator(`link[rel="alternate"][hreflang="${alt}"]`)).toHaveCount(1);
+    const og = await page.request.get(`/og/landing-${lang}.png`);
+    expect(og.status()).toBe(200);
+  }
+});
+
+/** Every request the page makes leaves the browser only for our own static files. */
+function networkLog(page: Page) {
+  const outside: string[] = [];
+  const apiCalls: Request[] = [];
+  page.on('request', (r) => {
+    const u = new URL(r.url());
+    if (u.origin !== 'http://localhost:3000') outside.push(r.url());
+    else if (/^\/(v1|__demo|__mock|api)\//.test(u.pathname)) apiCalls.push(r);
+  });
+  return { outside, apiCalls };
+}
+
+test('path A: the demo opens under my centre name, as the owner — and nothing leaves the browser', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  await prepare(page);
+  const net = networkLog(page);
+  await page.goto('/ar');
+  await page.getByTestId('cta-try-hero').click();
+  await expect(page).toHaveURL(/\/ar\/try$/);
+  await axe(page);
+  await capture(page, 'W-TRY.ar.mobile');
+  // Nothing typed, nothing chosen: both are asked for.
+  await page.getByTestId('try-submit').click();
+  await expect(page.getByText('اكتب اسم مركزك (حتى ٦٠ حرفًا).')).toBeVisible();
+  await expect(page.getByText('اختر دورًا.')).toBeVisible();
+  await page.getByLabel('اسم مركزك').fill('مركز الأمل');
+  await page.getByRole('radio', { name: /المالك/ }).click();
+  await page.getByLabel('عدد المعلّمين (اختياري)').fill('٨');
+  await page.getByTestId('try-submit').click();
+  await expect(page).toHaveURL(/\/ar\/centre\/cen-nour\/today$/, { timeout: 30_000 });
+  await expect(page.getByTestId('try-banner')).toContainText('عرض تجريبي — بيانات تجريبية');
+  await expect(page.getByTestId('try-centre')).toHaveText('مركز الأمل');
+  await expect(page.getByRole('navigation').getByText('مركز الأمل').first()).toBeVisible();
+  // The follow-up product, not the marketplace (the demo's flags, whatever the build's defaults).
+  const nav = page.getByRole('navigation');
+  await expect(nav.getByRole('link', { name: 'المتابعات', exact: true })).toBeVisible();
+  await expect(nav.getByRole('link', { name: 'الصفحة العامة' })).toHaveCount(0);
+  await expect(page.getByText('نور خالد').first()).toBeVisible();
+  await capture(page, 'W-TRY-demo.ar.mobile');
+  // A parent message drafted in the demo speaks for my centre, not the sample one.
+  await page.goto('/ar/centre/cen-nour/follow-ups');
+  await expect(page.getByTestId('try-banner')).toBeVisible();
+  await page.locator('[data-testid^="case-row-"]').first().getByRole('link').first().click();
+  await page.getByTestId('draft-message').click();
+  await expect(page.getByTestId('message-text')).toHaveValue(/مركز الأمل/);
+
+  // The proof: every API call was answered inside the browser (the MSW worker), none reached a
+  // server, and no request went to any other origin (analytics is off: no key in tests).
+  expect(net.outside).toEqual([]);
+  expect(net.apiCalls.length).toBeGreaterThan(5);
+  for (const r of net.apiCalls) {
+    const res = await r.response();
+    expect(res?.fromServiceWorker(), `${r.method()} ${r.url()}`).toBe(true);
+  }
+
+  // "Reset demo" wipes the browser and goes home.
+  await page.getByTestId('try-reset').click();
+  await expect(page).toHaveURL(/\/ar$/);
+  const left = await page.evaluate(() =>
+    Object.keys(localStorage).filter((k) => /^link\.(try|session|mock)/.test(k)),
+  );
+  expect(left).toEqual([]);
+});
+
+test('path A as Reception and as a teacher (the teacher app opens with my centre)', async ({
+  page,
+}) => {
+  await prepare(page);
+  await page.goto('/en/try');
+  await page.getByLabel("Your centre's name").fill('Al Amal Centre');
+  await page.getByRole('radio', { name: /Reception/ }).click();
+  await page.getByTestId('try-submit').click();
+  await expect(page).toHaveURL(/\/en\/centre\/cen-nour\/today$/, { timeout: 30_000 });
+  await expect(page.getByTestId('signed-in-as')).toContainText('Dina Adel');
+  await page.getByTestId('try-reset').click();
+  await expect(page).toHaveURL(/\/en$/);
+  // Teacher: the browser goes to the teacher app's /try with the name and the language.
+  await page.route('http://localhost:8081/**', (r) =>
+    r.fulfill({ status: 200, contentType: 'text/html', body: '<p>teacher app</p>' }),
+  );
+  await page.goto('/ar/try');
+  await page.getByLabel('اسم مركزك').fill('مركز الأمل');
+  await page.getByRole('radio', { name: /المعلّم/ }).click();
+  await page.getByTestId('try-submit').click();
+  await page.waitForURL(/localhost:8081\/try/);
+  const u = new URL(page.url());
+  expect(u.searchParams.get('centre')).toBe('مركز الأمل');
+  expect(u.searchParams.get('lang')).toBe('ar');
+});
+
+test('path A: after two minutes, a gentle pilot card on Today only — never mid-task', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  await page.clock.install();
+  await prepare(page);
+  await page.goto('/ar/try');
+  await page.getByLabel('اسم مركزك').fill('مركز الأمل');
+  await page.getByRole('radio', { name: /الاستقبال/ }).click();
+  await page.getByTestId('try-submit').click();
+  await expect(page).toHaveURL(/\/today$/, { timeout: 30_000 });
+  await expect(page.getByTestId('try-pilot-card')).toHaveCount(0);
+  // In a task (the rules page) when two minutes pass: nothing appears.
+  await page.goto('/ar/centre/cen-nour/rules');
+  await page.clock.fastForward('02:05');
+  await expect(page.getByTestId('try-pilot-card')).toHaveCount(0);
+  // Back on Today (between tasks): the card, pre-filled with the centre name.
+  await page.goto('/ar/centre/cen-nour/today');
+  await expect(page.getByTestId('try-pilot-card')).toBeVisible();
+  await expect(page.getByTestId('try-pilot-card')).toContainText('تحب تجرّب ده في مركزك الحقيقي؟');
+  await axe(page);
+  await capture(page, 'W-TRY-card.ar.mobile');
+  await page.getByTestId('try-pilot-card').getByRole('link').click();
+  await expect(page).toHaveURL(/\/ar\/pilot\?centre=/);
+  await expect(page.getByLabel('اسم المركز')).toHaveValue('مركز الأمل');
+  // Shown once: not again after it was used.
+  await page.goto('/ar/centre/cen-nour/today');
+  await expect(page.getByTestId('try-banner')).toBeVisible();
+  await expect(page.getByTestId('try-pilot-card')).toHaveCount(0);
+});
+
+test('path B: the pilot request checks every field, then confirms', async ({ page }) => {
+  await prepare(page);
+  // Each run gets its own address for the rate limit (5 per 10 minutes per address).
+  const ip = `10.0.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}`;
+  await page.route('**/api/pilot-request', (r) =>
+    r.continue({ headers: { ...r.request().headers(), 'x-forwarded-for': ip } }),
+  );
+  await page.goto('/ar');
+  await page.getByTestId('cta-pilot-hero').click();
+  await expect(page).toHaveURL(/\/ar\/pilot$/);
+  await page.getByTestId('pilot-submit').click();
+  for (const msg of [
+    'اكتب اسم المركز.',
+    'اكتب اسمك.',
+    'اكتب رقم موبايل مصري (١١ رقمًا يبدأ بـ ٠١).',
+    'اكتب منطقة المركز.',
+    'اكتب رقمًا من ١ إلى ٥٠٠.',
+    'ضع علامة في المربّع حتى نستطيع التواصل معك.',
+  ])
+    await expect(page.getByText(msg)).toBeVisible();
+  await axe(page);
+  await page.getByLabel('اسم المركز').fill('مركز الأمل');
+  await page.getByLabel('اسمك').fill('هبة مصطفى');
+  await page.getByLabel('الهاتف أو واتساب').fill('٠١٠ ١٢٣٤ ٥٦٧٨');
+  await page.getByLabel('المنطقة').fill('مدينة نصر');
+  await page.getByLabel('عدد المعلّمين').fill('٨');
+  await page.getByText('أوافق على أن يتواصل معي فريق لينك').click();
+  await capture(page, 'W-PILOT.ar.mobile');
+  const sent = page.waitForResponse('**/api/pilot-request');
+  await page.getByTestId('pilot-submit').click();
+  expect((await sent).status()).toBe(200);
+  await expect(page.getByTestId('pilot-done')).toContainText('شكرًا! هنتواصل معاك خلال يوم عمل.');
+  await axe(page);
+  await capture(page, 'W-PILOT-done.ar.mobile');
+});
+
+test('path B API: bad input 400, honeypot dropped, rate limit 429', async ({ request }) => {
+  const ip = `10.1.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}`;
+  const headers = { 'x-forwarded-for': ip };
+  const good = {
+    centreName: 'مركز الأمل',
+    contactName: 'هبة مصطفى',
+    phone: '01012345678',
+    area: 'مدينة نصر',
+    teachers: 8,
+    consent: true,
+    lang: 'ar',
+  };
+  const bad = await request.post('/api/pilot-request', { data: { ...good, phone: '12' }, headers });
+  expect(bad.status()).toBe(400);
+  expect(await bad.json()).toMatchObject({ code: 'validation_failed', errors: ['phone'] });
+  const spam = await request.post('/api/pilot-request', {
+    data: { ...good, website: 'x' },
+    headers,
+  });
+  expect(await spam.json()).toEqual({ ok: true });
+  const codes: number[] = [];
+  for (let i = 0; i < 6; i++)
+    codes.push((await request.post('/api/pilot-request', { data: good, headers })).status());
+  // The bad one counted too: 4 more pass, then 429.
+  expect(codes).toEqual([200, 200, 200, 200, 429, 429]);
+});
+
+test('sign in (pilot centres): pilots are being set up, with the way to request one', async ({
+  page,
+}) => {
+  await page.goto('/en');
+  await page.getByRole('link', { name: 'Sign in (pilot centres)' }).first().click();
+  await expect(page).toHaveURL(/\/en\/sign-in$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sign in for pilot centres');
+  await axe(page);
+  await capture(page, 'W-SIGNIN.en.mobile');
+  await page
+    .getByRole('main')
+    .getByRole('link', { name: /Request a free pilot/ })
+    .click();
+  await expect(page).toHaveURL(/\/en\/pilot$/);
+});

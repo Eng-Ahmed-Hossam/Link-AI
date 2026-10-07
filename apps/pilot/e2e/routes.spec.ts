@@ -111,21 +111,28 @@ test.beforeAll(async ({ browser }) => {
   const students = (await json(owner.request.get('/v1/centres/cen-pilot/students'))).data;
   const groups = await json(tpage.request.get('/v1/teachers/me/groups'));
   const today = await json(tpage.request.get('/v1/teachers/me/today'));
+  const recordId = sessions.find((r: { recordId: string | null }) => r.recordId).recordId;
+  // A session still without a record gets a draft for the record screens. When every session of
+  // this teacher is already confirmed (it depends on the date), the screens open a confirmed one.
   const open =
     today.needsYou.find((n: { kind: string }) => n.kind === 'missing') ?? today.recordDue;
-  const draft = await json(
-    tpage.request.post(`/v1/groups/${open.groupId}/session-records`, {
-      data: { groupSessionId: open.sessionId },
-    }),
-  );
+  const draftRecordId = open
+    ? (
+        await json(
+          tpage.request.post(`/v1/groups/${open.groupId}/session-records`, {
+            data: { groupSessionId: open.sessionId },
+          }),
+        )
+      ).id
+    : recordId;
   params = {
     centreId: 'cen-pilot',
     caseId,
     messageId: messages[0].id,
-    recordId: sessions.find((r: { recordId: string | null }) => r.recordId).recordId,
+    recordId,
     studentId: students[0].id ?? students[0].student?.id,
     groupId: groups[0].id,
-    draftRecordId: draft.id,
+    draftRecordId,
   };
   await owner.context().close();
   await tctx.close();
@@ -197,7 +204,13 @@ test('not in the pilot: the parent app, public pages, the dev index, marketplace
   browser,
 }) => {
   const page = await webSignIn(browser, people.owner!.name, people.owner!.pin, 'ar');
-  for (const s of SCREENS.filter((x) => x.app === 'web' && !x.modes.includes('pilot'))) {
+  // The landing page's address (/{lang}) is the pilot's front door: it opens the centre.
+  const front = await page.request.get('/ar', { maxRedirects: 0 });
+  expect(front.status()).toBe(302);
+  expect(front.headers().location).toBe('/ar/centre');
+  for (const s of SCREENS.filter(
+    (x) => x.app === 'web' && !x.modes.includes('pilot') && x.path !== '/',
+  )) {
     const path = fillPath(s.path, {
       ...params,
       centreSlug: 'x',
