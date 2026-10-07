@@ -44,8 +44,8 @@ for (const lang of ['ar', 'en']) {
     .brand { display: flex; align-items: center; gap: 16px; font-family: Jakarta; font-weight: 800; font-size: 44px; }
     .orb { position: absolute; ${ar ? 'left' : 'right'}: 70px; top: 50%; transform: translateY(-50%); width: 300px; height: 300px; }
   </style></head><body><img class="orb" src="data:image/png;base64,${orb}" alt="">
-    <div class="wrap"><p class="eyebrow">${m['landing.hero.eyebrow']}</p>
-    <h1>${m['landing.hero.titleA']} <span>${m['landing.hero.titleB']}</span></h1>
+    <div class="wrap"><p class="eyebrow">${m['site.hero.eyebrow']}</p>
+    <h1>${m['site.hero.title1']}<br>${m['site.hero.title2']} <span>${m['site.hero.titleAccent']}</span>.</h1>
     <p class="brand" dir="ltr">link.</p></div></body></html>`);
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: join(OUT, `landing-${lang}.png`) });

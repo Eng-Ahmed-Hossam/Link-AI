@@ -8,6 +8,7 @@ const SKIP = new Set([
   'node_modules',
   '.next',
   '.next-pilot',
+  '.next-lh',
   '.venv',
   '.models',
   'evals-runs',

@@ -1,5 +1,6 @@
-// The public website (Stage 1): the landing page, path A "Try Link with your centre" (a
-// personalised demo in the browser) and path B "Request a free pilot" (emailed to the Link team).
+// The public website: the landing page (a copy of Figma 68:616, PRODUCT_BRIEF), path A "Try
+// Link" (a personalised demo in the browser) and the requests emailed to the Link team (path B and
+// the landing's "Get started" form).
 // Runs in API mode `mock` (the in-browser MSW backend), the mode the public demo ships in.
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -53,16 +54,25 @@ for (const lang of LANGS)
       await page.goto(`/${lang}`);
       await expect(page.locator('html')).toHaveAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
       await expect(page.getByRole('heading', { level: 1 })).toContainText(
-        lang === 'ar' ? 'الطلاب يبتعدون بهدوء' : 'Students drift away',
+        lang === 'ar' ? 'تكلّم بعد الحصة.' : 'Speak after class.',
       );
       await expect(page.getByTestId('cta-try-hero')).toBeVisible();
-      await expect(page.getByTestId('cta-pilot-hero')).toBeVisible();
-      for (const id of ['how', 'trust', 'pilot', 'faq', 'request'])
+      // Figma's 12 sections, in order: nav + hero, then 10 sections, then the footer.
+      await expect(page.locator('.site-root > section')).toHaveCount(11);
+      for (const id of ['how-it-works', 'features', 'marketplace', 'pricing', 'faq', 'join'])
         await expect(page.locator(`#${id}`)).toBeAttached();
-      for (let i = 1; i <= 6; i++) await expect(page.getByTestId(`how-step-${i}`)).toBeAttached();
-      // No marketplace, pricing or promo video yet (flag off; no video file).
-      await expect(page.getByText(/Marketplace|Pricing|السوق|الأسعار/)).toHaveCount(0);
-      await expect(page.getByTestId('promo-video')).toHaveCount(0);
+      // Marketplace first (PRODUCT_BRIEF): the marketplace and pricing sections are on the page.
+      await expect(page.locator('#marketplace h2')).toHaveText(
+        lang === 'ar'
+          ? 'أولياء الأمور يجدون المعلّمين. والمعلّمون يجدون القاعات.'
+          : 'Parents find teachers. Teachers find rooms.',
+      );
+      await expect(page.locator('#pricing li[class*="rounded-[28px]"]')).toHaveCount(3);
+      // Every "try / get started" button goes to the role chooser.
+      for (const a of await page.locator('a[href*="/try"]').all())
+        expect(await a.getAttribute('href')).toMatch(
+          new RegExp(`^/${lang}/try([?]role=(centre|teacher|parent))?$`),
+        );
       // The website never starts the app's mock backend.
       expect(await page.evaluate(() => navigator.serviceWorker.controller)).toBeNull();
       await axe(page);
@@ -78,7 +88,7 @@ test('FAQ: one answer open at a time, no JavaScript needed', async ({ page }) =>
   await items.nth(2).locator('summary').click();
   await expect(items.nth(2)).toHaveAttribute('open', '');
   await expect(items.nth(0)).not.toHaveAttribute('open', '');
-  await expect(items.nth(2)).toContainText('Link drafts the message');
+  await expect(items.nth(2)).toContainText('Link drafts the WhatsApp update');
 });
 
 test('SEO: description, canonical, hreflang, Open Graph and the social card, per language', async ({
@@ -235,9 +245,7 @@ test('path B: the pilot request checks every field, then confirms', async ({ pag
   await page.route('**/api/pilot-request', (r) =>
     r.continue({ headers: { ...r.request().headers(), 'x-forwarded-for': ip } }),
   );
-  await page.goto('/ar');
-  await page.getByTestId('cta-pilot-hero').click();
-  await expect(page).toHaveURL(/\/ar\/pilot$/);
+  await page.goto('/ar/pilot');
   await page.getByTestId('pilot-submit').click();
   for (const msg of [
     'اكتب اسم المركز.',
@@ -295,7 +303,7 @@ test('sign in (pilot centres): pilots are being set up, with the way to request 
   page,
 }) => {
   await page.goto('/en');
-  await page.getByRole('link', { name: 'Sign in (pilot centres)' }).first().click();
+  await page.locator('header').getByRole('link', { name: 'Log in' }).click();
   await expect(page).toHaveURL(/\/en\/sign-in$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sign in for pilot centres');
   await axe(page);
@@ -305,4 +313,62 @@ test('sign in (pilot centres): pilots are being set up, with the way to request 
     .getByRole('link', { name: /Request a free pilot/ })
     .click();
   await expect(page).toHaveURL(/\/en\/pilot$/);
+});
+
+test('product tabs: owner dashboard, teacher app, parent updates (Figma renders, no JavaScript)', async ({
+  page,
+}) => {
+  await page.goto('/en');
+  const tabs = page.getByRole('radiogroup', { name: 'One place to see who needs attention today' });
+  await expect(page.getByTestId('product-owner')).toBeVisible();
+  await expect(page.getByTestId('product-teacher')).toBeHidden();
+  await tabs.getByText('Teacher app').click();
+  await expect(page.getByTestId('product-teacher')).toBeVisible();
+  await expect(page.getByTestId('product-owner')).toBeHidden();
+  await expect(tabs.getByRole('radio', { name: 'Teacher app' })).toBeChecked();
+  await tabs.getByText('Parent updates').click();
+  await expect(page.getByTestId('product-parent').getByRole('img')).toHaveAttribute(
+    'alt',
+    /WhatsApp update/,
+  );
+});
+
+test('landing "Get started" form (section 11): checks every field, then sends the request', async ({
+  page,
+}) => {
+  const ip = `10.2.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}`;
+  await page.route('**/api/pilot-request', (r) =>
+    r.continue({ headers: { ...r.request().headers(), 'x-forwarded-for': ip } }),
+  );
+  await page.goto('/ar#join');
+  const form = page.getByTestId('pilot-form');
+  await expect(form).toBeVisible();
+  await expect(form.getByRole('button', { name: 'أنشئ حسابي المجاني' })).toBeVisible();
+  await form.getByTestId('pilot-submit').click();
+  for (const msg of [
+    'اكتب اسمك.',
+    'اكتب اسم المركز.',
+    'اكتب منطقة المركز.',
+    'اكتب رقمًا من ١ إلى ٥٠٠.',
+    'اكتب رقم موبايل مصري (١١ رقمًا يبدأ بـ ٠١).',
+    'ضع علامة في المربّع حتى نستطيع التواصل معك.',
+  ])
+    await expect(form.getByText(msg)).toBeVisible();
+  await axe(page);
+  await form.getByLabel('اسمك').fill('هبة مصطفى');
+  await form.getByLabel('اسم المركز').fill('مركز الأمل');
+  await form.getByLabel('المنطقة').fill('مدينة نصر');
+  await form.getByLabel('عدد المعلّمين').fill('٨');
+  await form.getByLabel('رقم واتساب').fill('+20 10 1234 5678');
+  await form.getByText('أوافق على أن يتواصل معي فريق لينك').click();
+  const sent = page.waitForResponse('**/api/pilot-request');
+  await form.getByTestId('pilot-submit').click();
+  const res = await sent;
+  expect(res.status()).toBe(200);
+  expect(res.request().postDataJSON()).toMatchObject({
+    contactName: 'هبة مصطفى',
+    centreName: 'مركز الأمل',
+    lang: 'ar',
+  });
+  await expect(page.getByTestId('pilot-done')).toContainText('شكرًا! هنتواصل معاك خلال يوم عمل.');
 });

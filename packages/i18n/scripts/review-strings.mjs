@@ -143,26 +143,35 @@ if (cmd === 'export') {
           add(m[1], screen, w);
         }
     }
-  // The public website (landing page, try it, request a pilot, pilot sign-in; launch Stage 1):
-  // every `landing.*` key, by section. Seen by every visitor, so reviewed among the first.
+  // The public website. The landing page (`site.*`, a copy of Figma 68:616, PRODUCT_BRIEF) by
+  // its 12 sections, then the other website pages (`landing.*`). Seen by every visitor, so
+  // reviewed among the first.
+  const SITE = {
+    nav: 'Landing 1: nav',
+    lang: 'Landing 1: nav (language)',
+    hero: 'Landing 1: hero',
+    principles: 'Landing 2: proof row',
+    problem: 'Landing 3: the problem',
+    how: 'Landing 4: how it works',
+    product: 'Landing 5: the product',
+    features: 'Landing 6: features',
+    market: 'Landing 7: marketplace',
+    trust: 'Landing 8: AI that drafts, people who decide',
+    pricing: 'Landing 9: pricing',
+    faq: 'Landing 10: FAQ',
+    join: 'Landing 11: get started (form)',
+    footer: 'Landing 12: footer',
+  };
+  for (const k of Object.keys(en))
+    if (k.startsWith('site.') && !where.has(k)) add(k, SITE[k.split('.')[1]] ?? 'Landing', 9.5);
   const WEBSITE = {
     meta: 'Website: search and social cards',
-    nav: 'Website: header',
-    cta: 'Website: the two buttons',
-    hero: 'Website: hero',
-    strip: 'Website: four promises',
-    problem: 'Website: the problem',
-    how: 'Website: how it works',
-    trust: 'Website: trust',
-    pilot: 'Website: how a pilot works',
-    faq: 'Website: FAQ',
-    video: 'Website: video',
-    join: 'Website: request section',
-    form: 'Website: pilot request form',
-    footer: 'Website: footer',
+    cta: 'Website: buttons',
+    form: 'Website: request forms (landing 11 and the pilot page)',
     try: 'Website: try it (path A)',
     demo: 'Demo banner and pilot card (path A)',
     signIn: 'Website: sign in (pilot centres)',
+    pilotPage: 'Website: request a free pilot',
   };
   for (const k of Object.keys(en))
     if (k.startsWith('landing.') && !where.has(k)) add(k, WEBSITE[k.split('.')[1]] ?? 'Website', 9);
