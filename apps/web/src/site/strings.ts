@@ -31,6 +31,35 @@ export const PILOT_FORM_KEYS = [
   'landing.cta.try',
 ] as const satisfies readonly MessageKey[];
 
+/** Section 11's "Get started" form on the landing page (Figma 77:698). */
+export const JOIN_FORM_KEYS = [
+  'site.join.getStarted',
+  'site.join.formSub',
+  'site.join.name',
+  'site.join.namePh',
+  'site.join.centre',
+  'site.join.centrePh',
+  'site.join.area',
+  'site.join.areaPh',
+  'site.join.teachers',
+  'site.join.teachersPh',
+  'site.join.phone',
+  'site.join.submit',
+  'landing.form.consent',
+  'landing.form.honeypot',
+  'landing.form.sending',
+  'landing.form.errCentre',
+  'landing.form.errContact',
+  'landing.form.errPhone',
+  'landing.form.errArea',
+  'landing.form.errTeachers',
+  'landing.form.errConsent',
+  'landing.form.errRate',
+  'landing.form.errSend',
+  'landing.form.doneTitle',
+  'landing.form.doneBody',
+] as const satisfies readonly MessageKey[];
+
 export const TRY_FORM_KEYS = [
   'landing.try.centre',
   'landing.try.centreHint',

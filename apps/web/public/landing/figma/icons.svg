@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg"><symbol id="feat-chart" viewBox="0 0 22 22"><g id="feat-chart-Icon / chart">
+<path id="feat-chart-Vector" d="M2.75 2.75V19.25H19.25" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="feat-chart-Vector_2" d="M6.41667 14.6667V10.0833M11 14.6667V7.33333M15.5833 14.6667V6.41667" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="feat-chat" viewBox="0 0 22 22"><g id="feat-chat-Icon / chat">
+<path id="feat-chat-Vector" d="M7.24167 18.3334C8.9912 19.2308 11.0037 19.4739 12.9166 19.0188C14.8295 18.5637 16.517 17.4404 17.6749 15.8512C18.8329 14.262 19.3851 12.3115 19.2322 10.3512C19.0793 8.39085 18.2312 6.5496 16.8408 5.15922C15.4504 3.76884 13.6092 2.92077 11.6489 2.76784C9.68852 2.61491 7.73802 3.16717 6.14884 4.3251C4.55965 5.48304 3.4363 7.17049 2.9812 9.0834C2.52611 10.9963 2.7692 13.0088 3.66667 14.7584L1.83333 20.1667L7.24167 18.3334Z" stroke="#187447" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="feat-globe" viewBox="0 0 22 22"><g id="feat-globe-Icon / globe" clip-path="url(#feat-globe-clip0_0_25)">
+<path id="feat-globe-Vector" d="M11 20.1667C16.0626 20.1667 20.1667 16.0626 20.1667 11C20.1667 5.93739 16.0626 1.83333 11 1.83333C5.93739 1.83333 1.83333 5.93739 1.83333 11C1.83333 16.0626 5.93739 20.1667 11 20.1667Z" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="feat-globe-Vector_2" d="M1.83333 11H20.1667M11 1.83333C13.2548 4.35427 14.5014 7.61781 14.5014 11C14.5014 14.3822 13.2548 17.6457 11 20.1667C8.74521 17.6457 7.49864 14.3822 7.49864 11C7.49864 7.61781 8.74521 4.35427 11 1.83333Z" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<defs>
+<clipPath id="feat-globe-clip0_0_25">
+<rect width="22" height="22" fill="white"/>
+</clipPath>
+</defs></symbol><symbol id="feat-rules" viewBox="0 0 22 22"><g id="feat-rules-Icon / rules">
+<path id="feat-rules-Vector" d="M2.75 5.5H19.25M2.75 11H13.75M2.75 16.5H9.16667" stroke="#7EE0FF" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="hero-live-core" viewBox="0 0 6 6"><circle id="hero-live-core-Live core" cx="3" cy="3" r="3" fill="#7EE0FF"/></symbol><symbol id="hero-live-ring" viewBox="0 0 12 12"><circle id="hero-live-ring-Live ring" cx="6" cy="6" r="6" fill="#7EE0FF" fill-opacity="0.35"/></symbol><symbol id="hero-tick" viewBox="0 0 20 20"><g id="hero-tick-Tick">
+<rect width="20" height="20" rx="10" fill="#00ADF7" fill-opacity="0.18"/>
+<path id="hero-tick-Check" d="M5.5 10.45L8.74 13.6L14.5 6.4" stroke="#7EE0FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="how-check" viewBox="0 0 22 22"><g id="how-check-Icon / check">
+<path id="how-check-Vector" d="M18.3333 5.5L8.25 15.5833L3.66667 11" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="how-flag" viewBox="0 0 22 22"><g id="how-flag-Icon / flag">
+<path id="how-flag-Vector" d="M3.66667 20.1667V3.66667C3.66667 3.42355 3.76324 3.19039 3.93515 3.01849C4.10706 2.84658 4.34022 2.75 4.58333 2.75H16.5L13.75 7.33333L16.5 11.9167H4.58333" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="how-mic" viewBox="0 0 22 22"><g id="how-mic-Icon / mic">
+<path id="how-mic-Vector" d="M13.75 4.58333C13.75 3.06455 12.5188 1.83333 11 1.83333C9.48122 1.83333 8.25 3.06455 8.25 4.58333V10.0833C8.25 11.6021 9.48122 12.8333 11 12.8333C12.5188 12.8333 13.75 11.6021 13.75 10.0833V4.58333Z" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="how-mic-Vector_2" d="M17.4167 9.16667V10.0833C17.4167 11.7851 16.7406 13.4172 15.5373 14.6206C14.3339 15.824 12.7018 16.5 11 16.5C9.29819 16.5 7.66609 15.824 6.46273 14.6206C5.25937 13.4172 4.58333 11.7851 4.58333 10.0833V9.16667" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="how-mic-Vector_3" d="M11 16.5V20.1667" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="how-task" viewBox="0 0 22 22"><g id="how-task-Icon / task">
+<path id="how-task-Vector" d="M13.75 1.83333H8.25C7.74374 1.83333 7.33333 2.24374 7.33333 2.75V4.58333C7.33333 5.08959 7.74374 5.5 8.25 5.5H13.75C14.2563 5.5 14.6667 5.08959 14.6667 4.58333V2.75C14.6667 2.24374 14.2563 1.83333 13.75 1.83333Z" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="how-task-Vector_2" d="M14.6667 3.66667H16.5C16.9862 3.66667 17.4525 3.85982 17.7964 4.20364C18.1402 4.54745 18.3333 5.01377 18.3333 5.5V18.3333C18.3333 18.8196 18.1402 19.2859 17.7964 19.6297C17.4525 19.9735 16.9862 20.1667 16.5 20.1667H5.5C5.01377 20.1667 4.54745 19.9735 4.20364 19.6297C3.85982 19.2859 3.66667 18.8196 3.66667 18.3333V5.5C3.66667 5.01377 3.85982 4.54745 4.20364 4.20364C4.54745 3.85982 5.01377 3.66667 5.5 3.66667H7.33333" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="how-task-Vector_3" d="M8.25 12.8333L10.0833 14.6667L13.75 11" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="mkt-door" viewBox="0 0 22 22"><g id="mkt-door-Icon / door">
+<path id="mkt-door-Vector" d="M2.75 19.25H19.25M5.5 19.25V3.66667C5.5 3.42355 5.59658 3.19039 5.76849 3.01849C5.94039 2.84658 6.17355 2.75 6.41667 2.75H15.5833C15.8264 2.75 16.0596 2.84658 16.2315 3.01849C16.4034 3.19039 16.5 3.42355 16.5 3.66667V19.25" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="mkt-door-Vector_2" d="M12.8333 11H12.8433" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="mkt-star" viewBox="0 0 22 22"><g id="mkt-star-Icon / star">
+<path id="mkt-star-Vector" d="M11 1.83333L13.8417 7.60833L20.1667 8.525L15.5833 13.0167L16.6833 19.25L11 16.3167L5.31667 19.25L6.41667 13.0167L1.83333 8.525L8.15833 7.60833L11 1.83333Z" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="mkt-users" viewBox="0 0 22 22"><g id="mkt-users-Icon / users">
+<path id="mkt-users-Vector" d="M8.25 10.0833C10.275 10.0833 11.9167 8.44171 11.9167 6.41667C11.9167 4.39162 10.275 2.75 8.25 2.75C6.22496 2.75 4.58333 4.39162 4.58333 6.41667C4.58333 8.44171 6.22496 10.0833 8.25 10.0833Z" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="mkt-users-Vector_2" d="M1.83333 19.25V17.4167C1.83333 16.4442 2.21964 15.5116 2.90728 14.8239C3.59491 14.1363 4.52754 13.75 5.5 13.75H11C11.9725 13.75 12.9051 14.1363 13.5927 14.8239C14.2804 15.5116 14.6667 16.4442 14.6667 17.4167V19.25" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="mkt-users-Vector_3" d="M14.6667 2.84176C15.4768 3.02638 16.2001 3.48065 16.7183 4.13016C17.2364 4.77967 17.5186 5.5859 17.5186 6.41676C17.5186 7.24762 17.2364 8.05384 16.7183 8.70335C16.2001 9.35286 15.4768 9.80713 14.6667 9.99176M20.1667 19.2501V17.4168C20.1722 16.5996 19.9046 15.8041 19.4064 15.1564C18.9082 14.5087 18.2079 14.046 17.4167 13.8418" stroke="#006FA3" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="price-building" viewBox="0 0 18 18"><g id="price-building-Icon / building">
+<path id="price-building-Vector" d="M13.5 1.5H4.5C3.67157 1.5 3 2.17157 3 3V15C3 15.8284 3.67157 16.5 4.5 16.5H13.5C14.3284 16.5 15 15.8284 15 15V3C15 2.17157 14.3284 1.5 13.5 1.5Z" stroke="#7EE0FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="price-building-Vector_2" d="M6.75 16.5V13.5H11.25V16.5M6 4.5H6.0075M9 4.5H9.0075M12 4.5H12.0075M6 7.5H6.0075M9 7.5H9.0075M12 7.5H12.0075M6 10.5H6.0075M9 10.5H9.0075M12 10.5H12.0075" stroke="#7EE0FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="price-star" viewBox="0 0 18 18"><g id="price-star-Icon / star">
+<path id="price-star-Vector" d="M9 1.5L11.325 6.225L16.5 6.975L12.75 10.65L13.65 15.75L9 13.35L4.35 15.75L5.25 10.65L1.5 6.975L6.675 6.225L9 1.5Z" stroke="#006FA3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="price-tick-dark" viewBox="0 0 20 20"><g id="price-tick-dark-Row">
+<rect width="20" height="20" rx="10" fill="#00ADF7" fill-opacity="0.2"/>
+<path id="price-tick-dark-Check" d="M5.5 10.45L8.74 13.6L14.5 6.4" stroke="#7EE0FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="price-tick" viewBox="0 0 20 20"><g id="price-tick-Row">
+<rect width="20" height="20" rx="10" fill="#E6F5EC"/>
+<path id="price-tick-Check" d="M5.5 10.45L8.74 13.6L14.5 6.4" stroke="#187447" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="price-users" viewBox="0 0 18 18"><g id="price-users-Icon / users">
+<path id="price-users-Vector" d="M6.75 8.25C8.40685 8.25 9.75 6.90685 9.75 5.25C9.75 3.59315 8.40685 2.25 6.75 2.25C5.09315 2.25 3.75 3.59315 3.75 5.25C3.75 6.90685 5.09315 8.25 6.75 8.25Z" stroke="#006FA3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="price-users-Vector_2" d="M1.5 15.75V14.25C1.5 13.4544 1.81607 12.6913 2.37868 12.1287C2.94129 11.5661 3.70435 11.25 4.5 11.25H9C9.79565 11.25 10.5587 11.5661 11.1213 12.1287C11.6839 12.6913 12 13.4544 12 14.25V15.75" stroke="#006FA3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="price-users-Vector_3" d="M12 2.32507C12.6628 2.47613 13.2546 2.84781 13.6786 3.37922C14.1025 3.91064 14.3334 4.57028 14.3334 5.25007C14.3334 5.92987 14.1025 6.58951 13.6786 7.12092C13.2546 7.65234 12.6628 8.02402 12 8.17507M16.5 15.7501V14.2501C16.5045 13.5815 16.2856 12.9306 15.8779 12.4007C15.4703 11.8708 14.8973 11.4922 14.25 11.3251" stroke="#006FA3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="principle-chat" viewBox="0 0 20 20"><g id="principle-chat-Icon / chat">
+<path id="principle-chat-Vector" d="M6.58333 16.6667C8.17381 17.4825 10.0034 17.7035 11.7424 17.2898C13.4814 16.8761 15.0155 15.8548 16.0681 14.4101C17.1208 12.9654 17.6228 11.1922 17.4838 9.41012C17.3448 7.628 16.5738 5.95413 15.3098 4.69015C14.0459 3.42617 12.372 2.6552 10.5899 2.51617C8.80774 2.37714 7.03456 2.87919 5.58985 3.93186C4.14514 4.98453 3.12391 6.51858 2.71019 8.25758C2.29646 9.99658 2.51745 11.8262 3.33333 13.4167L1.66667 18.3333L6.58333 16.6667Z" stroke="#006FA3" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="principle-mic" viewBox="0 0 20 20"><g id="principle-mic-Icon / mic">
+<path id="principle-mic-Vector" d="M12.5 4.16667C12.5 2.78595 11.3807 1.66667 10 1.66667C8.61929 1.66667 7.5 2.78595 7.5 4.16667V9.16667C7.5 10.5474 8.61929 11.6667 10 11.6667C11.3807 11.6667 12.5 10.5474 12.5 9.16667V4.16667Z" stroke="#006FA3" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="principle-mic-Vector_2" d="M15.8333 8.33333V9.16667C15.8333 10.7138 15.2188 12.1975 14.1248 13.2915C13.0308 14.3854 11.5471 15 10 15C8.4529 15 6.96917 14.3854 5.87521 13.2915C4.78125 12.1975 4.16667 10.7138 4.16667 9.16667V8.33333" stroke="#006FA3" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="principle-mic-Vector_3" d="M10 15V18.3333" stroke="#006FA3" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="principle-rules" viewBox="0 0 20 20"><g id="principle-rules-Icon / rules">
+<path id="principle-rules-Vector" d="M2.5 5H17.5M2.5 10H12.5M2.5 15H8.33333" stroke="#006FA3" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="principle-shield" viewBox="0 0 20 20"><g id="principle-shield-Icon / shield">
+<path id="principle-shield-Vector" d="M10 18.3333C10 18.3333 16.6667 15 16.6667 10V4.16667L10 1.66667L3.33333 4.16667V10C3.33333 15 10 18.3333 10 18.3333Z" stroke="#006FA3" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="principle-shield-Vector_2" d="M7.5 10L9.16667 11.6667L12.5 8.33333" stroke="#006FA3" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="problem-arrow" viewBox="0 0 18 18"><g id="problem-arrow-Icon / arrow">
+<path id="problem-arrow-Vector" d="M3.75 9H14.25M9 14.25L14.25 9L9 3.75" stroke="#006FA3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="problem-check" viewBox="0 0 16 16"><g id="problem-check-Icon / check">
+<path id="problem-check-Vector" d="M13.3333 4L6 11.3333L2.66667 8" stroke="#187447" stroke-width="1.73333" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="problem-dot-amber" viewBox="0 0 22 22"><g id="problem-dot-amber-Dot">
+<circle cx="11" cy="11" r="7" fill="#F5A524"/>
+<circle cx="11" cy="11" r="9" stroke="#F5A524" stroke-opacity="0.25" stroke-width="4"/>
+</g></symbol><symbol id="problem-dot-blue" viewBox="0 0 22 22"><g id="problem-dot-blue-Dot">
+<circle cx="11" cy="11" r="7" fill="#00ADF7"/>
+<circle cx="11" cy="11" r="9" stroke="#00ADF7" stroke-opacity="0.25" stroke-width="4"/>
+</g></symbol><symbol id="problem-dot-red" viewBox="0 0 22 22"><g id="problem-dot-red-Dot">
+<circle cx="11" cy="11" r="7" fill="#BB3340"/>
+<circle cx="11" cy="11" r="9" stroke="#BB3340" stroke-opacity="0.25" stroke-width="4"/>
+</g></symbol><symbol id="problem-x" viewBox="0 0 12 12"><g id="problem-x-Icon / x">
+<path id="problem-x-Vector" d="M9 3L3 9M3 3L9 9" stroke="#BB3340" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="product-check" viewBox="0 0 16 16"><g id="product-check-Icon / check">
+<path id="product-check-Vector" d="M13.3333 4L6 11.3333L2.66667 8" stroke="#006FA3" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="product-rules" viewBox="0 0 16 16"><g id="product-rules-Icon / rules">
+<path id="product-rules-Vector" d="M2 4H14M2 8H10M2 12H6.66667" stroke="#006FA3" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="trust-bell" viewBox="0 0 18 18"><g id="trust-bell-Icon / bell">
+<path id="trust-bell-Vector" d="M4.5 6C4.5 4.80653 4.97411 3.66193 5.81802 2.81802C6.66193 1.97411 7.80653 1.5 9 1.5C10.1935 1.5 11.3381 1.97411 12.182 2.81802C13.0259 3.66193 13.5 4.80653 13.5 6C13.5 11.25 15.75 12.75 15.75 12.75H2.25C2.25 12.75 4.5 11.25 4.5 6Z" stroke="#7EE0FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="trust-bell-Vector_2" d="M7.72499 15.75C7.84325 15.9869 8.02519 16.1862 8.2504 16.3255C8.47561 16.4648 8.73518 16.5386 8.99999 16.5386C9.2648 16.5386 9.52437 16.4648 9.74958 16.3255C9.97479 16.1862 10.1567 15.9869 10.275 15.75" stroke="#7EE0FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="trust-chat" viewBox="0 0 20 20"><g id="trust-chat-Icon / chat">
+<path id="trust-chat-Vector" d="M6.58333 16.6667C8.17381 17.4826 10.0034 17.7036 11.7424 17.2899C13.4814 16.8761 15.0155 15.8549 16.0681 14.4102C17.1208 12.9655 17.6228 11.1923 17.4838 9.41017C17.3448 7.62805 16.5738 5.95418 15.3098 4.6902C14.0459 3.42622 12.372 2.65525 10.5899 2.51622C8.80774 2.37719 7.03456 2.87924 5.58985 3.93191C4.14514 4.98458 3.12391 6.51863 2.71019 8.25763C2.29646 9.99663 2.51745 11.8262 3.33333 13.4167L1.66667 18.3334L6.58333 16.6667Z" stroke="#4ADE80" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="trust-check" viewBox="0 0 20 20"><g id="trust-check-Icon / check">
+<path id="trust-check-Vector" d="M16.6667 5L7.5 14.1667L3.33333 10" stroke="#0A1824" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="trust-eye" viewBox="0 0 18 18"><g id="trust-eye-Icon / eye">
+<path id="trust-eye-Vector" d="M1.5 9C1.5 9 3.75 3.75 9 3.75C14.25 3.75 16.5 9 16.5 9C16.5 9 14.25 14.25 9 14.25C3.75 14.25 1.5 9 1.5 9Z" stroke="#7EE0FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="trust-eye-Vector_2" d="M9 11.25C10.2426 11.25 11.25 10.2426 11.25 9C11.25 7.75736 10.2426 6.75 9 6.75C7.75736 6.75 6.75 7.75736 6.75 9C6.75 10.2426 7.75736 11.25 9 11.25Z" stroke="#7EE0FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="trust-lock" viewBox="0 0 18 18"><g id="trust-lock-Icon / lock">
+<path id="trust-lock-Vector" d="M13.5 8.25H4.5C3.67157 8.25 3 8.92157 3 9.75V14.25C3 15.0784 3.67157 15.75 4.5 15.75H13.5C14.3284 15.75 15 15.0784 15 14.25V9.75C15 8.92157 14.3284 8.25 13.5 8.25Z" stroke="#7EE0FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="trust-lock-Vector_2" d="M6 8.25V5.25C6 4.45435 6.31607 3.69129 6.87868 3.12868C7.44129 2.56607 8.20435 2.25 9 2.25C9.79565 2.25 10.5587 2.56607 11.1213 3.12868C11.6839 3.69129 12 4.45435 12 5.25V8.25" stroke="#7EE0FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="trust-shield" viewBox="0 0 20 20"><g id="trust-shield-Icon / shield">
+<path id="trust-shield-Vector" d="M10 18.3333C10 18.3333 16.6667 15 16.6667 10V4.16667L10 1.66667L3.33333 4.16667V10C3.33333 15 10 18.3333 10 18.3333Z" stroke="#0A1824" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="trust-shield-Vector_2" d="M7.5 10L9.16667 11.6667L12.5 8.33333" stroke="#0A1824" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol><symbol id="trust-spark" viewBox="0 0 20 20"><g id="trust-spark-Icon / spark">
+<path id="trust-spark-Vector" d="M10 2.5L11.5833 6.75L15.8333 8.33333L11.5833 9.91667L10 14.1667L8.41667 9.91667L4.16667 8.33333L8.41667 6.75L10 2.5Z" stroke="#7EE0FF" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="trust-spark-Vector_2" d="M15.8333 14.1667V17.5M14.1667 15.8333H17.5" stroke="#7EE0FF" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
+</g></symbol></svg>

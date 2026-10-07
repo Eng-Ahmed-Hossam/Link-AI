@@ -1,0 +1,8 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="70" height="16" viewBox="0 0 70 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Connector">
+<line id="Line" x1="10" y1="7" x2="44" y2="7" stroke="#7EE0FF" stroke-opacity="0.5" stroke-width="2" stroke-dasharray="4 5"/>
+<g id="Icon / arrow">
+<path id="Vector" d="M47.3333 8H56.6667M52 12.6667L56.6667 8L52 3.33333" stroke="#7EE0FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+</svg>

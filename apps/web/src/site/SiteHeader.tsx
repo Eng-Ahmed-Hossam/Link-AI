@@ -4,36 +4,39 @@ import type { Locale } from '@link/i18n';
 import { getT } from '../i18n';
 import { TrackedLink } from './Tracked';
 
-/** Website header (landing frame 68:616): dark, over the hero. Section links on wide screens. */
+/**
+ * Website nav (Figma 68:617): logo; How it works, Features, Marketplace, Pricing, FAQ; the other
+ * language; Log in; Join Link. Section links show on wide screens.
+ */
 export function SiteHeader({ locale, home = false }: { locale: Locale; home?: boolean }) {
   const t = getT(locale);
   const other: Locale = locale === 'ar' ? 'en' : 'ar';
   const anchor = (id: string) => (home ? `#${id}` : `/${locale}#${id}`);
+  const links = [
+    ['how-it-works', 'site.nav.how'],
+    ['features', 'site.nav.features'],
+    ['marketplace', 'site.nav.marketplace'],
+    ['pricing', 'site.nav.pricing'],
+    ['faq', 'site.nav.faq'],
+  ] as const;
   return (
-    <header className="relative z-10 border-b border-white/10">
-      <div className="mx-auto flex max-w-[1200px] items-center gap-6 px-4 py-4 sm:px-6">
+    <header className="relative z-10 border-b border-white/8 bg-navy px-4 py-5 sm:px-6 lg:px-8 xl:px-0">
+      <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-6">
         <Link
           prefetch={false}
           href={`/${locale}`}
           className="shrink-0 rounded-12"
           aria-label={t('common.appName')}
         >
-          <Logo variant="lockup-dark" size={36} label={t('common.appName')} />
+          <Logo variant="lockup-dark" size={40} label={t('common.appName')} />
         </Link>
-        <nav aria-label={t('landing.nav.label')} className="hidden flex-1 justify-center lg:flex">
-          <ul className="flex items-center gap-1">
-            {(
-              [
-                ['how', 'landing.nav.how'],
-                ['trust', 'landing.nav.trust'],
-                ['pilot', 'landing.nav.pilot'],
-                ['faq', 'landing.nav.faq'],
-              ] as const
-            ).map(([id, key]) => (
+        <nav aria-label={t('site.nav.label')} className="hidden lg:block">
+          <ul className="flex items-center gap-9">
+            {links.map(([id, key]) => (
               <li key={id}>
                 <a
                   href={anchor(id)}
-                  className="inline-flex min-h-11 items-center rounded-full px-4 text-web-small text-white/80 hover:bg-white/10 hover:text-white"
+                  className="text-[14px] leading-[1.5] font-medium text-white/78 hover:text-white"
                 >
                   {t(key)}
                 </a>
@@ -41,36 +44,35 @@ export function SiteHeader({ locale, home = false }: { locale: Locale; home?: bo
             ))}
           </ul>
         </nav>
-        <div className="ms-auto flex items-center gap-2 lg:ms-0">
+        <div className="flex items-center gap-2.5 sm:gap-5">
           <Link
             prefetch={false}
             href={`/${other}`}
             hrefLang={other}
             lang={other}
-            className="inline-flex min-h-11 items-center rounded-full border border-white/25 px-4 text-web-small text-white hover:bg-white/10"
+            className="inline-flex min-h-11 items-center rounded-full border border-white/16 bg-white/8 px-3.5 text-[14px] font-semibold text-white hover:bg-white/14 sm:min-h-0 sm:py-1"
           >
-            {t(other === 'ar' ? 'common.languageSwitch.ar' : 'common.languageSwitch.en')}
+            {t(other === 'ar' ? 'site.lang.ar' : 'site.lang.en')}
           </Link>
           <Link
             prefetch={false}
             href={`/${locale}/sign-in`}
-            className="hidden min-h-11 items-center px-3 text-web-small text-white/90 hover:text-white md:inline-flex"
+            className="inline-flex min-h-11 items-center text-[14px] leading-[1.5] font-semibold whitespace-nowrap text-white"
           >
-            {t('landing.nav.signIn')}
+            {t('site.nav.logIn')}
           </Link>
-          <span className="hidden sm:contents">
-            <TrackedLink
-              prefetch={false}
-              href={`/${locale}/pilot`}
-              event="landing_pilot_click"
-              lang={locale}
-              placement="header"
-              className={webButtonClass('primary', '!py-3')}
-            >
-              {t('landing.cta.pilot')}
-              <WebArrow />
-            </TrackedLink>
-          </span>
+          <TrackedLink
+            prefetch={false}
+            href={`/${locale}/try`}
+            event="landing_try_click"
+            lang={locale}
+            placement="header"
+            className={webButtonClass('primary', 'px-5! py-3! whitespace-nowrap')}
+            data-testid="cta-try-header"
+          >
+            {t('site.nav.join')}
+            <WebArrow />
+          </TrackedLink>
         </div>
       </div>
     </header>

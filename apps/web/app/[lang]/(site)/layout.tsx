@@ -15,7 +15,7 @@ export default async function SiteLayout({
   return (
     <>
       <PageView lang={locale} />
-      <main id="main" className="bg-white">
+      <main id="main" className="site-page bg-white">
         {children}
       </main>
       <SiteFooter locale={locale} />

@@ -3,60 +3,95 @@
 /* Tailwind must scan the shared component package for class names. */
 @source '../../../packages/ui/src';
 
-/* Landing hero loop (Figma motion, one 8-second timeline, frame 68:616): the cards arrive in
-   order — voice note, record, flag, WhatsApp — stay, then leave together; the orb floats, the
-   rings breathe, the live ring pulses. Nothing moves with prefers-reduced-motion. */
+/* Landing page motion (Figma 68:616: one 8-second timeline). Hero: the four cards arrive in
+   order (voice note, record, flag, WhatsApp) with a small overshoot, stay, then leave together;
+   the orb floats, the glow and rings breathe, the outer ring turns, the satellites and the live dot
+   pulse. "How it works": a dot travels the step track and each badge pops as it passes. Product
+   and join panel: the phone, the callouts and the orb float. Nothing moves with reduced motion. */
 @media (prefers-reduced-motion: no-preference) {
-  .site-card {
-    animation: 8s ease-out infinite both;
+  .lp-card {
+    animation: 8s infinite both;
   }
-  .site-card-1 {
-    animation-name: site-card-1;
+  .lp-card-voice {
+    animation-name: lp-card-voice;
   }
-  .site-card-2 {
-    animation-name: site-card-2;
+  .lp-card-record {
+    animation-name: lp-card-record;
   }
-  .site-card-3 {
-    animation-name: site-card-3;
+  .lp-card-flag {
+    animation-name: lp-card-flag;
   }
-  .site-card-4 {
-    animation-name: site-card-4;
+  .lp-card-wa {
+    animation-name: lp-card-wa;
   }
-  .site-orb {
-    animation: site-float 4s ease-in-out infinite;
+  .lp-float {
+    animation: lp-float 4s ease-in-out infinite;
   }
-  .site-ring {
-    animation: site-breathe 4s ease-in-out infinite;
+  .lp-float-9 {
+    animation: lp-float-9 4s ease-in-out infinite;
   }
-  .site-ring-2 {
-    animation-delay: -1s;
+  .lp-glow {
+    animation:
+      lp-glow-fade 4s ease-in-out infinite,
+      lp-glow-scale 8s ease-in-out infinite;
   }
-  .site-live {
-    animation: site-live 2s ease-out infinite;
+  .lp-ring-1 {
+    animation: lp-ring-1 4s ease-in-out infinite;
   }
-  .site-glow {
-    animation: site-breathe 4s ease-in-out infinite;
+  .lp-ring-2 {
+    animation: lp-ring-2 4s ease-in-out infinite;
   }
-  .site-sat {
-    animation: site-twinkle 2s ease-in-out infinite;
+  .lp-ring-3 {
+    animation: lp-turn 8s linear infinite;
   }
-  .site-sat-2 {
-    animation-delay: -1s;
+  .lp-sat {
+    animation: lp-twinkle 2s ease-in-out infinite;
   }
-  .site-card .site-bar {
-    animation: site-bar 1.1s ease-in-out infinite;
-    transform-origin: center;
+  .lp-sat-2 {
+    animation-delay: -0.6s;
+  }
+  .lp-sat-3 {
+    animation-delay: -1.3s;
+  }
+  .lp-live {
+    animation: lp-live 2s infinite;
+  }
+  .lp-traveler {
+    animation: lp-travel 4s ease-in-out infinite;
+  }
+  .lp-badge {
+    animation: lp-badge 4s infinite;
+  }
+  .lp-badge-2 {
+    animation-delay: 1.2s;
+  }
+  .lp-badge-3 {
+    animation-delay: 2.4s;
+  }
+  .lp-badge-4 {
+    animation-delay: 3.6s;
+  }
+  .lp-phone {
+    animation: lp-phone 4s ease-in-out infinite;
+  }
+  .lp-callout {
+    animation: lp-callout 4s ease-in-out infinite;
+  }
+  .lp-callout-2 {
+    animation-delay: -1.4s;
   }
 }
-@keyframes site-card-1 {
+@keyframes lp-card-voice {
   0% {
     opacity: 0;
     transform: translateY(26px);
+    animation-timing-function: cubic-bezier(0.45, 1.45, 0.8, 1);
   }
-  7.5%,
+  8.75%,
   88.75% {
     opacity: 1;
     transform: none;
+    animation-timing-function: ease-in;
   }
   96.25%,
   100% {
@@ -64,16 +99,18 @@
     transform: translateY(-14px);
   }
 }
-@keyframes site-card-2 {
+@keyframes lp-card-record {
   0%,
   15% {
     opacity: 0;
     transform: translateY(26px);
+    animation-timing-function: cubic-bezier(0.45, 1.45, 0.8, 1);
   }
-  22.5%,
+  23.75%,
   89.75% {
     opacity: 1;
     transform: none;
+    animation-timing-function: ease-in;
   }
   97.25%,
   100% {
@@ -81,16 +118,18 @@
     transform: translateY(-14px);
   }
 }
-@keyframes site-card-3 {
+@keyframes lp-card-flag {
   0%,
   30% {
     opacity: 0;
     transform: translateY(26px) scale(0.9);
+    animation-timing-function: cubic-bezier(0.45, 1.45, 0.8, 1);
   }
-  37.5%,
+  38.75%,
   90.75% {
     opacity: 1;
     transform: none;
+    animation-timing-function: ease-in;
   }
   98.25%,
   100% {
@@ -98,16 +137,18 @@
     transform: translateY(-14px);
   }
 }
-@keyframes site-card-4 {
+@keyframes lp-card-wa {
   0%,
   45% {
     opacity: 0;
     transform: translateY(26px);
+    animation-timing-function: cubic-bezier(0.45, 1.45, 0.8, 1);
   }
-  52.5%,
+  53.75%,
   91.75% {
     opacity: 1;
     transform: none;
+    animation-timing-function: ease-in;
   }
   99.25%,
   100% {
@@ -115,8 +156,9 @@
     transform: translateY(-14px);
   }
 }
-@keyframes site-float {
+@keyframes lp-float {
   0%,
+  50%,
   100% {
     transform: translateY(0);
   }
@@ -127,19 +169,94 @@
     transform: translateY(10px);
   }
 }
-@keyframes site-breathe {
+@keyframes lp-float-9 {
   0%,
+  50%,
+  100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-9px);
+  }
+  75% {
+    transform: translateY(9px);
+  }
+}
+@keyframes lp-glow-fade {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+@keyframes lp-glow-scale {
+  0%,
+  50%,
   100% {
     transform: scale(1.02);
   }
-  50% {
-    transform: scale(1.06);
+  25% {
+    transform: scale(1.07);
+  }
+  75% {
+    transform: scale(0.97);
   }
 }
-@keyframes site-live {
+@keyframes lp-ring-1 {
+  0%,
+  50%,
+  100% {
+    transform: scale(1.02);
+  }
+  25% {
+    transform: scale(1.05);
+  }
+  75% {
+    transform: scale(0.99);
+  }
+}
+@keyframes lp-ring-2 {
+  0%,
+  100% {
+    transform: scale(1.046);
+  }
+  25% {
+    transform: scale(1.006);
+  }
+  50% {
+    transform: scale(0.994);
+  }
+  75% {
+    transform: scale(1.034);
+  }
+}
+@keyframes lp-turn {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(46.829deg);
+  }
+}
+@keyframes lp-twinkle {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+  25% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0.3;
+  }
+}
+@keyframes lp-live {
   0% {
     opacity: 0.9;
     transform: scale(1);
+    animation-timing-function: ease-out;
   }
   80%,
   100% {
@@ -147,22 +264,59 @@
     transform: scale(2.3);
   }
 }
-@keyframes site-twinkle {
-  0%,
-  100% {
-    opacity: 0.35;
+@keyframes lp-travel {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
   }
-  50% {
+  6% {
     opacity: 1;
   }
+  84% {
+    opacity: 1;
+  }
+  90%,
+  100% {
+    opacity: 0;
+    transform: translateX(var(--lp-track, 918px));
+  }
 }
-@keyframes site-bar {
+@keyframes lp-badge {
+  0% {
+    transform: scale(1);
+    animation-timing-function: ease-out;
+  }
+  3% {
+    transform: scale(1.16);
+    animation-timing-function: ease-in-out;
+  }
+  12.5%,
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes lp-phone {
   0%,
   100% {
-    transform: scaleY(1);
+    transform: translateY(-5px);
+  }
+  25% {
+    transform: translateY(0);
   }
   50% {
-    transform: scaleY(0.45);
+    transform: translateY(-5px);
+  }
+  75% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes lp-callout {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
   }
 }
 
@@ -174,4 +328,77 @@
 }
 .site-root .text-web-h2 {
   font-family: var(--site-heading), var(--font-ui-stack);
+}
+/* Arabic on the website: Cairo at 155% line height (docs/11 §2, PRODUCT_BRIEF). */
+html[lang='ar'] .site-root :is(h1, h2, h3, p, li, dt, dd, label, summary) {
+  line-height: 1.55;
+}
+
+/* Landing section backgrounds: Figma's radial gradients (ellipse centre and radii from each
+   frame's fill), mirrored in Arabic where the glow sits to one side. */
+.lp-hero-bg {
+  background:
+    radial-gradient(30% 30% at 45% 0%, rgba(59, 91, 255, 0.1), transparent),
+    radial-gradient(35% 35% at 5% 95%, rgba(126, 224, 255, 0.1), transparent),
+    radial-gradient(42% 42% at 78% 40%, rgba(0, 173, 247, 0.3), transparent), #0a1824;
+}
+html[dir='rtl'] .lp-hero-bg {
+  background:
+    radial-gradient(30% 30% at 55% 0%, rgba(59, 91, 255, 0.1), transparent),
+    radial-gradient(35% 35% at 95% 95%, rgba(126, 224, 255, 0.1), transparent),
+    radial-gradient(42% 42% at 22% 40%, rgba(0, 173, 247, 0.3), transparent), #0a1824;
+}
+.lp-product-bg {
+  background: radial-gradient(45% 45% at 50% 0%, rgba(0, 173, 247, 0.14), transparent), #f1f6fb;
+}
+.lp-rules-bg {
+  background: radial-gradient(70% 70% at 100% 0%, rgba(0, 173, 247, 0.28), transparent), #0a1824;
+}
+html[dir='rtl'] .lp-rules-bg {
+  background: radial-gradient(70% 70% at 0% 0%, rgba(0, 173, 247, 0.28), transparent), #0a1824;
+}
+.lp-updates-bg {
+  background: radial-gradient(60% 60% at 100% 100%, rgba(37, 211, 102, 0.12), transparent), #e6f5ec;
+}
+html[dir='rtl'] .lp-updates-bg {
+  background: radial-gradient(60% 60% at 0% 100%, rgba(37, 211, 102, 0.12), transparent), #e6f5ec;
+}
+.lp-trust-bg {
+  background:
+    radial-gradient(40% 40% at 10% 100%, rgba(126, 224, 255, 0.06), transparent),
+    radial-gradient(50% 50% at 50% 0%, rgba(0, 173, 247, 0.22), transparent), #0a1824;
+}
+html[dir='rtl'] .lp-trust-bg {
+  background:
+    radial-gradient(40% 40% at 90% 100%, rgba(126, 224, 255, 0.06), transparent),
+    radial-gradient(50% 50% at 50% 0%, rgba(0, 173, 247, 0.22), transparent), #0a1824;
+}
+.lp-plan-bg {
+  background: radial-gradient(80% 80% at 100% 0%, rgba(0, 173, 247, 0.3), transparent), #0a1824;
+}
+html[dir='rtl'] .lp-plan-bg {
+  background: radial-gradient(80% 80% at 0% 0%, rgba(0, 173, 247, 0.3), transparent), #0a1824;
+}
+.lp-cta-bg {
+  background:
+    radial-gradient(60% 60% at 10% 100%, rgba(10, 24, 36, 0.35), transparent),
+    radial-gradient(45% 45% at 85% 10%, rgba(126, 224, 255, 0.35), transparent),
+    linear-gradient(204.93deg, #0b93db 14.645%, #07406e 85.355%);
+}
+html[dir='rtl'] .lp-cta-bg {
+  background:
+    radial-gradient(60% 60% at 90% 100%, rgba(10, 24, 36, 0.35), transparent),
+    radial-gradient(45% 45% at 15% 10%, rgba(126, 224, 255, 0.35), transparent),
+    linear-gradient(155.07deg, #0b93db 14.645%, #07406e 85.355%);
+}
+
+/* The website is drawn at Figma's scale: 1rem = 16px (the app screens keep their 14px base), so
+   the Link/Web/* sizes and the spacing match frame 68:616 pixel for pixel. */
+html:has(main.site-page) {
+  font-size: 16px;
+}
+/* Figma's default line height on the website is "normal"; styles that set one keep theirs. */
+main.site-page,
+main.site-page ~ footer {
+  line-height: normal;
 }
