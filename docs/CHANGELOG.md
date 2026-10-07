@@ -2,6 +2,15 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-07 — Launch Stage 2: GitHub (private), CI, repo docs
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | README.md, dev/repo-map.md (new), LICENSE (new), SECURITY.md (new) | The README describes the code that exists (quick start for the demo and pilot practice, docs, Figma, Eraser, the sample-data rule); the repo map lists every app and package; proprietary licence ("All rights reserved"); how to report a security issue privately. | First push to GitHub |
+| 2 | .gitignore | Certificates and keys, pilot data and backups, all audio except the synthetic bench clips, model files. | Push audit |
+| 3 | .github/workflows | CI: lint, typecheck, unit tests, i18n, env and format checks; Python (link_nlp, evals, gold lock); gitleaks over the full history. e2e (web, demo, pilot) by hand only. | Stage 2 |
+| 4 | prompts/ (new) | The launch and hosted-pilot prompts, as Ahmed sent them. | Reference for Stages 3–5 |
+
 ## 2026-10-07 — Launch Stage 1: the landing page, try it, request a pilot
 
 | # | File | What changed | Why |
