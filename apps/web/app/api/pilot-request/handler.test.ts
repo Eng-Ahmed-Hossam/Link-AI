@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { RateLimiter } from '../../../src/pilot-request';
-import { handlePilotRequest } from './handler';
+import { handlePilotRequest, recipient } from './handler';
 
 const body = {
   centreName: 'مركز الأمل',
@@ -79,5 +79,15 @@ describe('POST /api/pilot-request', () => {
     expect(
       (await handlePilotRequest(post('x'.repeat(5000)), env, vi.fn(), new RateLimiter())).status,
     ).toBe(413);
+  });
+});
+
+describe('recipient', () => {
+  it('uses PILOT_REQUEST_TO, else the public contact address, else nothing (no send)', () => {
+    expect(recipient({ PILOT_REQUEST_TO: 'a@x.com', NEXT_PUBLIC_CONTACT_EMAIL: 'b@x.com' })).toBe(
+      'a@x.com',
+    );
+    expect(recipient({ NEXT_PUBLIC_CONTACT_EMAIL: 'b@x.com' })).toBe('b@x.com');
+    expect(recipient({})).toBe('');
   });
 });

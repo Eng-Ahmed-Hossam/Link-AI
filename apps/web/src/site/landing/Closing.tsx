@@ -3,6 +3,7 @@ import { FaqList, WebArrow, cn, webButtonClass } from '@link/ui';
 import { getT } from '../../i18n';
 import { JOIN_FORM_KEYS, pick } from '../strings';
 import { TrackedLink } from '../Tracked';
+import { emailLine } from '../contact';
 import { LazyJoinForm } from './LazyJoinForm';
 import { Decor, Heading, Icon, IconBox, iconSrc, pad, wrap } from './parts';
 
@@ -282,7 +283,7 @@ export function Join({ t, locale, whatsapp }: { t: T; locale: Locale; whatsapp: 
           id="join-form"
           className="relative min-w-0 flex-1 rounded-24 bg-white p-6 shadow-[0_24px_60px_rgba(0,18,31,0.25)] sm:p-7"
         >
-          <LazyJoinForm locale={locale} s={pick(t, JOIN_FORM_KEYS)} />
+          <LazyJoinForm locale={locale} s={pick(t, JOIN_FORM_KEYS)} email={emailLine(t)} />
         </div>
       </div>
     </section>

@@ -2,6 +2,13 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-08 — Step 1 approved
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | 13, frontend/screen-log.md | CF-40 and CF-41 resolved: "rent hall slots"; "Request free access" (back to "Create my account" once accounts exist). | Ahmed's review |
+| 2 | .env.example (`NEXT_PUBLIC_CONTACT_EMAIL`) | Link's contact address: footer "Contact", the request confirmation, and where requests go when `PILOT_REQUEST_TO` is empty. Shown only once set. | Step 0 |
+
 ## 2026-10-08 — The landing page, rebuilt from Figma 68:616
 
 | # | File | What changed | Why |

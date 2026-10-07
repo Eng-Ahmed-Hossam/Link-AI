@@ -343,7 +343,7 @@ test('landing "Get started" form (section 11): checks every field, then sends th
   await page.goto('/ar#join');
   const form = page.getByTestId('pilot-form');
   await expect(form).toBeVisible();
-  await expect(form.getByRole('button', { name: 'أنشئ حسابي المجاني' })).toBeVisible();
+  await expect(form.getByRole('button', { name: 'اطلب حسابك المجاني' })).toBeVisible();
   await form.getByTestId('pilot-submit').click();
   for (const msg of [
     'اكتب اسمك.',

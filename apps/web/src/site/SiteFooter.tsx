@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Logo } from '@link/ui';
 import type { Locale } from '@link/i18n';
 import { getT } from '../i18n';
-import { whatsappUrl } from './contact';
+import { contactEmail, whatsappUrl } from './contact';
 
 const linkCls = 'inline-flex min-h-6 text-[14px] font-medium text-white/82 hover:text-white';
 const textCls = 'text-[14px] font-medium text-white/82';
@@ -16,6 +16,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
   const t = getT(locale);
   const home = `/${locale}`;
   const wa = whatsappUrl();
+  const email = contactEmail();
   return (
     <footer className="site-lazy [contain-intrinsic-size:auto_400px] bg-navy px-4 pt-[72px] pb-10 text-white sm:px-6 lg:px-8 xl:px-0">
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-12">
@@ -70,7 +71,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                 {t('site.footer.company')}
               </h2>
               <p className={textCls}>{t('site.footer.about')}</p>
-              <a href={`${home}#join`} className={linkCls}>
+              <a href={email ? `mailto:${email}` : `${home}#join`} className={linkCls}>
                 {t('site.footer.contact')}
               </a>
               <Link prefetch={false} href={`${home}/try`} className={linkCls}>

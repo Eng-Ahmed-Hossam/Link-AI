@@ -28,7 +28,16 @@ const input =
  * then emailed to the Link team; nothing is stored. Not in the Figma frame, kept for the law
  * (PDPL): the consent tick, which also says what the details are used for.
  */
-export function JoinForm({ locale, s }: { locale: Locale; s: Strings<typeof JOIN_FORM_KEYS> }) {
+export function JoinForm({
+  locale,
+  s,
+  email,
+}: {
+  locale: Locale;
+  s: Strings<typeof JOIN_FORM_KEYS>;
+  /** Link's contact address and the confirmation sentence that carries it (when set). */
+  email?: { address: string; line: string } | null;
+}) {
   const t = (k: Key) => s[k];
   const [f, setF] = useState({
     contactName: '',
@@ -113,6 +122,19 @@ export function JoinForm({ locale, s }: { locale: Locale; s: Strings<typeof JOIN
           {t('landing.form.doneTitle')}
         </p>
         <p className="text-[14px] text-muted">{t('landing.form.doneBody')}</p>
+        {email ? (
+          <p className="text-[14px] text-muted" data-testid="pilot-done-email">
+            {email.line.split(email.address)[0]}
+            <a
+              href={`mailto:${email.address}`}
+              className="font-semibold text-blueText underline"
+              dir="ltr"
+            >
+              {email.address}
+            </a>
+            {email.line.split(email.address)[1]}
+          </p>
+        ) : null}
       </div>
     );
 

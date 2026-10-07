@@ -26,11 +26,13 @@ export function PilotForm({
   s: words,
   centre = '',
   teachers = '',
+  email,
 }: {
   locale: Locale;
   s: Strings<typeof PILOT_FORM_KEYS>;
   centre?: string;
   teachers?: string;
+  email?: { address: string; line: string } | null;
 }) {
   const t = (k: keyof typeof words) => words[k];
   const [f, setF] = useState({
@@ -84,6 +86,19 @@ export function PilotForm({
         <CheckCircle2 aria-hidden className="size-10 text-green" />
         <p className="text-web-h3 text-navy">{t('landing.form.doneTitle')}</p>
         <p className="text-web-body text-muted">{t('landing.form.doneBody')}</p>
+        {email ? (
+          <p className="text-[14px] text-muted" data-testid="pilot-done-email">
+            {email.line.split(email.address)[0]}
+            <a
+              href={`mailto:${email.address}`}
+              className="font-semibold text-blueText underline"
+              dir="ltr"
+            >
+              {email.address}
+            </a>
+            {email.line.split(email.address)[1]}
+          </p>
+        ) : null}
         <Link
           prefetch={false}
           href={`/${locale}/try?${new URLSearchParams({ centre: f.centreName })}`}

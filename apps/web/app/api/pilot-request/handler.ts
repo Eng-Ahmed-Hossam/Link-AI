@@ -24,6 +24,9 @@ const problem = (status: number, code: string, title: string, extra: object = {}
 type Env = Record<string, string | undefined>;
 type Send = (r: PilotRequest, env: Env) => Promise<boolean>;
 
+/** Where requests go: PILOT_REQUEST_TO, else Link's public contact address. */
+export const recipient = (env: Env) => env.PILOT_REQUEST_TO || env.NEXT_PUBLIC_CONTACT_EMAIL || '';
+
 /** Resend's HTTP API (free tier: 3,000 emails a month, 100 a day). */
 export const sendWithResend: Send = async (r, env) => {
   const mail = pilotEmail(r);
@@ -32,7 +35,7 @@ export const sendWithResend: Send = async (r, env) => {
     headers: { authorization: `Bearer ${env.EMAIL_API_KEY}`, 'content-type': 'application/json' },
     body: JSON.stringify({
       from: env.EMAIL_FROM || 'Link <onboarding@resend.dev>',
-      to: [env.PILOT_REQUEST_TO],
+      to: [recipient(env)],
       subject: mail.subject,
       text: mail.text,
     }),
@@ -62,7 +65,7 @@ export async function handlePilotRequest(
   const v = validatePilotRequest(body);
   if (!v.ok) return problem(400, 'validation_failed', 'Check the form.', { errors: v.errors });
 
-  if (!env.EMAIL_API_KEY || !env.PILOT_REQUEST_TO) {
+  if (!env.EMAIL_API_KEY || !recipient(env)) {
     console.info('[pilot-request] no email key set — request not sent:', redact(v.value));
     return Response.json({ ok: true, delivered: false });
   }

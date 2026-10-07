@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { getT, parseLocale } from '@/i18n';
 import { PILOT } from '@/api-mode';
 import { PilotForm } from '@/site/PilotForm';
+import { emailLine } from '@/site/contact';
 import { PILOT_FORM_KEYS, pick } from '@/site/strings';
 import { siteMetadata } from '@/site/meta';
 import { SitePage } from '../SitePage';
@@ -30,6 +31,7 @@ export default async function PilotPage({ params, searchParams }: Props) {
         s={pick(t, PILOT_FORM_KEYS)}
         centre={typeof centre === 'string' ? centre.slice(0, 80) : ''}
         teachers={typeof teachers === 'string' ? teachers.replace(/\D/g, '').slice(0, 3) : ''}
+        email={emailLine(t)}
       />
     </SitePage>
   );

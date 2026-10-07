@@ -141,7 +141,7 @@ The landing page (`/{lang}`) is a copy of Figma frame 68:616, section by section
 
 **Facts changed for PRODUCT_BRIEF §3 (money, payments, curricula):** none. Every money, payment and curriculum statement in the frame agrees with the brief (free to join; 5–10% of hall rent from centres; a commission on paid bookings from the teacher's fee; parents pay no fee; card, Fawry, mobile wallet; paid extras as a monthly subscription; National, IGCSE, American, Nile).
 
-**Kept as in Figma, for Ahmed to confirm** (not §3 facts, so not changed): "rent rooms by the session" (CF-40) and "Create my free account" on a form that sends a request, not an account (CF-41).
+**Changed after review (Ahmed, 2026-10-08):** "rent rooms by the session" → "rent hall slots" (CF-40); "Create my free account" → "Request free access" (CF-41). The consent tick, the product tabs and the WhatsApp fallback are approved as built.
 
 **Not in the Figma frame, added:**
 
