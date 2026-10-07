@@ -2,6 +2,12 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-07 — Reset to the product brief
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | PRODUCT_BRIEF.md (new), CLAUDE.md, 13, product/app-map.md (new) | The brief is the single source of truth (CLAUDE.md points to it first). **OD-48 and CF-19 reversed:** the landing page follows Figma `68:616`, marketplace first, Follow-up as a paid extra. **OD-58:** marketplace on; Follow-up on as a paid extra per centre (on in the demo). The app map lists every role → app → screen → status. | Ahmed's product brief |
+
 ## 2026-10-07 — Launch Stage 2: GitHub (private), CI, repo docs
 
 | # | File | What changed | Why |

@@ -1,5 +1,7 @@
 # CLAUDE.md — Link
 
+> **Read [docs/PRODUCT_BRIEF.md](docs/PRODUCT_BRIEF.md) first. It wins over every other doc, prompt and decision.**
+
 **Link** is a marketplace for tutoring in Egypt, with AI follow-up tools on top. Parents find teachers and centres and pay online, teachers rent halls in centres, and centres fill empty halls. **Every payment goes through Link**, and Link earns a small booking commission (from the teacher's fee) and a small marketing fee on hall rent (from the centre's share). Paid extras: Arabic voice records after class, readable decline alerts, follow-up cases, staff-approved WhatsApp updates, and topic analytics. Curricula: National, IGCSE, American, Nile. Arabic-first (RTL), full English.
 
 **Status:** documentation only. Do not write application code until the team has reviewed `docs/13-open-decisions.md` and `docs/12-backlog-phase1.md`.
