@@ -7,12 +7,15 @@
 @import '@fontsource/cairo/arabic-400.css';
 @import '@fontsource/cairo/arabic-600.css';
 @import '@fontsource/cairo/arabic-700.css';
+@import '@fontsource/cairo/arabic-800.css';
 @import '@fontsource/cairo/latin-400.css';
 @import '@fontsource/cairo/latin-600.css';
 @import '@fontsource/cairo/latin-700.css';
 @import '@fontsource/plus-jakarta-sans/latin-400.css';
 @import '@fontsource/plus-jakarta-sans/latin-600.css';
 @import '@fontsource/plus-jakarta-sans/latin-700.css';
+@import '@fontsource/plus-jakarta-sans/latin-500.css';
+@import '@fontsource/plus-jakarta-sans/latin-800.css';
 
 @layer base {
   html {
@@ -72,4 +75,92 @@
   font-size: var(--text-caption-size);
   font-weight: var(--text-caption-weight);
   line-height: var(--text-caption-leading);
+}
+
+/* Website styles Link/Web/* (docs/11 §2, landing frame 68:616). Figma letter-spacing is a percent
+   of the size. Arabic uses Cairo with no tracking, a taller line and no upper case. Hero and H2
+   scale down on small screens. */
+:root {
+  --web-hero-size: clamp(2.5rem, 1.6rem + 3.8vw, 4rem);
+  --web-hero-leading: 1.04;
+  --web-hero-tracking: -0.03em;
+  --web-h2-size: clamp(2rem, 1.5rem + 2vw, 2.875rem);
+  --web-h2-leading: 1.12;
+  --web-h2-tracking: -0.025em;
+  --web-h3-tracking: -0.01em;
+  --web-body-weight: 400;
+  --web-body-leading: 1.62;
+  --web-small-weight: 500;
+  --web-small-leading: 1.5;
+  --web-eyebrow-tracking: 0.12em;
+  --web-eyebrow-transform: uppercase;
+}
+html[lang='ar'] {
+  --web-hero-leading: 1.3;
+  --web-hero-tracking: 0;
+  --web-h2-leading: 1.35;
+  --web-h2-tracking: 0;
+  --web-h3-tracking: 0;
+  --web-body-weight: 600;
+  --web-body-leading: 1.7;
+  --web-small-weight: 400;
+  --web-small-leading: 1.65;
+  --web-eyebrow-tracking: 0;
+  --web-eyebrow-transform: none;
+}
+@utility text-web-hero {
+  font-size: var(--web-hero-size);
+  font-weight: 800;
+  line-height: var(--web-hero-leading);
+  letter-spacing: var(--web-hero-tracking);
+}
+@utility text-web-h2 {
+  font-size: var(--web-h2-size);
+  font-weight: 800;
+  line-height: var(--web-h2-leading);
+  letter-spacing: var(--web-h2-tracking);
+}
+@utility text-web-h3 {
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.32;
+  letter-spacing: var(--web-h3-tracking);
+}
+@utility text-web-lead {
+  font-size: clamp(1.0625rem, 1rem + 0.4vw, 1.25rem);
+  font-weight: 500;
+  line-height: 1.6;
+}
+@utility text-web-body {
+  font-size: 1rem;
+  font-weight: var(--web-body-weight);
+  line-height: var(--web-body-leading);
+}
+@utility text-web-small {
+  font-size: 0.875rem;
+  font-weight: var(--web-small-weight);
+  line-height: var(--web-small-leading);
+}
+@utility text-web-eyebrow {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: var(--web-eyebrow-tracking);
+  text-transform: var(--web-eyebrow-transform);
+}
+@utility text-web-button {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+@utility text-web-faq {
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.32;
+  letter-spacing: var(--web-h3-tracking);
+}
+@utility text-web-faq-answer {
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.62;
 }

@@ -1,4 +1,4 @@
-import { initialsOf } from '@link/i18n';
+import { initialsOf } from '@link/i18n/names';
 import { cn } from '../cn';
 
 export type AvatarTone = 'blue' | 'green' | 'amber' | 'navy';

@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { normalizeDigits } from '@link/i18n';
+import { normalizeDigits } from '@link/i18n/format';
 import { cn } from '../cn';
 
 /**

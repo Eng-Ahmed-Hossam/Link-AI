@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, type ClipboardEvent, type KeyboardEvent } from 'react';
-import { normalizeDigits } from '@link/i18n';
+import { normalizeDigits } from '@link/i18n/format';
 import { cn } from '../cn';
 
 export interface OtpInputProps {
