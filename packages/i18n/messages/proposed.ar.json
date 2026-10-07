@@ -1362,5 +1362,7 @@
   "landing.signIn.title",
   "landing.signIn.body",
   "landing.signIn.cta",
-  "landing.signIn.back"
+  "landing.signIn.back",
+  "landing.demo.about",
+  "landing.demo.teacherNote"
 ]

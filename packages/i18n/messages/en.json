@@ -1365,5 +1365,7 @@
   "landing.signIn.title": "Sign in for pilot centres",
   "landing.signIn.body": "We're setting up the first pilot centres now. Each one gets its own sign-in when its pilot starts.",
   "landing.signIn.cta": "Want to be one? Request a free pilot",
-  "landing.signIn.back": "Back to the home page"
+  "landing.signIn.back": "Back to the home page",
+  "landing.demo.about": "About this demo",
+  "landing.demo.teacherNote": "Sample data, kept only in this browser. The teacher demo opens in its own app with its own copy: what you do there doesn't appear here, and the other way round."
 }

@@ -59,6 +59,14 @@ export function TryBar({ locale }: { locale: Locale }) {
           ·
         </span>
         <bdi data-testid="try-centre">{demo.centreName}</bdi>
+        <details className="group" data-testid="try-about">
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center px-2 underline underline-offset-2 [&::-webkit-details-marker]:hidden">
+            {t('landing.demo.about')}
+          </summary>
+          <p className="absolute inset-x-4 top-full z-50 mx-auto mt-1 max-w-lg rounded-16 bg-navy p-4 text-caption text-white shadow-raised">
+            {t('landing.demo.teacherNote')}
+          </p>
+        </details>
         <button
           type="button"
           onClick={() => resetTry(locale)}

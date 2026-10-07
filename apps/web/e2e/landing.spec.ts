@@ -135,6 +135,10 @@ test('path A: the demo opens under my centre name, as the owner — and nothing 
   await expect(page).toHaveURL(/\/ar\/centre\/cen-nour\/today$/, { timeout: 30_000 });
   await expect(page.getByTestId('try-banner')).toContainText('عرض تجريبي — بيانات تجريبية');
   await expect(page.getByTestId('try-centre')).toHaveText('مركز الأمل');
+  // The help text says the teacher demo keeps its own sample data.
+  await page.getByTestId('try-about').locator('summary').click();
+  await expect(page.getByTestId('try-about')).toContainText('تجربة المعلّم تفتح في تطبيقها الخاص');
+  await page.getByTestId('try-about').locator('summary').click();
   await expect(page.getByRole('navigation').getByText('مركز الأمل').first()).toBeVisible();
   // The follow-up product, not the marketplace (the demo's flags, whatever the build's defaults).
   const nav = page.getByRole('navigation');

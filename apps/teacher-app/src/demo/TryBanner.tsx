@@ -60,6 +60,7 @@ export function TryBanner() {
   const pathname = usePathname();
   const [demo, setDemo] = useState<TeacherTry | null>(null);
   const [card, setCard] = useState(false);
+  const [about, setAbout] = useState(false);
 
   useEffect(() => {
     const s = readTeacherTry();
@@ -94,6 +95,17 @@ export function TryBanner() {
           {t('landing.demo.banner')} · {demo.centreName}
         </Text>
         <Pressable
+          onPress={() => setAbout(!about)}
+          testID="try-about"
+          accessibilityRole="button"
+          accessibilityState={{ expanded: about }}
+          style={styles.reset}
+        >
+          <Text style={[textStyle(locale, 'caption'), styles.bannerText, styles.link]}>
+            {t('landing.demo.about')}
+          </Text>
+        </Pressable>
+        <Pressable
           onPress={reset}
           testID="try-reset"
           accessibilityRole="button"
@@ -104,6 +116,11 @@ export function TryBanner() {
           </Text>
         </Pressable>
       </View>
+      {about ? (
+        <Text style={[textStyle(locale, 'caption'), styles.about]} testID="try-about-text">
+          {t('landing.demo.teacherNote')}
+        </Text>
+      ) : null}
       {card ? (
         <View style={styles.card} testID="try-pilot-card">
           <Text style={[textStyle(locale, 'heading'), { color: color.navy }]}>
@@ -143,6 +160,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: space[16],
   },
   bannerText: { color: color.white, fontWeight: '600' },
+  link: { textDecorationLine: 'underline' },
+  about: {
+    backgroundColor: color.navy,
+    color: color.white,
+    paddingHorizontal: space[16],
+    paddingBottom: space[12],
+  },
   reset: { minHeight: 44, justifyContent: 'center', paddingHorizontal: space[8] },
   card: {
     position: 'absolute',
