@@ -287,6 +287,22 @@ describe('messages', () => {
     expect(m.draft).toContain('مريم');
   });
 
+  it('path A: "Try Link with your centre" renames the sample centre in the scenario', async () => {
+    const res = await fetch(`${BASE}/__demo/reset`, {
+      method: 'POST',
+      body: JSON.stringify({ scenario: 'demo-followup', centreName: '  مركز   الأمل ' }),
+    });
+    expect(res.ok).toBe(true);
+    asTeacher();
+    const { m } = await draftForMariam();
+    expect(m.draft).toContain('مركز الأمل');
+    expect(m.draft).not.toContain('مركز النور');
+    // An empty or overlong name keeps the sample centre.
+    resetFollowupDb({ centreName: 'x'.repeat(61) });
+    asTeacher();
+    expect((await draftForMariam()).m.draft).toContain('مركز النور');
+  });
+
   it('FUP-MSG-02: only messages.approve, only with the check; approved = locked', async () => {
     const { m } = await draftForMariam();
     asTeacher();

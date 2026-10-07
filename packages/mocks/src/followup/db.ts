@@ -483,8 +483,24 @@ const defaultRules = (approvedBy: string): RuleRow[] =>
     proposal: null,
   }));
 
-function fresh(): FuState {
+/**
+ * A visitor's own centre name for the demo ("Try Link with your centre"): the sample scenario,
+ * renamed. Trimmed, at most 60 characters; anything else keeps the sample name.
+ */
+export function demoCentreName(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const name = raw.replace(/\s+/g, ' ').trim();
+  return name.length >= 2 && name.length <= 60 ? name : null;
+}
+
+function fresh(centreName: string | null = null): FuState {
   state = {
+    world: centreName
+      ? {
+          ...demoWorld(),
+          centre: { id: fx.DEMO_CENTRE_ID, name: { en: centreName, ar: centreName } },
+        }
+      : undefined,
     records: [],
     corrections: [],
     signals: [],
@@ -652,11 +668,12 @@ export function freshPilotState(w: WorldData): FuState {
   };
 }
 
-export function resetFollowupDb() {
+/** Reset the demo scenario; `centreName` personalises it (landing page, path A). */
+export function resetFollowupDb(opts: { centreName?: unknown } = {}) {
   if (isPilotState())
     throw new MockProblem(409, 'pilot_mode', 'Reset is not available in the pilot.');
   const keep = state?.demo;
-  state = fresh();
+  state = fresh(demoCentreName(opts.centreName));
   // A reset keeps the demo switches the presenter set, except one-shot faults and offline.
   if (keep)
     state.demo = {

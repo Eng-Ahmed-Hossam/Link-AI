@@ -370,9 +370,9 @@ export const demoHandlers = [
   ),
   http.post(
     '*/__demo/reset',
-    demoCall(() => {
+    demoCall((body) => {
       mdb.resetMockDb();
-      fu.resetFollowupDb();
+      fu.resetFollowupDb({ centreName: body.centreName });
       return { ok: true, scenario: 'demo-followup' };
     }),
   ),

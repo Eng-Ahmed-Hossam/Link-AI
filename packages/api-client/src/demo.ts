@@ -52,7 +52,9 @@ async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Pr
 
 export const demoApi = {
   state: () => call<DemoSnapshot>('GET', '/__demo/state'),
-  reset: () => call<{ ok: true }>('POST', '/__demo/reset', { scenario: 'demo-followup' }),
+  /** A fresh demo-followup scenario; `centreName` renames the sample centre (landing, path A). */
+  reset: (centreName?: string) =>
+    call<{ ok: true }>('POST', '/__demo/reset', { scenario: 'demo-followup', centreName }),
   settings: (patch: Partial<DemoSnapshot['demo']>) =>
     call<DemoSnapshot['demo']>('POST', '/__demo/settings', patch),
   /** Mock provider event: Queued → Sent → Delivered, or → Failed. */
