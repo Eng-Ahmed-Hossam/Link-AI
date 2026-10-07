@@ -8,6 +8,8 @@ export { DevIndex } from './DevIndex';
 export { DevPanel } from './DevPanel';
 export { DevSignIn } from './DevSignIn';
 export { refreshDemoState, useDemoState } from './demo-state';
+export { TryBar } from './TryBar';
+export { startTry, useTryCentre, useTryOn, type TryRole } from './try';
 
 /** The MSW worker for `mock` mode. */
 export const startMocks = () => import('@link/mocks/browser').then((m) => m.startMocks());

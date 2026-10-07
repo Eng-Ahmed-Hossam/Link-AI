@@ -28,6 +28,7 @@ import { useFlag } from './flags';
 import { LangSwitch } from './LangSwitch';
 import { API_MODE, PILOT } from './api-mode';
 import { useSession } from './session';
+import { useTryCentre } from '@demo';
 
 /**
  * Owner web shell (11 §3 side navigation). Follow-up items (Phase 2) show with `followup.owner_nav`;
@@ -51,7 +52,11 @@ export function CentreShell({
   const assistant = useFlag('followup.assistant') && followUp;
   // Pilot: the centre's own name instead of the sample centre (A1).
   const pilotInfo = useQuery({ queryKey: ['pilot-info'], queryFn: pilotApi.info, enabled: PILOT });
-  const centreName = PILOT ? (pilotInfo.data?.centreName ?? '') : t('owner.shell.centre');
+  // A personalised demo ("Try Link with your centre") shows the visitor's centre name.
+  const tryCentre = useTryCentre();
+  const centreName = PILOT
+    ? (pilotInfo.data?.centreName ?? '')
+    : (tryCentre ?? t('owner.shell.centre'));
   const marketplace = useFlag('marketplace.enabled');
   const { session, signOut } = useSession();
   const me = useMe({ enabled: !!session });

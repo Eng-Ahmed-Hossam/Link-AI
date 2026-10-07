@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { parseLocale } from '@/i18n';
 import { AppProviders } from '@/AppProviders';
 
-/** Public pages choose their own frame: P01 uses the mobile parent frame, C01 (Batch 2) a desktop one. */
-export default async function PublicLayout({
+/** The dev route index: the app providers (one-click sign-in, Demo controls). */
+export default async function DevLayout({
   children,
   params,
 }: {

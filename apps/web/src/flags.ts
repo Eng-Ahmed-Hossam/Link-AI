@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 import { PHASE2_FLAGS } from '@link/api-client';
-import { useDemoState } from '@demo';
+import { useDemoState, useTryOn } from '@demo';
 import { PILOT } from './api-mode';
 
 /**
@@ -74,7 +74,10 @@ export function useFlags(): Record<FlagKey, boolean> {
         'marketplace.enabled': demo.demo.marketplace !== false,
       }
     : {};
+  // "Try Link with your centre" (landing page, path A) shows the follow-up product.
+  const tryOn = useTryOn();
   if (PILOT) return { ...FLAG_DEFAULTS, ...PILOT_FLAGS };
+  if (tryOn) return { ...FLAG_DEFAULTS, ...TRY_FLAGS, ...phase2Overrides(raw) };
   return {
     ...FLAG_DEFAULTS,
     ...phase2,
@@ -94,5 +97,21 @@ const PILOT_FLAGS: Partial<Record<FlagKey, boolean>> = {
   'followup.voice_notes': false,
   'followup.whatsapp_updates': true,
 };
+
+/**
+ * A personalised demo from the landing page (path A): the follow-up product as the pilot runs it,
+ * plus the demo-only Ask Link (scripted answers, labelled) and the parent feed. No marketplace.
+ */
+const TRY_FLAGS: Partial<Record<FlagKey, boolean>> = {
+  'marketplace.enabled': false,
+  'followup.assistant': true,
+  'followup.owner_nav': true,
+  'followup.records': true,
+  'followup.voice_notes': true,
+  'followup.whatsapp_updates': true,
+  'parent.updates_feed': true,
+};
+/** Local overrides (dev only) still win over the try flags. */
+const phase2Overrides = (raw: string) => JSON.parse(raw) as Partial<Record<FlagKey, boolean>>;
 
 export const useFlag = (key: FlagKey) => useFlags()[key];

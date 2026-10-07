@@ -38,6 +38,44 @@ const BOTH: ScreenMode[] = ['demo', 'pilot'];
 const DEMO: ScreenMode[] = ['demo'];
 
 export const SCREENS: Screen[] = [
+  // Website (landing page, Figma 68:616; Stage 1 of the launch)
+  {
+    id: 'W00',
+    name: 'Landing page',
+    app: 'web',
+    path: '/',
+    roles: ['anyone'],
+    modes: DEMO,
+    status: 'built',
+    figma: '68:616',
+  },
+  {
+    id: 'W-TRY',
+    name: 'Try Link with your centre (path A)',
+    app: 'web',
+    path: '/try',
+    roles: ['anyone'],
+    modes: DEMO,
+    status: 'built',
+  },
+  {
+    id: 'W-PILOT',
+    name: 'Request a free pilot (path B)',
+    app: 'web',
+    path: '/pilot',
+    roles: ['anyone'],
+    modes: DEMO,
+    status: 'built',
+  },
+  {
+    id: 'W-SIGNIN',
+    name: 'Sign in (pilot centres)',
+    app: 'web',
+    path: '/sign-in',
+    roles: ['anyone'],
+    modes: DEMO,
+    status: 'built',
+  },
   // Public pages
   {
     id: 'P01',
@@ -652,6 +690,17 @@ export const SCREENS: Screen[] = [
     figma: '21:152',
     flag: 'phase2',
   },
+  // Last: it resets the demo scenario (the crawler visits screens in this order).
+  {
+    id: 'T-TRY',
+    name: 'Try as a teacher (path A, opens Today)',
+    app: 'teacher',
+    path: '/try?centre={centreName}&lang=ar',
+    roles: ['anyone'],
+    modes: DEMO,
+    status: 'built',
+    flow: 'W-TRY → role Teacher',
+  },
 ];
 
 /**
@@ -665,6 +714,7 @@ export const DEMO_PARAMS: Record<string, string> = {
   teacherSlug: 'salma-fathy-maths',
   enrolmentId: 'enr-mariam-phys',
   groupId: 'grp-salma-ws',
+  centreName: 'Al Amal Centre',
 };
 
 /** Fill `{param}`s; `null` when one has no value (the screen is only reached inside a flow). */

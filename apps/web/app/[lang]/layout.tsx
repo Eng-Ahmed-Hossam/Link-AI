@@ -2,8 +2,6 @@ import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import { dirOf, locales } from '@link/i18n';
 import { LinkProvider } from '@link/ui';
-import { Providers } from '@/providers';
-import { I18nProvider } from '@/i18n-client';
 import { getT, parseLocale } from '@/i18n';
 import '../globals.css';
 
@@ -18,7 +16,11 @@ export async function generateMetadata({
   return { title: getT(locale)('common.appName') };
 }
 
-/** `<html lang dir>` is set on the server from the URL (RTL-01). */
+/**
+ * `<html lang dir>` is set on the server from the URL (RTL-01). The app's providers (data, session,
+ * translations on the client) are added by each app section's layout (`AppProviders`), so the
+ * public website pages ship none of them.
+ */
 export default async function RootLayout({
   children,
   params,
@@ -37,11 +39,7 @@ export default async function RootLayout({
         >
           {t('common.skipToContent')}
         </a>
-        <LinkProvider locale={locale}>
-          <I18nProvider locale={locale}>
-            <Providers locale={locale}>{children}</Providers>
-          </I18nProvider>
-        </LinkProvider>
+        <LinkProvider locale={locale}>{children}</LinkProvider>
       </body>
     </html>
   );
