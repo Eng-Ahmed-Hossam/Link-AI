@@ -35,3 +35,30 @@ apps/pilot/test-results/
 
 # ai-service: eval predictions and bench output (resumable runs; not committed)
 evals-runs/
+
+# Push safety (launch Stage 2 audit, 2026-10-07)
+# Certificates and keys: pilot TLS, the local CA, any mkcert output
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+# Pilot data and backups, if a data folder is ever placed inside the repo
+pilot-data/
+**/backups/
+state.json
+activity.jsonl
+pilot-deletion-receipt-*
+# Recordings: no audio anywhere except the synthetic benchmark clips
+*.wav
+*.m4a
+*.mp3
+*.ogg
+*.webm
+*.flac
+!apps/ai-service/bench/audio/*.wav
+# Model files (Whisper, Ollama, anything downloaded)
+*.gguf
+*.safetensors
+*.onnx

@@ -1,0 +1,9 @@
+Copyright (c) 2026 the Link authors (github.com/Eng-Ahmed-Hossam). All rights reserved.
+
+This repository and everything in it — source code, designs, documents and other material — is
+proprietary and confidential. No licence is granted to use, copy, modify, merge, publish,
+distribute, sublicense or sell any part of it, in any form, without the prior written permission
+of the copyright holder.
+
+Third-party components keep their own licences (for example the fonts under the SIL Open Font
+Licence and the open-source packages listed in each package.json).

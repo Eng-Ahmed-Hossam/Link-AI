@@ -1,0 +1,59 @@
+name: e2e
+# End-to-end suites, run by hand (Actions → e2e → Run workflow) to save minutes.
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Which suite
+        type: choice
+        options: [all, web, demo, pilot]
+        default: all
+permissions:
+  contents: read
+jobs:
+  web:
+    if: ${{ inputs.suite == 'all' || inputs.suite == 'web' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @link/web exec playwright install --with-deps chromium
+      # Parent PWA and the website, in API mode mock (MSW in the browser).
+      - run: pnpm --filter @link/web test:e2e
+
+  demo:
+    if: ${{ inputs.suite == 'all' || inputs.suite == 'demo' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @link/web exec playwright install --with-deps chromium
+      # Owner web, the cross-app walkthrough, the route crawler and the hands-on guide, on pnpm demo
+      # (started by the config, fixtures only). Then the teacher app on the same demo.
+      - run: pnpm --filter @link/web test:e2e:demo
+        env: { DEMO_AI: '0' }
+      - run: pnpm --filter @link/teacher-app test:e2e
+        env: { DEMO_AI: '0' }
+
+  pilot:
+    if: ${{ inputs.suite == 'all' || inputs.suite == 'pilot' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @link/pilot exec playwright install --with-deps chromium
+      - run: pnpm pilot:build
+      # The pilot end to end, its route crawler and the guide's tour 4 (voice is opt-in, skipped).
+      - run: pnpm --filter @link/pilot test:e2e
