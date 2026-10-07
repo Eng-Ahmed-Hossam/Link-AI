@@ -2,6 +2,17 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-07 — Launch Stage 1: the landing page, try it, request a pilot
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 1 | 13 | **OD-48 decided:** the landing page leads with follow-up; two ways in (try it, request a free pilot); no numbers, testimonials, logos or prediction claims. **CF-19 resolved** in favour of follow-up; marketplace copy hidden with its sections. | Ahmed, launch prompt |
+| 2 | adr/ADR-0009 (new) | Pilot requests emailed through Resend (free tier: 3,000 a month, 100 a day), validated, honeypot, rate-limited, never stored or logged in clear; path A demo in the browser; cookieless PostHog (page views and two buttons). | No backend yet |
+| 3 | 11 §3 | `Link Web / Button` and `FAQ item` built (`Web.tsx`). | Stage 1 |
+| 4 | 14 | The landing routes, `pnpm landing:shots`, `pnpm og:images`; env `PILOT_REQUEST_TO`, `NEXT_PUBLIC_POSTHOG_HOST`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_TEACHER_APP_URL`, `EXPO_PUBLIC_SITE_URL` (`EMAIL_*` reused). | Stage 1 |
+| 5 | frontend/screen-log.md | The website screens and how they differ from Figma `68:616`. | Stage 1 |
+| 6 | pilot/strings-to-review.csv, arabic-review.md | The 199 website strings added for review, by section. | Ahmed reviews the copy |
+
 ## 2026-10-07 — Every route reachable; hands-on walkthrough
 
 | # | File | What changed | Why |

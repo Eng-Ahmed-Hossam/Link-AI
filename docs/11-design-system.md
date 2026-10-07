@@ -81,7 +81,7 @@ Font stacks: Arabic UI `"Cairo", "Plus Jakarta Sans", system-ui, sans-serif`. En
 | **Link / Mastery band** | `Strong` (green), `Developing` (info blue), `Needs work` (amber), `Not enough data` (neutral) | Parents see only the band. The designs never use red for a student's band; keep it that way. |
 | **Link / Logo** | Lockup light, lockup dark, mark, mark with halo | The orb is the brand and the face of the Link Assistant. Lockup in navigation and headers; the mark alone for the assistant and app icons; the halo version only at hero sizes (sign-in, voice capture). Clear space = half the orb's width. |
 | **Link Web / Button** (`69:629`) | Style: `Primary`, `On dark`, `Outline`, `Dark` × State: `Default`, `Hover` | Website buttons only (landing page, public pages). Label uses `Link/Web/Button`. |
-| **Link Web / FAQ item** (`76:657`) | State: `Closed`, `Open` | Accordion on the landing page; one open at a time. |
+| **Link Web / FAQ item** (`76:657`) | State: `Closed`, `Open` | Accordion on the landing page; one open at a time. In code: `FaqList` (native `<details name>`, no JavaScript) and `FaqItem` (controlled); `WebButton` / `webButtonClass` for the button (`packages/ui/src/components/Web.tsx`, stories `Website/Link Web`). |
 
 ### Patterns used across screens
 

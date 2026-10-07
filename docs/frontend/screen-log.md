@@ -115,10 +115,23 @@ Pilot builds (`pnpm pilot:build`: `NEXT_PUBLIC_LINK_MODE` / `EXPO_PUBLIC_LINK_MO
 
 | Screen | Difference | Stories / decisions | Screenshots |
 |---|---|---|---|
-| Links without a centre id | `/{lang}/centre/today` (or any centre page without its id) → the centre entry with `?next=` → after sign-in, that page of the person's own centre. `/{lang}/centre/{id}` alone → Today (Staff with Phase 2 off). `/{lang}` → welcome (pilot: the centre). | Fixes the 404 from the demo's printed link | — |
+| Links without a centre id | `/{lang}/centre/today` (or any centre page without its id) → the centre entry with `?next=` → after sign-in, that page of the person's own centre. `/{lang}/centre/{id}` alone → Today (Staff with Phase 2 off). `/{lang}` → the landing page since 2026-10-07 (pilot: the centre). | Fixes the 404 from the demo's printed link | — |
 | Not found (web) | Any unknown path, and an unknown section, shows the app's own page («لم نجد هذه الصفحة» / "We couldn't find this page", "Go to the start") in the URL's language, HTTP 404; no Figma frame, follows the system (card + error state) | 11 §4 | — |
 | Unknown centre | An unknown centre id shows «لم نجد هذا المركز» with "Go to my centre", never an empty workspace; no Figma frame | 10 §2 | — |
 | Not found (teacher app) | Unknown paths show «لم نجد هذه الصفحة» with a way back to the start; V02 and T07 opened without their voice note go to T04 / T05 instead of waiting forever | — | — |
 | C02–C07 (pilot) | The marketplace placeholders are "not found" in the pilot (marketplace off, CF-29) | CF-29 | — |
 | Dev index `/{lang}/dev` (demo only) | Every screen of both apps from the route manifest (`apps/web/src/screens.ts`): ID, name, link, modes, status, Figma node; one-click sign-in as the sample owner, Reception, parent and teacher; opens the Demo controls. English only, like the Demo controls. Not built into the pilot (stub + start-up check) | Developer tool | — |
+
+## Launch Stage 1 · The website (2026-10-07)
+
+Next.js pages in `app/[lang]/(site)`, with no app providers (ADR-0009). Built from the Figma landing frame `68:616` (read through the Figma MCP) and the `Link Web / Button` (`69:629`) and `Link Web / FAQ item` (`76:657`) components (`packages/ui/src/components/Web.tsx`). Tests: `apps/web/e2e/landing.spec.ts` (axe AR/EN, desktop and mobile; SEO; path A with no network; the pilot card; path B), and the route crawlers.
+
+| Screen | Route | Status | Differs from Figma | Screenshots |
+|---|---|---|---|---|
+| W00 Landing page | `/{lang}` | built | Leads with the problem and the two ways in (OD-48 decided, CF-19 resolved). Kept: hero with the four animated cards (8-second loop, still with reduced motion), the four promises, "The problem" with Omar's month, the trust flow and FAQ. Changed: "How it works" has six steps with the **real app screens** in phone and laptop frames (not the four illustrated cards and product tabs); trust has the four promises asked for; "How a pilot works" is new; the request section's form is the pilot request. Hidden: marketplace, pricing (flag off), the video slot (until `public/landing/promo.mp4` exists). No WhatsApp/LinkedIn/Instagram links or contact number (none given yet). Arabic is designed from the English frame (no Arabic frame) | `docs/frontend/screenshots/landing/W00-landing.{ar,en}.{desktop,mobile}` |
+| Try Link with your centre | `/{lang}/try` | built | No Figma frame; follows the website system (card on the soft background, RadioCards) | `W-TRY.ar.mobile`, `W-TRY-demo.ar.mobile`, `W-TRY-card.ar.mobile` |
+| Request a free pilot | `/{lang}/pilot` | built | The Figma "Get started" card, with the fields asked for (centre, name, phone/WhatsApp, area, teachers, consent) | `W-PILOT.ar.mobile`, `W-PILOT-done.ar.mobile` |
+| Sign in (pilot centres) | `/{lang}/sign-in` | built | No Figma frame; points to the pilot request until the hosted pilot (Stage 5) | `W-SIGNIN.en.mobile` |
+| Demo banner and pilot card | every app page during path A | built | No Figma frame: "Demo — sample data · <centre> · Reset demo"; after two minutes, on Today or Follow-ups only, "Want this for your real centre?" | `W-TRY-card.ar.mobile` |
+| Teacher app `/try` | `/try?centre=…&lang=…` | built | Opens Today as the sample teacher under the visitor's centre name, with the same banner | — |
 
