@@ -12,6 +12,7 @@ import { DEMO_CONTROLS } from '../api-mode';
  * controls, the in-app mock handlers and the sample sign-in never reach the pilot bundle.
  */
 export { startMocks } from '@link/mocks/native';
+export { TryBanner, startTeacherTry, teacherTryOn } from './TryBanner';
 import type { Session } from '../session';
 
 /** The sample teacher of the demo scenario (Ms Salma, Al Nour). */

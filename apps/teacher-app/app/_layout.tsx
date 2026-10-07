@@ -17,7 +17,7 @@ import { setApiBaseUrl } from '@link/api-client';
 import { LocaleProvider, useLocale } from '@/locale';
 import { API_BASE_URL, API_MODE } from '@/api-mode';
 import { SessionProvider } from '@/session';
-import { DemoControls, startMocks } from '@/demo';
+import { DemoControls, TryBanner, startMocks } from '@/demo';
 import { startQueueWorker } from '@/offline/voiceQueue';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -31,6 +31,7 @@ function Shell() {
       style={{ flex: 1, backgroundColor: color.bg, direction: locale === 'ar' ? 'rtl' : 'ltr' }}
     >
       <StatusBar style="dark" />
+      <TryBanner />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.bg } }}>
         <Stack.Screen name="student/[id]/note" options={{ presentation: 'transparentModal' }} />
       </Stack>

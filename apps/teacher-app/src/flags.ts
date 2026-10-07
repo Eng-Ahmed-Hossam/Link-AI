@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { pilotApi } from '@link/api-client';
-import { useDemoState } from '@/demo';
+import { teacherTryOn, useDemoState } from '@/demo';
 import { DEMO_CONTROLS, PILOT } from './api-mode';
 
 /**
@@ -11,6 +11,7 @@ import { DEMO_CONTROLS, PILOT } from './api-mode';
 export function usePhase2(): boolean | undefined {
   const demo = useDemoState();
   if (PILOT) return true; // the concierge pilot is the follow-up loop
+  if (teacherTryOn()) return true; // "Try Link with your centre" shows the follow-up product
   if (!DEMO_CONTROLS) return false;
   return demo ? demo.demo.phase2 : undefined;
 }
@@ -19,6 +20,7 @@ export function usePhase2(): boolean | undefined {
 export function useMarketplace(): boolean | undefined {
   const demo = useDemoState();
   if (PILOT) return false;
+  if (teacherTryOn()) return false;
   if (!DEMO_CONTROLS) return true;
   return demo ? demo.demo.marketplace !== false : undefined;
 }
