@@ -24,6 +24,7 @@ packages/mocks/.data/
 # Concierge pilot (apps/pilot): this laptop's settings, pilot builds, results to review before sharing
 apps/pilot/.env.pilot
 apps/web/.next-pilot/
+apps/web/.next-lh/
 apps/teacher-app/dist-pilot/
 docs/pilot/metrics-*
 pilot-deletion-receipt-*.txt

@@ -9,6 +9,7 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/.next/**',
       '**/.next-pilot/**',
+      '**/.next-lh/**',
       '**/dist-pilot/**',
       '**/.e2e-data/**',
       '**/test-results/**',

@@ -34,6 +34,8 @@
     "scenario:demo-followup": "node scripts/demo-scenario.mjs",
     "demo": "node scripts/demo.mjs",
     "demo:warm": "node scripts/demo-warm.mjs",
+    "landing:shots": "node scripts/landing-shots.mjs",
+    "og:images": "node scripts/og-images.mjs",
     "pilot:init": "pnpm --filter @link/pilot run init",
     "pilot:cert": "pnpm --filter @link/pilot run cert",
     "pilot:import": "pnpm --filter @link/pilot run import",

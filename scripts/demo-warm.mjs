@@ -8,6 +8,10 @@ const MOCK = process.env.MOCK_SERVER_URL ?? 'http://localhost:4010';
 const C = '/centre/cen-nour';
 
 const webPages = ['ar', 'en'].flatMap((l) => [
+  `/${l}`,
+  `/${l}/try`,
+  `/${l}/pilot`,
+  `/${l}/sign-in`,
   `/${l}/dev`,
   `/${l}/centre`,
   `/${l}${C}/today`,
@@ -45,6 +49,18 @@ async function warm(base, path) {
   return r.ok;
 }
 
+// Wait for all three servers (the e2e global setup runs this right after starting the demo).
+const waitFor = async (url, seconds) => {
+  for (let i = 0; i < seconds; i++) {
+    if ((await get(url)).status > 0) return true;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return false;
+};
+const WAIT = Number(process.env.DEMO_WARM_WAIT_S ?? 0);
+if (WAIT)
+  for (const u of [`${MOCK}/__demo/state`, `${WEB}/ar/centre`, `${TEACHER}/`])
+    await waitFor(u, WAIT);
 const up = await get(`${MOCK}/__demo/state`);
 if (!up.ok) {
   console.error(
