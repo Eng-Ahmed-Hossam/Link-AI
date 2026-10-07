@@ -26,7 +26,7 @@ export const followupHandlers = [
       await delay(200);
       const now = Date.now();
       return HttpResponse.json(
-        mfx.groups
+        mdb.allGroups()
           .filter((g) => g.teacherId === me.teacherId)
           .map((g) => {
             const d = mdb.groupDto(g.id, lang);

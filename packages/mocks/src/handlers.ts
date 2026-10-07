@@ -5,6 +5,7 @@ import * as fx from './data';
 import { authed, langOf, problem, withScenario } from './http';
 import { followupHandlers, demoHandlers } from './followup/handlers';
 import { ownerHandlers } from './followup/owner-handlers';
+import { marketHandlers } from './market/handlers';
 
 /** Mock mode accepts this code for every phone number. */
 export const MOCK_OTP = '123456';
@@ -312,4 +313,5 @@ export const handlers = [
   }),
   ...followupHandlers,
   ...ownerHandlers,
+  ...marketHandlers,
 ];

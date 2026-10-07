@@ -9,7 +9,7 @@
  */
 import type { L } from '../data';
 import * as mfx from '../data';
-import { sessionsOf as marketplaceSessions } from '../db';
+import { allGroups, sessionsOf as marketplaceSessions } from '../db';
 import { addDays, cairoToUtc, cairoToday, isoWeekday } from '../time';
 import * as fx from './data';
 
@@ -80,7 +80,7 @@ const roleOf = (r: (typeof mfx.staff)[number]['role']): StaffRole =>
 
 /** The demo scenario as a world (docs/14 §5.1). */
 export function demoWorld(): WorldData {
-  const mg = mfx.groups.find((g) => g.id === fx.DEMO_GROUP_ID)!;
+  const mg = allGroups().find((g) => g.id === fx.DEMO_GROUP_ID)!;
   return {
     kind: 'demo',
     centre: { id: fx.DEMO_CENTRE_ID, name: { en: 'Al Nour Centre', ar: 'مركز النور' } },

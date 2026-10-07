@@ -29,6 +29,7 @@ import type {
   TeacherProfile,
 } from '@link/api-client';
 import * as fx from './data';
+import { seedMarket, type MarketState } from './market/seed';
 import { addDays, addMonth, cairoToUtc, cairoToday, isoWeekday } from './time';
 
 export type Lang = 'ar' | 'en';
@@ -90,6 +91,7 @@ interface State {
     body: string;
     visibility: 'public' | 'private';
     status: 'published' | 'held';
+    createdAt?: string;
   }[];
   waitlist: { id: string; groupId: string; studentId: string }[];
   /** Phone → OTP attempts for the current code. */
@@ -110,6 +112,8 @@ interface State {
     /** How long the mock webhook takes to land ("Confirming…"). Tests can lengthen it. */
     webhookDelayMs?: number;
   };
+  /** Marketplace operations (halls, requests, bookings, rent; Batches 2–3). */
+  market?: MarketState;
   seq: number;
 }
 
@@ -142,6 +146,7 @@ function fresh(): State {
     extraChildren: [],
     settings: { holdSeconds: HOLD_SECONDS_DEFAULT, scenario: 'default', reviewEachEnrolment: {} },
     seq: 20900,
+    market: seedMarket(today),
   };
   for (const e of fx.seedEnrolments) {
     const first = sessionsOf(e.groupId).find((x) => x.date >= addDays(today, -e.startedDaysAgo))!;
@@ -235,7 +240,24 @@ export function setMockSettings(patch: Partial<State['settings']>) {
 // ── helpers ────────────────────────────────────────────────────────────────────
 const t = (l: fx.L, lang: Lang) => l[lang];
 const money = (amountPt: number): Money => ({ amountPt, currency: 'EGP' });
-const groupFx = (id: string) => fx.groups.find((g) => g.id === id)!;
+const groupFx = (id: string) => allGroups().find((g) => g.id === id)!;
+
+/** The marketplace state (older saved states get it on first use). */
+export function market(): MarketState {
+  const s = load();
+  return (s.market ??= seedMarket(cairoToday()));
+}
+
+/** Every group: the fixtures with the teacher's edits (J05), then the groups opened since. */
+export function allGroups(): fx.GroupFx[] {
+  // The current state as it is: while `fresh()` builds the first state there is none yet.
+  const m = state?.market;
+  if (!m) return fx.groups;
+  return [
+    ...fx.groups.map((g) => (m.groupEdits[g.id] ? { ...g, ...m.groupEdits[g.id] } : g)),
+    ...m.newGroups.map((g) => (m.groupEdits[g.id] ? { ...g, ...m.groupEdits[g.id] } : g)),
+  ];
+}
 const centreFx = (id: string) => fx.centres.find((c) => c.id === id)!;
 const teacherFx = (id: string) => fx.teachers.find((x) => x.id === id)!;
 
@@ -381,7 +403,7 @@ export interface SearchArgs {
 }
 
 function matchingGroups(a: SearchArgs) {
-  return fx.groups.filter(
+  return allGroups().filter(
     (g) =>
       (!a.subjectId || g.subjectId === a.subjectId) &&
       (!a.curriculumId || g.curriculumId === a.curriculumId) &&
@@ -443,7 +465,7 @@ export function searchCentres(a: SearchArgs, lang: Lang) {
 function teacherCard(
   id: string,
   lang: Lang,
-  gs = fx.groups.filter((g) => g.teacherId === id),
+  gs = allGroups().filter((g) => g.teacherId === id),
 ): TeacherCard {
   const tc = teacherFx(id);
   return {
@@ -493,7 +515,7 @@ export function centreProfile(
 ) {
   const c = fx.centres.find((x) => x.slug === slug);
   if (!c) return null;
-  const gs = fx.groups.filter((g) => g.centreId === c.id);
+  const gs = allGroups().filter((g) => g.centreId === c.id);
   const bySubject = new Map<string, fx.GroupFx[]>();
   for (const g of gs)
     bySubject.set(`${g.subjectId}|${g.curriculumId}`, [
@@ -546,7 +568,7 @@ export function centreProfile(
 export function teacherProfile(slug: string, lang: Lang): TeacherProfile | null {
   const tc = fx.teachers.find((x) => x.slug === slug);
   if (!tc) return null;
-  const gs = fx.groups.filter(
+  const gs = allGroups().filter(
     (g) => g.teacherId === tc.id && centreFx(g.centreId).distanceKm <= 20,
   );
   return {
@@ -787,7 +809,7 @@ export function createEnrolment(
     return { replayed: true, dto: getEnrolment(prior.id, userId, lang) };
   if (!ownsStudent(userId, body.studentId))
     throw new MockProblem(404, 'not_found', 'Child not found.');
-  const g = fx.groups.find((x) => x.id === body.groupId);
+  const g = allGroups().find((x) => x.id === body.groupId);
   if (!g) throw new MockProblem(404, 'not_found', 'Group not found.');
   if (body.paymentPlan === 'monthly_recurring' && !g.offersMonthlyRecurring)
     throw new MockProblem(
@@ -956,6 +978,58 @@ export function cancelEnrolment(enrolmentId: string, userId: string, lang: Lang)
   return enrolmentDto(e, lang, userId);
 }
 
+// ── marketplace: what a teacher sees of enrolments (J06, J07) ──────────────────────
+export const enrolmentRows = () => load().enrolments;
+export const reviewRows = () => load().reviews;
+
+/** A student's and parent's display names, whoever's child it is (teacher and centre views). */
+export function studentLabel(studentId: string, lang: Lang): { student: string; parent: string } {
+  const own = fx.children.find((c) => c.id === studentId);
+  if (own) return { student: t(own.name, lang), parent: t(fx.parent.name, lang) };
+  const extra = load().extraChildren.find((c) => c.id === studentId);
+  if (extra) return { student: extra.name, parent: t(fx.parent.name, lang) };
+  const other = fx.otherStudents[studentId];
+  if (other) return { student: t(other.name, lang), parent: t(other.parent, lang) };
+  return { student: studentId, parent: '' };
+}
+
+/** OD-08: with "review each enrolment" on, the teacher accepts, or declines with a full refund. */
+export function teacherDecide(enrolmentId: string, teacherId: string, accept: boolean) {
+  const s = load();
+  const e = s.enrolments.find((x) => x.id === enrolmentId);
+  if (!e || groupFx(e.groupId)?.teacherId !== teacherId)
+    throw new MockProblem(404, 'not_found', 'Enrolment not found.');
+  if (e.status !== 'awaiting_teacher')
+    throw new MockProblem(409, 'not_awaiting_teacher', 'This enrolment is not waiting for you.');
+  if (accept) e.status = 'confirmed';
+  else {
+    e.status = 'declined';
+    e.refund = {
+      id: `ref-${++s.seq}`,
+      status: 'requested',
+      policy: 'teacher_declined',
+      createdAt: new Date().toISOString(),
+      amountPt: e.payment?.amountPt ?? e.pricePt,
+    };
+  }
+  save();
+  return e;
+}
+
+/** The teacher's "review each enrolment" setting (OD-08, off by default). */
+export function reviewEachEnrolment(teacherId: string): boolean {
+  return (
+    mockSettings().reviewEachEnrolment[teacherId] ??
+    fx.teachers.find((x) => x.id === teacherId)?.reviewEachEnrolment ??
+    false
+  );
+}
+export function setReviewEachEnrolment(teacherId: string, on: boolean) {
+  const s = load();
+  s.settings.reviewEachEnrolment = { ...s.settings.reviewEachEnrolment, [teacherId]: on };
+  save();
+}
+
 /** BR-REF-03: after the first session, a refund request goes to ops as a dispute. */
 export function refundRequest(enrolmentId: string, userId: string, lang: Lang) {
   const s = load();
@@ -1032,7 +1106,12 @@ export function createReview(
     throw new MockProblem(422, 'body_too_long', 'Use 600 characters or fewer.');
   // BR-REV-04 rule-based checks: a review with contact details is held for ops (L02).
   const status = CONTACT_PATTERN.test(body.body) ? 'held' : 'published';
-  const row = { id: `rvw-${++s.seq}`, ...body, status: status as 'held' | 'published' };
+  const row = {
+    id: `rvw-${++s.seq}`,
+    ...body,
+    status: status as 'held' | 'published',
+    createdAt: new Date().toISOString(),
+  };
   s.reviews.push(row);
   e.reviewedTargets.push(body.targetType);
   s.idem[key] = { kind: 'review', id: row.id };

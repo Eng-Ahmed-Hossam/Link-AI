@@ -64,9 +64,34 @@ import type {
   RuleView,
   StaffMember,
 } from './followup';
+import type {
+  AutoApproveRules,
+  CentreApplicationBody,
+  CentreFeatures,
+  CentreProfileEdit,
+  CentreSchedule,
+  Earnings,
+  GroupPatch,
+  Hall,
+  HallPatch,
+  NewGroupBody,
+  RentEstimate,
+  RentEstimateBody,
+  RentIncome,
+  ReviewTab,
+  ReviewsReceived,
+  RoomRequest,
+  RoomRequestBody,
+  RoomSearchResult,
+  TeacherBooking,
+  TeacherEnrolment,
+  TeacherSelf,
+  TeacherSelfPatch,
+} from './market';
 
 export * from './types';
 export * from './followup';
+export * from './market';
 export * from './flags';
 export { setApiBaseUrl, apiUrl } from './config';
 import { config } from './config';
@@ -428,6 +453,70 @@ export const pilotApi = {
   voiceStatus: () => request<PilotVoiceStatus>('GET', '/v1/pilot/voice'),
   setVoicePaused: (paused: boolean) =>
     request<{ paused: boolean; stopped: number }>('POST', '/v1/pilot/voice', { body: { paused } }),
+};
+
+/** Phase 1 marketplace operations: the centre web (Batch 2) and the teacher app (Batch 3). */
+export const marketApi = {
+  // Centre (C01–C07, auto-approve, paid extras)
+  applyToJoin: (body: CentreApplicationBody) =>
+    request<{ id: string }>('POST', '/v1/centre-applications', { body }),
+  centreProfile: (centreId: string) =>
+    request<CentreProfileEdit>('GET', `/v1/centres/${centreId}/profile`),
+  updateCentreProfile: (centreId: string, body: { about?: string; photos?: number }) =>
+    request<CentreProfileEdit>('PATCH', `/v1/centres/${centreId}`, { body }),
+  halls: (centreId: string) => request<Hall[]>('GET', `/v1/centres/${centreId}/rooms`),
+  updateHall: (hallId: string, body: HallPatch) =>
+    request<Hall>('PATCH', `/v1/rooms/${hallId}`, { body }),
+  schedule: (centreId: string) =>
+    request<CentreSchedule>('GET', `/v1/centres/${centreId}/schedule`),
+  autoApprove: (centreId: string) =>
+    request<AutoApproveRules>('GET', `/v1/centres/${centreId}/settings/auto-approve`),
+  putAutoApprove: (centreId: string, body: AutoApproveRules) =>
+    request<AutoApproveRules>('PUT', `/v1/centres/${centreId}/settings/auto-approve`, { body }),
+  centreRequests: (centreId: string) =>
+    request<RoomRequest[]>('GET', '/v1/room-requests', { params: { centreId } }),
+  moveRequest: (id: string, stage: 'phone_call' | 'meeting', at?: string) =>
+    request<RoomRequest>('POST', `/v1/room-requests/${id}/stage`, { body: { stage, at } }),
+  approveRequest: (id: string) =>
+    request<RoomRequest>('POST', `/v1/room-requests/${id}/approve`, { body: {} }),
+  declineRequest: (id: string, reason: string) =>
+    request<RoomRequest>('POST', `/v1/room-requests/${id}/decline`, { body: { reason } }),
+  rentIncome: (centreId: string) =>
+    request<RentIncome>('GET', `/v1/centres/${centreId}/rent-income`),
+  reviewsReceived: (centreId: string, tab: ReviewTab) =>
+    request<ReviewsReceived>('GET', '/v1/me/reviews-received', { params: { centreId, tab } }),
+  replyReview: (id: string, body: string) =>
+    request<{ ok: true }>('POST', `/v1/reviews/${id}/reply`, { body: { body } }),
+  reportReview: (id: string, reason: string) =>
+    request<{ ok: true }>('POST', `/v1/reviews/${id}/report`, { body: { reason } }),
+  centreFeatures: (centreId: string) =>
+    request<CentreFeatures>('GET', `/v1/centres/${centreId}/features`),
+  // Teacher (J01–J07)
+  searchRooms: (q: { students?: number; weekdays?: string; maxKm?: number }) =>
+    request<RoomSearchResult[]>('GET', '/v1/rooms/search', { params: q }),
+  rentEstimate: (body: RentEstimateBody) =>
+    request<RentEstimate>('POST', `/v1/rooms/${body.hallId}/rent-estimate`, { body }),
+  requestRoom: (body: RoomRequestBody) =>
+    request<RoomRequest>('POST', '/v1/room-requests', { body }),
+  myRoomRequests: () =>
+    request<RoomRequest[]>('GET', '/v1/room-requests', { params: { scope: 'mine' } }),
+  withdrawRequest: (id: string) =>
+    request<RoomRequest>('POST', `/v1/room-requests/${id}/withdraw`, { body: {} }),
+  teacherSelf: () => request<TeacherSelf>('GET', '/v1/teachers/me'),
+  updateTeacherSelf: (body: TeacherSelfPatch) =>
+    request<TeacherSelf>('PATCH', '/v1/teachers/me', { body }),
+  myBookings: () => request<TeacherBooking[]>('GET', '/v1/teachers/me/bookings'),
+  updateGroup: (id: string, body: GroupPatch) =>
+    request<{ ok: true }>('PATCH', `/v1/groups/${id}`, { body }),
+  createGroup: (body: NewGroupBody) => request<{ id: string }>('POST', '/v1/groups', { body }),
+  myEnrolments: () => request<TeacherEnrolment[]>('GET', '/v1/teachers/me/enrolments'),
+  acceptEnrolment: (id: string) =>
+    request<TeacherEnrolment>('POST', `/v1/enrolments/${id}/accept`, { body: {} }),
+  declineEnrolment: (id: string) =>
+    request<TeacherEnrolment>('POST', `/v1/enrolments/${id}/decline`, { body: {} }),
+  earnings: () => request<Earnings>('GET', '/v1/teachers/me/earnings'),
+  /** The teacher's centre(s) with the follow-up extra (Follow-up tab). */
+  teacherFeatures: () => request<CentreFeatures>('GET', '/v1/teachers/me/features'),
 };
 
 export const isExtractionReady = (

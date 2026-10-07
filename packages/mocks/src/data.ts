@@ -603,7 +603,36 @@ export const seedEnrolments: {
     plan: 'monthly_recurring',
     startedDaysAgo: 28,
   },
+  // Other families in Ms Salma's Nile Academy group (J06, J07). Not the sample parent's children.
+  {
+    id: 'enr-youssef-salma',
+    reference: 'LNK-20881',
+    groupId: 'grp-salma-nile',
+    studentId: 'stu-youssef',
+    plan: 'monthly_recurring',
+    startedDaysAgo: 3,
+  },
+  {
+    id: 'enr-nour-salma',
+    reference: 'LNK-20884',
+    groupId: 'grp-salma-nile',
+    studentId: 'stu-nourhan',
+    plan: 'per_session',
+    startedDaysAgo: 0,
+  },
 ];
+
+/** Students of other (fictional) families, seen only by their teacher and centre. */
+export const otherStudents: Record<string, { name: L; parent: L }> = {
+  'stu-youssef': {
+    name: { en: 'Youssef Hany', ar: 'يوسف هاني' },
+    parent: { en: 'Hany Ali', ar: 'هاني علي' },
+  },
+  'stu-nourhan': {
+    name: { en: 'Nourhan Adel', ar: 'نورهان عادل' },
+    parent: { en: 'Adel Samir', ar: 'عادل سمير' },
+  },
+};
 
 /** Sample staff accounts for the Phase 2 demo (sign in with code 123456). Fictional. */
 export const staff: {
