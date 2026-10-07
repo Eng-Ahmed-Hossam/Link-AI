@@ -5,6 +5,9 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./locale": "./src/locale.ts",
+    "./format": "./src/format.ts",
+    "./names": "./src/names.ts",
     "./messages/*": "./messages/*"
   },
   "scripts": {

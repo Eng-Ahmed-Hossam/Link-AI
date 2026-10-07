@@ -143,6 +143,29 @@ if (cmd === 'export') {
           add(m[1], screen, w);
         }
     }
+  // The public website (landing page, try it, request a pilot, pilot sign-in; launch Stage 1):
+  // every `landing.*` key, by section. Seen by every visitor, so reviewed among the first.
+  const WEBSITE = {
+    meta: 'Website: search and social cards',
+    nav: 'Website: header',
+    cta: 'Website: the two buttons',
+    hero: 'Website: hero',
+    strip: 'Website: four promises',
+    problem: 'Website: the problem',
+    how: 'Website: how it works',
+    trust: 'Website: trust',
+    pilot: 'Website: how a pilot works',
+    faq: 'Website: FAQ',
+    video: 'Website: video',
+    join: 'Website: request section',
+    form: 'Website: pilot request form',
+    footer: 'Website: footer',
+    try: 'Website: try it (path A)',
+    demo: 'Demo banner and pilot card (path A)',
+    signIn: 'Website: sign in (pilot centres)',
+  };
+  for (const k of Object.keys(en))
+    if (k.startsWith('landing.') && !where.has(k)) add(k, WEBSITE[k.split('.')[1]] ?? 'Website', 9);
   // Shared state messages appear on every screen.
   for (const k of Object.keys(en))
     if (/^(states|common)\./.test(k) && !where.has(k)) add(k, 'All screens (states, common)', 5);
