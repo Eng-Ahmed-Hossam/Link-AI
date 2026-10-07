@@ -4,6 +4,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { addDays, cairoToday } from '@link/mocks/time';
 import { REPO_ROOT } from '../src/config';
@@ -34,8 +35,13 @@ afterEach(() => {
 });
 
 function startServer(dir: string, web: number, teacher: number): Promise<ChildProcess> {
-  const tsx = join(REPO_ROOT, 'apps', 'pilot', 'node_modules', 'tsx', 'dist', 'cli.mjs');
-  const c = spawn(process.execPath, [tsx, join(REPO_ROOT, 'apps', 'pilot', 'src', 'server.ts')], {
+  // The tsx loader in this process, not the tsx CLI: the CLI runs the script in a child process,
+  // so a SIGKILL would hit only the wrapper and leave the real server (and its lock) running.
+  const tsx = pathToFileURL(
+    join(REPO_ROOT, 'apps', 'pilot', 'node_modules', 'tsx', 'dist', 'loader.mjs'),
+  );
+  const server = join(REPO_ROOT, 'apps', 'pilot', 'src', 'server.ts');
+  const c = spawn(process.execPath, ['--import', tsx.href, server], {
     env: {
       ...process.env,
       LINK_MODE: 'pilot',
