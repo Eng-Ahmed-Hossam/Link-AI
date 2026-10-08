@@ -62,6 +62,53 @@ export const handlers = [
       },
     });
   }),
+  // MKT-ACC-04: mock tokens never expire, so refresh hands back the same pair and logout is a no-op.
+  http.post('*/v1/auth/refresh', async ({ request }) => {
+    const { refreshToken } = ((await request.json().catch(() => ({}))) ?? {}) as {
+      refreshToken?: string;
+    };
+    const userId = refreshToken?.startsWith('mock-refresh.')
+      ? refreshToken.slice('mock-refresh.'.length)
+      : null;
+    if (!userId || !db.userById(userId))
+      return problem(401, 'refresh_invalid', 'Sign in again to continue.');
+    return HttpResponse.json({
+      accessToken: `mock.${userId}`,
+      refreshToken: `mock-refresh.${userId}`,
+    });
+  }),
+  http.post('*/v1/auth/logout', () => new HttpResponse(null, { status: 204 })),
+  http.patch(
+    '*/v1/me',
+    authed(async ({ request, userId, lang }) => {
+      const body = (await request.json()) as { name?: string; language?: string };
+      if (body.name !== undefined && (typeof body.name !== 'string' || body.name.length > 80))
+        return problem(422, 'validation_failed', 'Enter a name of up to 80 characters.');
+      if (body.language !== undefined && body.language !== 'ar' && body.language !== 'en')
+        return problem(422, 'validation_failed', 'Language is ar or en.');
+      const u = db.updateUser(userId, body);
+      if (!u) return problem(401, 'unauthenticated', 'Sign in to continue.');
+      return HttpResponse.json({
+        id: u.id,
+        name: u.name,
+        language: body.language ?? lang,
+        roles: u.roles,
+      });
+    }),
+  ),
+  http.get(
+    '*/v1/me/consents',
+    authed(({ userId }) => HttpResponse.json({ data: db.consentsOf(userId) })),
+  ),
+  http.put(
+    '*/v1/me/consents',
+    authed(async ({ request, userId }) => {
+      const body = (await request.json()) as Parameters<typeof db.putConsent>[1];
+      if (!body?.kind || typeof body.granted !== 'boolean' || !body.version)
+        return problem(422, 'validation_failed', 'kind, granted and version are required.');
+      return HttpResponse.json({ data: db.putConsent(userId, body) });
+    }),
+  ),
   http.get(
     '*/v1/me',
     authed(({ userId, lang }) => {

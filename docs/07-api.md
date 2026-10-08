@@ -25,7 +25,8 @@ core-api exposes REST over HTTPS, described in **OpenAPI 3.1**. The OpenAPI docu
 ### Authentication
 | Caller | Mechanism |
 |---|---|
-| Apps and web | `Authorization: Bearer <JWT>`. Access token 15 min; refresh token 30 days, rotated on use. Claims: `sub`, `roles`, `centreIds`, `teacherId`, `guardianId`, `lang`. |
+| Teacher app | `Authorization: Bearer <JWT>`. Access token 15 min; refresh token 30 days, rotated on use (`POST /v1/auth/refresh` with `{refreshToken}`). Both are kept in the device's secure storage. Claims: `sub`, `roles`, `centreIds`, `teacherId`, `guardianId`, `lang`. |
+| Web (parent PWA, owner and staff web) | The same tokens in **httpOnly cookies**, never readable by scripts (decided 2026-10-08): `link_at` (access, `Path=/`) and `link_rt` (refresh, `Path=/v1/auth`), `SameSite=Lax`, `Secure` outside local. The web app serves `/v1/*` from its own origin (a proxy to core-api), so no cross-origin credentials. Every cookie-authenticated request carries `X-Link-Auth: cookie` (the CSRF guard: a plain cross-site form cannot set it); `otp/verify` and `refresh` then set the cookies and leave the tokens out of the body. |
 | Ops console | SSO (OIDC) behind an IP allow-list. Ops tokens carry `link_ops` and fine-grained permissions (`ops.verify`, `ops.moderate`, `ops.finance`). |
 | ai-service → core-api | Service token (mTLS / workload identity) **plus** an on-behalf-of user context. ai-service acts as the teacher with the teacher's permissions. |
 | Provider webhooks | No JWT. The adapter verifies the provider's signature (HMAC / signed payload) before anything else. |
@@ -99,10 +100,10 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 | Method | Path | Who | Purpose | Idem | Req |
 |---|---|---|---|---|---|
 | POST | `/v1/auth/otp/request` | public | Send a 6-digit SMS code | rate-limited | MKT-ACC-01 |
-| POST | `/v1/auth/otp/verify` | public | Verify the code; returns tokens | rate-limited | MKT-ACC-01 |
+| POST | `/v1/auth/otp/verify` | public | Verify the code; returns `{user, isNewUser}` plus the tokens (in the body for the app, as cookies for the web) | rate-limited | MKT-ACC-01 |
 | POST | `/v1/auth/refresh` | any | Rotate the refresh token | ✓ | MKT-ACC-04 |
 | POST | `/v1/auth/logout` | any | Revoke the refresh token | ✓ | MKT-ACC-04 |
-| GET | `/v1/me` | any | Profile, roles, language | — read | MKT-ACC-03 |
+| GET | `/v1/me` | any | Profile, roles, language; `centreIds` (owner or staff) and `teacherId` (added 2026-10-08, so the apps open the right workspace) | — read | MKT-ACC-03 |
 | PATCH | `/v1/me` | any | Name, language | ✓ | MKT-ACC-03 |
 | POST | `/v1/me/roles` | any | Add the role `parent`, `teacher` or `centre_owner` | ✓ | MKT-ACC-02 |
 | POST | `/v1/me/devices` | any | Register a push token (platform, app) | ✓ | MKT-NTF-02 |
@@ -111,6 +112,7 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 | POST | `/v1/me/children` | parent | Add a child (records `child_data_processing` consent) | ✓ | MKT-ACC-05 |
 | PATCH / DELETE | `/v1/children/{id}` | parent | Edit / archive a child | ✓ | MKT-ACC-05 |
 | GET | `/v1/me/consents` | any | Current consents (by `user_id`; never cached) | — read | BR-DAT-03 |
+| GET | `/v1/me/features` | parent | Paid extras on for any centre where the parent's children study: `{followupExtra}` (added 2026-10-08; P09 updates feed) | — read | OD-58 |
 | PUT | `/v1/me/consents` | any | Grant or withdraw a consent | ✓ | BR-DAT-03 |
 | POST | `/v1/me/data-requests` | any | PDPL access / correction / deletion request | ✓ | MKT-OPS-09 |
 
@@ -127,7 +129,9 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 | POST | `/v1/leads` | public | Landing-page "Get started" form → `org.leads` (rate-limited, bot-filtered at the WAF) | ✓ | MKT-WEB-01 |
 | POST | `/v1/centre-applications` | centre_owner | Join request (C01) | ✓ | MKT-CEN-01 |
 | GET | `/v1/centres/{id}` · `/v1/centres/by-slug/{slug}` | public | Public profile | — read | MKT-DSC-04 |
-| PATCH | `/v1/centres/{id}` | centre_owner | Edit profile | ✓ | MKT-CEN-02 |
+| GET | `/v1/centres/{id}/profile` | owner, staff | The C02 editing view: public fields plus halls, completeness, badges and `locationUnderReview` (added 2026-10-08) | — read | MKT-CEN-02, CF-44 |
+| GET | `/v1/centres/{id}/features` | owner, staff | Paid extras for this centre: `{followupExtra}` (added 2026-10-08) | — read | OD-58 |
+| PATCH | `/v1/centres/{id}` | centre_owner | Edit profile; a moved map pin (`location`) puts the centre under review (CF-44) | ✓ | MKT-CEN-02 |
 | POST | `/v1/centres/{id}/photos/upload-url` | centre_owner | Signed upload URL | ✓ | MKT-CEN-02 |
 | GET | `/v1/centres/{id}/rooms` | owner, staff | List halls | — read | MKT-CEN-03 |
 | POST | `/v1/centres/{id}/rooms` | centre_owner | Add a hall | ✓ | MKT-CEN-03 |
@@ -148,11 +152,12 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 | PATCH | `/v1/teachers/me` | teacher | Profile, subjects, availability, settings | ✓ | MKT-TCH-01 |
 | POST | `/v1/teachers/me/verification` | teacher | Start eKYC; returns the provider session | ✓ | MKT-TCH-02 |
 | POST | `/v1/teachers/me/documents/upload-url` | teacher | Degree / reference upload | ✓ | MKT-TCH-02 |
+| GET | `/v1/teachers/me/features` | teacher | Paid extras on for any centre the teacher works in: `{followupExtra}` (added 2026-10-08; Follow-up tab) | — read | OD-58 |
 
 ### Hall booking
 | Method | Path | Who | Purpose | Idem | Money | Req |
 |---|---|---|---|---|---|---|
-| GET | `/v1/rooms/search?lat&lng&radiusKm&minCapacity&weekday&from&to&maxRentPt&facilities` | teacher | Find halls (J01) | — read | — | MKT-HAL-01 |
+| GET | `/v1/rooms/search?lat&lng&radiusKm&minCapacity&weekday&from&to&maxRentPt&facilities` | teacher | Find halls (J01). `weekday` is a comma-separated list (0 = Sunday … 6 = Saturday); without `lat`/`lng` the teacher's area is used | — read | — | MKT-HAL-01 |
 | POST | `/v1/rooms/{id}/rent-estimate` | teacher | Estimate from slots, students and fee (J02); pure calculation | — read (no write) | teacher → centre (estimate) | BR-BKG-07 |
 | POST | `/v1/room-requests` | teacher | Request slot(s) | ✓ | — | MKT-HAL-02 |
 | GET | `/v1/room-requests?scope=mine` | teacher | My requests (J03) | — read | — | MKT-HAL-03 |
@@ -161,6 +166,7 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 | POST | `/v1/room-requests/{id}/approve` | owner, staff | Approve → creates the booking | ✓ | — | MKT-HAL-04 |
 | POST | `/v1/room-requests/{id}/decline` | owner, staff | Decline with a reason | ✓ | — | MKT-HAL-04 |
 | POST | `/v1/room-requests/{id}/withdraw` | teacher | Withdraw | ✓ | — | MKT-HAL-03 |
+| GET | `/v1/room-bookings?scope=mine` | teacher | My bookings: hall, centre, slots and dates, so a group can be opened in a booked slot (J05; added 2026-10-08) | — read | — | MKT-GRP-01 |
 | GET | `/v1/room-bookings/{id}` | teacher, owner, staff | Booking detail | — read | — | MKT-HAL-04 |
 | POST | `/v1/room-bookings/{id}/end` | teacher, centre_owner | End at the period end | ✓ | — | MKT-HAL-06 |
 
@@ -245,7 +251,7 @@ One owner can own several centres; each centre has its own payout account, balan
 |---|---|---|---|---|---|
 | POST | `/v1/reviews` | parent (verified) | Create a review or private feedback | ✓ | MKT-REV-01 |
 | PATCH | `/v1/reviews/{id}` | author | Edit and resubmit (when `needs_edit`) | ✓ | BR-REV-05 |
-| GET | `/v1/me/reviews-received?visibility&status` | teacher, owner, staff | C04 tabs | — read | MKT-REV-03 |
+| GET | `/v1/me/reviews-received?centreId&visibility&status` | teacher, owner, staff | C04 tabs: `visibility=public` · `visibility=private` · `status=reported`. Owners and staff pass `centreId` | — read | MKT-REV-03 |
 | POST | `/v1/reviews/{id}/reply` | target | Public reply | ✓ | MKT-REV-03 |
 | POST | `/v1/reviews/{id}/report` | target | Report | ✓ | MKT-REV-03 |
 
@@ -399,7 +405,7 @@ Owner-side endpoints (cases, messages, assistant, demo controls) are in §2c.
 | GET | `/v1/centres/{id}/rules` | → `RuleView[]` (code, active, params, scope, version, history, proposal, readable text and example) | 03 §3 defaults; only `consecutive_absences` on |
 | PUT | `/v1/centres/{id}/rules/{code}` | `RuleChangeBody` → `RuleView` | Owner: new version. Staff: a proposal, version unchanged. Parameters must be whole numbers ≥ 1 (422, never adjusted) |
 | POST | `/v1/centres/{id}/rules/{code}/approve` · `/reject` | → `RuleView` | Owner only (403); 409 `no_proposal` |
-| GET | `/v1/centres/{id}/staff` · POST `/staff/invites` | → `StaffMember[]` · `{phone, role}` → `StaffMember[]` | Invite: owner only; Egyptian mobile (422 `invalid_phone`) |
+| GET | `/v1/centres/{id}/staff` · POST `/v1/centres/{id}/staff` | → `StaffMember[]` · `{phone, role, permissions?}` → `StaffMember[]` | Invite: owner only; Egyptian mobile (422 `invalid_phone`). Same path as §2 (renamed from `/staff/invites` on 2026-10-08) |
 | GET | `/v1/centres/{id}/activity` | → `ActivityLog` (`events[]`, `week` counts) | Append-only audit events (FUP-DSH-04); filters by kind |
 | GET | `/v1/me/updates` | → `Page<ParentUpdate>` | Parent: approved messages for their own children only, never drafts (FUP-MSG-08, OD-41) |
 | GET | `/v1/assistant/briefing` | → `{text, items[]}` (case, reason, draft id, latest sent status, blocked reason) | Staff of the centre only |

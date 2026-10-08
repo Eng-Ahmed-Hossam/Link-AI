@@ -228,6 +228,17 @@ export interface CentreApplicationBody {
   consent: boolean;
 }
 
+/** `GET /v1/rooms/search` query (07 §2, MKT-HAL-01). Without `lat`/`lng` the teacher's area is used. */
+export interface RoomSearchQuery {
+  /** Seats needed: halls smaller than this are listed with `fits: false`. */
+  minCapacity?: number;
+  /** Comma-separated weekdays, 0 = Sunday … 6 = Saturday. */
+  weekday?: string;
+  radiusKm?: number;
+  lat?: number;
+  lng?: number;
+}
+
 export interface RoomSearchResult {
   hall: { id: string; name: string; capacity: number; facilities: Facility[] };
   centre: { id: string; name: string; area: string; distanceKm: number };

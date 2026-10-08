@@ -40,8 +40,9 @@ export interface OtpRequestResult {
 }
 
 export interface OtpVerifyResult {
-  accessToken: string;
-  refreshToken: string;
+  /** In the body for the teacher app; the web gets httpOnly cookies instead (07 §1). */
+  accessToken?: string;
+  refreshToken?: string;
   user: Me;
   /** True when the phone had no account: the client then adds the chosen role (MKT-ACC-02). */
   isNewUser: boolean;
@@ -52,6 +53,10 @@ export interface Me {
   name: string | null;
   language: 'ar' | 'en';
   roles: Role[];
+  /** Centres where the user is owner or staff (07 §2, added 2026-10-08). */
+  centreIds?: string[];
+  /** Set for teachers. */
+  teacherId?: string | null;
 }
 
 /** PATCH /v1/me (07 §2a P-1). PLACEHOLDER (Account). */

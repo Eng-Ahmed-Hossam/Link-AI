@@ -32,9 +32,9 @@ export default function Rooms() {
     queryFn: () =>
       track(
         marketApi.searchRooms({
-          students,
-          maxKm,
-          ...(days.length ? { weekdays: days.join(',') } : {}),
+          minCapacity: students,
+          radiusKm: maxKm,
+          ...(days.length ? { weekday: days.join(',') } : {}),
         }),
       ),
   });

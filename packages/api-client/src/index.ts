@@ -83,6 +83,7 @@ import type {
   ReviewsReceived,
   RoomRequest,
   RoomRequestBody,
+  RoomSearchQuery,
   RoomSearchResult,
   TeacherBooking,
   TeacherEnrolment,
@@ -332,7 +333,7 @@ export const ownerApi = {
   invite: (
     centreId: string,
     body: { phone: string; role: StaffMember['role']; permissions?: StaffPermission[] },
-  ) => request<StaffMember[]>('POST', `/v1/centres/${centreId}/staff/invites`, { body }),
+  ) => request<StaffMember[]>('POST', `/v1/centres/${centreId}/staff`, { body }),
   activity: (centreId: string) => request<ActivityLog>('GET', `/v1/centres/${centreId}/activity`),
   reviseMessage: (id: string) => request<ParentMessage>('POST', `/v1/messages/${id}/revise`),
   seatCheck: (caseId: string) =>
@@ -493,8 +494,11 @@ export const marketApi = {
     request<RoomRequest>('POST', `/v1/room-requests/${id}/decline`, { body: { reason } }),
   rentIncome: (centreId: string) =>
     request<RentIncome>('GET', `/v1/centres/${centreId}/rent-income`),
+  /** C04 tabs map to 07's filters: public / private visibility, or reported status. */
   reviewsReceived: (centreId: string, tab: ReviewTab) =>
-    request<ReviewsReceived>('GET', '/v1/me/reviews-received', { params: { centreId, tab } }),
+    request<ReviewsReceived>('GET', '/v1/me/reviews-received', {
+      params: tab === 'reported' ? { centreId, status: 'reported' } : { centreId, visibility: tab },
+    }),
   replyReview: (id: string, body: string) =>
     request<{ ok: true }>('POST', `/v1/reviews/${id}/reply`, { body: { body } }),
   reportReview: (id: string, reason: string) =>
@@ -502,8 +506,9 @@ export const marketApi = {
   centreFeatures: (centreId: string) =>
     request<CentreFeatures>('GET', `/v1/centres/${centreId}/features`),
   // Teacher (J01–J07)
-  searchRooms: (q: { students?: number; weekdays?: string; maxKm?: number }) =>
-    request<RoomSearchResult[]>('GET', '/v1/rooms/search', { params: q }),
+  /** J01 (07 §2): `weekday` is a comma-separated list (6 = Saturday … 4 = Thursday). */
+  searchRooms: (q: RoomSearchQuery) =>
+    request<RoomSearchResult[]>('GET', '/v1/rooms/search', { params: { ...q } }),
   rentEstimate: (body: RentEstimateBody) =>
     request<RentEstimate>('POST', `/v1/rooms/${body.hallId}/rent-estimate`, { body }),
   requestRoom: (body: RoomRequestBody) =>
@@ -515,7 +520,8 @@ export const marketApi = {
   teacherSelf: () => request<TeacherSelf>('GET', '/v1/teachers/me'),
   updateTeacherSelf: (body: TeacherSelfPatch) =>
     request<TeacherSelf>('PATCH', '/v1/teachers/me', { body }),
-  myBookings: () => request<TeacherBooking[]>('GET', '/v1/teachers/me/bookings'),
+  myBookings: () =>
+    request<TeacherBooking[]>('GET', '/v1/room-bookings', { params: { scope: 'mine' } }),
   updateGroup: (id: string, body: GroupPatch) =>
     request<{ ok: true }>('PATCH', `/v1/groups/${id}`, { body }),
   createGroup: (body: NewGroupBody) => request<{ id: string }>('POST', '/v1/groups', { body }),

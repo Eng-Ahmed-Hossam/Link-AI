@@ -87,7 +87,7 @@ function PhoneSignIn() {
         setError(t('teacher.signIn.notTeacher'));
         return;
       }
-      signIn({ accessToken: r.accessToken, userId: r.user.id });
+      signIn({ accessToken: r.accessToken ?? '', userId: r.user.id });
       router.replace('/');
     } catch (e) {
       setError(errorText(e));

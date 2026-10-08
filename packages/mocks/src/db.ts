@@ -10,6 +10,7 @@ import type {
   CentreCard,
   CentreProfile,
   Child,
+  ConsentState,
   CurriculumRef,
   Enrolment,
   EnrolmentStatus,
@@ -114,6 +115,8 @@ interface State {
   };
   /** Marketplace operations (halls, requests, bookings, rent; Batches 2–3). */
   market?: MarketState;
+  /** Consent events per user, newest last (BR-DAT-03). Optional: older saved states have none. */
+  consents?: Record<string, ConsentState[]>;
   seq: number;
 }
 
@@ -667,6 +670,36 @@ export function otpReset(phone: string) {
   load().otp[phone] = { attempts: 0, sentAt: Date.now() };
   save();
 }
+/** PATCH /v1/me (07 §2a P-1). The mock keeps the name; the language follows Accept-Language. */
+export function updateUser(userId: string, body: { name?: string }) {
+  const u = userById(userId);
+  if (u && body.name !== undefined) u.name = body.name.trim() || null;
+  save();
+  return u;
+}
+
+/** Current consents: the latest event per (student, kind). Never cached (BR-DAT-03). */
+export function consentsOf(userId: string): ConsentState[] {
+  const latest = new Map<string, ConsentState>();
+  for (const c of load().consents?.[userId] ?? []) latest.set(`${c.studentId}:${c.kind}`, c);
+  return [...latest.values()];
+}
+export function putConsent(
+  userId: string,
+  body: { kind: ConsentState['kind']; granted: boolean; version: string; studentId?: string },
+) {
+  const s = load();
+  ((s.consents ??= {})[userId] ??= []).push({
+    kind: body.kind,
+    studentId: body.studentId ?? null,
+    granted: body.granted,
+    version: body.version,
+    at: new Date().toISOString(),
+  });
+  save();
+  return consentsOf(userId);
+}
+
 export function persist() {
   save();
 }

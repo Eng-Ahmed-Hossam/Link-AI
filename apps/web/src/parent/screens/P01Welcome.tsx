@@ -87,10 +87,10 @@ export function P01Welcome() {
       let roles = r.user.roles;
       // MKT-ACC-02 AC2: one person can hold several roles; add the chosen one if new.
       if (!signInOnly && !roles.includes(role)) {
-        setAuthToken(r.accessToken);
+        setAuthToken(r.accessToken ?? null);
         roles = (await api.addRole(role)).roles;
       }
-      signIn({ accessToken: r.accessToken, userId: r.user.id, roles });
+      signIn({ accessToken: r.accessToken ?? '', userId: r.user.id, roles });
       const chosen: SignupRole = signInOnly
         ? ((roles.find((x) => x !== 'centre_staff') as SignupRole) ?? 'parent')
         : role;

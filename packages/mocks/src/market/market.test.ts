@@ -136,7 +136,7 @@ describe('halls and room requests (MKT-HAL)', () => {
 
   it('J02: a teacher requests free slots only; with auto-approve on and every rule met it is booked at once', async () => {
     as('usr-salma');
-    const rooms = await marketApi.searchRooms({ students: 20 });
+    const rooms = await marketApi.searchRooms({ minCapacity: 20 });
     const room2 = rooms.find((r) => r.hall.id === 'hall-nour-2')!;
     const slot = room2.freeSlots.find((s) => s.start === '14:00')!;
     const body = {

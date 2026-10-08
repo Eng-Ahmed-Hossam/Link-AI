@@ -91,7 +91,7 @@ export const ownerHandlers = [
     }),
   ),
   http.post(
-    '*/v1/centres/:id/staff/invites',
+    '*/v1/centres/:id/staff',
     authed(async ({ request, params, userId, lang }) => {
       centre(params.id);
       const b = (await request.json()) as Parameters<typeof fu.inviteStaff>[1];

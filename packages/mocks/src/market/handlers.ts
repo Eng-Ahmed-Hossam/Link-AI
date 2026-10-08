@@ -142,7 +142,12 @@ export const marketHandlers = [
       const q = new URL(request.url).searchParams;
       const centreId = q.get('centreId') ?? STAFF_CENTRE;
       staffOf(userId, centreId);
-      const tab = (q.get('tab') ?? 'public') as ReviewTab;
+      const tab: ReviewTab =
+        q.get('status') === 'reported'
+          ? 'reported'
+          : q.get('visibility') === 'private'
+            ? 'private'
+            : 'public';
       return HttpResponse.json(mk.reviewsReceived(centreId, tab, lang));
     }),
   ),
@@ -172,9 +177,9 @@ export const marketHandlers = [
       return HttpResponse.json(
         mk.searchRooms(
           {
-            students: q.get('students') ? Number(q.get('students')) : undefined,
-            weekdays: q.get('weekdays') ? q.get('weekdays')!.split(',').map(Number) : undefined,
-            maxKm: q.get('maxKm') ? Number(q.get('maxKm')) : undefined,
+            students: q.get('minCapacity') ? Number(q.get('minCapacity')) : undefined,
+            weekdays: q.get('weekday') ? q.get('weekday')!.split(',').map(Number) : undefined,
+            maxKm: q.get('radiusKm') ? Number(q.get('radiusKm')) : undefined,
           },
           lang,
         ),
@@ -265,7 +270,7 @@ export const marketHandlers = [
     ),
   ),
   http.get(
-    '*/v1/teachers/me/bookings',
+    '*/v1/room-bookings',
     authed(({ userId, lang }) => HttpResponse.json(mk.teacherBookings(teacherOf(userId), lang))),
   ),
   http.get(

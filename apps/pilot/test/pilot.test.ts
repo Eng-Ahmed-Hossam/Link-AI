@@ -53,6 +53,11 @@ describe('A1 start-up check', () => {
     });
     expect(p.some((x) => x.includes('/__demo'))).toBe(true);
     expect(p.some((x) => x.includes('/v1/assistant'))).toBe(true);
+    // Phone invites (POST, same path as the staff list since 07 renamed /staff/invites).
+    expect(p).toContain('Demo or mock route mounted: POST */v1/centres/:id/staff');
+    expect(
+      p.some((x) => x.startsWith('Demo or mock route mounted: GET */v1/centres/:id/staff')),
+    ).toBe(false);
     expect(p).toContain('The stored world is the demo scenario.');
     expect(p).toContain('Demo fixture or demo user present: usr-salma');
     expect(p).toContain('Demo setting present: DEMO_DEFAULT_FLAGS');

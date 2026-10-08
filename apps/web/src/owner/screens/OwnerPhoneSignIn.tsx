@@ -74,7 +74,7 @@ export function OwnerPhoneSignIn({ landing }: { landing: string }) {
         setNotStaff(true);
         return;
       }
-      signIn({ accessToken: r.accessToken, userId: r.user.id, roles: r.user.roles });
+      signIn({ accessToken: r.accessToken ?? '', userId: r.user.id, roles: r.user.roles });
       router.replace(landing);
     } catch (err) {
       setError(errorText(err));

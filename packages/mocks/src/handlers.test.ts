@@ -55,6 +55,28 @@ describe('MKT-ACC-01 phone OTP', () => {
   });
 });
 
+describe('MKT-ACC-03 / BR-DAT-03 account (07 §2a P-1, P-2)', () => {
+  it('PATCH /v1/me saves the name and rejects a long one', async () => {
+    const me = await api.updateMe({ name: 'Hassan M.' }, newIdempotencyKey());
+    expect(me.name).toBe('Hassan M.');
+    const e = await err(api.updateMe({ name: 'x'.repeat(81) }, newIdempotencyKey()));
+    expect(e.code).toBe('validation_failed');
+  });
+  it('consents: the latest event per kind wins', async () => {
+    expect((await api.consents()).data).toEqual([]);
+    await api.putConsent(
+      { kind: 'sms_updates', granted: true, version: 'v1' },
+      newIdempotencyKey(),
+    );
+    const r = await api.putConsent(
+      { kind: 'sms_updates', granted: false, version: 'v1' },
+      newIdempotencyKey(),
+    );
+    expect(r.data).toHaveLength(1);
+    expect(r.data[0]).toMatchObject({ kind: 'sms_updates', granted: false, studentId: null });
+  });
+});
+
 describe('MKT-DSC-02 search', () => {
   it('defaults to ≤ 5 km and reports totals', async () => {
     const r = await api.searchCentres({ subjectId: 'sub-math', schoolYearId: 'sy-sec2' });

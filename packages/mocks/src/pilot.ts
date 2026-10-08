@@ -14,6 +14,8 @@ import * as fx from './followup/data';
 import type { WorldData } from './followup/world';
 
 const pathOf = (h: RequestHandler) => String((h.info as { path?: unknown }).path ?? '');
+const routeOf = (h: RequestHandler) =>
+  `${String((h.info as { method?: unknown }).method ?? '')} ${pathOf(h)}`;
 
 /** Paths that must never answer in the pilot (checked at start-up and in tests). */
 export const FORBIDDEN_IN_PILOT = [
@@ -23,17 +25,20 @@ export const FORBIDDEN_IN_PILOT = [
   '/v1/me/updates',
   '/v1/me/centre-groups',
   '/seat-check',
-  '/staff/invites',
+  // Phone invites: the pilot adds staff with PINs instead.
+  'POST */v1/centres/:id/staff',
   '/v1/auth/otp',
 ];
-const forbidden = (path: string) => FORBIDDEN_IN_PILOT.some((f) => path.includes(f));
+/** `METHOD path` entries match one route exactly; plain entries match any route containing them. */
+const forbidden = (route: string) =>
+  FORBIDDEN_IN_PILOT.some((f) => (f.includes(' ') ? route === f : route.includes(f)));
 
 export const pilotHandlers: RequestHandler[] = [...followupHandlers, ...ownerHandlers].filter(
-  (h) => !forbidden(pathOf(h)),
+  (h) => !forbidden(routeOf(h)),
 );
 
 /** Every route a handler list answers (for the start-up check). */
-export const handlerPaths = (hs: RequestHandler[]) => hs.map(pathOf);
+export const handlerPaths = (hs: RequestHandler[]) => hs.map(routeOf);
 
 /** Ids that only the demo fixtures use: none may appear in pilot data. */
 export function fixtureIds(): Set<string> {
