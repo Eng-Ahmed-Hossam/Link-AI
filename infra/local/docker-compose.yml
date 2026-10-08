@@ -81,7 +81,7 @@ services:
       args: { FAKE: sms-sink }
     image: link/sms-sink:local
     ports:
-      - '${SMS_SINK_HOST_PORT:-8090}:8090'
+      - '${SMS_SINK_HOST_PORT:-8093}:8090'
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://localhost:8090/health']
       interval: 3s
