@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { demoApi } from '@link/api-client/demo';
 import { Button, Sheet } from '@link/ui';
 import { DEMO_CONTROLS } from '../api-mode';
@@ -18,6 +18,14 @@ export function DemoControls({ showButton = true }: { showButton?: boolean }) {
   const [note, setNote] = useState<string | null>(null);
   const s = useDemoState();
   const qc = useQueryClient();
+  const [step, setStep] = useState(1);
+  // The connected story (Step 2B): where it is, for the labels below.
+  const story = useQuery({
+    queryKey: ['demo-story'],
+    queryFn: demoApi.story,
+    enabled: open,
+    refetchInterval: open ? 3000 : false,
+  });
   // The dev index (`/{lang}/dev`) opens the panel with a `link:demo-controls` event.
   useEffect(() => {
     // The demo banner's "Demo tools" link opens them as a side panel (local demo only).
@@ -66,6 +74,73 @@ export function DemoControls({ showButton = true }: { showButton?: boolean }) {
         side={side}
       >
         <div lang="en" dir="ltr" className="flex flex-col gap-4 text-body">
+          <section
+            aria-labelledby="story-title"
+            className="flex flex-col gap-2 rounded-16 bg-soft p-3"
+            data-testid="story-controls"
+          >
+            <h3 id="story-title" className="text-label text-navy">
+              Connected story (docs/testing/walkthrough.md)
+            </h3>
+            <p className="text-caption text-muted" data-testid="story-state">
+              {story.data
+                ? `Request ${story.data.stage ?? '—'} · group ${story.data.groupId ? 'open' : '—'} · ` +
+                  `sessions done ${story.data.sessionsDone} · Follow-up extra ${story.data.followupExtra ? 'on' : 'off'}`
+                : '…'}
+            </p>
+            <div className="flex flex-wrap items-end gap-2">
+              <Button
+                variant="secondary"
+                danger
+                data-testid="story-reset"
+                onClick={() => run('Reset story', demoApi.storyReset)}
+              >
+                Reset story
+              </Button>
+              <label className="flex flex-col gap-1 text-caption text-muted">
+                Jump to step
+                <select
+                  value={step}
+                  onChange={(e) => setStep(Number(e.target.value))}
+                  data-testid="story-step"
+                  className="min-h-11 rounded-12 border border-border bg-white px-3 text-body text-navy"
+                >
+                  {Array.from({ length: 9 }, (_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      {i + 1}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Button
+                variant="secondary"
+                data-testid="story-jump"
+                onClick={() => run(`Jump to step ${step}`, () => demoApi.storyJump(step))}
+              >
+                Jump to step {step}
+              </Button>
+              <Button
+                variant="secondary"
+                data-testid="story-session-done"
+                disabled={!story.data?.groupId}
+                onClick={() => run('Session done', demoApi.storySessionDone)}
+              >
+                {story.data?.sessionsDone
+                  ? 'Simulate next session done'
+                  : 'Simulate first session done'}
+              </Button>
+              <Button
+                variant="secondary"
+                aria-pressed={!!story.data?.followupExtra}
+                data-testid="story-extra"
+                onClick={() =>
+                  run('Follow-up extra', () => demoApi.storyExtra(!story.data?.followupExtra))
+                }
+              >
+                Follow-up extra: {story.data?.followupExtra ? 'on' : 'off'}
+              </Button>
+            </div>
+          </section>
           <p className="text-caption text-muted">
             Scenario demo-followup · {s?.records.confirmed ?? '–'} confirmed records ·{' '}
             {s?.signals.length ?? '–'} flag(s) · {s?.cases.length ?? '–'} case(s)

@@ -112,6 +112,22 @@ export function DemoControls() {
             Scenario demo-followup · {s?.records.confirmed ?? '–'} confirmed ·{' '}
             {s?.signals.length ?? '–'} flag(s) · drafts {s?.records.drafts.length ?? '–'}
           </Text>
+          <Text style={[textStyle('en', 'label'), { color: color.navy }]}>Connected story</Text>
+          <Button
+            locale="en"
+            variant="secondary"
+            danger
+            testID="story-reset"
+            label="Reset story"
+            onPress={() => run('Reset story', demoApi.storyReset)}
+          />
+          <Button
+            locale="en"
+            variant="secondary"
+            testID="story-session-done"
+            label="Simulate first / next session done"
+            onPress={() => run('Session done', demoApi.storySessionDone)}
+          />
           <Button
             locale="en"
             variant="secondary"
