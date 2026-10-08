@@ -14,17 +14,17 @@
     "confirmCommits": 1
   },
   "records": {
-    "confirmed": 10,
+    "confirmed": 9,
     "drafts": []
   },
   "signals": [
     {
-      "id": "sig-110",
+      "id": "sig-109",
       "rule": "consecutive_absences",
       "ruleVersion": 1,
       "student": "نور خالد",
       "status": "case_opened",
-      "caseId": "case-111",
+      "caseId": "case-110",
       "explanation": "غابت عن حصتين متتاليتين: ٣٠ سبتمبر و٣ أكتوبر",
       "evidence": [
         {
@@ -38,12 +38,12 @@
       ]
     },
     {
-      "id": "sig-120",
+      "id": "sig-119",
       "rule": "consecutive_absences",
       "ruleVersion": 1,
       "student": "مريم حسن",
       "status": "case_opened",
-      "caseId": "case-121",
+      "caseId": "case-120",
       "explanation": "غابت عن حصتين متتاليتين: ٣ أكتوبر و٧ أكتوبر",
       "evidence": [
         {
@@ -59,23 +59,23 @@
   ],
   "cases": [
     {
-      "id": "case-111",
+      "id": "case-110",
       "student": "نور خالد",
       "assignee": "دينا عادل",
       "status": "open",
       "dueOn": "2026-10-03"
     },
     {
-      "id": "case-121",
+      "id": "case-120",
       "student": "مريم حسن",
       "assignee": "دينا عادل",
       "status": "awaiting_confirmation",
-      "dueOn": "2026-10-07"
+      "dueOn": "2026-10-08"
     }
   ],
   "messages": [
     {
-      "id": "msg-123",
+      "id": "msg-122",
       "student": "مريم حسن",
       "status": "delivered",
       "channel": "whatsapp",

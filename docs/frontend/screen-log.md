@@ -129,11 +129,11 @@ Next.js pages in `app/[lang]/(site)`, with no app providers (ADR-0009). Built fr
 | Screen | Route | Status | Differs from Figma | Screenshots |
 |---|---|---|---|---|
 | W00 Landing page | `/{lang}` | built | **Rebuilt 2026-10-08 as a copy of Figma 68:616** (PRODUCT_BRIEF, OD-48 reversed): the 13 Figma frames in order, every English word from Figma, the UI pictures are Figma's own renders, the icons Figma's SVGs. See "Landing page rebuilt from Figma" below for what differs | `docs/frontend/screenshots/landing/W00-landing.{ar,en}.{desktop,mobile}`, comparisons in `docs/frontend/compare/landing/` |
-| Try Link with your centre | `/{lang}/try` | built | No Figma frame; follows the website system (card on the soft background, RadioCards) | `W-TRY.ar.mobile`, `W-TRY-demo.ar.mobile`, `W-TRY-card.ar.mobile` |
+| Try Link with your centre | `/{lang}/try` | replaced | Replaced in Step 2A by the role chooser (below) | — |
 | Request a free pilot | `/{lang}/pilot` | built | The Figma "Get started" card, with the fields asked for (centre, name, phone/WhatsApp, area, teachers, consent) | `W-PILOT.ar.mobile`, `W-PILOT-done.ar.mobile` |
 | Sign in (pilot centres) | `/{lang}/sign-in` | built | No Figma frame; points to the pilot request until the hosted pilot (Stage 5) | `W-SIGNIN.en.mobile` |
-| Demo banner and pilot card | every app page during path A | built | No Figma frame: "Demo — sample data · <centre> · Reset demo"; after two minutes, on Today or Follow-ups only, "Want this for your real centre?" | `W-TRY-card.ar.mobile` |
-| Teacher app `/try` | `/try?centre=…&lang=…` | built | Opens Today as the sample teacher under the visitor's centre name, with the same banner | — |
+| Demo banner and pilot card | every app page during path A | replaced | Replaced in Step 2A: no centre name; "Switch role" added (below) | — |
+| Teacher app `/try` | `/try?lang=…` | built | Step 2A: opens My groups as the sample teacher, without resetting the shared story | — |
 
 ## Landing page rebuilt from Figma (2026-10-08)
 
@@ -165,7 +165,7 @@ Role chooser, centre marketplace screens (Batch 2), teacher marketplace screens 
 | Screen | Route | Status | Stories covered | Differs from Figma (CF) | Screenshots |
 |---|---|---|---|---|---|
 | Role chooser | `/{lang}/try` | built | 2A.1 | No Figma frame: three cards (Parent · Teacher · Centre owner); each opens that role's app signed in as a sample user, without resetting the shared story | `W-TRY.ar.mobile` |
-| Demo banner | every app page in the demo | built | 2A.6 | "Demo — sample data · Switch role · Reset demo" only; Demo controls only on `/{lang}/dev` | `W-TRY-demo.ar.mobile` |
+| Demo banner | every app page in the demo | built | 2A.6 | "Demo — sample data · Switch role · Reset demo" only; Demo controls only on `/{lang}/dev`; the pilot card after two minutes on a role's home | `W-TRY-demo.ar.desktop`, `W-TRY-card.ar.desktop` |
 | A18 Owner sign-in | `/{lang}/centre` | built | MKT-ACC-01 | CF-02 (phone code, no email/password); the left panel says what the marketplace does (Figma's copy was follow-up first); demo shortcuts for the sample owner and Reception under the form | `A18.ar`, `A18.en` |
 | C01 Add my centre | `/{lang}/add-your-centre` | built | MKT-CEN-01 | CF-45 | `C01.ar`, `C01.en` |
 | C02 Public profile | `/{lang}/centre/{id}/profile` | built | MKT-CEN-02 | CF-44 (no "Edit pin", no "+ Add room"); photos are sample gradients (no uploads in the demo); "Listed" switch per room | `C02.ar`, `C02.en` |
