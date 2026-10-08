@@ -31,3 +31,4 @@ export * from './components/Countdown';
 export * from './components/Select';
 export * from './components/Followup';
 export * from './components/Web';
+export * from './components/Switch';

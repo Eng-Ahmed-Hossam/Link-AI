@@ -12,6 +12,8 @@ export interface SideNavSection {
   id: string;
   /** Section heading, for example "Marketplace". Omit for an ungrouped list. */
   label?: string;
+  /** A small tag after the heading, for example "Paid extra". */
+  tag?: string;
   items: SideNavItem[];
 }
 
@@ -65,6 +67,17 @@ export function SideNav({
               )}
             >
               {section.label}
+              {section.tag ? (
+                <span
+                  data-testid={`nav-tag-${section.id}`}
+                  className={cn(
+                    'ms-2 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                    dark ? 'bg-white/15 text-white' : 'bg-amberSoft text-amber',
+                  )}
+                >
+                  {section.tag}
+                </span>
+              ) : null}
             </p>
           ) : null}
           <ul className="flex flex-col gap-1">
