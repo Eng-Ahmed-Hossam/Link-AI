@@ -9,12 +9,12 @@ import { API_MODE, PILOT } from '@/api-mode';
 import { Screen } from '@/ui/Screen';
 
 /**
- * `/try?centre=…&lang=…` — the website's "Try Link with your centre" as a teacher (path A): renames
- * this app's sample scenario after the visitor's centre, signs in the sample teacher, opens Today.
- * Mock modes only; the pilot and live builds go to the start.
+ * `/try?lang=…` — "Teacher" on the website's role chooser: signs in the sample teacher (Ms Salma)
+ * and opens My groups, the teacher's home. Joins the shared demo story without resetting it. Mock
+ * modes only; the pilot and live builds go to the start.
  */
 export default function Try() {
-  const { centre, lang } = useLocalSearchParams<{ centre?: string; lang?: string }>();
+  const { lang } = useLocalSearchParams<{ lang?: string }>();
   const { locale, t, setLocale } = useLocale();
   const { signIn } = useSession();
   const router = useRouter();
@@ -23,14 +23,13 @@ export default function Try() {
 
   useEffect(() => {
     if (!available) return;
-    const name = (centre ?? '').replace(/\s+/g, ' ').trim().slice(0, 60);
     const l = isLocale(lang ?? '') ? (lang as 'ar' | 'en') : locale;
     setLocale(l);
     (async () => {
       try {
-        await startTeacherTry!(name, l);
+        await startTeacherTry!(l);
         signIn(SAMPLE_TEACHER!);
-        router.replace('/today');
+        router.replace('/groups');
       } catch {
         setFailed(true);
       }
@@ -40,11 +39,11 @@ export default function Try() {
 
   if (!available) return <Redirect href="/" />;
   return (
-    <Screen title={t('landing.try.title')}>
+    <Screen title={t('site.try.title')}>
       <StateView
         locale={locale}
         kind={failed ? 'error' : 'loading'}
-        title={failed ? t('states.error.title') : t('landing.try.opening')}
+        title={failed ? t('states.error.title') : t('site.try.opening')}
         body={failed ? t('states.error.body') : undefined}
       />
     </Screen>

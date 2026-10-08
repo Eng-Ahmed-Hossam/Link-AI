@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { pilotApi } from '@link/api-client';
+import { marketApi, pilotApi } from '@link/api-client';
 import { teacherTryOn, useDemoState } from '@/demo';
 import { DEMO_CONTROLS, PILOT } from './api-mode';
+import { useSession } from './session';
 
 /**
  * Phase 2 (follow-up) is off by default and renders nothing when off (plan §1.5). Until core-api
@@ -11,7 +12,7 @@ import { DEMO_CONTROLS, PILOT } from './api-mode';
 export function usePhase2(): boolean | undefined {
   const demo = useDemoState();
   if (PILOT) return true; // the concierge pilot is the follow-up loop
-  if (teacherTryOn()) return true; // "Try Link with your centre" shows the follow-up product
+  if (teacherTryOn()) return true; // "Try Link" shows the whole product (OD-58)
   if (!DEMO_CONTROLS) return false;
   return demo ? demo.demo.phase2 : undefined;
 }
@@ -20,9 +21,35 @@ export function usePhase2(): boolean | undefined {
 export function useMarketplace(): boolean | undefined {
   const demo = useDemoState();
   if (PILOT) return false;
-  if (teacherTryOn()) return false;
+  if (teacherTryOn()) return true;
   if (!DEMO_CONTROLS) return true;
   return demo ? demo.demo.marketplace !== false : undefined;
+}
+
+/**
+ * Follow-up is a paid extra per centre (OD-58): the teacher sees it when a centre they work at has
+ * it. The concierge pilot is the follow-up product. `undefined` while loading.
+ */
+export function useFollowupExtra(): boolean | undefined {
+  const { session } = useSession();
+  const q = useQuery({
+    queryKey: ['teacher-features', session?.userId],
+    queryFn: marketApi.teacherFeatures,
+    enabled: !!session && !PILOT,
+    staleTime: 5_000,
+  });
+  if (PILOT) return true;
+  if (q.isError) return false;
+  return q.data?.followupExtra;
+}
+
+/** The Follow-up tab and screens: Phase 2 on and the extra on. `undefined` while loading. */
+export function useFollowup(): boolean | undefined {
+  const phase2 = usePhase2();
+  const extra = useFollowupExtra();
+  if (phase2 === false || extra === false) return false;
+  if (phase2 === undefined || extra === undefined) return undefined;
+  return true;
 }
 
 /**

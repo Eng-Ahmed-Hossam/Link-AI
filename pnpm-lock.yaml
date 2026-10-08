@@ -387,6 +387,9 @@ importers:
         specifier: ^0.21.3
         version: 0.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
     devDependencies:
+      '@axe-core/playwright':
+        specifier: ^4.13.0
+        version: 4.13.0(playwright-core@1.63.0)
       '@link/config':
         specifier: workspace:*
         version: link:../../packages/config

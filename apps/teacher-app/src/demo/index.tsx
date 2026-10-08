@@ -13,6 +13,7 @@ import { DEMO_CONTROLS } from '../api-mode';
  */
 export { startMocks } from '@link/mocks/native';
 export { TryBanner, startTeacherTry, teacherTryOn } from './TryBanner';
+import { teacherTryOn } from './TryBanner';
 import type { Session } from '../session';
 
 /** The sample teacher of the demo scenario (Ms Salma, Al Nour). */
@@ -66,7 +67,8 @@ export function DemoControls() {
   const s = useDemoState();
   const qc = useQueryClient();
   useEffect(() => setNote(null), [open]);
-  if (!DEMO_CONTROLS) return null;
+  // Developer tools stay off the public demo (2A.6): a visitor from the role chooser sees none.
+  if (!DEMO_CONTROLS || teacherTryOn()) return null;
 
   const run = async (label: string, fn: () => Promise<unknown>) => {
     try {

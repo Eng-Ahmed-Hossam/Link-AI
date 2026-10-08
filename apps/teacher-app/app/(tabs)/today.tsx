@@ -6,7 +6,7 @@ import { fuApi } from '@link/api-client';
 import { Button, Callout, Card, StateView, StatusBadge, textStyle } from '@link/ui-native';
 import { color, space } from '@link/tokens';
 import { useLocale } from '@/locale';
-import { usePhase2 } from '@/flags';
+import { useFollowup } from '@/flags';
 import { isNetworkError, track } from '@/net';
 import { listDrafts, openDraft } from '@/record/drafts';
 import type { Draft } from '@/record/logic';
@@ -14,10 +14,10 @@ import { useVoiceQueue } from '@/offline/voiceQueue';
 import { dayMonth, longDay, num, timeRange, todayYmd } from '@/format';
 import { Screen } from '@/ui/Screen';
 
-/** T01 / AR01 · Today (FUP-REC-01). Phase 2 only. */
+/** T01 / AR01 · Today (FUP-REC-01). Phase 2 with the Follow-up extra only (OD-58). */
 export default function Today() {
   const { locale, t } = useLocale();
-  const phase2 = usePhase2();
+  const phase2 = useFollowup();
   const router = useRouter();
   const q = useQuery({
     queryKey: ['teacher-today', locale],

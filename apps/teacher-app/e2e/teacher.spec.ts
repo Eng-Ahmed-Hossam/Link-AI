@@ -415,12 +415,30 @@ test.describe('Flags and tabs', () => {
     await expect(page.getByRole('tab')).toHaveText(['مجموعاتي', 'القاعات', 'الأرباح']);
   });
 
-  test('CF-29: both → Today · My groups · Rooms · Earnings; Records from My groups', async ({
+  test('2A.6 / OD-58: with the marketplace → My groups · Rooms · Earnings · Follow-up; home is My groups', async ({
     page,
   }) => {
     await setDemo({ phase2: true, marketplace: true });
     await page.goto('/');
+    await expect(id(page, 'screen-t09')).toBeVisible();
+    await expect(page.getByRole('tab')).toHaveText(['مجموعاتي', 'القاعات', 'الأرباح', 'المتابعة']);
+    await page.getByRole('tab', { name: 'المتابعة' }).click();
     await expect(id(page, 'screen-today')).toBeVisible();
-    await expect(page.getByRole('tab')).toHaveText(['اليوم', 'مجموعاتي', 'القاعات', 'الأرباح']);
+  });
+
+  test('OD-58: without the Follow-up extra the Follow-up tab and screens are gone', async ({
+    page,
+  }) => {
+    await setDemo({ phase2: true, marketplace: true });
+    await fetch(`${MOCK}/__demo/features`, {
+      method: 'POST',
+      body: JSON.stringify({ centreId: 'cen-nour', followupExtra: false }),
+    });
+    await page.goto('/');
+    await expect(id(page, 'screen-t09')).toBeVisible();
+    await expect(page.getByRole('tab')).toHaveText(['مجموعاتي', 'القاعات', 'الأرباح']);
+    await expect(id(page, 'roster-grp-salma-ws')).toHaveCount(0);
+    await page.goto('/today');
+    await expect(id(page, 'screen-t09')).toBeVisible();
   });
 });

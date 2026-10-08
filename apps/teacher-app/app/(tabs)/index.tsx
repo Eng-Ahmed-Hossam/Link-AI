@@ -1,9 +1,10 @@
 import { Redirect } from 'expo-router';
-import { usePhase2 } from '@/flags';
+import { useMarketplace, usePhase2 } from '@/flags';
 
-/** Start on Today with the Phase 2 flag, on My groups without it. */
+/** One home per role (2A.6): My groups with the marketplace; Today in the follow-up-only pilot. */
 export default function TabsIndex() {
   const phase2 = usePhase2();
-  if (phase2 === undefined) return null;
-  return <Redirect href={phase2 ? '/today' : '/groups'} />;
+  const marketplace = useMarketplace();
+  if (phase2 === undefined || marketplace === undefined) return null;
+  return <Redirect href={marketplace || !phase2 ? '/groups' : '/today'} />;
 }

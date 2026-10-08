@@ -5,18 +5,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabBar } from '@link/ui-native';
 import { useLocale } from '@/locale';
 import { useSession } from '@/session';
-import { useMarketplace, usePhase2 } from '@/flags';
+import { useFollowup, useMarketplace } from '@/flags';
 import { tabsFor } from '@/tabs';
 
 export default function TabsLayout() {
   const { locale, t } = useLocale();
   const insets = useSafeAreaInsets();
   const { session, ready } = useSession();
-  const phase2 = usePhase2();
+  const followup = useFollowup();
   const marketplace = useMarketplace();
   if (ready && !session) return <Redirect href="/sign-in" />;
   const labels: Record<string, string> = {
-    today: t('teacher.tabs.today'),
+    // With the marketplace, the follow-up home is the "Follow-up" tab (a paid extra, OD-58).
+    today: marketplace !== false ? t('teacher.tabs.followup') : t('teacher.tabs.today'),
     groups: t('teacher.tabs.groups'),
     rooms: t('teacher.tabs.rooms'),
     earnings: t('teacher.tabs.earnings'),
@@ -29,7 +30,7 @@ export default function TabsLayout() {
     earnings: Wallet,
     records: ClipboardList,
   };
-  const shown = tabsFor(phase2 === true, marketplace !== false);
+  const shown = tabsFor(followup === true, marketplace !== false);
   return (
     <Tabs
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: color.bg } }}

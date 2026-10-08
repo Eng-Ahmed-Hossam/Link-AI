@@ -1,8 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Text } from 'react-native';
-import { Button, Callout, textStyle } from '@link/ui-native';
-import { color } from '@link/tokens';
+import { Text, View } from 'react-native';
+import { api, ApiError } from '@link/api-client';
+import { normalizeEgyptPhone } from '@link/i18n';
+import { Button, Callout, TextField, textStyle } from '@link/ui-native';
+import { color, space } from '@link/tokens';
 import { useLocale } from '@/locale';
 import { useSession } from '@/session';
 import { SAMPLE_TEACHER } from '@/demo';
@@ -11,18 +13,26 @@ import { PilotSignIn } from '@/screens/PilotSignIn';
 import { Screen } from '@/ui/Screen';
 
 /**
- * Stand-in sign-in for the mock-data app. Phone + code sign-in (T14) is Batch 3; until then mock
- * modes offer the sample teacher only, and live mode shows nothing to sign in with.
+ * T14 · Sign in by phone code (MKT-ACC-01, CF-02): the number the centre registered, then the
+ * 6-digit SMS code (5 minutes, 5 tries). No public sign-up: the centre adds its teachers. In mock
+ * modes the code is 123456 and the sample teacher has a one-tap shortcut. The pilot signs in with
+ * a name and PIN (A3).
  */
 export default function SignIn() {
   if (PILOT) return <PilotSignIn />;
-  return <SampleSignIn />;
+  return <PhoneSignIn />;
 }
 
-function SampleSignIn() {
-  const { locale, t } = useLocale();
+function PhoneSignIn() {
+  const { locale, t, setLocale } = useLocale();
   const { signIn } = useSession();
   const router = useRouter();
+  const [phone, setPhone] = useState('');
+  const [code, setCode] = useState('');
+  const [step, setStep] = useState<'phone' | 'code'>('phone');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const national = normalizeEgyptPhone(phone);
   // `/sign-in?sample=1` (the web dev index's one-click sign-in): straight in as the sample teacher.
   const { sample } = useLocalSearchParams<{ sample?: string }>();
   useEffect(() => {
@@ -31,24 +41,156 @@ function SampleSignIn() {
       router.replace('/');
     }
   }, [sample, signIn, router]);
+
+  const errorText = (e: unknown) => {
+    if (e instanceof ApiError) {
+      if (e.isNetwork) return t('states.offline.body');
+      switch (e.code) {
+        case 'otp_invalid':
+          return t('auth.otp.invalid', { remaining: Number(e.problem.remainingAttempts ?? 0) });
+        case 'otp_locked':
+          return t('auth.otp.locked');
+        case 'otp_expired':
+          return t('auth.otp.expired');
+        case 'invalid_phone':
+          return t('auth.phone.invalid');
+      }
+    }
+    return t('states.error.body');
+  };
+
+  async function send() {
+    if (!national) return setError(t('auth.phone.invalid'));
+    setBusy(true);
+    setError(null);
+    try {
+      await api.requestOtp(`+20${national}`);
+      setStep('code');
+      setCode('');
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verify() {
+    if (code.length !== 6) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api.verifyOtp(`+20${national}`, code);
+      if (!r.user.roles.includes('teacher')) {
+        setError(t('teacher.signIn.notTeacher'));
+        return;
+      }
+      signIn({ accessToken: r.accessToken, userId: r.user.id });
+      router.replace('/');
+    } catch (e) {
+      setError(errorText(e));
+      setCode('');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <Screen title={t('teacher.signIn.title')}>
-      <Callout locale={locale} tone="info" body={t('teacher.signIn.pending')} />
-      {API_MODE !== 'live' && SAMPLE_TEACHER ? (
+    <Screen
+      title={t('teacher.signIn.title')}
+      subtitle={t('teacher.signIn.lead')}
+      testID="screen-t14"
+    >
+      <TextField
+        locale={locale}
+        label={t('auth.phone.label')}
+        value={phone}
+        onChangeText={(v) => {
+          setPhone(v);
+          setError(null);
+        }}
+        placeholder={t('auth.phone.placeholder')}
+        keyboardType="phone-pad"
+        autoComplete="tel"
+        ltr
+        editable={step === 'phone'}
+        testID="t14-phone"
+      />
+      {step === 'code' ? (
+        <TextField
+          locale={locale}
+          label={t('teacher.signIn.codeLabel')}
+          value={code}
+          onChangeText={(v) =>
+            setCode(
+              v
+                .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+                .replace(/\D/g, '')
+                .slice(0, 6),
+            )
+          }
+          keyboardType="number-pad"
+          textContentType="oneTimeCode"
+          autoComplete="one-time-code"
+          maxLength={6}
+          ltr
+          testID="t14-code"
+        />
+      ) : null}
+      {error ? <Callout locale={locale} tone="error" role="alert" body={error} /> : null}
+      {step === 'phone' ? (
         <Button
           locale={locale}
-          testID="sign-in-sample"
-          label={t('teacher.signIn.sample')}
-          onPress={() => {
-            signIn(SAMPLE_TEACHER);
-            router.replace('/');
-          }}
+          label={t('teacher.signIn.sendCode')}
+          onPress={() => void send()}
+          disabled={busy}
+          testID="t14-send"
         />
       ) : (
-        <Text style={[textStyle(locale, 'body'), { color: color.muted }]}>
-          {t('teacher.signIn.liveUnavailable')}
-        </Text>
+        <>
+          <Button
+            locale={locale}
+            label={t('teacher.signIn.verify')}
+            onPress={() => void verify()}
+            disabled={busy || code.length !== 6}
+            testID="t14-verify"
+          />
+          <Button
+            locale={locale}
+            variant="quiet"
+            label={t('teacher.signIn.changeNumber')}
+            onPress={() => {
+              setStep('phone');
+              setError(null);
+            }}
+          />
+        </>
       )}
+      <Callout locale={locale} tone="info" body={t('teacher.signIn.noAccount')} />
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+        <Button
+          locale={locale}
+          variant="quiet"
+          label={locale === 'ar' ? t('common.languageSwitch.en') : t('common.languageSwitch.ar')}
+          onPress={() => setLocale(locale === 'ar' ? 'en' : 'ar')}
+        />
+      </View>
+      {API_MODE !== 'live' && SAMPLE_TEACHER ? (
+        <View style={{ gap: space[8] }}>
+          <Text style={[textStyle(locale, 'caption'), { color: color.muted }]}>
+            {t('teacher.signIn.demoHint')}
+          </Text>
+          <Button
+            locale={locale}
+            variant="secondary"
+            testID="sign-in-sample"
+            label={t('teacher.signIn.sample')}
+            onPress={() => {
+              signIn(SAMPLE_TEACHER!);
+              router.replace('/');
+            }}
+          />
+        </View>
+      ) : null}
     </Screen>
   );
 }

@@ -11,6 +11,5 @@ export const DemoControls = () => null;
 export const useDemoState = (): DemoSnapshot | null => null;
 export const refreshDemoState = async () => {};
 export const TryBanner = () => null;
-export const startTeacherTry = null as
-  null | ((centreName: string, lang: 'ar' | 'en') => Promise<void>);
+export const startTeacherTry = null as null | ((lang: 'ar' | 'en') => Promise<void>);
 export const teacherTryOn = () => false;
