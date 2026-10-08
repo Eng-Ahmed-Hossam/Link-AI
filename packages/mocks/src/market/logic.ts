@@ -35,6 +35,7 @@ import type {
   TeacherSelfPatch,
   WeeklySlot,
 } from '@link/api-client';
+import { formatClock, formatWeekdays } from '@link/i18n';
 import * as fx from '../data';
 import * as db from '../db';
 import { addDays, cairoToUtc, cairoToday, isoWeekday } from '../time';
@@ -717,6 +718,7 @@ export function teacherSelf(teacherKey: string, lang: Lang): TeacherSelf {
         subjectId: g.subjectId,
         schoolYearId: g.schoolYearId,
         label: `${tr(fx.subjects.find((x) => x.id === g.subjectId)!.name, lang)} • ${yearShort(g.schoolYearId, lang)}`,
+        where: `${tr(centreFx(g.centreId).name, lang)} • ${tr(g.room, lang)} • ${formatWeekdays(g.weekdays, lang)} ${formatClock(g.startTime, lang)}`,
         students: studentsOf(g.id),
         monthlyFee: money(g.monthlyFeePt),
       })),

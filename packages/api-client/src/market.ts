@@ -275,6 +275,8 @@ export interface TeacherSelf {
     subjectId: string;
     schoolYearId: string;
     label: string;
+    /** "Al Nour Centre • Room 2 • Sat & Wed 5:00 PM" — tells same-subject groups apart. */
+    where: string;
     students: number;
     monthlyFee: Money;
   }[];

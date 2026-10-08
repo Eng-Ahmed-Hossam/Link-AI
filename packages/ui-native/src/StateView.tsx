@@ -30,7 +30,9 @@ export function StateView({
         aria-busy={kind === 'loading'}
         style={styles.box}
       >
-        {kind === 'loading' ? <ActivityIndicator color={color.blueText} /> : null}
+        {kind === 'loading' ? (
+          <ActivityIndicator color={color.blueText} accessibilityLabel={title} aria-label={title} />
+        ) : null}
         <Text style={textStyle(locale, 'label')}>{title}</Text>
         {body ? (
           <Text style={[textStyle(locale, 'body'), { color: color.muted }]}>{body}</Text>

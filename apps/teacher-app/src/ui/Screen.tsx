@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Callout, ScreenHeader, textStyle } from '@link/ui-native';
@@ -47,6 +47,8 @@ export function Screen({
   return (
     <View testID={testID} style={{ flex: 1, backgroundColor: color.bg }}>
       <ScrollView
+        // Web: a keyboard user can scroll a long read-only screen (axe scrollable-region-focusable).
+        {...(Platform.OS === 'web' ? { tabIndex: 0, 'aria-label': title } : {})}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.page, { paddingTop: insets.top + space[12] }]}
       >

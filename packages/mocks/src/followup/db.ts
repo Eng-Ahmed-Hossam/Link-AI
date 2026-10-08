@@ -2993,7 +2993,7 @@ export function rejectRule(userId: string, code: string, lang: Lang) {
 
 // ── staff (A16, FUP-STF-01) ────────────────────────────────────────────────────
 const STAFF_PERMISSIONS: StaffPermission[] = ['bookings.manage', 'reviews.reply'];
-/** The sample Reception desk handles room requests and reviews (sample data, MKT-ACC-04). */
+/** The sample Reception desk handles room requests and reviews (sample data, MKT-ACC-06). */
 export const SAMPLE_RECEPTION_PERMISSIONS: StaffPermission[] = ['bookings.manage', 'reviews.reply'];
 const permissionsOf = (role: StaffMember['role']): StaffPermission[] =>
   role === 'owner'

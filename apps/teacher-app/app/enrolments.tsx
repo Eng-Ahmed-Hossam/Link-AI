@@ -11,7 +11,7 @@ import { QueryView } from '@/ui/QueryView';
 import { Screen } from '@/ui/Screen';
 
 /**
- * J06 · New enrolments (MKT-ENR-05): parents who chose the teacher's groups, how they pay, and
+ * J06 · New enrolments (MKT-ENR-10): parents who chose the teacher's groups, how they pay, and
  * whether the seat is paid or held. Read-only by default: seats are confirmed by payment. Accept /
  * decline appear only with "Review each enrolment" on (OD-08); declining refunds the parent in full.
  */

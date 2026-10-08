@@ -22,12 +22,16 @@ test.afterAll(async () => {
 });
 
 /** The amber Demo controls panel on any web page; `label` is the button to press. */
+/** Demo controls live on the dev index only (2A.6): press one there, in a second tab of the same browser. */
 async function demoControl(page: Page, label: string | RegExp) {
-  await page.getByRole('button', { name: 'Demo controls' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Demo controls' });
+  const dev = await page.context().newPage();
+  await dev.goto('/ar/dev');
+  await dev.getByRole('button', { name: 'Demo controls' }).click();
+  const dialog = dev.getByRole('dialog', { name: 'Demo controls' });
   await dialog.getByRole('button', { name: label }).click();
   await expect(dialog.getByRole('status')).toContainText('done');
-  await dialog.getByRole('button', { name: 'Close' }).click();
+  await dev.close();
+  await page.bringToFront();
 }
 
 async function holdMic(page: Page, ms: number) {

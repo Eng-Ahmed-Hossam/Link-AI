@@ -66,7 +66,7 @@ test.describe('2A.5 / OD-58: Follow-up is a paid extra', () => {
     await expect(page).toHaveURL(/\/centre\/cen-nour\/schedule$/);
     await expect(page.getByTestId('followup-today-card')).toBeVisible();
     await expect(nav(page).getByText('Marketplace', { exact: true })).toBeVisible();
-    await expect(nav(page).getByText('Follow-up', { exact: true })).toBeVisible();
+    await expect(nav(page)).toContainText('Follow-up');
     for (const l of [
       'Public profile',
       'Room schedule',
@@ -259,27 +259,27 @@ test.describe('A18 / C01 / A16', () => {
     );
   });
 
-  test('C01 MKT-ACC-02 AC3: the request checks the fields and the unticked consent, then confirms', async ({
+  test('C01 MKT-CEN-01: the request checks the fields and the unticked consent, then confirms', async ({
     page,
   }) => {
     await market();
     await page.goto('/en/add-your-centre');
     await ready(page);
     await page.getByTestId('join-submit').click();
-    await expect(page.getByRole('alert')).toBeVisible();
+    await expect(page.locator('main [role="alert"]')).toBeVisible();
     await page.getByTestId('join-centre-name').fill('Al Amal Centre');
     await page.getByTestId('join-area').fill('Nasr City');
     await page.getByTestId('join-address').fill('5 Makram Ebeid St');
     await page.getByTestId('join-owner').fill('Hany Nabil');
     await page.locator('input[type=tel]').fill('1012345678');
     await page.getByTestId('join-submit').click();
-    await expect(page.getByRole('alert')).toContainText('Tick the box');
+    await expect(page.locator('main [role="alert"]')).toContainText('Tick the box');
     await page.getByRole('checkbox').click();
     await page.getByTestId('join-submit').click();
     await expect(page.getByTestId('join-done')).toBeVisible();
   });
 
-  test('A16 MKT-ACC-04 AC1: a Reception invite carries marketplace permissions', async ({
+  test('A16 MKT-ACC-06 AC1: a Reception invite carries marketplace permissions', async ({
     page,
   }) => {
     await market();

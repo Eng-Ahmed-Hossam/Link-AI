@@ -15,7 +15,7 @@ import { Toggle } from '@/ui/Toggle';
 const DAYS = [6, 7, 1, 2, 3, 4];
 
 /**
- * J04 · My profile (MKT-TCH-02): what centres and parents see. Ratings come only from verified
+ * J04 · My profile (MKT-TCH-01, MKT-TCH-02): what centres and parents see. Ratings come only from verified
  * parents; verification is done by Link (public only after the national ID, OD-19). "Review each
  * enrolment" (OD-08, off by default) lets the teacher accept or decline new seats on J06.
  */
@@ -146,6 +146,7 @@ function ProfileForm({ d }: { d: TeacherSelf }) {
                     onPress={() => toggle(wd, part)}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: on }}
+                    aria-checked={on}
                     accessibilityLabel={`${formatWeekday(wd, locale, 'long')} ${t(`teacher.profile.${part}`)}`}
                     style={[styles.cell, on ? styles.cellOn : null]}
                     testID={`avail-${wd}-${part}`}

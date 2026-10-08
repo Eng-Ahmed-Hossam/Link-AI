@@ -12,9 +12,12 @@ import { API_MODE, PILOT } from '@/api-mode';
 import { PilotSignIn } from '@/screens/PilotSignIn';
 import { Screen } from '@/ui/Screen';
 
+/** Phone numbers and codes read left to right inside Arabic text (LTR isolate). */
+const ltr = (s: string) => `⁦${s}⁩`;
+
 /**
  * T14 · Sign in by phone code (MKT-ACC-01, CF-02): the number the centre registered, then the
- * 6-digit SMS code (5 minutes, 5 tries). No public sign-up: the centre adds its teachers. In mock
+ * 6-digit SMS code (5 minutes, 5 tries). Teachers join free and sign up themselves (CF-03). In mock
  * modes the code is 123456 and the sample teacher has a one-tap shortcut. The pilot signs in with
  * a name and PIN (A3).
  */
@@ -177,7 +180,7 @@ function PhoneSignIn() {
       {API_MODE !== 'live' && SAMPLE_TEACHER ? (
         <View style={{ gap: space[8] }}>
           <Text style={[textStyle(locale, 'caption'), { color: color.muted }]}>
-            {t('teacher.signIn.demoHint')}
+            {t('teacher.signIn.demoHint', { phone: ltr('+20 100 000 0002'), code: ltr('123456') })}
           </Text>
           <Button
             locale={locale}

@@ -461,7 +461,7 @@ export interface StaffMember {
   user: PersonRef;
   role: 'owner' | 'reception' | 'teacher';
   scope: string;
-  /** Marketplace permissions (A16, MKT-ACC-04 AC1). Teachers hold none at the centre. */
+  /** Marketplace permissions (A16, MKT-ACC-06 AC1). Teachers hold none at the centre. */
   permissions: StaffPermission[];
   lastActiveAt: string | null;
   /** `removed`: pilot — access removed by the owner (kept so past actions stay attributed). */

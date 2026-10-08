@@ -30,7 +30,7 @@ function firstDate(weekdays: number[]): string {
 }
 
 /**
- * J02 · Request a slot (MKT-HAL-03): for which group, which free slots (same time of day), and a
+ * J02 · Request a slot (MKT-HAL-02): for which group, which free slots (same time of day), and a
  * rent estimate with each deduction on its own line — the centre's rent and Link's commission
  * (OD-02, rate from the server) — so "you keep" is computed, never typed (CF-13).
  */
@@ -141,10 +141,11 @@ export default function RequestRoom() {
                     on={pick === i}
                     onPress={() => setPick(i)}
                     title={g.label}
-                    body={t('teacher.request.groupLine', {
-                      n: num(g.students, locale),
-                      fee: egp(g.monthlyFee, locale),
-                    })}
+                    body={`${g.where}
+${t('teacher.request.groupLine', {
+  n: num(g.students, locale),
+  fee: egp(g.monthlyFee, locale),
+})}`}
                     testID={`for-${g.groupId}`}
                   />
                 ))}
@@ -240,6 +241,7 @@ export default function RequestRoom() {
                           }
                           accessibilityRole="checkbox"
                           accessibilityState={{ checked: on, disabled: !isFree }}
+                          aria-checked={on}
                           accessibilityLabel={`${formatWeekday(d, locale, 'long')} ${at ? formatClock(at, locale) : ''}`}
                           testID={`slot-${d}`}
                           style={[
@@ -365,6 +367,7 @@ function Option({
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ checked: on }}
+      aria-checked={on}
       testID={testID}
       style={[styles.option, on ? styles.optionOn : null]}
     >

@@ -24,7 +24,7 @@ const reached = (r: RoomRequest) =>
           : 1;
 
 /**
- * J03 · My room requests (MKT-HAL-04): where each request is in the centre's pipeline (Requested →
+ * J03 · My room requests (MKT-HAL-03): where each request is in the centre's pipeline (Requested →
  * Phone call → Meeting → Decision), the booked call or meeting, and approved rooms on top. An
  * approval books the slot; the teacher can withdraw a request that is still open.
  */

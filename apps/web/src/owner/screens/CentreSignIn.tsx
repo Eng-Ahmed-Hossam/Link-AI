@@ -19,6 +19,8 @@ import { LangSwitch } from '../../LangSwitch';
 import { OwnerPhoneSignIn } from './OwnerPhoneSignIn';
 
 const CENTRE = 'cen-nour';
+/** Phone numbers and codes read left to right inside Arabic text (LTR isolate). */
+const ltr = (s: string) => `⁦${s}⁩`;
 
 /**
  * Centre workspace entry. A18: owners and staff sign in with a phone code (in the demo, code
@@ -83,7 +85,12 @@ export function CentreSignIn() {
           <OwnerPhoneSignIn landing={landing} />
           {API_MODE !== 'live' ? (
             <div className="flex flex-col gap-2 border-t border-border pt-4">
-              <p className="text-caption text-muted">{t('owner.signIn.demoHint')}</p>
+              <p className="text-caption text-muted">
+                {t('owner.signIn.demoHint', {
+                  phone: ltr('+20 100 000 0003'),
+                  code: ltr('123456'),
+                })}
+              </p>
               <DevSignIn landing={landing} />
             </div>
           ) : null}

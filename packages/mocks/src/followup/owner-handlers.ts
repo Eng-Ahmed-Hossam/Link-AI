@@ -1,5 +1,5 @@
 import { http, HttpResponse, delay } from 'msw';
-import type { AssistantEvent, RuleChangeBody, StaffMember } from '@link/api-client';
+import type { AssistantEvent, RuleChangeBody } from '@link/api-client';
 import { MockProblem } from '../db';
 import { authed, langOf, problem, userIdOf } from '../http';
 import * as fu from './db';

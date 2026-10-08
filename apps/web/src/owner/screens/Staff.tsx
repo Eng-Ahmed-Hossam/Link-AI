@@ -32,7 +32,7 @@ import { PilotPeople } from './PilotPeople';
 /**
  * A16 · Staff & access (FUP-STF-01, 10 §1). Phase 2 role matrix: owner (full access, rules, staff),
  * Reception (follow-ups, messages, all students read), teacher (own groups only). Whether teachers
- * see guardian phones is open (OD-25): hidden, pending. Marketplace part (MKT-ACC-04 AC1): a Reception
+ * see guardian phones is open (OD-25): hidden, pending. Marketplace part (MKT-ACC-06 AC1): a Reception
  * invite carries the permissions `bookings.manage` (room requests) and `reviews.reply` (10 §1).
  */
 const PERMISSION_KEY = {

@@ -267,7 +267,7 @@ describe('groups, enrolments, reviews', () => {
 });
 
 describe('staff and schedule', () => {
-  it('A16 MKT-ACC-04 AC1: a Reception invite carries bookings.manage / reviews.reply', async () => {
+  it('A16 MKT-ACC-06 AC1: a Reception invite carries bookings.manage / reviews.reply', async () => {
     const before = await ownerApi.staff(C);
     expect(before.find((m) => m.role === 'reception')?.permissions).toEqual([
       'bookings.manage',

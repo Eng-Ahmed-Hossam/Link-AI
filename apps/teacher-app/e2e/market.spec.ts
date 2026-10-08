@@ -44,6 +44,11 @@ for (const lang of ['ar', 'en'] as Lang[])
       await page.goto(path);
       await expect(id(page, testId)).toBeVisible();
       await settle(page);
+      // J02 with a slot picked: the rent estimate shows, line by line.
+      if (sid === 'J02') {
+        await page.locator('[data-testid^="slot-"]:not([aria-disabled="true"])').first().click();
+        await expect(id(page, 'rent-estimate')).toBeVisible();
+      }
       await axe(page);
       await shot(page, `${sid}.${lang}`, SHOTS);
     }
@@ -68,7 +73,7 @@ test('T14 MKT-ACC-01: sign in with the phone code; home is My groups (2A.6)', as
   await expect(id(page, 'screen-t09')).toBeVisible();
 });
 
-test('J01 → J02 → J03 MKT-HAL-02/03: a free slot, a rent estimate line by line, then the request in the pipeline', async ({
+test('J01 → J02 → J03 MKT-HAL-01/02/03: a free slot, a rent estimate line by line, then the request in the pipeline', async ({
   page,
 }) => {
   await prepare(page, 'en');
@@ -90,7 +95,7 @@ test('J01 → J02 → J03 MKT-HAL-02/03: a free slot, a rent estimate line by li
   await expect(page.getByText('Waiting for Al Nour Centre to review').first()).toBeVisible();
 });
 
-test('J05 CF-05: fees per month and per session; the seat cap cannot go above the hall', async ({
+test('J05 MKT-GRP-02 / CF-05: fees per month and per session; the seat cap cannot go above the hall', async ({
   page,
 }) => {
   await prepare(page, 'en');

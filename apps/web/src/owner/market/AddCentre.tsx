@@ -14,7 +14,7 @@ const STEPS = ['call', 'verify', 'live'] as const;
 const POINTS = ['found', 'rooms', 'approve', 'followup'] as const;
 
 /**
- * C01 · Add my centre (MKT-ACC-02 AC3): a request to join. Free to list; Link keeps a small fee
+ * C01 · Add my centre (MKT-CEN-01; P01 sends owners here, MKT-ACC-02 AC3): a request to join. Free to list; Link keeps a small fee
  * only on rent paid through Link (OD-01). Link calls, verifies, then the centre goes live — nothing
  * is published without the owner's approval. The consent box starts unticked (BR-CONSENT).
  */

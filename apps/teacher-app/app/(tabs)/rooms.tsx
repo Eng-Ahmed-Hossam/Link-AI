@@ -18,7 +18,7 @@ const DISTANCES = [3, 8] as const;
 const DAYS = [6, 7, 1, 2, 3, 4];
 
 /**
- * J01 · Rooms near you (MKT-HAL-02): centres with free slots that fit the teacher's groups, nearest
+ * J01 · Rooms near you (MKT-HAL-01): centres with free slots that fit the teacher's groups, nearest
  * first. The rent is the centre's rule, as the centre set it (C05). Tap a room to request slots (J02).
  */
 export default function Rooms() {
