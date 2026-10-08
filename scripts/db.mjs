@@ -62,10 +62,33 @@ switch (cmd) {
   case 'status':
     dbmate('status');
     break;
+  case 'types':
+    // Kysely row types from the migrated schema (ADR-0006). CI regenerates and fails on a diff.
+    run(
+      process.execPath,
+      [
+        join(dirname(requireCore.resolve('kysely-codegen/package.json')), 'dist', 'cli', 'bin.js'),
+        '--dialect',
+        'postgres',
+        '--out-file',
+        join(coreApi, 'src', 'db', 'schema.ts'),
+        '--include-pattern',
+        '(identity|ref|org|market|ledger|records|followup|messaging|analytics|audit|platform).*',
+        '--camel-case=false',
+      ],
+      { env: { ...process.env, DATABASE_URL: url } },
+    );
+    break;
   case 'seed':
     if (process.env.APP_ENV === 'prod') fail('Refusing to seed sample data when APP_ENV=prod.');
-    run(process.execPath, [join(coreApi, 'seeds', 'seed.ts')]);
+    if (process.env.APP_ENV !== 'local')
+      fail('seed:demo wipes the app tables; APP_ENV must be local.');
+    // tsx: the seed imports the mock fixtures (TypeScript workspace packages).
+    run(process.execPath, [
+      join(dirname(requireCore.resolve('tsx/package.json')), 'dist', 'cli.mjs'),
+      join(coreApi, 'seeds', 'demo.ts'),
+    ]);
     break;
   default:
-    fail('Usage: node scripts/db.mjs migrate|rollback|status|seed');
+    fail('Usage: node scripts/db.mjs migrate|rollback|status|types|seed');
 }

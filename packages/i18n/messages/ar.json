@@ -1870,5 +1870,10 @@
   "centre.location.west": "غربًا",
   "centre.location.address": "العنوان",
   "centre.location.reviewNote": "الدبوس المنقول يظهر عليه «الموقع قيد المراجعة» حتى يراجعه لينك.",
-  "centre.location.save": "حفظ الموقع"
+  "centre.location.save": "حفظ الموقع",
+  "sms.otp.body": "لينك: كود الدخول ⁦{code}⁩. صالح لمدة ٥ دقائق. لا تشاركه مع أحد.",
+  "sms.staffInvite.body": "لينك: أضافك {centre} إلى فريقه. ادخل برقم الموبايل ده.",
+  "server.staff.scope.owner": "كل المجموعات",
+  "server.staff.scope.reception": "كل الطلاب • المتابعات",
+  "server.staff.scope.teacher": "مجموعاته فقط"
 }

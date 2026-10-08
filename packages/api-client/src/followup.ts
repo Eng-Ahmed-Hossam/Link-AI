@@ -1,3 +1,12 @@
+import type { components } from './generated/openapi';
+
+type Schemas = components['schemas'];
+
+/** Generated from the core-api contract (`pnpm openapi:generate`); edit apps/core-api/src/contract, not here. */
+export type PersonRef = Schemas['PersonRef'];
+export type StaffPermission = Schemas['StaffPermission'];
+export type StaffMember = Schemas['StaffMember'];
+
 /**
  * Phase 2 (follow-up) draft types. docs/07 §3 lists the endpoints in outline only, so every shape
  * here is PLACEHOLDER until the backend team writes OpenAPI. Field names follow docs/06 §6–§8.
@@ -10,11 +19,6 @@ export type Participation = 'low' | 'normal' | 'high' | 'not_recorded';
 export type NoteTag =
   'understanding' | 'needs_revisit' | 'behaviour' | 'positive' | 'absence_context';
 export type RecordStatus = 'draft' | 'confirmed';
-
-export interface PersonRef {
-  id: string;
-  displayName: string;
-}
 
 export interface Assessment {
   id: string;
@@ -453,20 +457,7 @@ export interface RuleChangeBody {
   scope: string;
 }
 
-/** Marketplace permissions a centre_staff member can hold (10 §1); the owner has them all. */
-export type StaffPermission = 'bookings.manage' | 'reviews.reply';
 export const STAFF_PERMISSIONS: StaffPermission[] = ['bookings.manage', 'reviews.reply'];
-
-export interface StaffMember {
-  user: PersonRef;
-  role: 'owner' | 'reception' | 'teacher';
-  scope: string;
-  /** Marketplace permissions (A16, MKT-ACC-06 AC1). Teachers hold none at the centre. */
-  permissions: StaffPermission[];
-  lastActiveAt: string | null;
-  /** `removed`: pilot — access removed by the owner (kept so past actions stay attributed). */
-  status: 'active' | 'invite_pending' | 'removed';
-}
 
 export type ActivityKind = 'records' | 'followups' | 'messages' | 'corrections' | 'access';
 

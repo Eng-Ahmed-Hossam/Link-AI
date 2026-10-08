@@ -6,6 +6,14 @@
  */
 import type { Money } from './types';
 
+import type { components } from './generated/openapi';
+
+type Schemas = components['schemas'];
+
+/** Generated from the core-api contract (`pnpm openapi:generate`); edit apps/core-api/src/contract, not here. */
+export type CentreApplicationBody = Schemas['CentreApplicationBody'];
+export type CentreFeatures = Schemas['CentreFeatures'];
+
 export type Facility =
   'ac' | 'fan' | 'projector' | 'sound' | 'whiteboard' | 'smart_board' | 'wheelchair';
 
@@ -216,18 +224,6 @@ export interface CentreProfileEdit {
   location: CentreLocation;
 }
 
-export interface CentreApplicationBody {
-  centreName: string;
-  governorate: string;
-  area: string;
-  address: string;
-  subjects: string[];
-  hallRange: '1-3' | '4-8' | '9+';
-  ownerName: string;
-  phone: string;
-  consent: boolean;
-}
-
 /** `GET /v1/rooms/search` query (07 §2, MKT-HAL-01). Without `lat`/`lng` the teacher's area is used. */
 export interface RoomSearchQuery {
   /** Seats needed: halls smaller than this are listed with `fits: false`. */
@@ -373,9 +369,4 @@ export interface Earnings {
   rentTotal: Money;
   byGroup: { id: string; name: string; students: number; amount: Money }[];
   methods: { method: 'card' | 'fawry' | 'wallet'; percent: number }[];
-}
-
-/** Paid extras switched on for a centre (OD-05, OD-58). */
-export interface CentreFeatures {
-  followupExtra: boolean;
 }

@@ -52,7 +52,13 @@
     "pilot:restore": "pnpm --filter @link/pilot run restore",
     "pilot:reset-pin": "pnpm --filter @link/pilot run reset-pin",
     "pilot:metrics": "pnpm --filter @link/pilot run metrics",
-    "pilot:wipe": "pnpm --filter @link/pilot run wipe"
+    "pilot:wipe": "pnpm --filter @link/pilot run wipe",
+    "db:types": "node scripts/db.mjs types",
+    "openapi:generate": "pnpm --filter @link/core-api openapi:generate",
+    "openapi:check": "pnpm --filter @link/core-api openapi:check",
+    "seed:demo": "node scripts/db.mjs seed",
+    "test:api": "node scripts/test-api.mjs all",
+    "test:rls": "node scripts/test-api.mjs rls"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

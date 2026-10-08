@@ -1,5 +1,9 @@
 {
   "extends": "@link/config/tsconfig.base.json",
-  "compilerOptions": { "allowImportingTsExtensions": true, "types": ["node"] },
-  "include": ["src", "seeds", "test"]
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "types": ["node"],
+    "experimentalDecorators": true
+  },
+  "include": ["src", "seeds", "scripts", "test"]
 }

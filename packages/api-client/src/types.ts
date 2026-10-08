@@ -1,16 +1,33 @@
 /**
- * DRAFT. Hand-written from docs/07-api.md for the mock-data frontend.
- * The client generated from OpenAPI replaces this file in E0-13. Fields the docs do not define
- * are marked `// PLACEHOLDER (<screen>)` and listed in the batch report.
+ * Client types. The ones core-api already serves are aliases of the generated contract
+ * (`./generated/openapi`, from apps/core-api/src/contract). The rest are still DRAFT, hand-written
+ * from docs/07-api.md; they move to the contract as their endpoints land (R2, R3). Fields the docs
+ * do not define are marked `// PLACEHOLDER (<screen>)`.
  */
+import type { components } from './generated/openapi';
+
+type Schemas = components['schemas'];
+
+/** Generated from the core-api contract (`pnpm openapi:generate`); edit apps/core-api/src/contract, not here. */
+export type Curriculum = Schemas['Curriculum'];
+export type Role = Schemas['Role'];
+export type OtpRequestResult = Schemas['OtpRequestResult'];
+export type OtpVerifyResult = Schemas['OtpVerifyResult'];
+export type Me = Schemas['Me'];
+export type UpdateMeBody = Schemas['UpdateMeBody'];
+export type ConsentKind = Schemas['ConsentKind'];
+export type PutConsentBody = Schemas['PutConsentBody'];
+export type ConsentState = Schemas['ConsentState'];
+export type CurriculumRef = Schemas['CurriculumRef'];
+export type SchoolYearRef = Schemas['SchoolYearRef'];
+export type SubjectRef = Schemas['SubjectRef'];
+export type Child = Schemas['Child'];
 
 /** BR-MNY: money is always integer piasters. */
 export interface Money {
   amountPt: number;
   currency: 'EGP';
 }
-
-export type Curriculum = 'NATIONAL' | 'IGCSE' | 'AMERICAN' | 'NILE';
 
 /** RFC 9457 problem details with a stable `code` (07 §1). */
 export interface ProblemDetails {
@@ -30,94 +47,6 @@ export interface Page<T> {
 }
 
 // ── Auth and account (MKT-ACC) ─────────────────────────────────────────────────
-export type Role = 'parent' | 'teacher' | 'centre_owner' | 'centre_staff';
-
-export interface OtpRequestResult {
-  /** Seconds until "Resend" is allowed (AC2: 60). */
-  resendAfterSeconds: number;
-  /** Code lifetime (AC2: 5 minutes). */
-  expiresInSeconds: number;
-}
-
-export interface OtpVerifyResult {
-  /** In the body for the teacher app; the web gets httpOnly cookies instead (07 §1). */
-  accessToken?: string;
-  refreshToken?: string;
-  user: Me;
-  /** True when the phone had no account: the client then adds the chosen role (MKT-ACC-02). */
-  isNewUser: boolean;
-}
-
-export interface Me {
-  id: string;
-  name: string | null;
-  language: 'ar' | 'en';
-  roles: Role[];
-  /** Centres where the user is owner or staff (07 §2, added 2026-10-08). */
-  centreIds?: string[];
-  /** Set for teachers. */
-  teacherId?: string | null;
-}
-
-/** PATCH /v1/me (07 §2a P-1). PLACEHOLDER (Account). */
-export interface UpdateMeBody {
-  name?: string;
-  language?: 'ar' | 'en';
-}
-
-/** `consent_events.kind` (06). */
-export type ConsentKind =
-  | 'terms'
-  | 'privacy'
-  | 'child_data_processing'
-  | 'share_phone_with_teacher'
-  | 'whatsapp_updates'
-  | 'sms_updates'
-  | 'focus_plans'
-  | 'ai_training_use';
-
-/** PUT /v1/me/consents (07 §2a P-2). PLACEHOLDER (Account). */
-export interface PutConsentBody {
-  kind: ConsentKind;
-  granted: boolean;
-  /** Text version the person saw. */
-  version: string;
-  studentId?: string;
-}
-
-/** Current state: the latest consent_events row per (person, student, kind). Never cached. */
-export interface ConsentState {
-  kind: ConsentKind;
-  studentId: string | null;
-  granted: boolean;
-  version: string;
-  at: string;
-}
-
-export interface CurriculumRef {
-  id: string;
-  code: Curriculum;
-  name: string;
-}
-export interface SchoolYearRef {
-  id: string;
-  code: string;
-  name: string;
-  /** Short form for chips: "Sec 2". PLACEHOLDER (P02) — ref data has only `name`. */
-  shortName: string;
-}
-export interface SubjectRef {
-  id: string;
-  code: string;
-  name: string;
-}
-
-export interface Child {
-  id: string;
-  displayName: string;
-  curriculum: CurriculumRef;
-  schoolYear: SchoolYearRef;
-}
 
 // ── Discovery (MKT-DSC) ────────────────────────────────────────────────────────
 export interface RatingSummary {

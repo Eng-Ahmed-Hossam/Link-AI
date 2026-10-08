@@ -1867,5 +1867,10 @@
   "centre.location.west",
   "centre.location.address",
   "centre.location.reviewNote",
-  "centre.location.save"
+  "centre.location.save",
+  "sms.otp.body",
+  "sms.staffInvite.body",
+  "server.staff.scope.owner",
+  "server.staff.scope.reception",
+  "server.staff.scope.teacher"
 ]

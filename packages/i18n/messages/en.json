@@ -1870,5 +1870,10 @@
   "centre.location.west": "West",
   "centre.location.address": "Address",
   "centre.location.reviewNote": "A moved pin shows “Location under review” until Link checks it.",
-  "centre.location.save": "Save location"
+  "centre.location.save": "Save location",
+  "sms.otp.body": "Link: your sign-in code is {code}. It works for 5 minutes. Never share it.",
+  "sms.staffInvite.body": "Link: {centre} added you to its team. Sign in with this mobile number.",
+  "server.staff.scope.owner": "All groups",
+  "server.staff.scope.reception": "All students • Follow-ups",
+  "server.staff.scope.teacher": "Own groups only"
 }
