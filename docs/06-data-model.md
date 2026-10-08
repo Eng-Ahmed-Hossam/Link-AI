@@ -179,6 +179,7 @@ RLS for all `ref` tables: `PUBLIC` read; `OPS` write.
 | governorate, area | text | |
 | address | text | Public once the centre is verified |
 | location | geography(Point, 4326) | Geocoded on save only |
+| location_status | text | `verified` \| `under_review` — an owner's moved pin is under review until Link ops verify it (CF-44); P04 shows "Location under review" |
 | hours | jsonb | `[{weekday, opens, closes}]`, closed days |
 | photos | jsonb | Object-storage keys |
 | verification | text | `pending` \| `in_review` \| `verified` \| `rejected` \| `revoked` |

@@ -88,6 +88,7 @@ import type {
   TeacherEnrolment,
   TeacherSelf,
   TeacherSelfPatch,
+  NewHallBody,
 } from './market';
 
 export * from './types';
@@ -468,6 +469,12 @@ export const marketApi = {
   updateCentreProfile: (centreId: string, body: { about?: string; photos?: number }) =>
     request<CentreProfileEdit>('PATCH', `/v1/centres/${centreId}`, { body }),
   halls: (centreId: string) => request<Hall[]>('GET', `/v1/centres/${centreId}/rooms`),
+  /** CF-44: owners add halls. */
+  addHall: (centreId: string, body: NewHallBody) =>
+    request<Hall>('POST', `/v1/centres/${centreId}/rooms`, { body }),
+  /** CF-44: owners move the map pin; the location is under review until ops verify it. */
+  moveCentrePin: (centreId: string, body: { lat: number; lng: number; address: string }) =>
+    request<CentreProfileEdit>('PATCH', `/v1/centres/${centreId}`, { body: { location: body } }),
   updateHall: (hallId: string, body: HallPatch) =>
     request<Hall>('PATCH', `/v1/rooms/${hallId}`, { body }),
   schedule: (centreId: string) =>

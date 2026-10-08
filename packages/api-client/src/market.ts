@@ -179,6 +179,21 @@ export interface ReviewsReceived {
   items: ReviewReceived[];
 }
 
+/** CF-44: the owner moves the pin; the location shows "under review" until Link ops verifies it. */
+export interface CentreLocation {
+  lat: number;
+  lng: number;
+  address: string;
+  underReview: boolean;
+}
+
+export interface NewHallBody {
+  name: string;
+  capacity: number;
+  facilities: Facility[];
+  rentRule: { basis: RentBasis; amountPt?: number | null; percent?: number | null };
+}
+
 export interface CentreProfileEdit {
   id: string;
   /** The public page: /{lang}/centres/{slug}. */
@@ -198,6 +213,7 @@ export interface CentreProfileEdit {
   rating: { avg: number; count: number };
   teachers: number;
   halls: Hall[];
+  location: CentreLocation;
 }
 
 export interface CentreApplicationBody {

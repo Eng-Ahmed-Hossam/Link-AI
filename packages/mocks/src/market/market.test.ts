@@ -300,3 +300,66 @@ describe('staff and schedule', () => {
     );
   });
 });
+
+describe('CF-44 (decided 2026-10-08): owners add halls and move the pin', () => {
+  it('only the owner adds a hall; it is listed with every slot offered and its rent rule checked', async () => {
+    const before = (await marketApi.halls(C)).length;
+    as('usr-reception');
+    expect(
+      (
+        await err(
+          marketApi.addHall(C, {
+            name: 'Room 4',
+            capacity: 18,
+            facilities: ['ac'],
+            rentRule: { basis: 'fixed_per_session', amountPt: 20000 },
+          }),
+        )
+      ).problem.status,
+    ).toBe(403);
+    as('usr-owner');
+    expect(
+      (
+        await err(
+          marketApi.addHall(C, {
+            name: 'Room 4',
+            capacity: 18,
+            facilities: [],
+            rentRule: { basis: 'percent_of_fees', percent: 90 },
+          }),
+        )
+      ).problem.status,
+    ).toBe(422);
+    const h = await marketApi.addHall(C, {
+      name: 'Room 4',
+      capacity: 18,
+      facilities: ['ac'],
+      rentRule: { basis: 'fixed_per_session', amountPt: 20000 },
+    });
+    expect(h.listed).toBe(true);
+    expect(h.slots.every((x) => x.state === 'free')).toBe(true);
+    expect((await marketApi.halls(C)).length).toBe(before + 1);
+  });
+
+  it('a moved pin shows "Location under review" to the owner and on P04 until ops verify it', async () => {
+    const p = await marketApi.moveCentrePin(C, {
+      lat: 29.961,
+      lng: 31.258,
+      address: '14 Road 9, Maadi',
+    });
+    expect(p.location).toMatchObject({ address: '14 Road 9, Maadi', underReview: true });
+    const pub = await (await fetch(`${BASE}/v1/centres/by-slug/al-nour-maadi`)).json();
+    expect(pub.locationUnderReview).toBe(true);
+    expect(pub.address).toBe('14 Road 9, Maadi');
+    await fetch(`${BASE}/__demo/verify-location`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ centreId: C }),
+    });
+    expect((await marketApi.centreProfile(C)).location.underReview).toBe(false);
+    expect(
+      (await err(marketApi.moveCentrePin(C, { lat: 48.8, lng: 2.3, address: 'Paris' }))).problem
+        .status,
+    ).toBe(422);
+  });
+});

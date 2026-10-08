@@ -156,6 +156,11 @@ export function P04Centre({ slug }: { slug: string }) {
                     {c.governorate} • {t('parent.km', { km: formatKm(c.distanceKm ?? 0, locale) })}{' '}
                     • {hoursLabel(c, locale)}
                   </p>
+                  {c.locationUnderReview ? (
+                    <span className="self-start" data-testid="location-under-review">
+                      <StatusBadge tone="warning">{t('centre.location.underReview')}</StatusBadge>
+                    </span>
+                  ) : null}
                 </div>
               </div>
 

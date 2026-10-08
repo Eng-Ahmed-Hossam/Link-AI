@@ -46,6 +46,8 @@ export function RoomsRent() {
     queryFn: () => marketApi.halls(centreId),
   });
   const [selected, setSelected] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const owner = useIsOwner();
 
   return (
     <>
@@ -105,9 +107,33 @@ export function RoomsRent() {
                     </button>
                   </li>
                 ))}
+                {owner ? (
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => setAdding(true)}
+                      data-testid="add-hall"
+                      className="flex min-h-14 w-full items-center justify-center rounded-16 border-2 border-dashed border-blue/50 text-label text-blueText"
+                    >
+                      {t('centre.rooms.addRoom')}
+                    </button>
+                  </li>
+                ) : null}
               </ul>
               <div className="flex flex-col gap-6">
-                {hall ? <HallEditor key={hall.id} hall={hall} /> : null}
+                {adding ? (
+                  <HallEditor
+                    key="new"
+                    hall={null}
+                    onCreated={(id) => {
+                      setAdding(false);
+                      setSelected(id);
+                    }}
+                    onCancel={() => setAdding(false)}
+                  />
+                ) : hall ? (
+                  <HallEditor key={hall.id} hall={hall} />
+                ) : null}
                 <AutoApprove centreId={centreId} />
               </div>
             </div>
@@ -125,22 +151,33 @@ const PHOTO = [
   'bg-linear-to-br from-amber to-navy',
 ];
 
-function HallEditor({ hall }: { hall: Hall }) {
+/** One hall's seats, facilities, rent rule and open slots; with `hall` null, "Add a room" (CF-44). */
+function HallEditor({
+  hall,
+  onCreated,
+  onCancel,
+}: {
+  hall: Hall | null;
+  onCreated?: (id: string) => void;
+  onCancel?: () => void;
+}) {
   const { locale, t } = useI18n();
   const { centreId } = useCentre();
   const qc = useQueryClient();
   const toast = useToast();
-  const [name, setName] = useState(hall.name);
-  const [seats, setSeats] = useState(String(hall.capacity));
-  const [facilities, setFacilities] = useState<Facility[]>(hall.facilities);
-  const [basis, setBasis] = useState<RentBasis>(hall.rentRule.basis);
+  const [name, setName] = useState(hall?.name ?? '');
+  const [seats, setSeats] = useState(hall ? String(hall.capacity) : '');
+  const [facilities, setFacilities] = useState<Facility[]>(hall?.facilities ?? []);
+  const [basis, setBasis] = useState<RentBasis>(hall?.rentRule.basis ?? 'fixed_per_session');
   const [amount, setAmount] = useState(
-    hall.rentRule.amount ? String(hall.rentRule.amount.amountPt / 100) : '',
+    hall?.rentRule.amount ? String(hall.rentRule.amount.amountPt / 100) : '',
   );
-  const [percent, setPercent] = useState(String(hall.rentRule.percent ?? 20));
+  const [percent, setPercent] = useState(String(hall?.rentRule.percent ?? 20));
   const owner = useIsOwner();
   const [closed, setClosed] = useState<Set<string>>(
-    new Set(hall.slots.filter((s) => s.state === 'closed').map((s) => `${s.weekday}|${s.start}`)),
+    new Set(
+      (hall?.slots ?? []).filter((s) => s.state === 'closed').map((s) => `${s.weekday}|${s.start}`),
+    ),
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -151,7 +188,7 @@ function HallEditor({ hall }: { hall: Hall }) {
         return { weekday: Number(weekday), start, end: '' };
       });
       const n = Number(normalizeDigits(amount));
-      return marketApi.updateHall(hall.id, {
+      const body = {
         name,
         capacity: Number(normalizeDigits(seats)),
         facilities,
@@ -159,11 +196,14 @@ function HallEditor({ hall }: { hall: Hall }) {
           basis === 'percent_of_fees'
             ? { basis, percent: Number(normalizeDigits(percent)) }
             : { basis, amountPt: Math.round(n * 100) },
-        closedSlots,
-      });
+      };
+      return hall
+        ? marketApi.updateHall(hall.id, { ...body, closedSlots })
+        : marketApi.addHall(centreId, body);
     },
-    onSuccess: () => {
+    onSuccess: (saved) => {
       setError(null);
+      if (!hall) onCreated?.(saved.id);
       void qc.invalidateQueries({ queryKey: ['halls', centreId] });
       void qc.invalidateQueries({ queryKey: ['schedule', centreId] });
       toast(t('centre.rooms.saved'));
@@ -174,7 +214,9 @@ function HallEditor({ hall }: { hall: Hall }) {
 
   return (
     <Card className="flex flex-col gap-4" data-testid="hall-editor">
-      <h2 className="text-heading text-navy">{t('centre.rooms.edit', { name: hall.name })}</h2>
+      <h2 className="text-heading text-navy">
+        {hall ? t('centre.rooms.edit', { name: hall.name }) : t('centre.rooms.addTitle')}
+      </h2>
       <div className="grid grid-cols-[1fr_120px] gap-3">
         <Input
           label={t('centre.rooms.name')}
@@ -255,53 +297,57 @@ function HallEditor({ hall }: { hall: Hall }) {
         // OD-13 is open: which students count. Phase 1 default: confirmed enrolled students.
         <Callout tone="warning">{t('centre.rooms.perStudentPending')}</Callout>
       ) : null}
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-label text-navy">{t('centre.rooms.slots')}</legend>
-        <div className="grid grid-cols-6 gap-1.5" role="group">
-          {DAYS.map((d) => (
-            <span key={d} className="text-center text-caption text-muted">
-              {formatWeekday(d, locale)}
-            </span>
-          ))}
-          {TIMES.flatMap((tm) =>
-            DAYS.map((d) => {
-              const slot = hall.slots.find((s) => s.weekday === d && s.start === tm);
-              const taken = slot?.state === 'taken';
-              const key = `${d}|${tm}`;
-              const isClosed = closed.has(key);
-              const label = `${formatWeekday(d, locale, 'long')} ${formatClock(tm, locale)}`;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  disabled={taken}
-                  aria-pressed={!taken && !isClosed}
-                  aria-label={`${label}: ${taken ? t('centre.rooms.taken') : isClosed ? t('centre.rooms.closed') : t('centre.rooms.open')}`}
-                  onClick={() =>
-                    setClosed((cur) => {
-                      const next = new Set(cur);
-                      if (next.has(key)) next.delete(key);
-                      else next.add(key);
-                      return next;
-                    })
-                  }
-                  className={cn(
-                    'min-h-11 rounded-8 text-caption',
-                    taken
-                      ? 'bg-soft text-muted'
-                      : isClosed
-                        ? 'border border-dashed border-border bg-white text-muted line-through'
-                        : 'bg-greenSoft font-semibold text-green',
-                  )}
-                >
-                  {taken ? t('centre.rooms.taken') : formatClock(tm, locale)}
-                </button>
-              );
-            }),
-          )}
-        </div>
-        <p className="text-caption text-muted">{t('centre.rooms.slotsHint')}</p>
-      </fieldset>
+      {hall ? (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 text-label text-navy">{t('centre.rooms.slots')}</legend>
+          <div className="grid grid-cols-6 gap-1.5" role="group">
+            {DAYS.map((d) => (
+              <span key={d} className="text-center text-caption text-muted">
+                {formatWeekday(d, locale)}
+              </span>
+            ))}
+            {TIMES.flatMap((tm) =>
+              DAYS.map((d) => {
+                const slot = hall.slots.find((s) => s.weekday === d && s.start === tm);
+                const taken = slot?.state === 'taken';
+                const key = `${d}|${tm}`;
+                const isClosed = closed.has(key);
+                const label = `${formatWeekday(d, locale, 'long')} ${formatClock(tm, locale)}`;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    disabled={taken}
+                    aria-pressed={!taken && !isClosed}
+                    aria-label={`${label}: ${taken ? t('centre.rooms.taken') : isClosed ? t('centre.rooms.closed') : t('centre.rooms.open')}`}
+                    onClick={() =>
+                      setClosed((cur) => {
+                        const next = new Set(cur);
+                        if (next.has(key)) next.delete(key);
+                        else next.add(key);
+                        return next;
+                      })
+                    }
+                    className={cn(
+                      'min-h-11 rounded-8 text-caption',
+                      taken
+                        ? 'bg-soft text-muted'
+                        : isClosed
+                          ? 'border border-dashed border-border bg-white text-muted line-through'
+                          : 'bg-greenSoft font-semibold text-green',
+                    )}
+                  >
+                    {taken ? t('centre.rooms.taken') : formatClock(tm, locale)}
+                  </button>
+                );
+              }),
+            )}
+          </div>
+          <p className="text-caption text-muted">{t('centre.rooms.slotsHint')}</p>
+        </fieldset>
+      ) : (
+        <p className="text-caption text-muted">{t('centre.rooms.addNote')}</p>
+      )}
       {error ? (
         <p role="alert" className="text-caption text-red">
           {error}
@@ -314,7 +360,12 @@ function HallEditor({ hall }: { hall: Hall }) {
           disabled={save.isPending}
           data-testid="save-hall"
         >
-          {t('centre.rooms.save')}
+          {hall ? t('centre.rooms.save') : t('centre.rooms.add')}
+        </Button>
+      ) : null}
+      {owner && !hall ? (
+        <Button variant="quiet" onClick={onCancel}>
+          {t('common.cancel')}
         </Button>
       ) : (
         <div data-testid="owner-only">

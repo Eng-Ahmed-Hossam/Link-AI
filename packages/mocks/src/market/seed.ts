@@ -64,7 +64,15 @@ export interface MarketState {
   newGroups: fx.GroupFx[];
   replies: Record<string, { body: string; at: string }>;
   reports: Record<string, { reason: string; at: string }>;
-  centreEdits: Record<string, { about?: string; photos?: number }>;
+  centreEdits: Record<
+    string,
+    {
+      about?: string;
+      photos?: number;
+      /** CF-44: a moved pin, under review until Link ops verify it. */
+      location?: { lat: number; lng: number; address: string; underReview: boolean };
+    }
+  >;
   teacherEdits: Record<string, TeacherSelfPatch>;
   decisions: Record<string, 'accepted' | 'declined'>;
   applications: (CentreApplicationBody & { id: string; at: string })[];

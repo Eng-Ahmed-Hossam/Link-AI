@@ -34,6 +34,7 @@ import type {
   TeacherSelf,
   TeacherSelfPatch,
   WeeklySlot,
+  NewHallBody,
 } from '@link/api-client';
 import { formatClock, formatWeekdays } from '@link/i18n';
 import * as fx from '../data';
@@ -157,6 +158,65 @@ export function patchHall(hallId: string, p: HallPatch, lang: Lang): Hall {
   if (p.closedSlots) h.closed = p.closedSlots.map((s) => `${s.weekday}|${s.start}`);
   db.persist();
   return hallDto(h, lang);
+}
+
+/** CF-44: the owner adds a hall (listed, every slot of the grid offered). */
+export function addHall(centreId: string, b: NewHallBody, lang: Lang): Hall {
+  const name = b.name?.trim();
+  if (!name) fail(422, 'invalid_name', 'Give the hall a name.');
+  if (!Number.isInteger(b.capacity) || b.capacity < 1 || b.capacity > 500)
+    fail(422, 'invalid_capacity', 'Seats must be a whole number from 1 to 500.');
+  const h: HallRow = {
+    id: `hall-new-${++m().seq}`,
+    centreId,
+    name: { en: name!, ar: name! },
+    roomLabel: name!,
+    capacity: b.capacity,
+    facilities: [...new Set(b.facilities ?? [])],
+    rule: { basis: 'fixed_per_session', amountPt: 100, percent: null },
+    listed: true,
+    closed: [],
+    photo: m().halls.filter((x) => x.centreId === centreId).length % 4,
+  };
+  m().halls.push(h);
+  // The rent rule goes through the same checks as an edit (C05).
+  try {
+    return patchHall(h.id, { rentRule: b.rentRule }, lang);
+  } catch (e) {
+    m().halls.pop();
+    throw e;
+  }
+}
+
+/** The centre's location: a moved pin is under review until Link ops verify it (CF-44). */
+export function centreLocation(centreId: string, lang: Lang) {
+  const c = centreFx(centreId);
+  const moved = m().centreEdits[centreId]?.location;
+  return moved ?? { lat: c.lat, lng: c.lng, address: tr(c.address, lang), underReview: false };
+}
+export function moveCentrePin(
+  centreId: string,
+  p: { lat: number; lng: number; address: string },
+  lang: Lang,
+) {
+  const address = p.address?.trim();
+  if (!address || address.length > 200) fail(422, 'invalid_address', 'Write the address.');
+  // Egypt, roughly: the pin must be on the map Link serves.
+  if (!(p.lat >= 22 && p.lat <= 32 && p.lng >= 24.5 && p.lng <= 37))
+    fail(422, 'invalid_location', 'Put the pin in Egypt.');
+  m().centreEdits[centreId] = {
+    ...(m().centreEdits[centreId] ?? {}),
+    location: { lat: p.lat, lng: p.lng, address: address!, underReview: true },
+  };
+  db.persist();
+  return centreProfile(centreId, lang);
+}
+/** Link ops checked the new location (the ops console is later; the demo has a control). */
+export function verifyCentreLocation(centreId: string) {
+  const loc = m().centreEdits[centreId]?.location;
+  if (loc) loc.underReview = false;
+  db.persist();
+  return { ok: true as const };
 }
 
 // ── people ──────────────────────────────────────────────────────────────────────
@@ -895,6 +955,7 @@ export function centreProfile(centreId: string, lang: Lang): CentreProfileEdit {
         .map((b) => b.teacherKey),
     ).size,
     halls,
+    location: centreLocation(centreId, lang),
   };
 }
 export function patchCentreProfile(

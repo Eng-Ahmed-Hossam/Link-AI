@@ -4,6 +4,7 @@ import type {
   CentreApplicationBody,
   GroupPatch,
   HallPatch,
+  NewHallBody,
   NewGroupBody,
   RentEstimateBody,
   ReviewTab,
@@ -75,8 +76,22 @@ export const marketHandlers = [
     '*/v1/centres/:id',
     authed(async ({ request, params, userId, lang }) => {
       staffOf(userId, params.id!, true);
-      const body = (await request.json()) as { about?: string; photos?: number };
-      return HttpResponse.json(mk.patchCentreProfile(params.id!, body, lang));
+      const body = (await request.json()) as {
+        about?: string;
+        photos?: number;
+        location?: { lat: number; lng: number; address: string };
+      };
+      const { location, ...rest } = body;
+      if (location) mk.moveCentrePin(params.id!, location, lang);
+      return HttpResponse.json(mk.patchCentreProfile(params.id!, rest, lang));
+    }),
+  ),
+  http.post(
+    '*/v1/centres/:id/rooms',
+    authed(async ({ request, params, userId, lang }) => {
+      staffOf(userId, params.id!, true);
+      const body = (await request.json()) as NewHallBody;
+      return HttpResponse.json(mk.addHall(params.id!, body, lang), { status: 201 });
     }),
   ),
   http.get(
@@ -305,6 +320,11 @@ export const marketHandlers = [
     }),
   ),
   // Demo controls (dev only): switch a centre's paid extra.
+  // CF-44: Link ops verify a moved pin (the ops console is later).
+  http.post('*/__demo/verify-location', async ({ request }) => {
+    const { centreId } = (await request.json()) as { centreId: string };
+    return HttpResponse.json(mk.verifyCentreLocation(centreId));
+  }),
   http.post('*/__demo/features', async ({ request }) => {
     const { centreId, followupExtra } = (await request.json()) as {
       centreId: string;

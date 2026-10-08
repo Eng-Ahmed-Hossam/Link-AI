@@ -250,6 +250,8 @@ export interface CentreProfile {
   reviews: PublicReview[];
   lat: number;
   lng: number;
+  /** CF-44: the owner moved the pin; Link ops have not checked it yet. */
+  locationUnderReview: boolean;
 }
 
 export interface TeacherProfile {

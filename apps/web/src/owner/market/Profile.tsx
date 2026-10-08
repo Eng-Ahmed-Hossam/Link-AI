@@ -9,6 +9,7 @@ import { useI18n } from '../../i18n-client';
 import { QueryState } from '../../parent/QueryState';
 import { OwnerPageHeader, num, useCentre, useIsOwner } from '../common';
 import { facilityLabel, ruleText } from './shared';
+import { LocationCard } from './LocationCard';
 
 /** The photo tiles are sample gradients in the demo (no uploads, no real photos). */
 const PHOTO_TONES = [
@@ -55,6 +56,9 @@ export function PublicProfile() {
               <Chip tone="warning">{t('centre.profile.notLive')}</Chip>
             )}
             {d.verified ? <Chip tone="info">{t('centre.profile.verified')}</Chip> : null}
+            {d.location.underReview ? (
+              <Chip tone="warning">{t('centre.location.underReview')}</Chip>
+            ) : null}
             <span className="flex items-center gap-2 text-caption text-muted">
               {t('centre.profile.complete', { pct: num(d.completeness, locale) })}
               <span
@@ -74,27 +78,7 @@ export function PublicProfile() {
             <div className="flex flex-col gap-6">
               <PhotosAbout d={d} />
               <RoomsTable halls={d.halls} roomsHref={`${base}/rooms`} />
-              <Card className="flex flex-col gap-4">
-                <h2 className="text-heading text-navy">{t('centre.profile.location')}</h2>
-                <div className="flex flex-wrap gap-5">
-                  <div
-                    aria-hidden
-                    className="relative h-28 w-full max-w-64 overflow-hidden rounded-12 bg-soft"
-                  >
-                    <span className="absolute inset-y-0 start-1/3 w-2 bg-white" />
-                    <span className="absolute inset-x-0 top-1/2 h-2 bg-white" />
-                    <span className="absolute inset-y-0 end-12 w-10 -skew-x-12 bg-blueSoft" />
-                    <span className="absolute start-1/3 top-1/2 size-3.5 -translate-y-1/4 rounded-full border-2 border-white bg-blue" />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <p className="text-label text-navy" data-testid="profile-address">
-                      {d.address}
-                    </p>
-                    <p className="text-caption text-muted">{d.hours}</p>
-                    <p className="text-caption text-muted">{t('centre.profile.pinNote')}</p>
-                  </div>
-                </div>
-              </Card>
+              <LocationCard d={d} />
             </div>
             <div className="flex flex-col gap-4">
               <p className="text-caption uppercase text-muted">{t('centre.profile.preview')}</p>

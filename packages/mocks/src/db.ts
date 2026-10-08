@@ -508,6 +508,14 @@ function reviewDto(r: fx.ReviewFx, lang: Lang): PublicReview {
   };
 }
 
+/** The centre's map pin and address, after an owner's move (CF-44, market state). */
+function movedLocation(centreId: string, lang: Lang, c: fx.CentreFx) {
+  const loc = state?.market?.centreEdits[centreId]?.location;
+  return loc
+    ? { lat: loc.lat, lng: loc.lng, address: loc.address, locationUnderReview: loc.underReview }
+    : { lat: c.lat, lng: c.lng, address: t(c.address, lang), locationUnderReview: false };
+}
+
 export function centreProfile(
   slug: string,
   lang: Lang,
@@ -528,7 +536,6 @@ export function centreProfile(
     name: t(c.name, lang),
     area: t(c.area, lang),
     governorate: t(c.governorate, lang),
-    address: t(c.address, lang),
     distanceKm: c.distanceKm,
     verified: c.verified,
     hours: c.hours,
@@ -552,8 +559,8 @@ export function centreProfile(
     reviews: fx.reviews
       .filter((r) => r.targetType === 'centre' && r.targetId === c.id)
       .map((r) => reviewDto(r, lang)),
-    lat: c.lat,
-    lng: c.lng,
+    // CF-44: a moved pin shows with "Location under review" until Link ops verify it.
+    ...movedLocation(c.id, lang, c),
     groupsForChild: gs
       .filter(
         (g) =>
