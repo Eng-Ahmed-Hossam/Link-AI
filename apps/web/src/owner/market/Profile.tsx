@@ -197,9 +197,9 @@ function PhotosAbout({ d }: { d: CentreProfileEdit }) {
         rows={3}
       />
       {!owner ? (
-        <Callout tone="info" data-testid="owner-only">
-          {t('centre.ownerOnly.edit')}
-        </Callout>
+        <div data-testid="owner-only">
+          <Callout tone="info">{t('centre.ownerOnly.edit')}</Callout>
+        </div>
       ) : null}
       <div className={owner ? 'flex items-center gap-3' : 'hidden'}>
         <Button

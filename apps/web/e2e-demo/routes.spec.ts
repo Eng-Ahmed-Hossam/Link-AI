@@ -226,13 +226,14 @@ test('links without the centre id and unknown pages', async ({ page }) => {
   await expect(page).toHaveURL(/\/ar\/centre\/cen-nour\/today$/);
   await page.goto(`/en/centre/follow-ups/${params.caseId}`);
   await expect(page).toHaveURL(new RegExp(`/en/centre/cen-nour/follow-ups/${params.caseId}$`));
+  // One home per role (2A.6): with the marketplace on, the owner's home is the Room schedule.
   await page.goto('/ar/centre/cen-nour');
-  await expect(page).toHaveURL(/\/ar\/centre\/cen-nour\/today$/);
+  await expect(page).toHaveURL(/\/ar\/centre\/cen-nour\/schedule$/);
   // An unknown centre: a real "not found" with a way back, in the page's language.
   await page.goto('/en/centre/cen-unknown/today');
   await expect(page.getByTestId('centre-not-found')).toContainText("We couldn't find this centre");
   await page.getByRole('link', { name: 'Go to my centre' }).click();
-  await expect(page).toHaveURL(/\/en\/centre\/cen-nour\/today$/);
+  await expect(page).toHaveURL(/\/en\/centre\/cen-nour\/schedule$/);
   // Any other unknown path: the app's not-found page, not the bare Next.js 404.
   const res = await page.goto('/ar/no-such-page');
   expect(res?.status()).toBe(404);
@@ -251,7 +252,8 @@ test('teacher app: an unknown path shows "not found" with a way back', async ({ 
   await page.goto('/no-such-screen');
   await expect(page.getByTestId('screen-not-found')).toBeVisible();
   await page.getByTestId('not-found-home').click();
-  await expect(page.getByTestId('screen-today')).toBeVisible();
+  // The teacher's home with the marketplace on is My groups (2A.6).
+  await expect(page.getByTestId('screen-t09')).toBeVisible();
   await ctx.close();
 });
 

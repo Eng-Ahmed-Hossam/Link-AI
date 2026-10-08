@@ -26,7 +26,7 @@ test.afterAll(async () => {
 async function demoControl(page: Page, label: string | RegExp) {
   const dev = await page.context().newPage();
   await dev.goto('/ar/dev');
-  await dev.getByRole('button', { name: 'Demo controls' }).click();
+  await dev.getByRole('button', { name: 'Demo controls', exact: true }).click();
   const dialog = dev.getByRole('dialog', { name: 'Demo controls' });
   await dialog.getByRole('button', { name: label }).click();
   await expect(dialog.getByRole('status')).toContainText('done');

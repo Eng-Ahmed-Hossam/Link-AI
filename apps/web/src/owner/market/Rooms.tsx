@@ -317,9 +317,9 @@ function HallEditor({ hall }: { hall: Hall }) {
           {t('centre.rooms.save')}
         </Button>
       ) : (
-        <Callout tone="info" data-testid="owner-only">
-          {t('centre.ownerOnly.edit')}
-        </Callout>
+        <div data-testid="owner-only">
+          <Callout tone="info">{t('centre.ownerOnly.edit')}</Callout>
+        </div>
       )}
     </Card>
   );

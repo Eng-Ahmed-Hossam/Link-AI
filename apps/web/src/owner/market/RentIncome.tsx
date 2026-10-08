@@ -34,9 +34,9 @@ export function RentIncome() {
     <>
       <OwnerPageHeader title={t('centre.rent.title')} subtitle={t('centre.rent.subtitle')} />
       {!owner ? (
-        <Callout tone="info" data-testid="owner-only">
-          {t('centre.ownerOnly.rent')}
-        </Callout>
+        <div data-testid="owner-only">
+          <Callout tone="info">{t('centre.ownerOnly.rent')}</Callout>
+        </div>
       ) : null}
       {owner ? (
         <QueryState query={q} loadingRows={4} isEmpty={(d) => !d.rows.length}>
