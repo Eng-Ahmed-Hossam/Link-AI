@@ -430,8 +430,14 @@ const isCentreStaff = (userId: string) => {
 /** OD-34: centre staff with `messages.approve` (owner and Reception). */
 const canApprove = isCentreStaff;
 /** Ids are readable in the demo (`rec-<date>`) and unique per group in the pilot. */
-const recId = (groupId: string, date: string) =>
-  groupId === G && !isPilot() ? `rec-${date}` : `rec-${groupId}-${date}`;
+const recId = (groupId: string, date: string) => {
+  const base = groupId === G && !isPilot() ? `rec-${date}` : `rec-${groupId}-${date}`;
+  // A record keeps its id when the connected story moves its group's calendar, so a later session
+  // on the same date gets the next free id (never two records with one id).
+  let id = base;
+  for (let k = 2; load().records.some((r) => r.id === id); k++) id = `${base}-${k}`;
+  return id;
+};
 
 function fmtDate(date: string, lang: Lang) {
   return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG' : 'en-GB-u-nu-latn', {

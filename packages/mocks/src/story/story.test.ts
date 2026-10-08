@@ -142,4 +142,16 @@ describe('Step 2B · the connected story', () => {
     });
     expect(r.status).toBe(422);
   });
+
+  it('a record keeps its id when the calendar moves; the next session on that date gets a new one', async () => {
+    const s = await jump(8);
+    as('usr-salma');
+    const first = (await fuApi.teacherToday()).recordDue!;
+    const r1 = await fuApi.openRecord(s.groupId, first.sessionId);
+    await post('/__demo/story/session-done');
+    const second = (await fuApi.teacherToday()).recordDue!;
+    expect(second.sessionDate).toBe(first.sessionDate);
+    const r2 = await fuApi.openRecord(s.groupId, second.sessionId);
+    expect(r2.id).not.toBe(r1.id);
+  });
 });

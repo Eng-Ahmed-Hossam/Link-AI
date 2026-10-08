@@ -166,6 +166,7 @@ ${t('teacher.request.groupLine', {
                           label={x.name}
                           selected={newGroup.subjectId === x.id}
                           onPress={() => setNewGroup((v) => ({ ...v, subjectId: x.id }))}
+                          testID={`subject-${x.id}`}
                         />
                       ))}
                     </View>
@@ -177,12 +178,14 @@ ${t('teacher.request.groupLine', {
                           label={y.name}
                           selected={newGroup.schoolYearId === y.id}
                           onPress={() => setNewGroup((v) => ({ ...v, schoolYearId: y.id }))}
+                          testID={`year-${y.id}`}
                         />
                       ))}
                     </View>
                     <TextField
                       locale={locale}
                       label={t('teacher.request.expected')}
+                      testID="new-expected"
                       value={newGroup.students}
                       onChangeText={(v) =>
                         setNewGroup((x) => ({ ...x, students: v.replace(/\D/g, '') }))
@@ -193,6 +196,7 @@ ${t('teacher.request.groupLine', {
                     <TextField
                       locale={locale}
                       label={t('teacher.request.plannedFee')}
+                      testID="new-fee"
                       value={newGroup.fee}
                       onChangeText={(v) =>
                         setNewGroup((x) => ({ ...x, fee: v.replace(/\D/g, '') }))
