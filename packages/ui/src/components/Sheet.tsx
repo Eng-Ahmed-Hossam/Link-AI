@@ -12,8 +12,8 @@ export interface SheetProps {
   children: ReactNode;
   footer?: ReactNode;
   closeLabel: string;
-  /** `bottom` = mobile bottom sheet; `center` = dialog. */
-  side?: 'bottom' | 'center';
+  /** `bottom` = mobile bottom sheet; `center` = dialog; `end` = side panel at the end edge. */
+  side?: 'bottom' | 'center' | 'end';
 }
 
 /** Bottom sheet / dialog on Radix Dialog: focus trap, Esc, and scroll lock come for free. */
@@ -36,7 +36,9 @@ export function Sheet({
             'fixed z-50 flex max-h-[90dvh] flex-col gap-4 overflow-y-auto bg-white p-6 shadow-raised outline-none',
             side === 'bottom'
               ? 'inset-x-0 bottom-0 mx-auto max-w-md rounded-t-24'
-              : 'inset-x-4 top-1/2 mx-auto max-w-md -translate-y-1/2 rounded-24',
+              : side === 'end'
+                ? 'inset-y-0 end-0 max-h-dvh w-full max-w-sm rounded-s-24'
+                : 'inset-x-4 top-1/2 mx-auto max-w-md -translate-y-1/2 rounded-24',
           )}
         >
           {side === 'bottom' ? (

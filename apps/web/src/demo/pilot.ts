@@ -4,7 +4,6 @@
  */
 import type { DemoSnapshot } from '@link/api-client/demo';
 
-export const DemoControls = () => null;
 export const DevIndex = () => null;
 export const DevPanel = () => null;
 export const DevSignIn = (props: { landing: string }) => (void props, null);

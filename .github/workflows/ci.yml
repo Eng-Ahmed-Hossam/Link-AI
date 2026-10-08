@@ -25,6 +25,8 @@ jobs:
       - run: pnpm run i18n:check
       - run: pnpm run env:check
       - run: npx prettier --check .
+      # The public demo build carries no presenter tools ("Demo tools", Demo controls).
+      - run: pnpm check:public-demo
 
   python:
     runs-on: ubuntu-latest

@@ -16,7 +16,8 @@ const CALM_PAGE = /(\/centre\/[^/]+\/(schedule|today|follow-ups)|\/search)$/;
 
 /**
  * The demo banner on every app page while a demo is on: "Demo — sample data", "Switch role" (back to
- * the role chooser) and "Reset demo" — nothing else on public paths (2A.6). After two minutes, a gentle card offering
+ * the role chooser) and "Reset demo" — nothing else on public paths (2A.6). The local demo adds
+ * "Demo tools", which opens the Demo controls as a side panel. After two minutes, a gentle card offering
  * a free pilot, only on a role's home or an overview (never in the middle of a task).
  */
 export function TryBar({ locale }: { locale: Locale }) {
@@ -61,6 +62,27 @@ export function TryBar({ locale }: { locale: Locale }) {
         >
           {t('common.switchRole')}
         </Link>
+        {/* Written out, not DEMO_CONTROLS: the bundler drops this from production builds. */}
+        {process.env.NODE_ENV !== 'production' &&
+        process.env.NEXT_PUBLIC_APP_ENV === 'local' &&
+        process.env.NEXT_PUBLIC_DEMO_CONTROLS === '1' ? (
+          // Local demo only: a production build (the public demo, the pilot) compiles this out —
+          // `pnpm check:public-demo` and the pilot start-up check look for the marker.
+          <button
+            type="button"
+            data-demo-tools=""
+            lang="en"
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent('link:demo-controls', { detail: { side: 'end' } }),
+              )
+            }
+            data-testid="demo-tools"
+            className="inline-flex min-h-11 items-center px-2 font-semibold text-amberSoft underline underline-offset-2"
+          >
+            Demo tools
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => void resetTry(locale)}

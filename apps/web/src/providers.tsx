@@ -12,7 +12,16 @@ import { SessionProvider } from './session';
 import { API_BASE_URL, API_MODE } from './api-mode';
 
 // Demo-only panels load on demand: they pull the mock data in, which the website never needs.
-const DemoControls = dynamic(() => import('@demo').then((m) => m.DemoControls), { ssr: false });
+// The presenter's Demo controls exist only in the local demo. The condition is written out so the
+// bundler replaces it at build time: production builds (the public demo, the pilot) carry no trace
+// of them — `pnpm check:public-demo` and the pilot start-up check prove it.
+const DemoControls =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.NEXT_PUBLIC_APP_ENV === 'local' &&
+  process.env.NEXT_PUBLIC_DEMO_CONTROLS === '1'
+    ? dynamic(() => import('./demo/DemoControls').then((m) => m.DemoControls), { ssr: false })
+    : // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      (_: { showButton?: boolean }) => null;
 const DevPanel = dynamic(() => import('@demo').then((m) => m.DevPanel), { ssr: false });
 const TryBar = dynamic(() => import('@demo').then((m) => m.TryBar), { ssr: false });
 
@@ -58,7 +67,8 @@ export function Providers({ locale, children }: { locale: Locale; children: Reac
           {ready ? children : null}
           {API_MODE !== 'live' ? <MockBadge label={t('common.mockBadge')} /> : null}
           {USE_MSW && devPage ? <DevPanel /> : null}
-          {devPage ? <DemoControls /> : null}
+          {/* The floating button only on /dev (2A.6); the banner's "Demo tools" opens the panel anywhere. */}
+          <DemoControls showButton={devPage} />
         </ToastProvider>
       </SessionProvider>
     </QueryClientProvider>

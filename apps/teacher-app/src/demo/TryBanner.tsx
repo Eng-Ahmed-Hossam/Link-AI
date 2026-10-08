@@ -5,6 +5,8 @@ import { textStyle } from '@link/ui-native';
 import { color, space } from '@link/tokens';
 import { demoApi } from '@link/api-client/demo';
 import { useLocale } from '@/locale';
+import { DEMO_CONTROLS } from '../api-mode';
+import { openDemoTools } from './tools';
 
 /**
  * "Try Link" as a teacher (the website's role chooser): the "Demo — sample data" banner with
@@ -91,6 +93,17 @@ export function TryBanner() {
           {t('common.switchRole')}
         </Text>
       </Pressable>
+      {DEMO_CONTROLS ? (
+        // Local demo only (__DEV__ + APP_ENV=local): export builds compile this out.
+        <Pressable
+          onPress={openDemoTools}
+          testID="demo-tools"
+          accessibilityRole="button"
+          style={styles.reset}
+        >
+          <Text style={[textStyle('en', 'caption'), styles.tools]}>Demo tools</Text>
+        </Pressable>
+      ) : null}
       <Pressable
         onPress={() => void reset()}
         testID="try-reset"
@@ -117,5 +130,6 @@ const styles = StyleSheet.create({
   },
   bannerText: { color: color.white, fontWeight: '600' },
   link: { textDecorationLine: 'underline' },
+  tools: { color: color.amberSoft, fontWeight: '600', textDecorationLine: 'underline' },
   reset: { minHeight: 44, justifyContent: 'center', paddingHorizontal: space[8] },
 });

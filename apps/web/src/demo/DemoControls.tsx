@@ -12,14 +12,19 @@ import { refreshDemoState, useDemoState } from './demo-state';
  * They stand in for the outside world during a demo: the WhatsApp provider, the parent's phone and
  * the network. English only on purpose: a presenter tool, not a product screen.
  */
-export function DemoControls() {
+export function DemoControls({ showButton = true }: { showButton?: boolean }) {
   const [open, setOpen] = useState(false);
+  const [side, setSide] = useState<'center' | 'end'>('center');
   const [note, setNote] = useState<string | null>(null);
   const s = useDemoState();
   const qc = useQueryClient();
   // The dev index (`/{lang}/dev`) opens the panel with a `link:demo-controls` event.
   useEffect(() => {
-    const show = () => setOpen(true);
+    // The demo banner's "Demo tools" link opens them as a side panel (local demo only).
+    const show = (e: Event) => {
+      setSide((e as CustomEvent<{ side?: 'end' }>).detail?.side === 'end' ? 'end' : 'center');
+      setOpen(true);
+    };
     window.addEventListener('link:demo-controls', show);
     return () => window.removeEventListener('link:demo-controls', show);
   }, []);
@@ -40,20 +45,25 @@ export function DemoControls() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        lang="en"
-        className="fixed bottom-40 start-3 z-50 min-h-11 rounded-full border border-amber bg-amberSoft px-4 text-caption font-semibold text-amber"
-      >
-        Demo controls
-      </button>
+      {showButton ? (
+        <button
+          type="button"
+          onClick={() => {
+            setSide('center');
+            setOpen(true);
+          }}
+          lang="en"
+          className="fixed bottom-40 start-3 z-50 min-h-11 rounded-full border border-amber bg-amberSoft px-4 text-caption font-semibold text-amber"
+        >
+          Demo controls
+        </button>
+      ) : null}
       <Sheet
         open={open}
         onOpenChange={setOpen}
         title="Demo controls"
         closeLabel="Close"
-        side="center"
+        side={side}
       >
         <div lang="en" dir="ltr" className="flex flex-col gap-4 text-body">
           <p className="text-caption text-muted">

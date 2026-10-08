@@ -10,6 +10,7 @@ export default tseslint.config(
       '**/.next/**',
       '**/.next-pilot/**',
       '**/.next-lh/**',
+      '**/.next-public/**',
       '**/dist-pilot/**',
       '**/.e2e-data/**',
       '**/test-results/**',

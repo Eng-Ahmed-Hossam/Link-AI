@@ -9,6 +9,7 @@ const SKIP = new Set([
   '.next',
   '.next-pilot',
   '.next-lh',
+  '.next-public',
   '.venv',
   '.models',
   'evals-runs',

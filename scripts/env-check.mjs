@@ -13,6 +13,7 @@ const SKIP_DIRS = new Set([
   '.next',
   '.next-pilot',
   '.next-lh',
+  '.next-public',
   '.models',
   'evals-runs',
   '.turbo',

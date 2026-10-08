@@ -15,6 +15,9 @@ export const BUNDLE_MARKERS = [
   'mock.usr-',
   'link.mock.fu',
   'data-dev-index',
+  // The local demo's "Demo tools" link in the demo banner (Step 2B).
+  'data-demo-tools',
+  'Demo tools',
 ];
 
 function* walk(dir: string): Generator<string> {

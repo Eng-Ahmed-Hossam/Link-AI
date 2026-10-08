@@ -146,7 +146,9 @@ test('2A.1 role chooser: Centre owner opens the Room schedule, signed in — not
   await expect(banner).toContainText('عرض تجريبي — بيانات تجريبية');
   await expect(banner.getByTestId('switch-role')).toHaveAttribute('href', '/ar/try');
   await expect(banner.getByRole('link')).toHaveCount(1);
-  await expect(banner.getByRole('button')).toHaveCount(1);
+  // "Reset demo", plus "Demo tools" only in the local demo (never in a production build:
+  // pnpm check:public-demo); the Demo controls stay closed until asked for.
+  await expect(banner.getByRole('button').filter({ hasNotText: 'Demo tools' })).toHaveCount(1);
   await expect(page.getByText('Demo controls')).toHaveCount(0);
   // One connected product (OD-58): the marketplace, and Follow-up as a labelled paid extra.
   const nav = page.getByRole('navigation');

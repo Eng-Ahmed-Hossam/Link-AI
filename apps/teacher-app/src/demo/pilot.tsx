@@ -13,3 +13,4 @@ export const refreshDemoState = async () => {};
 export const TryBanner = () => null;
 export const startTeacherTry = null as null | ((lang: 'ar' | 'en') => Promise<void>);
 export const teacherTryOn = () => false;
+export const openDemoTools = () => {};

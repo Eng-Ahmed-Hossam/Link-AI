@@ -25,6 +25,7 @@ packages/mocks/.data/
 apps/pilot/.env.pilot
 apps/web/.next-pilot/
 apps/web/.next-lh/
+apps/web/.next-public/
 apps/teacher-app/dist-pilot/
 docs/pilot/metrics-*
 pilot-deletion-receipt-*.txt

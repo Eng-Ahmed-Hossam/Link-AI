@@ -14,6 +14,8 @@ import { DEMO_CONTROLS } from '../api-mode';
 export { startMocks } from '@link/mocks/native';
 export { TryBanner, startTeacherTry, teacherTryOn } from './TryBanner';
 import { teacherTryOn } from './TryBanner';
+import { onOpenDemoTools } from './tools';
+export { openDemoTools } from './tools';
 import type { Session } from '../session';
 
 /** The sample teacher of the demo scenario (Ms Salma, Al Nour). */
@@ -67,8 +69,10 @@ export function DemoControls() {
   const s = useDemoState();
   const qc = useQueryClient();
   useEffect(() => setNote(null), [open]);
-  // Developer tools stay off the public demo (2A.6): a visitor from the role chooser sees none.
-  if (!DEMO_CONTROLS || teacherTryOn()) return null;
+  useEffect(() => onOpenDemoTools(() => setOpen(true)), []);
+  if (!DEMO_CONTROLS) return null;
+  // A visitor from the role chooser gets no floating button (2A.6); "Demo tools" in the banner opens it.
+  const fab = !teacherTryOn();
 
   const run = async (label: string, fn: () => Promise<unknown>) => {
     try {
@@ -83,17 +87,19 @@ export function DemoControls() {
 
   return (
     <>
-      <Pressable
-        testID="demo-controls"
-        accessibilityRole="button"
-        accessibilityLabel="Demo controls"
-        onPress={() => setOpen(true)}
-        style={styles.fab}
-      >
-        <Text style={[textStyle('en', 'caption'), { color: color.navy, fontWeight: '600' }]}>
-          Demo
-        </Text>
-      </Pressable>
+      {fab ? (
+        <Pressable
+          testID="demo-controls"
+          accessibilityRole="button"
+          accessibilityLabel="Demo controls"
+          onPress={() => setOpen(true)}
+          style={styles.fab}
+        >
+          <Text style={[textStyle('en', 'caption'), { color: color.navy, fontWeight: '600' }]}>
+            Demo
+          </Text>
+        </Pressable>
+      ) : null}
       <Sheet
         locale="en"
         open={open}
