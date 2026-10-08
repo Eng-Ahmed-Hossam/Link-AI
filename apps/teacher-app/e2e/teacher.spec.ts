@@ -75,7 +75,7 @@ test.describe('T03 Scores', () => {
     await expect(id(page, 'score-chd-mariam')).toHaveCount(0);
     await id(page, 'score-stu-omar').fill('24');
     await expect(
-      page.getByText('٢٤ أكبر من الدرجة القصوى ٢٠. صحّحها — Link لا يغيّر الدرجة من تلقاء نفسه.'),
+      page.getByText('٢٤ أكبر من الدرجة القصوى ٢٠. صحّحها — لينك لا يغيّر الدرجة من تلقاء نفسه.'),
     ).toBeVisible();
     await expect(id(page, 'score-stu-omar')).toHaveValue('24'); // as typed, not capped
     await expect(id(page, 'to-observation')).toBeDisabled();

@@ -95,7 +95,7 @@ test('Tour 1 · Teacher', async ({ browser }) => {
     await id('assessment-max').fill('20');
     await id('score-stu-omar').fill('24');
     await expect(
-      t.getByText('٢٤ أكبر من الدرجة القصوى ٢٠. صحّحها — Link لا يغيّر الدرجة من تلقاء نفسه.'),
+      t.getByText('٢٤ أكبر من الدرجة القصوى ٢٠. صحّحها — لينك لا يغيّر الدرجة من تلقاء نفسه.'),
     ).toBeVisible();
     await expect(id('score-stu-omar')).toHaveValue('24');
     await expect(id('to-observation')).toBeDisabled();
@@ -112,7 +112,7 @@ test('Tour 1 · Teacher', async ({ browser }) => {
     await expect(t.getByText('لا يُحفظ شيء قبل أن تراجع ما فهمه الذكاء الاصطناعي.')).toBeVisible();
     await holdMic(t, 2500);
     await expect(id('screen-v02')).toBeVisible({ timeout: 30_000 });
-    await expect(t.getByText('هذا ما فهمه Link').first()).toBeVisible();
+    await expect(t.getByText('هذا ما فهمه لينك').first()).toBeVisible();
   });
   await test.step('T1.8 receipt only; high accepted, medium "Check", low blank', async () => {
     await expect(id('receipt')).toContainText('إيصال فقط');
@@ -325,7 +325,7 @@ test('Tour 3 · Parent', async ({ browser }) => {
   await test.step('P3.3 centre profile: each teacher sets their fee', async () => {
     await p.goto('/ar/centres/al-nour-maadi');
     await ready(p);
-    await expect(p.getByText('كل معلّم يحدد سعره. تحجز وتدفع للمعلّم من خلال Link.')).toBeVisible();
+    await expect(p.getByText('كل معلّم يحدد سعره. تحجز وتدفع للمعلّم من خلال لينك.')).toBeVisible();
   });
   await test.step('P3.4 teacher → choose group and session → continue', async () => {
     await p.goto('/ar/teachers/salma-fathy-maths');

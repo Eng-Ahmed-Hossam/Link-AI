@@ -14,7 +14,8 @@ Code always uses the English term, in `snake_case` in the database and `camelCas
 | Teacher | المعلّم / المدرس | `teacher` | Figma uses المعلّم. Speech and search also use مستر / ميس. | Figma |
 | Parent / guardian | وليّ الأمر | `guardian` | A parent account holds a guardian profile. | Figma |
 | Student / child | الطالب / الابن | `student` | | Figma |
-| Link ops | فريق Link | `link_ops` | Internal team. | Proposed |
+| Link (brand) | لينك | — | Arabic text always says «لينك» (website and apps); the logo keeps the Latin "Link" wordmark. Decided 2026-10-08. | Decided |
+| Link ops | فريق لينك | `link_ops` | Internal team. | Proposed |
 | Hall | قاعة | `room` | Designs use "room", "hall" and "Hall A". Code uses `room`; UI copy uses "hall" (قاعة). | Proposed |
 
 ## Marketplace and money
@@ -72,7 +73,7 @@ Code always uses the English term, in `snake_case` in the database and `camelCas
 | Outcome | النتيجة | `outcome` | | Proposed |
 | Parent message | رسالة لوليّ الأمر | `message` | | Figma |
 | Activity history (audit log) | سجل النشاط | `audit_events` | | Figma |
-| Ask Link (assistant) | اسأل Link | `assistant` | | Proposed |
+| Ask Link (assistant) | اسأل لينك | `assistant` | | Proposed |
 
 ## Analytics (Phase 3)
 
