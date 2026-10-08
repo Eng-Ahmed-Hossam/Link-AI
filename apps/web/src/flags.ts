@@ -74,7 +74,7 @@ export function useFlags(): Record<FlagKey, boolean> {
         'marketplace.enabled': demo.demo.marketplace !== false,
       }
     : {};
-  // "Try Link with your centre" (landing page, path A) shows the follow-up product.
+  // "Try Link" (the role chooser, /try) shows the whole product: marketplace + the Follow-up extra.
   const tryOn = useTryOn();
   if (PILOT) return { ...FLAG_DEFAULTS, ...PILOT_FLAGS };
   if (tryOn) return { ...FLAG_DEFAULTS, ...TRY_FLAGS, ...phase2Overrides(raw) };
@@ -99,11 +99,12 @@ const PILOT_FLAGS: Partial<Record<FlagKey, boolean>> = {
 };
 
 /**
- * A personalised demo from the landing page (path A): the follow-up product as the pilot runs it,
- * plus the demo-only Ask Link (scripted answers, labelled) and the parent feed. No marketplace.
+ * "Try Link" from the role chooser: one connected product — the marketplace, plus the Follow-up
+ * paid extra for the sample centre (OD-58; which centres have it is per centre, not a flag), the
+ * demo-only Ask Link (scripted answers, labelled) and the parent feed.
  */
 const TRY_FLAGS: Partial<Record<FlagKey, boolean>> = {
-  'marketplace.enabled': false,
+  'marketplace.enabled': true,
   'followup.assistant': true,
   'followup.owner_nav': true,
   'followup.records': true,

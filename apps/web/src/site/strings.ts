@@ -60,23 +60,20 @@ export const JOIN_FORM_KEYS = [
   'landing.form.doneBody',
 ] as const satisfies readonly MessageKey[];
 
-export const TRY_FORM_KEYS = [
-  'landing.try.centre',
-  'landing.try.centreHint',
-  'landing.try.errCentre',
-  'landing.try.role',
-  'landing.try.owner',
-  'landing.try.ownerDesc',
-  'landing.try.reception',
-  'landing.try.receptionDesc',
-  'landing.try.teacher',
-  'landing.try.teacherDesc',
-  'landing.try.errRole',
-  'landing.try.teachers',
-  'landing.try.submit',
-  'landing.try.opening',
-  'landing.try.note',
-  'landing.try.unavailable',
+/** The role chooser (`/{lang}/try`). */
+export const ROLE_KEYS = [
+  'site.try.parent',
+  'site.try.parentBody',
+  'site.try.openParent',
+  'site.try.teacher',
+  'site.try.teacherBody',
+  'site.try.openTeacher',
+  'site.try.owner',
+  'site.try.ownerBody',
+  'site.try.openOwner',
+  'site.try.opening',
+  'site.try.failed',
+  'site.try.sample',
 ] as const satisfies readonly MessageKey[];
 
 export type Strings<K extends readonly MessageKey[]> = Record<K[number], string>;

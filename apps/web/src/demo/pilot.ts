@@ -12,15 +12,10 @@ export const useDemoState = (): DemoSnapshot | null => null;
 export const refreshDemoState = async () => {};
 export const startMocks = async () => {};
 export const TryBar = (props: { locale: string }) => (void props, null);
-export const useTryCentre = (): string | null => null;
 export const useTryOn = (): boolean => false;
-export type TryRole = 'owner' | 'reception' | 'teacher';
+export type TryRole = 'parent' | 'teacher' | 'owner';
+/** No demo to reset in the pilot. */
+export const resetTry = null as null | ((lang: string) => Promise<void>);
 /** The pilot has no demo: the "try it" page says so (and is not served by the pilot server). */
 export const startTry = null as
-  | null
-  | ((input: {
-      centreName: string;
-      role: TryRole;
-      teachers: number | null;
-      lang: 'ar' | 'en';
-    }) => Promise<string>);
+  null | ((input: { role: TryRole; lang: 'ar' | 'en' }) => Promise<string>);

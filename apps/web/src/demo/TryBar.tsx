@@ -11,14 +11,13 @@ import { readTry, resetTry, writeTry, type TrySession } from './try';
 
 /** Two minutes in the demo before the pilot card may show (never during a task, see below). */
 const CARD_AFTER_MS = 2 * 60_000;
-/** Pages where a task has just ended: an overview, not a form. */
-const CALM_PAGE = /\/centre\/[^/]+\/(today|follow-ups)$/;
+/** Pages where a task has just ended: a role's home or an overview, not a form. */
+const CALM_PAGE = /(\/centre\/[^/]+\/(schedule|today|follow-ups)|\/search)$/;
 
 /**
- * Path A: the "Demo — sample data" banner with "Reset demo", on every app page while a personalised
- * demo is on; and, after two minutes, a gentle card offering a free pilot (pre-filled with the
- * centre name). The card appears only on Today or Follow-ups, the pages a person lands on between
- * tasks, so it never interrupts one.
+ * The demo banner on every app page while a demo is on: "Demo — sample data", "Switch role" (back to
+ * the role chooser), "About this demo" and "Reset demo". After two minutes, a gentle card offering
+ * a free pilot, only on a role's home or an overview (never in the middle of a task).
  */
 export function TryBar({ locale }: { locale: Locale }) {
   const t = createTranslator(locale);
@@ -41,10 +40,7 @@ export function TryBar({ locale }: { locale: Locale }) {
     setCard(false);
     writeTry({ ...demo, cardDone: true });
   };
-  const pilotHref = `/${locale}/pilot?${new URLSearchParams({
-    centre: demo.centreName,
-    ...(demo.teachers ? { teachers: String(demo.teachers) } : {}),
-  })}`;
+  const pilotHref = `/${locale}/pilot`;
 
   return (
     <>
@@ -58,7 +54,13 @@ export function TryBar({ locale }: { locale: Locale }) {
         <span aria-hidden className="opacity-60">
           ·
         </span>
-        <bdi data-testid="try-centre">{demo.centreName}</bdi>
+        <Link
+          href={`/${locale}/try`}
+          data-testid="switch-role"
+          className="inline-flex min-h-11 items-center px-2 font-semibold underline underline-offset-2"
+        >
+          {t('common.switchRole')}
+        </Link>
         <details className="group" data-testid="try-about">
           <summary className="inline-flex min-h-11 cursor-pointer list-none items-center px-2 underline underline-offset-2 [&::-webkit-details-marker]:hidden">
             {t('landing.demo.about')}
@@ -69,7 +71,7 @@ export function TryBar({ locale }: { locale: Locale }) {
         </details>
         <button
           type="button"
-          onClick={() => resetTry(locale)}
+          onClick={() => void resetTry(locale)}
           data-testid="try-reset"
           className="inline-flex min-h-11 items-center rounded-full px-3 font-semibold text-[#7fd8ff] underline underline-offset-2"
         >

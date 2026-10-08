@@ -1,12 +1,13 @@
 'use client';
 
 /**
- * "Try Link with your centre" (landing page, path A): a personalised demo that lives only in this
- * browser. The visitor's centre name renames the sample scenario; they are signed in as the role
- * they chose. Nothing leaves the browser in `mock` mode (the in-browser MSW backend answers);
- * "Reset demo" wipes it all. Demo-only code: the pilot build swaps this module for a stub.
+ * "Try Link" (the website's role chooser, `/{lang}/try`): the visitor picks Parent, Teacher or
+ * Centre owner and lands in that role's app, signed in as the sample user. Picking a role never
+ * resets data, so every role sees the same story (the local demo's shared mock server); "Reset
+ * demo" is the only reset. In `mock` mode nothing leaves the browser. Demo-only code: the pilot
+ * build swaps this module for a stub.
  */
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 import { setApiBaseUrl } from '@link/api-client';
 import { demoApi } from '@link/api-client/demo';
 import { resetMockDb } from '@link/mocks';
@@ -15,11 +16,9 @@ import type { Locale } from '@link/i18n';
 import type { Session } from '../session';
 import { API_BASE_URL, API_MODE } from '../api-mode';
 
-export type TryRole = 'owner' | 'reception' | 'teacher';
+export type TryRole = 'parent' | 'teacher' | 'owner';
 export interface TrySession {
-  centreName: string;
   role: TryRole;
-  teachers: number | null;
   lang: Locale;
   startedAt: number;
   /** The "Want this for your real centre?" card was shown and closed. */
@@ -27,16 +26,18 @@ export interface TrySession {
 }
 
 export const TRY_KEY = 'link.try';
-/** Browser keys the personalised demo uses (wiped by "Reset demo"). */
+/** Browser keys the demo uses (wiped by "Reset demo"). */
 const DEMO_KEYS = [TRY_KEY, 'link.session', 'link.mock.fu.v4', 'link.mock.db.v1'];
 
+/** The sample accounts (the mock server prints them: code 123456). */
 const SESSIONS: Record<Exclude<TryRole, 'teacher'>, Session> = {
+  parent: { accessToken: 'mock.usr-parent', userId: 'usr-parent', roles: ['parent'] },
   owner: { accessToken: 'mock.usr-owner', userId: 'usr-owner', roles: ['centre_owner'] },
-  reception: {
-    accessToken: 'mock.usr-reception',
-    userId: 'usr-reception',
-    roles: ['centre_staff'],
-  },
+};
+/** Each role's home: owner → Room schedule, parent → Search; the teacher app opens on Groups. */
+const HOME: Record<Exclude<TryRole, 'teacher'>, (lang: Locale) => string> = {
+  parent: (lang) => `/${lang}/search`,
+  owner: (lang) => `/${lang}/centre/cen-nour/schedule`,
 };
 const TEACHER_APP = process.env.NEXT_PUBLIC_TEACHER_APP_URL || 'http://localhost:8081';
 
@@ -56,44 +57,37 @@ export function writeTry(s: TrySession) {
   }
 }
 
-/**
- * Sets up the demo and says where to go. Owner and Reception open the owner web here, signed in;
- * a teacher opens the teacher app, which renames its own copy of the scenario. In `mock` mode the
- * scenario is reset right here in the browser (no request at all); with the demo's shared mock
- * server (`pnpm demo`) it is reset there.
- */
-export async function startTry(input: {
-  centreName: string;
-  role: TryRole;
-  teachers: number | null;
-  lang: Locale;
-}): Promise<string> {
-  writeTry({ ...input, startedAt: Date.now() });
-  if (input.role === 'teacher') {
-    const q = new URLSearchParams({ centre: input.centreName, lang: input.lang });
-    return `${TEACHER_APP}/try?${q}`;
-  }
-  const settings = { phase2: true, marketplace: false, offline: false, realStt: false };
+/** The demo's switches, with no reset: the marketplace and the follow-up product both on (OD-58). */
+const SETTINGS = { phase2: true, marketplace: true, offline: false, realStt: false };
+
+/** Signs in the role's sample user and says where to go. */
+export async function startTry(input: { role: TryRole; lang: Locale }): Promise<string> {
+  const prior = readTry();
+  writeTry({ ...input, startedAt: prior?.startedAt ?? Date.now(), cardDone: prior?.cardDone });
+  if (input.role === 'teacher')
+    return `${TEACHER_APP}/try?${new URLSearchParams({ lang: input.lang })}`;
   if (API_MODE === 'mock') {
-    resetMockDb();
-    resetFollowupDb({ centreName: input.centreName });
-    setDemo(settings);
+    // First visit in this browser: the sample scenario; later visits keep what was done.
+    if (!prior) {
+      resetMockDb();
+      resetFollowupDb();
+    }
+    setDemo(SETTINGS);
   } else {
-    // The website pages do not load the app providers, which set the API address: set it here,
-    // or these calls would go to the web app itself (404).
+    // The website pages load no app providers, which set the API address: set it here, or these
+    // calls would go to the web app itself (404).
     setApiBaseUrl(API_BASE_URL);
-    await demoApi.reset(input.centreName);
-    await demoApi.settings(settings);
+    await demoApi.settings(SETTINGS);
   }
   try {
     localStorage.setItem('link.session', JSON.stringify(SESSIONS[input.role]));
   } catch {
-    /* storage blocked: the centre entry asks to sign in */
+    /* storage blocked: the app asks to sign in */
   }
-  return `/${input.lang}/centre/cen-nour/today`;
+  return HOME[input.role](input.lang);
 }
 
-/** True while a personalised demo is on in this browser (read synchronously: no flash of flags). */
+/** True while a demo is on in this browser (read synchronously: no flash of flags). */
 export function useTryOn(): boolean {
   return useSyncExternalStore(
     () => () => {},
@@ -102,15 +96,12 @@ export function useTryOn(): boolean {
   );
 }
 
-/** The visitor's centre name while a personalised demo is on (the owner shell shows it). */
-export function useTryCentre(): string | null {
-  const [name, setName] = useState<string | null>(null);
-  useEffect(() => setName(readTry()?.centreName ?? null), []);
-  return name;
-}
-
-/** "Reset demo": everything the demo kept in this browser, then back to the landing page. */
-export function resetTry(lang: Locale) {
+/** "Reset demo": the shared sample scenario again, this browser's demo data wiped, then home. */
+export async function resetTry(lang: Locale) {
+  if (API_MODE !== 'mock') {
+    setApiBaseUrl(API_BASE_URL);
+    await demoApi.reset().catch(() => undefined);
+  }
   try {
     for (const k of DEMO_KEYS) localStorage.removeItem(k);
   } catch {
