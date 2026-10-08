@@ -297,7 +297,7 @@ test.describe('A18 / C01 / A16', () => {
 });
 
 test.describe('10 §1: what Reception may do', () => {
-  test('Reception works room requests and reviews, but rent income and editing halls are the owner\'s', async ({
+  test("Reception works room requests and reviews, but rent income and editing halls are the owner's", async ({
     page,
   }) => {
     await market();
