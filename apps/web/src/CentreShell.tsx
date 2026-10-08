@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -17,6 +17,8 @@ import {
   Sun,
   UserCog,
   Wallet,
+  Inbox,
+  Sparkles,
 } from 'lucide-react';
 import { Card, ErrorState, Logo, SideNav, StatusBadge, type SideNavSection } from '@link/ui';
 import { createTranslator, type Locale } from '@link/i18n';
@@ -25,10 +27,11 @@ import { ApiError, ownerApi, pilotApi, useMe } from '@link/api-client';
 import { RequireStaff } from './owner/common';
 import { AssistantPanel } from './owner/AssistantPanel';
 import { useFlag } from './flags';
+import { useFollowupExtra } from './features';
 import { LangSwitch } from './LangSwitch';
 import { API_MODE, PILOT } from './api-mode';
 import { useSession } from './session';
-import { useTryCentre } from '@demo';
+import { FOLLOWUP_SECTIONS } from './centre-routes';
 
 /**
  * Owner web shell (11 §3 side navigation). Follow-up items (Phase 2) show with `followup.owner_nav`;
@@ -49,14 +52,10 @@ export function CentreShell({
   const pathname = usePathname() ?? '';
   const router = useRouter();
   const followUp = useFlag('followup.owner_nav');
-  const assistant = useFlag('followup.assistant') && followUp;
+  const assistantFlag = useFlag('followup.assistant');
   // Pilot: the centre's own name instead of the sample centre (A1).
   const pilotInfo = useQuery({ queryKey: ['pilot-info'], queryFn: pilotApi.info, enabled: PILOT });
-  // A personalised demo ("Try Link with your centre") shows the visitor's centre name.
-  const tryCentre = useTryCentre();
-  const centreName = PILOT
-    ? (pilotInfo.data?.centreName ?? '')
-    : (tryCentre ?? t('owner.shell.centre'));
+  const centreName = PILOT ? (pilotInfo.data?.centreName ?? '') : t('owner.shell.centre');
   const marketplace = useFlag('marketplace.enabled');
   const { session, signOut } = useSession();
   const me = useMe({ enabled: !!session });
@@ -70,10 +69,53 @@ export function CentreShell({
   const unknownCentre = centre.error instanceof ApiError && centre.error.problem.status === 404;
   const [assistantOpen, setAssistantOpen] = useState(false);
 
+  // Follow-up is a paid extra per centre (OD-58): with it off, none of its items show.
+  const extra = useFollowupExtra(centreId);
+  const followUpOn = followUp && extra === true;
   const sections: SideNavSection[] = [];
-  if (followUp)
+  if (marketplace)
+    sections.push({
+      id: 'marketplace',
+      label: t('centre.nav.marketplace'),
+      items: [
+        {
+          id: 'profile',
+          label: t('centre.nav.publicProfile'),
+          icon: <Building2 />,
+          href: `${base}/profile`,
+        },
+        {
+          id: 'schedule',
+          label: t('centre.nav.roomSchedule'),
+          icon: <CalendarDays />,
+          href: `${base}/schedule`,
+        },
+        {
+          id: 'rooms',
+          label: t('centre.nav.roomsRent'),
+          icon: <DoorOpen />,
+          href: `${base}/rooms`,
+        },
+        {
+          id: 'requests',
+          label: t('centre.nav.roomRequests'),
+          icon: <Inbox />,
+          href: `${base}/requests`,
+        },
+        {
+          id: 'rent-income',
+          label: t('centre.nav.rentIncome'),
+          icon: <Wallet />,
+          href: `${base}/rent-income`,
+        },
+        { id: 'reviews', label: t('centre.nav.reviews'), icon: <Star />, href: `${base}/reviews` },
+      ],
+    });
+  if (followUpOn)
     sections.push({
       id: 'followup',
+      label: t('centre.nav.followup'),
+      tag: PILOT ? undefined : t('centre.nav.paidExtra'),
       items: [
         { id: 'today', label: t('owner.nav.today'), icon: <Sun />, href: `${base}/today` },
         {
@@ -96,68 +138,45 @@ export function CentreShell({
         },
         {
           id: 'communication',
-          label: t('owner.nav.communication'),
+          label: t('centre.nav.parentMessages'),
           icon: <MessagesSquare />,
           href: `${base}/communication`,
         },
-      ],
-    });
-  if (marketplace)
-    sections.push({
-      id: 'marketplace',
-      label: t('centre.nav.marketplace'),
-      items: [
+        { id: 'rules', label: t('owner.nav.rules'), icon: <Settings2 />, href: `${base}/rules` },
         {
-          id: 'profile',
-          label: t('centre.nav.publicProfile'),
-          icon: <Building2 />,
-          href: `${base}/profile`,
-        },
-        {
-          id: 'schedule',
-          label: t('centre.nav.roomSchedule'),
-          icon: <CalendarDays />,
-          href: `${base}/schedule`,
-        },
-        { id: 'reviews', label: t('centre.nav.reviews'), icon: <Star />, href: `${base}/reviews` },
-        {
-          id: 'rooms',
-          label: t('centre.nav.roomsRequests'),
-          icon: <DoorOpen />,
-          href: `${base}/rooms`,
-        },
-        {
-          id: 'rent-income',
-          label: t('centre.nav.rentIncome'),
-          icon: <Wallet />,
-          href: `${base}/rent-income`,
+          id: 'activity',
+          label: t('owner.nav.activity'),
+          icon: <Activity />,
+          href: `${base}/activity`,
         },
       ],
     });
   sections.push({
     id: 'workspace',
-    label: t('centre.nav.workspace'),
     items: [
-      ...(followUp
+      { id: 'staff', label: t('centre.nav.staff'), icon: <UserCog />, href: `${base}/staff` },
+      // A centre without the extra sees what it would get (no prices: "Contact us").
+      ...(marketplace && extra === false && !PILOT
         ? [
             {
-              id: 'rules',
-              label: t('owner.nav.rules'),
-              icon: <Settings2 />,
-              href: `${base}/rules`,
-            },
-            {
-              id: 'activity',
-              label: t('owner.nav.activity'),
-              icon: <Activity />,
-              href: `${base}/activity`,
+              id: 'followup-extra',
+              label: t('centre.nav.whatsIncluded'),
+              icon: <Sparkles />,
+              href: `${base}/followup-extra`,
             },
           ]
         : []),
-      { id: 'staff', label: t('centre.nav.staff'), icon: <UserCog />, href: `${base}/staff` },
     ],
   });
 
+  // A follow-up page opened without the extra (a bookmark, an old link) shows what it includes.
+  const section = pathname.slice(base.length + 1).split('/')[0] ?? '';
+  const locked = !PILOT && extra === false && FOLLOWUP_SECTIONS.has(section);
+  useEffect(() => {
+    if (locked) router.replace(`${base}/followup-extra`);
+  }, [locked, base, router]);
+
+  const assistant = assistantFlag && followUpOn;
   const all = sections.flatMap((s) => s.items);
   // A message belongs to its follow-up (A06/A09 are reached from A03), so Follow-ups stays highlighted.
   const path = pathname.replace(`${base}/messages`, `${base}/follow-ups`);
@@ -255,7 +274,7 @@ export function CentreShell({
             </div>
           </header>
           <main id="main" className="flex flex-1 flex-col gap-6 p-8">
-            {children}
+            {locked ? null : children}
           </main>
         </div>
         {assistant ? <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} /> : null}

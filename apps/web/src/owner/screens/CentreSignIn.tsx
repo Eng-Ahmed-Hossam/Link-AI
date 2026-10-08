@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { ApiError, pilotApi } from '@link/api-client';
+import { CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
 import { Button, Callout, Card, Input, Logo } from '@link/ui';
 import { DevSignIn } from '@demo';
 import { useI18n } from '../../i18n-client';
@@ -13,13 +15,15 @@ import { API_MODE, PILOT } from '../../api-mode';
 import { isStaff, num } from '../common';
 import { formatTime } from '@link/i18n';
 import { centreNext } from '../../centre-routes';
+import { LangSwitch } from '../../LangSwitch';
+import { OwnerPhoneSignIn } from './OwnerPhoneSignIn';
 
 const CENTRE = 'cen-nour';
 
 /**
- * Centre workspace entry. Phone sign-in for owners (A18) is a Phase 1 screen (Batch 2, parked);
- * in mock modes this page offers the sample owner and Reception accounts (dev shortcut). The
- * concierge pilot signs in with the person's name and 6-digit PIN (A3).
+ * Centre workspace entry. A18: owners and staff sign in with a phone code (in the demo, code
+ * 123456; the sample owner and Reception also have one-tap shortcuts). The concierge pilot signs
+ * in with the person's name and 6-digit PIN (A3).
  *
  * `?next=/follow-ups/case-110` (a link that left the centre id out, proxy.ts) lands on that page of
  * the person's own centre once they are signed in.
@@ -29,33 +33,69 @@ export function CentreSignIn() {
   const router = useRouter();
   const { session, ready } = useSession();
   const followUp = useFlag('followup.owner_nav');
+  const marketplace = useFlag('marketplace.enabled');
   const next = centreNext(useSearchParams().get('next'));
   const centre = session?.centreId ?? CENTRE;
-  const landing = `/${locale}/centre/${centre}${next ?? (followUp ? '/today' : '/staff')}`;
+  const landing = `/${locale}/centre/${centre}${next ?? (marketplace ? '/schedule' : followUp ? '/today' : '/staff')}`;
 
   useEffect(() => {
     if (ready && isStaff(session?.roles)) router.replace(landing);
   }, [ready, session, landing, router]);
 
-  return (
-    <main id="main" className="flex min-h-dvh items-center justify-center bg-bg p-6">
-      <Card padding="lg" className="flex w-full max-w-md flex-col gap-4">
-        <Logo variant="lockup-light" size={32} label={t('common.appName')} />
-        {PILOT ? (
+  if (PILOT)
+    return (
+      <main id="main" className="flex min-h-dvh items-center justify-center bg-bg p-6">
+        <Card padding="lg" className="flex w-full max-w-md flex-col gap-4">
+          <Logo variant="lockup-light" size={32} label={t('common.appName')} />
           <PilotSignIn next={next} />
-        ) : (
-          <>
-            <h1 className="text-title text-navy">{t('owner.signIn.title')}</h1>
-            <Callout tone="info">{t('owner.signIn.pending')}</Callout>
-            {API_MODE !== 'live' ? (
+        </Card>
+      </main>
+    );
+
+  return (
+    <div className="grid min-h-dvh bg-bg lg:grid-cols-[minmax(0,620px)_1fr]">
+      <aside className="hidden flex-col justify-between gap-10 bg-navy p-12 text-white lg:flex">
+        <Logo variant="lockup-dark" size={40} label={t('common.appName')} />
+        <div className="flex flex-col gap-5">
+          <p className="text-display">{t('owner.signIn.panelTitle')}</p>
+          <p className="text-body text-white/75">{t('owner.signIn.panelBody')}</p>
+          <ul className="flex flex-col gap-3">
+            {(['panel1', 'panel2', 'panel3'] as const).map((k) => (
+              <li key={k} className="flex items-center gap-3 text-body text-white/90">
+                <CheckCircle2 aria-hidden className="size-5 shrink-0 text-blue" />
+                {t(`owner.signIn.${k}`)}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="text-caption text-white/60">{t('owner.signIn.sample')}</p>
+      </aside>
+      <main id="main" className="flex flex-col items-center justify-center gap-4 p-6">
+        <div className="flex w-full max-w-md justify-end">
+          <LangSwitch locale={locale} />
+        </div>
+        <Card padding="lg" className="flex w-full max-w-md flex-col gap-4">
+          <span className="lg:hidden">
+            <Logo variant="lockup-light" size={32} label={t('common.appName')} />
+          </span>
+          <h1 className="text-title text-navy">{t('owner.signIn.title')}</h1>
+          <p className="text-body text-muted">{t('owner.signIn.subtitle')}</p>
+          <OwnerPhoneSignIn landing={landing} />
+          {API_MODE !== 'live' ? (
+            <div className="flex flex-col gap-2 border-t border-border pt-4">
+              <p className="text-caption text-muted">{t('owner.signIn.demoHint')}</p>
               <DevSignIn landing={landing} />
-            ) : (
-              <p className="text-body text-muted">{t('owner.signIn.liveUnavailable')}</p>
-            )}
-          </>
-        )}
-      </Card>
-    </main>
+            </div>
+          ) : null}
+        </Card>
+        <p className="max-w-md text-center text-caption text-muted">
+          {t('owner.signIn.newCentre')}{' '}
+          <Link href={`/${locale}/add-your-centre`} className="text-blueText underline">
+            {t('owner.signIn.addCentre')}
+          </Link>
+        </p>
+      </main>
+    </div>
   );
 }
 

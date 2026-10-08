@@ -19,7 +19,20 @@ export const CENTRE_SECTIONS = [
   'rooms',
   'requests',
   'rent-income',
+  'followup-extra',
 ] as const;
+
+/** The Follow-up paid extra's pages (OD-58): without the extra they lead to "What's included". */
+export const FOLLOWUP_SECTIONS = new Set<string>([
+  'today',
+  'follow-ups',
+  'students',
+  'sessions',
+  'communication',
+  'messages',
+  'rules',
+  'activity',
+]);
 
 const SECTIONS = new Set<string>(CENTRE_SECTIONS);
 

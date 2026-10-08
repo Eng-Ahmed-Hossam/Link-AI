@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ownerApi,
+  marketApi,
   api,
   ApiError,
   queryKeys,
@@ -34,13 +35,22 @@ import { ChildSheet } from '../ChildSheet';
 import { useSelectedChild } from '../search-context';
 import { enrolmentTone, money, refundTone, scheduleLabel, shortDate, time } from '../format';
 
-/** P09 · My children (MKT-ENR-07, MKT-ENR-08). The Phase 2 feed is behind `parent.updates_feed`. */
+/**
+ * P09 · My children (MKT-ENR-07, MKT-ENR-08). The updates feed is behind `parent.updates_feed` and
+ * shows only when a child's centre has the Follow-up extra (OD-58).
+ */
 export function P09Children() {
   const { t } = useI18n();
   const me = useMe();
   const { child, children, setChildId, query: kids } = useSelectedChild();
   const enrolments = useMyEnrolments();
-  const feedOn = useFlag('parent.updates_feed');
+  const feedFlag = useFlag('parent.updates_feed');
+  const extra = useQuery({
+    queryKey: ['parent-features'],
+    queryFn: marketApi.parentFeatures,
+    enabled: feedFlag,
+  });
+  const feedOn = feedFlag && extra.data?.followupExtra === true;
   const [addOpen, setAddOpen] = useState(false);
 
   return (

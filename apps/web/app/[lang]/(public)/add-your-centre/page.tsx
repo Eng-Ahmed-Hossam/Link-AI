@@ -1,23 +1,21 @@
-import { Card, PageTitle } from '@link/ui';
-import { ParentShell } from '@/parent/ParentShell';
-import { getT, parseLocale } from '@/i18n';
+import { notFound } from 'next/navigation';
+import { parseLocale } from '@/i18n';
+import { PILOT } from '@/api-mode';
+import { SiteHeader } from '@/site/SiteHeader';
+import { AddCentre } from '@/owner/market/AddCentre';
 
-/** MKT-ACC-02 AC3 → C01 "Add my centre" (Batch 2). Placeholder so P01's owner path has a target. */
-export default async function AddCentrePlaceholder({
-  params,
-}: {
-  params: Promise<{ lang: string }>;
-}) {
-  const t = getT(parseLocale((await params).lang));
+/** C01 · Add my centre (MKT-ACC-02 AC3): the website header, then the request to join. */
+export default async function AddCentrePage({ params }: { params: Promise<{ lang: string }> }) {
+  const lang = parseLocale((await params).lang);
+  if (PILOT) notFound();
   return (
-    <ParentShell eyebrow={t('parent.welcome.eyebrow')}>
-      <PageTitle
-        title={t('parent.welcome.ownerNextTitle')}
-        subtitle={t('parent.welcome.ownerNextBody')}
-      />
-      <Card>
-        <p className="text-caption text-muted">{t('parent.welcome.placeholderBatch2')}</p>
-      </Card>
-    </ParentShell>
+    <>
+      <div className="bg-navy">
+        <SiteHeader locale={lang} />
+      </div>
+      <main id="main" className="min-h-dvh bg-[linear-gradient(180deg,#e8f7fe_0%,#fafdff_100%)]">
+        <AddCentre />
+      </main>
+    </>
   );
 }

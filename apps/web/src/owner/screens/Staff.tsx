@@ -2,9 +2,25 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ApiError, ownerApi, type StaffMember } from '@link/api-client';
+import {
+  ApiError,
+  ownerApi,
+  STAFF_PERMISSIONS,
+  type StaffMember,
+  type StaffPermission,
+} from '@link/api-client';
 import { normalizeEgyptPhone } from '@link/i18n';
-import { Avatar, Button, Callout, Card, Input, Select, StatusBadge } from '@link/ui';
+import {
+  Avatar,
+  Button,
+  Callout,
+  Card,
+  Checkbox,
+  Chip,
+  Input,
+  Select,
+  StatusBadge,
+} from '@link/ui';
 import { useI18n } from '../../i18n-client';
 import { useSession } from '../../session';
 import { useFlag } from '../../flags';
@@ -16,13 +32,19 @@ import { PilotPeople } from './PilotPeople';
 /**
  * A16 · Staff & access (FUP-STF-01, 10 §1). Phase 2 role matrix: owner (full access, rules, staff),
  * Reception (follow-ups, messages, all students read), teacher (own groups only). Whether teachers
- * see guardian phones is open (OD-25): hidden, pending.
+ * see guardian phones is open (OD-25): hidden, pending. Marketplace part (MKT-ACC-04 AC1): a Reception
+ * invite carries the permissions `bookings.manage` (room requests) and `reviews.reply` (10 §1).
  */
+const PERMISSION_KEY = {
+  'bookings.manage': 'owner.staff.permBookings',
+  'reviews.reply': 'owner.staff.permReviews',
+} as const;
 export function OwnerStaff() {
   const { locale, t } = useI18n();
   const { centreId } = useCentre();
   const { session } = useSession();
   const phase2 = useFlag('followup.owner_nav');
+  const marketplace = useFlag('marketplace.enabled');
   const qc = useQueryClient();
   const owner = session?.roles.includes('centre_owner');
   const q = useQuery({
@@ -32,6 +54,7 @@ export function OwnerStaff() {
   });
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<StaffMember['role'] | ''>('');
+  const [perms, setPerms] = useState<StaffPermission[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const roleLabel = (r: StaffMember['role']) =>
@@ -50,9 +73,14 @@ export function OwnerStaff() {
     setBusy(true);
     setError(null);
     try {
-      await ownerApi.invite(centreId, { phone: `+20${national}`, role });
+      await ownerApi.invite(centreId, {
+        phone: `+20${national}`,
+        role,
+        ...(marketplace && role === 'reception' ? { permissions: perms } : {}),
+      });
       setPhone('');
       setRole('');
+      setPerms([]);
       await qc.invalidateQueries({ queryKey: ['staff'] });
     } catch (e) {
       setError(
@@ -158,7 +186,20 @@ export function OwnerStaff() {
                           {roleLabel(s.role)}
                         </StatusBadge>
                       </td>
-                      <td className="px-5 py-3 text-body">{s.scope}</td>
+                      <td className="px-5 py-3 text-body">
+                        <span className="flex flex-col gap-1">
+                          {s.scope}
+                          {marketplace && s.role === 'reception' && s.permissions?.length ? (
+                            <span className="flex flex-wrap gap-1" data-testid="staff-perms">
+                              {s.permissions.map((x) => (
+                                <Chip key={x} tone="info">
+                                  {t(PERMISSION_KEY[x])}
+                                </Chip>
+                              ))}
+                            </span>
+                          ) : null}
+                        </span>
+                      </td>
                       <td className="px-5 py-3 text-body text-muted">
                         {s.lastActiveAt ? dateTime(s.lastActiveAt, locale) : '—'}
                       </td>
@@ -200,6 +241,22 @@ export function OwnerStaff() {
               ]}
             />
           </div>
+          {marketplace && role === 'reception' ? (
+            <fieldset className="flex flex-col gap-2" data-testid="invite-perms">
+              <legend className="mb-1 text-label text-navy">{t('owner.staff.permsTitle')}</legend>
+              {STAFF_PERMISSIONS.map((x) => (
+                <Checkbox
+                  key={x}
+                  checked={perms.includes(x)}
+                  onCheckedChange={(on) =>
+                    setPerms((p) => (on ? [...p, x] : p.filter((y) => y !== x)))
+                  }
+                >
+                  {t(PERMISSION_KEY[x])}
+                </Checkbox>
+              ))}
+            </fieldset>
+          ) : null}
           {error ? (
             <Callout tone="error" role="alert">
               {error}
