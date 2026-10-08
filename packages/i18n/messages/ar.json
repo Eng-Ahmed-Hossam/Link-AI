@@ -1854,5 +1854,7 @@
   "teacher.earnings.howPaid": "كيف دفع أولياء الأمور",
   "teacher.earnings.method.card": "بطاقة",
   "teacher.earnings.method.fawry": "فوري",
-  "teacher.earnings.method.wallet": "محافظ الموبايل"
+  "teacher.earnings.method.wallet": "محافظ الموبايل",
+  "centre.ownerOnly.rent": "دخل الإيجار والتحويلات يراها مالك المركز فقط.",
+  "centre.ownerOnly.edit": "مالك المركز فقط يمكنه تعديل هذا. يمكنك الاطلاع عليه."
 }

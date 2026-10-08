@@ -1851,5 +1851,7 @@
   "teacher.earnings.howPaid",
   "teacher.earnings.method.card",
   "teacher.earnings.method.fawry",
-  "teacher.earnings.method.wallet"
+  "teacher.earnings.method.wallet",
+  "centre.ownerOnly.rent",
+  "centre.ownerOnly.edit"
 ]

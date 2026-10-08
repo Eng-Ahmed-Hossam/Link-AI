@@ -139,6 +139,8 @@ test('2A.1 role chooser: Centre owner opens the Room schedule, signed in — not
   await capture(page, 'W-TRY.ar.mobile');
   await page.getByTestId('role-owner').click();
   await expect(page).toHaveURL(/\/ar\/centre\/cen-nour\/schedule$/, { timeout: 30_000 });
+  // The centre web is a desktop app (Figma owner frames are 1440 wide).
+  await page.setViewportSize({ width: 1440, height: 900 });
   // The banner: "Demo — sample data", "Switch role" and "Reset demo" only (2A.6).
   const banner = page.getByTestId('try-banner');
   await expect(banner).toContainText('عرض تجريبي — بيانات تجريبية');
@@ -152,7 +154,7 @@ test('2A.1 role chooser: Centre owner opens the Room schedule, signed in — not
   await expect(nav.getByRole('link', { name: 'المتابعات', exact: true })).toBeVisible();
   await expect(page.getByTestId('nav-tag-followup')).toHaveText('إضافة مدفوعة');
   await expect(page.getByTestId('followup-today-card')).toBeVisible();
-  await capture(page, 'W-TRY-demo.ar.mobile');
+  await capture(page, 'W-TRY-demo.ar.desktop');
 
   // The proof: every API call was answered inside the browser (the MSW worker), none reached a
   // server, and no request went to any other origin (analytics is off: no key in tests).
@@ -208,6 +210,7 @@ test('path A: after two minutes, a gentle pilot card on a home page only — nev
   await page.goto('/ar/try');
   await page.getByTestId('role-owner').click();
   await expect(page).toHaveURL(/\/schedule$/, { timeout: 30_000 });
+  await page.setViewportSize({ width: 1440, height: 900 });
   await expect(page.getByTestId('try-pilot-card')).toHaveCount(0);
   // In a task (editing rooms) when two minutes pass: nothing appears.
   await page.goto('/ar/centre/cen-nour/rooms');
@@ -218,7 +221,7 @@ test('path A: after two minutes, a gentle pilot card on a home page only — nev
   await expect(page.getByTestId('try-pilot-card')).toBeVisible();
   await expect(page.getByTestId('try-pilot-card')).toContainText('تحب تجرّب ده في مركزك الحقيقي؟');
   await axe(page);
-  await capture(page, 'W-TRY-card.ar.mobile');
+  await capture(page, 'W-TRY-card.ar.desktop');
   await page.getByTestId('try-pilot-card').getByRole('link').click();
   await expect(page).toHaveURL(/\/ar\/pilot$/);
   // Shown once: not again after it was used.

@@ -295,3 +295,26 @@ test.describe('A18 / C01 / A16', () => {
     await expect(page.getByTestId('staff-perms')).toHaveCount(2);
   });
 });
+
+test.describe('10 §1: what Reception may do', () => {
+  test('Reception works room requests and reviews, but rent income and editing halls are the owner\'s', async ({
+    page,
+  }) => {
+    await market();
+    await signIn(page, 'reception', 'en');
+    await page.goto(`${C('en')}/schedule`);
+    await ready(page);
+    await expect(nav(page).getByRole('link', { name: 'Room requests', exact: true })).toBeVisible();
+    await expect(nav(page).getByRole('link', { name: 'Rent income', exact: true })).toHaveCount(0);
+    await page.goto(`${C('en')}/rent-income`);
+    await expect(page.getByTestId('owner-only')).toBeVisible();
+    await expect(page.getByTestId('rent-row')).toHaveCount(0);
+    await page.goto(`${C('en')}/rooms`);
+    await ready(page);
+    await expect(page.getByTestId('owner-only')).toBeVisible();
+    await expect(page.getByTestId('save-hall')).toHaveCount(0);
+    await expect(page.getByTestId('auto-approve-switch')).toBeDisabled();
+    await page.goto(`${C('en')}/requests`);
+    await expect(page.getByTestId('approve-instantly-req-omar')).toBeVisible();
+  });
+});

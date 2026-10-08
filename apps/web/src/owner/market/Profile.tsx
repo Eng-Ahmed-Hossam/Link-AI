@@ -4,10 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, marketApi, type CentreProfileEdit, type Hall } from '@link/api-client';
-import { Button, Card, Chip, Switch, Textarea, useToast } from '@link/ui';
+import { Button, Callout, Card, Chip, Switch, Textarea, useToast } from '@link/ui';
 import { useI18n } from '../../i18n-client';
 import { QueryState } from '../../parent/QueryState';
-import { OwnerPageHeader, num, useCentre } from '../common';
+import { OwnerPageHeader, num, useCentre, useIsOwner } from '../common';
 import { facilityLabel, ruleText } from './shared';
 
 /** The photo tiles are sample gradients in the demo (no uploads, no real photos). */
@@ -147,6 +147,7 @@ function PhotosAbout({ d }: { d: CentreProfileEdit }) {
   const toast = useToast();
   const { centreId } = useCentre();
   const [about, setAbout] = useState(d.about);
+  const owner = useIsOwner();
   const [error, setError] = useState<string | null>(null);
   const save = useMutation({
     mutationFn: (body: { about?: string; photos?: number }) =>
@@ -172,7 +173,7 @@ function PhotosAbout({ d }: { d: CentreProfileEdit }) {
             <span className="sr-only">{t('centre.profile.photoN', { n: i + 1 })}</span>
           </li>
         ))}
-        {d.photos < MAX_PHOTOS ? (
+        {owner && d.photos < MAX_PHOTOS ? (
           <li>
             <button
               type="button"
@@ -190,11 +191,17 @@ function PhotosAbout({ d }: { d: CentreProfileEdit }) {
         label={t('centre.profile.about')}
         value={about}
         onChange={(e) => setAbout(e.target.value)}
+        readOnly={!owner}
         maxLength={600}
         counter={(n, max) => t('common.counter', { n, max })}
         rows={3}
       />
-      <div className="flex items-center gap-3">
+      {!owner ? (
+        <Callout tone="info" data-testid="owner-only">
+          {t('centre.ownerOnly.edit')}
+        </Callout>
+      ) : null}
+      <div className={owner ? 'flex items-center gap-3' : 'hidden'}>
         <Button
           variant="secondary"
           onClick={() => save.mutate({ about })}
@@ -218,6 +225,7 @@ function RoomsTable({ halls, roomsHref }: { halls: Hall[]; roomsHref: string }) 
   const { locale, t } = useI18n();
   const qc = useQueryClient();
   const { centreId } = useCentre();
+  const owner = useIsOwner();
   const list = useMutation({
     mutationFn: ({ id, listed }: { id: string; listed: boolean }) =>
       marketApi.updateHall(id, { listed }),
@@ -274,7 +282,7 @@ function RoomsTable({ halls, roomsHref }: { halls: Hall[]; roomsHref: string }) 
                   checked={h.listed}
                   onCheckedChange={(listed) => list.mutate({ id: h.id, listed })}
                   label={t('centre.profile.listedLabel', { name: h.name })}
-                  disabled={list.isPending}
+                  disabled={list.isPending || !owner}
                   testId={`listed-${h.id}`}
                 />
               </td>

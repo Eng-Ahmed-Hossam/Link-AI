@@ -26,7 +26,7 @@ import {
 } from '@link/ui';
 import { useI18n } from '../../i18n-client';
 import { QueryState } from '../../parent/QueryState';
-import { OwnerPageHeader, num, useCentre } from '../common';
+import { OwnerPageHeader, num, useCentre, useIsOwner } from '../common';
 import { FACILITIES, facilityLabel, ruleText } from './shared';
 
 const DAYS = [6, 7, 1, 2, 3, 4];
@@ -138,6 +138,7 @@ function HallEditor({ hall }: { hall: Hall }) {
     hall.rentRule.amount ? String(hall.rentRule.amount.amountPt / 100) : '',
   );
   const [percent, setPercent] = useState(String(hall.rentRule.percent ?? 20));
+  const owner = useIsOwner();
   const [closed, setClosed] = useState<Set<string>>(
     new Set(hall.slots.filter((s) => s.state === 'closed').map((s) => `${s.weekday}|${s.start}`)),
   );
@@ -306,9 +307,20 @@ function HallEditor({ hall }: { hall: Hall }) {
           {error}
         </p>
       ) : null}
-      <Button block onClick={() => save.mutate()} disabled={save.isPending} data-testid="save-hall">
-        {t('centre.rooms.save')}
-      </Button>
+      {owner ? (
+        <Button
+          block
+          onClick={() => save.mutate()}
+          disabled={save.isPending}
+          data-testid="save-hall"
+        >
+          {t('centre.rooms.save')}
+        </Button>
+      ) : (
+        <Callout tone="info" data-testid="owner-only">
+          {t('centre.ownerOnly.edit')}
+        </Callout>
+      )}
     </Card>
   );
 }
@@ -324,6 +336,7 @@ function AutoApprove({ centreId }: { centreId: string }) {
   useEffect(() => {
     if (q.data) setRules(q.data);
   }, [q.data]);
+  const owner = useIsOwner();
   const put = useMutation({
     mutationFn: (r: AutoApproveRules) => marketApi.putAutoApprove(centreId, r),
     onSuccess: (r) => {
@@ -333,7 +346,10 @@ function AutoApprove({ centreId }: { centreId: string }) {
   });
   if (!rules) return null;
   return (
-    <Card className="flex flex-col gap-3 bg-soft" data-testid="auto-approve">
+    <div
+      className="flex flex-col gap-3 rounded-16 border border-border bg-soft p-4"
+      data-testid="auto-approve"
+    >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-label text-navy" id="auto-title">
           {t('centre.rooms.autoTitle')}
@@ -343,6 +359,7 @@ function AutoApprove({ centreId }: { centreId: string }) {
           onCheckedChange={(enabled) => put.mutate({ ...rules, enabled })}
           label={t('centre.rooms.autoTitle')}
           testId="auto-approve-switch"
+          disabled={!owner}
         />
       </div>
       <StatusBadge tone={rules.enabled ? 'success' : 'neutral'}>
@@ -354,6 +371,6 @@ function AutoApprove({ centreId }: { centreId: string }) {
         <li>✓ {t('centre.rooms.ruleFits')}</li>
       </ul>
       <p className="text-caption text-muted">{t('centre.rooms.autoOtherwise')}</p>
-    </Card>
+    </div>
   );
 }

@@ -115,7 +115,8 @@ export function RoomSchedule() {
                   label={t('centre.schedule.teachersRenting')}
                 />
               </div>
-              <Card padding="none" className="overflow-x-auto">
+              {/* Focusable so a keyboard user can scroll the grid sideways (axe scrollable-region-focusable). */}
+              <Card padding="none" className="overflow-x-auto" tabIndex={0}>
                 <div
                   role="table"
                   aria-label={t('centre.schedule.gridLabel', {

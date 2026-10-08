@@ -1854,5 +1854,7 @@
   "teacher.earnings.howPaid": "How parents paid",
   "teacher.earnings.method.card": "Card",
   "teacher.earnings.method.fawry": "Fawry",
-  "teacher.earnings.method.wallet": "Mobile wallets"
+  "teacher.earnings.method.wallet": "Mobile wallets",
+  "centre.ownerOnly.rent": "Only the centre owner sees rent income and transfers.",
+  "centre.ownerOnly.edit": "Only the centre owner can change this. You can view it."
 }

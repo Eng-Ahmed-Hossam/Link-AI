@@ -59,6 +59,7 @@ export function CentreShell({
   const marketplace = useFlag('marketplace.enabled');
   const { session, signOut } = useSession();
   const me = useMe({ enabled: !!session });
+  const owner = !!session?.roles.includes('centre_owner');
   // An unknown centre id is "not found", not an empty workspace (one centre per world, 10 §2).
   const centre = useQuery({
     queryKey: ['centre-known', centreId],
@@ -102,12 +103,17 @@ export function CentreShell({
           icon: <Inbox />,
           href: `${base}/requests`,
         },
-        {
-          id: 'rent-income',
-          label: t('centre.nav.rentIncome'),
-          icon: <Wallet />,
-          href: `${base}/rent-income`,
-        },
+        // Rent income is the owner's (10 §1).
+        ...(owner
+          ? [
+              {
+                id: 'rent-income',
+                label: t('centre.nav.rentIncome'),
+                icon: <Wallet />,
+                href: `${base}/rent-income`,
+              },
+            ]
+          : []),
         { id: 'reviews', label: t('centre.nav.reviews'), icon: <Star />, href: `${base}/reviews` },
       ],
     });

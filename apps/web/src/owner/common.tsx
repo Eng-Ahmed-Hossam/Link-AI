@@ -16,6 +16,9 @@ export function useCentre() {
   return { centreId, base: `/${locale}/centre/${centreId}` };
 }
 
+/** 10 §1: rent income, the centre profile, halls and rent rules are the owner's alone. */
+export const useIsOwner = () => !!useSession().session?.roles.includes('centre_owner');
+
 export const isStaff = (roles: string[] | undefined) =>
   !!roles?.some((r) => r === 'centre_owner' || r === 'centre_staff');
 
