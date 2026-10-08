@@ -119,7 +119,7 @@ Rules:
 |---|---|
 | In transit | TLS 1.2+ everywhere; HSTS on web; mTLS between internal services |
 | At rest | Managed disk encryption for Postgres, Redis and backups; SSE-KMS for object storage with per-environment keys |
-| Field level | Guardian phones, payout account details and holder names are envelope-encrypted in the app (KMS data keys), with HMAC columns for lookup |
+| Field level | Account phones (`identity.users`), guardian phones, payout account details and holder names are envelope-encrypted in the app (KMS data keys), with HMAC columns for lookup and a last-4 column where a masked number is shown. Locally the key-encryption key comes from `.env.local`, because aws-local keeps KMS keys in memory only |
 | Card data | Never touches Link. Hosted checkout and provider tokens only — PCI scope stays minimal (SAQ A) |
 | Secrets | Secrets manager + KMS; rotated; never in code, images or env files in git; one least-privilege IAM role per deployable (diagram 02) |
 | Object access | Signed URLs only, with short expiry. No public buckets. |

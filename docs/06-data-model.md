@@ -17,11 +17,13 @@ PostgreSQL 16+ with PostGIS and pgvector. This file mirrors the Eraser ERD (diag
 | NULLs in keys | In PostgreSQL `NULL` never equals `NULL`. Every unique constraint over a column that may be NULL uses **`UNIQUE NULLS NOT DISTINCT`** (PostgreSQL 15+). Exclusion constraints can't do that, so they use a generated, non-NULL scope column instead (see `commission_rules.scope_id`). |
 | Tenancy | Every tenant table has `centre_id uuid NOT NULL`. It is copied from the parent row and kept equal to it by a trigger. RLS uses it. Exception: `ledger.payments.centre_id` is NULL for a paid-extras subscription bought by a teacher only. |
 | Cross-schema refs | Plain `uuid`, no FK (module rule 4). Within a schema: real FKs. |
-| Personal data | Marked **[PII]**. Phone numbers outside `identity.users` are encrypted at the app level (`bytea`), with an HMAC column for lookup. |
+| Personal data | Marked **[PII]**. Every stored phone number — account phones in `identity.users` included — is envelope-encrypted at the app level (`bytea`), with an HMAC column for lookup ([10](10-security-privacy.md) §5). |
 | Deletes | Business rows are archived (`archived_at`). Append-only tables reject `UPDATE` and `DELETE` with a trigger and have no grants for them. |
 | Common columns | `created_at timestamptz NOT NULL DEFAULT now()` everywhere. `updated_at` on mutable tables. Not repeated below. |
 
 ### RLS policy codes
+
+core-api sets `app.user_id` from the verified token and loads the rest from `identity.load_context()` (SECURITY DEFINER, the caller's own rows only) in the same transaction, so a revoked role counts on the next request. Policies that would query each other (students ↔ student_guardians) use small SECURITY DEFINER lookups instead (`org.my_student_ids()`), since policies that reference each other recurse.
 
 Each request sets the context with `SET LOCAL`: `app.user_id`, `app.roles`, `app.centre_ids` (centres where the user is owner or staff), `app.teacher_id`, `app.guardian_id`. The app connects as `app_user`, which has **no** `BYPASSRLS`. Workers connect as `app_worker`, with policies per job. Ops connect as `app_ops`.
 
@@ -43,13 +45,15 @@ Each request sets the context with `SET LOCAL`: `app.user_id`, `app.roles`, `app
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
-| phone_e164 | text UNIQUE NOT NULL | **[PII]** Normalised `+20…`. Used for OTP. |
+| phone_hmac | bytea UNIQUE NOT NULL | HMAC-SHA256 of the normalised `+20…` number (key `HMAC_KEY_LOOKUP`). Sign-in and invites look the user up by it (changed: replaces `phone_e164`, decided 2026-10-08) |
+| phone_enc | bytea NOT NULL | **[PII]** The normalised number, envelope-encrypted (AES-256-GCM data key wrapped by `KMS_KEY_FIELDS`). Decrypted only to send an SMS |
+| phone_last4 | text NOT NULL | Last 4 digits, for masked display (`•••• 0003`) |
 | name | text | **[PII]** |
 | language | text | `ar` \| `en`, default `ar` |
 | status | text | `active` \| `suspended` \| `deleted` |
 | deleted_at | timestamptz | Set by a PDPL deletion; personal data is wiped |
 
-Indexes: `UNIQUE(phone_e164)`. RLS: `SELF`, `OPS`.
+Indexes: `UNIQUE(phone_hmac)`. No plaintext phone column. RLS: `SELF`, `OPS`.
 
 ### role_assignments
 | Field | Type | Notes |
@@ -73,7 +77,9 @@ RLS: `SELF` read. The centre owner reads and writes rows for their centre. `OPS`
 |---|---|---|
 | id | uuid PK | |
 | user_id | uuid FK → users | |
-| refresh_token_hash | bytea UNIQUE | Rotated on each use |
+| family_id | uuid | **(added)** Every rotation of one sign-in shares it; reuse of a rotated token revokes the family |
+| refresh_token_hash | bytea UNIQUE | SHA-256 of the token; rotated on each use |
+| client | text | **(added)** `web` (httpOnly cookies) \| `app` (Bearer, device secure storage) |
 | device_label | text | |
 | last_used_at, expires_at, revoked_at | timestamptz | |
 | replaced_by | uuid | Rotation chain; reuse of an old token revokes the chain |
@@ -126,6 +132,7 @@ RLS: `SELF`, `OPS`.
 | curriculum_id | uuid FK → curricula | |
 | code | text | e.g. `SEC2`, `Y10`, `G9` |
 | name_en, name_ar | text | |
+| short_name_en, short_name_ar | text | **(added)** Chip form: "Sec 2", «٢ ثانوي» (07 §2a P-4) |
 | position | int | |
 | confirmed | boolean | `false` until OD-07 is decided |
 
@@ -277,9 +284,11 @@ Created by the landing page's "Get started" form (`POST /v1/leads`, MKT-WEB-01).
 | teacher_count | int NULL | |
 | whatsapp_encrypted, whatsapp_hmac | bytea | **[PII]** |
 | contact_consent_version | text | "Link may contact me" |
+| details | jsonb | **(added)** The rest of the C01 form: governorate, address, subjects, hall range, phone last 4 |
 | status | text | `new` \| `contacted` \| `converted` \| `discarded` |
 | converted_centre_id | uuid NULL | |
 
+A C01 join request is a `centre` lead; when that number signs in with a code, the centre is created (`verification = pending`) with the caller as `centre_owner`, and the lead is converted (decided 2026-10-08).
 RLS: `OPS`; inserts only through the public endpoint (`SYSTEM`). Retention (OD-28, [10](10-security-privacy.md) §4): deleted 6 months after the last contact if not converted; name and WhatsApp number wiped once converted.
 
 ### verification_checks (added)
