@@ -7,7 +7,7 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 import { C, TEACHER_APP, demoState, ready, resetScenario, setDemo } from './helpers';
 
 const ROOT = join(__dirname, '..', '..', '..');
-const GUIDE = join(ROOT, 'docs', 'testing', 'walkthrough.md');
+const GUIDE = join(ROOT, 'docs', 'testing', 'feature-tours.md');
 
 let before: Record<string, unknown>;
 

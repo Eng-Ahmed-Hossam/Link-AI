@@ -2,6 +2,19 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-08 — Step 2B: the connected story
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 2B-1 | `docs/testing/walkthrough.md`, `walkthrough.pdf` | Rewritten around the connected story: for each step the role, address, clicks, what you see and why it matters, in English and Arabic, one page per role switch | Step 2B.3 |
+| 2B-2 | `docs/testing/feature-tours.md` | The earlier hands-on tours, moved from walkthrough.md (their test, `guide.spec.ts`, follows them) | The walkthrough is now the story |
+| 2B-3 | `docs/product/sample-only.md` | What still needs the real backend (accounts, saved data, payments, SMS, WhatsApp, voice, maps, photos, ops, notifications, contact email) | Step 2B report |
+| 2B-4 | `docs/13-open-decisions.md` | CF-44 decided (owner adds halls; a moved pin is "under review" until ops verify); CF-46 and CF-50 agreed as built | Step 2A review, 2026-10-08 |
+| 2B-5 | `docs/06-data-model.md` | `centres.location_status` (`verified` / `under_review`) | CF-44 |
+| 2B-6 | `docs/glossary.md` | Brand row: «لينك» in all Arabic text; the logo keeps the Latin wordmark | Decided 2026-10-08 |
+| 2B-7 | `docs/14-dev-environment.md`, `README.md` | `pnpm check:public-demo`; Demo controls from the banner's "Demo tools" (local demo only); the story and feature-tour guides | Step 2B |
+| 2B-8 | `docs/frontend/screen-log.md`, `docs/product/app-map.md` | Step 2B section; app map links the story and the sample-only list | Step 2B records |
+
 ## 2026-10-08 — Step 2A: one connected product
 
 | # | File | What changed | Why |

@@ -1,4 +1,4 @@
-// docs/testing/walkthrough.md, tour 4 (the pilot), followed click by click on the pilot e2e server.
+// docs/testing/feature-tours.md, tour 4 (the pilot), followed click by click on the pilot e2e server.
 // The guide runs it on the practice centre; the server here has the same synthetic sample roster.
 // Runs after pilot.spec.ts and routes.spec.ts on the same server, so it works with the second
 // teacher (كريم) and a new Reception person, whose sessions and PINs those leave untouched.

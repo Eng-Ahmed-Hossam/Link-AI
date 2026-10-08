@@ -2,7 +2,7 @@
 
 Every role → app → screen → status: the quickest way to find your way around. Product rules: [PRODUCT_BRIEF](../PRODUCT_BRIEF.md). Screen details and differences from Figma: [screen log](../frontend/screen-log.md). Figma inventory: [docs/11 §7](../11-design-system.md#7-screen-inventory).
 
-One way in: the role chooser at `/{lang}/try` opens each app signed in as a sample user. One home per role: Parent → Search, Teacher → My groups, Centre owner → Room schedule. "· Follow-up" marks a screen of the paid extra (on in the demo, OD-58). Thumbnails are the Arabic screenshots from the e2e runs. Run the demo with `pnpm demo`; every screen with one-click sign-in is at http://localhost:3000/ar/dev.
+One way in: the role chooser at `/{lang}/try` opens each app signed in as a sample user. The connected story across the roles, step by step: [walkthrough](../testing/walkthrough.md) (screens in `docs/frontend/walkthroughs/connected-story/`); what is still sample-only: [sample-only](sample-only.md). One home per role: Parent → Search, Teacher → My groups, Centre owner → Room schedule. "· Follow-up" marks a screen of the paid extra (on in the demo, OD-58). Thumbnails are the Arabic screenshots from the e2e runs. Run the demo with `pnpm demo`; every screen with one-click sign-in is at http://localhost:3000/ar/dev.
 
 ## Visitor: Website (`apps/web`, route group `(site)`)
 
@@ -70,10 +70,10 @@ One way in: the role chooser at `/{lang}/try` opens each app signed in as a samp
 |---|---|---|---|---|---|
 | A18 | Owner sign-in (phone + code) | `/{lang}/centre` | [31:233](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=31-233) | built | <img src="../frontend/screenshots/batch-2/A18.ar.png" width="96" alt=""> |
 | C01 | Add my centre to Link | `/{lang}/add-your-centre` | [45:273](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=45-273) | built | <img src="../frontend/screenshots/batch-2/C01.ar.png" width="96" alt=""> |
-| C02 | Public profile editor | `…/profile` | [46:274](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=46-274) | built | <img src="../frontend/screenshots/batch-2/C02.ar.png" width="96" alt=""> |
+| C02 | Public profile editor (Edit pin → "Location under review", CF-44) | `…/profile` | [46:274](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=46-274) | built | <img src="../frontend/screenshots/batch-2/C02.ar.png" width="96" alt=""> |
 | C03 | Room schedule (home) | `/{lang}/centre/[id]/schedule` | [56:375](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=56-375) | built | <img src="../frontend/screenshots/batch-2/C03.ar.png" width="96" alt=""> |
 | C04 | Reviews & private feedback | `…/reviews` | [48:295](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=48-295) | built | <img src="../frontend/screenshots/batch-2/C04.ar.png" width="96" alt=""> |
-| C05 | Rooms & rent | `…/rooms` | [57:364](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=57-364) | built | <img src="../frontend/screenshots/batch-2/C05.ar.png" width="96" alt=""> |
+| C05 | Rooms & rent (+ Add room, CF-44) | `…/rooms` | [57:364](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=57-364) | built | <img src="../frontend/screenshots/batch-2/C05.ar.png" width="96" alt=""> |
 | C06 | Room requests | `…/requests` | [49:307](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=49-307) | built | <img src="../frontend/screenshots/batch-2/C06.ar.png" width="96" alt=""> |
 | C07 | Rent income | `…/rent-income` | [58:358](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=58-358) | built | <img src="../frontend/screenshots/batch-2/C07.ar.png" width="96" alt=""> |
 | C-EXTRA | Follow-up: what's included (centres without the extra) | `…/followup-extra` | — | built | <img src="../frontend/screenshots/batch-2/C-EXTRA.ar.png" width="96" alt=""> |

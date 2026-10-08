@@ -151,6 +151,6 @@ Link demo (sample data only)
   Teacher app  http://localhost:8081                  sign in as the sample teacher (Ms Salma)
   Parent PWA   http://localhost:3000/ar/welcome       sign in: +20 10 0000 0001, code 123456
   Mock server  ${MOCK}/__demo/state
-  Walkthrough  docs/testing/walkthrough.md
+  Walkthrough  docs/testing/walkthrough.md (the connected story; start at http://localhost:3000/ar/try)
   Speech-to-text  ${aiReady ? 'local Whisper ready (Demo controls → "Speech-to-text" to use it)' : 'fixtures only (pnpm ai:models, then restart, for local Whisper)'}
 `);

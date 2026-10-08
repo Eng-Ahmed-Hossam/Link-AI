@@ -28,7 +28,8 @@ function inline(s) {
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1');
 }
 
-export function markdownToHtml(md) {
+export function markdownToHtml(md, { pagePerSection = false } = {}) {
+  let seenH2 = 0;
   const out = [];
   const lines = md.replace(/\r\n?/g, '\n').split('\n');
   let list = null;
@@ -85,7 +86,12 @@ export function markdownToHtml(md) {
     if (h) {
       closeList();
       // Each language prints on its own page: Arabic first, English from a new page.
-      const cls = h[2].startsWith('In English') ? ' class="en"' : '';
+      const cls = h[2].startsWith('In English')
+        ? ' class="en"'
+        : // The walkthrough: one page per role-switch section (every `##` after the first).
+          pagePerSection && h[1].length === 2 && seenH2++ > 0
+          ? ' class="page"'
+          : '';
       out.push(`<h${h[1].length}${cls}>${inline(h[2])}</h${h[1].length}>`);
     } else if (ol || ul) {
       const kind = ol ? 'ol' : 'ul';
@@ -113,7 +119,7 @@ const CSS = `
          line-height: 1.45; color: #12213f; }
   h1 { font-size: 16pt; margin: 0 0 6pt; color: #0b2f6b; }
   h2 { font-size: 12pt; margin: 8pt 0 3pt; color: #0b2f6b; border-bottom: 1px solid #d5dde8; }
-  h2.en { break-before: page; }
+  h2.en, h2.page { break-before: page; }
   p, li { margin: 2pt 0; }
   ol, ul { margin: 2pt 0; padding-inline-start: 18pt; }
   table { border-collapse: collapse; width: 100%; font-size: 9pt; margin: 4pt 0; }
@@ -131,7 +137,7 @@ for (const doc of DOCS) {
   mkdirSync(doc.pdf, { recursive: true });
   const name = basename(doc.md, '.md');
   const md = readFileSync(doc.md, 'utf8');
-  const html = `<!doctype html><html lang="ar"><head><meta charset="utf-8"><style>${CSS}</style></head><body>${markdownToHtml(md)}</body></html>`;
+  const html = `<!doctype html><html lang="ar"><head><meta charset="utf-8"><style>${CSS}</style></head><body>${markdownToHtml(md, { pagePerSection: process.argv.includes('--walkthrough') })}</body></html>`;
   await page.setContent(html, { waitUntil: 'load' });
   const pdf = join(doc.pdf, `${name}.pdf`);
   await page.pdf({ path: pdf, format: 'A4', printBackground: true });

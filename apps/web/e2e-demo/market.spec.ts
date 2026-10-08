@@ -318,3 +318,58 @@ test.describe('10 §1: what Reception may do', () => {
     await expect(page.getByTestId('approve-instantly-req-omar')).toBeVisible();
   });
 });
+
+test.describe('CF-44 (decided 2026-10-08): the owner adds halls and moves the pin', () => {
+  test('"+ Add room" adds a listed hall', async ({ page }) => {
+    await market();
+    await signIn(page, 'owner', 'en');
+    await page.goto(`${C('en')}/rooms`);
+    await ready(page);
+    await page.getByTestId('add-hall').click();
+    const editor = page.getByTestId('hall-editor');
+    await editor.getByLabel('Room name').fill('Room 4');
+    await editor.getByTestId('hall-seats').fill('18');
+    await editor.getByLabel('Rent per session (EGP)').fill('200');
+    await editor.getByRole('button', { name: 'Add room' }).click();
+    await expect(page.locator('[data-testid^="hall-hall-new-"]')).toContainText('Room 4');
+    await axe(page);
+  });
+
+  test('Reception sees no "+ Add room" and no "Edit pin" (10 §1)', async ({ page }) => {
+    await market();
+    await signIn(page, 'reception', 'en');
+    await page.goto(`${C('en')}/rooms`);
+    await ready(page);
+    await expect(page.getByTestId('add-hall')).toHaveCount(0);
+    await page.goto(`${C('en')}/profile`);
+    await ready(page);
+    await expect(page.getByTestId('edit-pin')).toHaveCount(0);
+  });
+
+  test('a moved pin shows "Location under review" on C02 and on P04 until ops verify it', async ({
+    page,
+    browser,
+  }) => {
+    await market();
+    await signIn(page, 'owner', 'en');
+    await page.goto(`${C('en')}/profile`);
+    await ready(page);
+    await page.getByTestId('edit-pin').click();
+    await page.getByTestId('nudge-north').click();
+    await page.getByTestId('location-address').fill('14 Road 9, Maadi');
+    await page.getByTestId('save-pin').click();
+    await expect(page.getByTestId('location-under-review')).toBeVisible();
+    await expect(page.getByTestId('profile-address')).toHaveText('14 Road 9, Maadi');
+    await axe(page);
+    const parent = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await parent.goto('/en/centres/al-nour-maadi');
+    await expect(parent.getByTestId('location-under-review')).toBeVisible();
+    await fetch(`${MOCK}/__demo/verify-location`, {
+      method: 'POST',
+      body: JSON.stringify({ centreId: 'cen-nour' }),
+    });
+    await parent.reload();
+    await expect(parent.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(parent.getByTestId('location-under-review')).toHaveCount(0);
+  });
+});

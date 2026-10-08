@@ -189,3 +189,17 @@ Role chooser, centre marketplace screens (Batch 2), teacher marketplace screens 
 **Sample data:** Al Nour's Room 1 and Room 3 have 24 and 20 seats (Figma: 20 and 12) so the existing groups' seat caps fit their halls (seats ≤ hall). The demo centre has four halls; the 2B story brief says two (to settle in 2B).
 
 **Strings to review:** the website spells the brand «لينك» and the apps "Link" (the new centre screens follow the apps; C01 is a website page and follows the website).
+
+## Step 2B · the connected story (2026-10-08)
+
+One story across the three roles on the shared mock server, tested by clicking in one spec (`apps/web/e2e-demo/story.spec.ts`), with 27 numbered Arabic screenshots in `docs/frontend/walkthroughs/connected-story/`. The guide is `docs/testing/walkthrough.md` (and its PDF, one page per role switch); the earlier feature tours moved to `docs/testing/feature-tours.md`. What is still sample-only: `docs/product/sample-only.md`.
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Story controls | Demo controls (side panel from "Demo tools" in the banner, or `/{lang}/dev`) | built | "Reset story", "Jump to step N" (1–9), "Simulate first / next session done", "Follow-up extra: on/off". Jumps replay steps 1 … N−1 through the same functions the screens call |
+| "Demo tools" in the demo banner | every app page in the local demo | built | Local demo only; production builds compile it out — `pnpm check:public-demo` (CI) and the pilot start-up check prove it |
+| C05 "+ Add room" | `/{lang}/centre/{id}/rooms` | built | CF-44 decided: owner only |
+| C02 "Edit pin" | `/{lang}/centre/{id}/profile` | built | CF-44: map tap or north/south/east/west, address; "Location under review" on C02 and P04 until Link ops verify (a Demo control until the ops console) |
+| Arabic brand name | every Arabic string | done | «لينك» everywhere in Arabic (website and apps); the logo keeps the Latin wordmark |
+
+**Story sample data:** Ms Salma rents Room 1 (24 seats, EGP 250 per session) on Saturdays at 4:00 PM and opens Maths · Secondary 2 (EGP 550 a month or EGP 150 a session, 24 seats). Mariam's month is paid by card; Youssef's seat is held with Fawry (a Secondary 1 child in a Secondary 2 group: the year warning shows and does not block, BR-ENR-09). "Simulate first session done" moves only the story group's calendar a week back (booking, enrolments and records move with it), so the review window and consecutive absences run on real dates.

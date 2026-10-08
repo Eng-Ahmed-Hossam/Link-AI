@@ -17,7 +17,8 @@ pnpm demo:warm   # in a second terminal: compile every page once
 ```
 
 - Landing page: http://localhost:3000/ar · every screen with one-click sign-in: http://localhost:3000/ar/dev
-- Hands-on tour of every feature: [docs/testing/walkthrough.md](docs/testing/walkthrough.md)
+- The connected story, step by step across the three roles: [docs/testing/walkthrough.md](docs/testing/walkthrough.md)
+- Deeper tours of each feature: [docs/testing/feature-tours.md](docs/testing/feature-tours.md)
 
 **Pilot practice** (the concierge pilot with a throwaway training centre; setup in [docs/pilot/runbook.md](docs/pilot/runbook.md)):
 
