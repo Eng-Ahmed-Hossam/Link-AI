@@ -111,7 +111,7 @@ test.describe('nav and landing (CF-29, plan §1.5)', () => {
       'Follow-ups',
       'Students',
       'Sessions',
-      'Parent communication',
+      'Parent messages',
       'Rules & settings',
       'Activity history',
       'Staff',

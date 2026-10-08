@@ -163,7 +163,7 @@ for (const lang of LANGS)
     const errors = watch(page);
     const problems: string[] = [];
     const p = { ...params, recordId: params.draftRecordId, studentId: 'chd-mariam' };
-    // T-TRY resets the shared scenario, so it has its own test below.
+    // T-TRY signs in and changes the demo switches, so it has its own test below.
     for (const s of SCREENS.filter(
       (x) => x.app === 'teacher' && x.modes.includes('demo') && x.id !== 'T-TRY',
     )) {
@@ -175,7 +175,7 @@ for (const lang of LANGS)
     await ctx.close();
   });
 
-test('teacher app /try (path A as a teacher): Today under my centre name, with the demo banner', async ({
+test('teacher app /try (role chooser → Teacher): My groups signed in, with the demo banner', async ({
   browser,
 }) => {
   const ctx = await browser.newContext({
@@ -186,17 +186,22 @@ test('teacher app /try (path A as a teacher): Today under my centre name, with t
   const errors = watch(page);
   const path = fillPath(SCREENS.find((x) => x.id === 'T-TRY')!.path, params)!;
   await page.goto(path);
-  await expect(page.getByTestId('screen-today')).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByTestId('try-banner')).toContainText(DEMO_PARAMS.centreName!);
-  await page.getByTestId('try-reset').click();
+  await expect(page.getByTestId('screen-t09')).toBeVisible({ timeout: 30_000 });
+  const banner = page.getByTestId('try-banner');
+  await expect(banner).toContainText('عرض تجريبي — بيانات تجريبية');
+  await expect(banner.getByTestId('switch-role')).toBeVisible();
+  // Tabs: Groups · Rooms · Earnings · Follow-up (the sample centre has the extra, OD-58).
+  for (const tab of ['مجموعاتي', 'القاعات', 'الأرباح', 'المتابعة'])
+    await expect(page.getByRole('tab', { name: tab })).toBeVisible();
+  // Joining never resets the shared story; "Reset demo" does, and goes to the website.
+  await banner.getByTestId('try-reset').click();
   await page.waitForURL(/localhost:3000\/ar$/);
   expect(errors).toEqual([]);
   await ctx.close();
 });
 
-test('website path A as a centre, on the shared mock server: "List your centre" → try → Today under my centre name', async ({
+test('website role chooser on the shared mock server: "List your centre" → Centre owner → Room schedule', async ({
   page,
-  request,
 }) => {
   test.setTimeout(180_000);
   const errors = watch(page);
@@ -204,20 +209,13 @@ test('website path A as a centre, on the shared mock server: "List your centre" 
   page.on('response', (r) => r.status() >= 400 && failed.push(`${r.status()} ${r.url()}`));
   await page.goto('/ar');
   await page.locator('#pricing a[href="/ar/try?role=centre"]').click();
-  await page.getByLabel('اسم مركزك').fill('مركز الأمل');
-  await page.getByRole('radio', { name: /المالك/ }).click();
-  await page.getByTestId('try-submit').click();
-  // The website pages load no app providers: the try flow must still reach the mock server (it
-  // once called the web app instead: HTTP 404).
-  await expect(page).toHaveURL(/\/ar\/centre\/cen-nour\/today$/, { timeout: 60_000 });
-  await expect(page.getByTestId('try-centre')).toHaveText('مركز الأمل');
+  await page.getByTestId('role-owner').click();
+  // The website pages load no app providers: the role chooser must still reach the mock server
+  // (it once called the web app instead: HTTP 404).
+  await expect(page).toHaveURL(/\/ar\/centre\/cen-nour\/schedule$/, { timeout: 60_000 });
+  await expect(page.getByTestId('try-banner')).toBeVisible();
   expect(failed).toEqual([]);
   expect(errors).toEqual([]);
-  // Put the shared sample scenario back for the other tests and for the people using the demo.
-  const back = await request.post('http://localhost:4010/__demo/reset', {
-    data: { scenario: 'demo-followup' },
-  });
-  expect(back.ok()).toBe(true);
 });
 
 test('links without the centre id and unknown pages', async ({ page }) => {

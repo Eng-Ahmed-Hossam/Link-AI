@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
+import { usePathname } from 'next/navigation';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { setApiBaseUrl, setApiLocale } from '@link/api-client';
 import { MockBadge, ToastProvider } from '@link/ui';
@@ -33,6 +34,8 @@ export function Providers({ locale, children }: { locale: Locale; children: Reac
   );
   const [ready, setReady] = useState(!USE_MSW);
   const t = createTranslator(locale);
+  // Developer tools only on /dev (2A.6); public pages show the demo banner and "Reset demo" only.
+  const devPage = /^\/(ar|en)\/dev(\/|$)/.test(usePathname() ?? '');
   // API calls carry the page language (Accept-Language, 07 §1).
   setApiLocale(locale);
 
@@ -54,8 +57,8 @@ export function Providers({ locale, children }: { locale: Locale; children: Reac
           <TryBar locale={locale} />
           {ready ? children : null}
           {API_MODE !== 'live' ? <MockBadge label={t('common.mockBadge')} /> : null}
-          {USE_MSW ? <DevPanel /> : null}
-          <DemoControls />
+          {USE_MSW && devPage ? <DevPanel /> : null}
+          {devPage ? <DemoControls /> : null}
         </ToastProvider>
       </SessionProvider>
     </QueryClientProvider>

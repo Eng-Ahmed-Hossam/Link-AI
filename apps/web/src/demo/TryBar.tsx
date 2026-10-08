@@ -16,7 +16,7 @@ const CALM_PAGE = /(\/centre\/[^/]+\/(schedule|today|follow-ups)|\/search)$/;
 
 /**
  * The demo banner on every app page while a demo is on: "Demo — sample data", "Switch role" (back to
- * the role chooser), "About this demo" and "Reset demo". After two minutes, a gentle card offering
+ * the role chooser) and "Reset demo" — nothing else on public paths (2A.6). After two minutes, a gentle card offering
  * a free pilot, only on a role's home or an overview (never in the middle of a task).
  */
 export function TryBar({ locale }: { locale: Locale }) {
@@ -61,14 +61,6 @@ export function TryBar({ locale }: { locale: Locale }) {
         >
           {t('common.switchRole')}
         </Link>
-        <details className="group" data-testid="try-about">
-          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center px-2 underline underline-offset-2 [&::-webkit-details-marker]:hidden">
-            {t('landing.demo.about')}
-          </summary>
-          <p className="absolute inset-x-4 top-full z-50 mx-auto mt-1 max-w-lg rounded-16 bg-navy p-4 text-caption text-white shadow-raised">
-            {t('landing.demo.teacherNote')}
-          </p>
-        </details>
         <button
           type="button"
           onClick={() => void resetTry(locale)}

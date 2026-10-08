@@ -1,6 +1,6 @@
 // The public website: the landing page (a copy of Figma 68:616, PRODUCT_BRIEF), path A "Try
-// Link" (a personalised demo in the browser) and the requests emailed to the Link team (path B and
-// the landing's "Get started" form).
+// Link" (the role chooser, 2A.1: each role's app signed in as a sample user, in the browser) and
+// the requests emailed to the Link team (path B and the landing's "Get started" form).
 // Runs in API mode `mock` (the in-browser MSW backend), the mode the public demo ships in.
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -123,7 +123,7 @@ function networkLog(page: Page) {
   return { outside, apiCalls };
 }
 
-test('path A: the demo opens under my centre name, as the owner — and nothing leaves the browser', async ({
+test('2A.1 role chooser: Centre owner opens the Room schedule, signed in — nothing leaves the browser', async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -132,47 +132,43 @@ test('path A: the demo opens under my centre name, as the owner — and nothing 
   await page.goto('/ar');
   await page.getByTestId('cta-try-hero').click();
   await expect(page).toHaveURL(/\/ar\/try$/);
+  // Three roles, one card each.
+  for (const role of ['parent', 'teacher', 'owner'])
+    await expect(page.getByTestId(`role-${role}`)).toBeVisible();
   await axe(page);
   await capture(page, 'W-TRY.ar.mobile');
-  // Nothing typed, nothing chosen: both are asked for.
-  await page.getByTestId('try-submit').click();
-  await expect(page.getByText('اكتب اسم مركزك (حتى ٦٠ حرفًا).')).toBeVisible();
-  await expect(page.getByText('اختر دورًا.')).toBeVisible();
-  await page.getByLabel('اسم مركزك').fill('مركز الأمل');
-  await page.getByRole('radio', { name: /المالك/ }).click();
-  await page.getByLabel('عدد المعلّمين (اختياري)').fill('٨');
-  await page.getByTestId('try-submit').click();
-  await expect(page).toHaveURL(/\/ar\/centre\/cen-nour\/today$/, { timeout: 30_000 });
-  await expect(page.getByTestId('try-banner')).toContainText('عرض تجريبي — بيانات تجريبية');
-  await expect(page.getByTestId('try-centre')).toHaveText('مركز الأمل');
-  // The help text says the teacher demo keeps its own sample data.
-  await page.getByTestId('try-about').locator('summary').click();
-  await expect(page.getByTestId('try-about')).toContainText('تجربة المعلّم تفتح في تطبيقها الخاص');
-  await page.getByTestId('try-about').locator('summary').click();
-  await expect(page.getByRole('navigation').getByText('مركز الأمل').first()).toBeVisible();
-  // The follow-up product, not the marketplace (the demo's flags, whatever the build's defaults).
+  await page.getByTestId('role-owner').click();
+  await expect(page).toHaveURL(/\/ar\/centre\/cen-nour\/schedule$/, { timeout: 30_000 });
+  // The banner: "Demo — sample data", "Switch role" and "Reset demo" only (2A.6).
+  const banner = page.getByTestId('try-banner');
+  await expect(banner).toContainText('عرض تجريبي — بيانات تجريبية');
+  await expect(banner.getByTestId('switch-role')).toHaveAttribute('href', '/ar/try');
+  await expect(banner.getByRole('link')).toHaveCount(1);
+  await expect(banner.getByRole('button')).toHaveCount(1);
+  await expect(page.getByText('Demo controls')).toHaveCount(0);
+  // One connected product (OD-58): the marketplace, and Follow-up as a labelled paid extra.
   const nav = page.getByRole('navigation');
+  await expect(nav.getByRole('link', { name: 'الصفحة العامة' })).toBeVisible();
   await expect(nav.getByRole('link', { name: 'المتابعات', exact: true })).toBeVisible();
-  await expect(nav.getByRole('link', { name: 'الصفحة العامة' })).toHaveCount(0);
-  await expect(page.getByText('نور خالد').first()).toBeVisible();
+  await expect(page.getByTestId('nav-tag-followup')).toHaveText('إضافة مدفوعة');
+  await expect(page.getByTestId('followup-today-card')).toBeVisible();
   await capture(page, 'W-TRY-demo.ar.mobile');
-  // A parent message drafted in the demo speaks for my centre, not the sample one.
-  await page.goto('/ar/centre/cen-nour/follow-ups');
-  await expect(page.getByTestId('try-banner')).toBeVisible();
-  await page.locator('[data-testid^="case-row-"]').first().getByRole('link').first().click();
-  await page.getByTestId('draft-message').click();
-  await expect(page.getByTestId('message-text')).toHaveValue(/مركز الأمل/);
 
   // The proof: every API call was answered inside the browser (the MSW worker), none reached a
   // server, and no request went to any other origin (analytics is off: no key in tests).
   expect(net.outside).toEqual([]);
-  expect(net.apiCalls.length).toBeGreaterThan(5);
+  expect(net.apiCalls.length).toBeGreaterThan(3);
   for (const r of net.apiCalls) {
     const res = await r.response();
     expect(res?.fromServiceWorker(), `${r.method()} ${r.url()}`).toBe(true);
   }
 
+  // "Switch role" goes back to the chooser without resetting the story.
+  await banner.getByTestId('switch-role').click();
+  await expect(page).toHaveURL(/\/ar\/try$/);
   // "Reset demo" wipes the browser and goes home.
+  await page.getByTestId('role-owner').click();
+  await expect(page).toHaveURL(/\/schedule$/, { timeout: 30_000 });
   await page.getByTestId('try-reset').click();
   await expect(page).toHaveURL(/\/ar$/);
   const left = await page.evaluate(() =>
@@ -181,59 +177,52 @@ test('path A: the demo opens under my centre name, as the owner — and nothing 
   expect(left).toEqual([]);
 });
 
-test('path A as Reception and as a teacher (the teacher app opens with my centre)', async ({
+test('2A.1 role chooser: Parent opens Search signed in; Teacher opens the teacher app', async ({
   page,
 }) => {
   await prepare(page);
   await page.goto('/en/try');
-  await page.getByLabel("Your centre's name").fill('Al Amal Centre');
-  await page.getByRole('radio', { name: /Reception/ }).click();
-  await page.getByTestId('try-submit').click();
-  await expect(page).toHaveURL(/\/en\/centre\/cen-nour\/today$/, { timeout: 30_000 });
-  await expect(page.getByTestId('signed-in-as')).toContainText('Dina Adel');
+  await page.getByTestId('role-parent').click();
+  await expect(page).toHaveURL(/\/en\/search$/, { timeout: 30_000 });
+  await expect(page.getByTestId('try-banner')).toBeVisible();
   await page.getByTestId('try-reset').click();
   await expect(page).toHaveURL(/\/en$/);
-  // Teacher: the browser goes to the teacher app's /try with the name and the language.
+  // Teacher: the browser goes to the teacher app's /try with the language (no centre name).
   await page.route('http://localhost:8081/**', (r) =>
     r.fulfill({ status: 200, contentType: 'text/html', body: '<p>teacher app</p>' }),
   );
   await page.goto('/ar/try');
-  await page.getByLabel('اسم مركزك').fill('مركز الأمل');
-  await page.getByRole('radio', { name: /المعلّم/ }).click();
-  await page.getByTestId('try-submit').click();
+  await page.getByTestId('role-teacher').click();
   await page.waitForURL(/localhost:8081\/try/);
   const u = new URL(page.url());
-  expect(u.searchParams.get('centre')).toBe('مركز الأمل');
   expect(u.searchParams.get('lang')).toBe('ar');
+  expect(u.searchParams.get('centre')).toBeNull();
 });
 
-test('path A: after two minutes, a gentle pilot card on Today only — never mid-task', async ({
+test('path A: after two minutes, a gentle pilot card on a home page only — never mid-task', async ({
   page,
 }) => {
   test.setTimeout(120_000);
   await page.clock.install();
   await prepare(page);
   await page.goto('/ar/try');
-  await page.getByLabel('اسم مركزك').fill('مركز الأمل');
-  await page.getByRole('radio', { name: /الاستقبال/ }).click();
-  await page.getByTestId('try-submit').click();
-  await expect(page).toHaveURL(/\/today$/, { timeout: 30_000 });
+  await page.getByTestId('role-owner').click();
+  await expect(page).toHaveURL(/\/schedule$/, { timeout: 30_000 });
   await expect(page.getByTestId('try-pilot-card')).toHaveCount(0);
-  // In a task (the rules page) when two minutes pass: nothing appears.
-  await page.goto('/ar/centre/cen-nour/rules');
+  // In a task (editing rooms) when two minutes pass: nothing appears.
+  await page.goto('/ar/centre/cen-nour/rooms');
   await page.clock.fastForward('02:05');
   await expect(page.getByTestId('try-pilot-card')).toHaveCount(0);
-  // Back on Today (between tasks): the card, pre-filled with the centre name.
-  await page.goto('/ar/centre/cen-nour/today');
+  // Back on the owner's home (between tasks): the card.
+  await page.goto('/ar/centre/cen-nour/schedule');
   await expect(page.getByTestId('try-pilot-card')).toBeVisible();
   await expect(page.getByTestId('try-pilot-card')).toContainText('تحب تجرّب ده في مركزك الحقيقي؟');
   await axe(page);
   await capture(page, 'W-TRY-card.ar.mobile');
   await page.getByTestId('try-pilot-card').getByRole('link').click();
-  await expect(page).toHaveURL(/\/ar\/pilot\?centre=/);
-  await expect(page.getByLabel('اسم المركز')).toHaveValue('مركز الأمل');
+  await expect(page).toHaveURL(/\/ar\/pilot$/);
   // Shown once: not again after it was used.
-  await page.goto('/ar/centre/cen-nour/today');
+  await page.goto('/ar/centre/cen-nour/schedule');
   await expect(page.getByTestId('try-banner')).toBeVisible();
   await expect(page.getByTestId('try-pilot-card')).toHaveCount(0);
 });
