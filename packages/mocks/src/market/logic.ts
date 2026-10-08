@@ -876,6 +876,7 @@ export function createGroup(teacherKey: string, b: NewGroupBody) {
     offersMonthlyRecurring: b.offersMonthlyRecurring,
     seatCap: b.seatCap,
     takenUpcoming: [0],
+    startsOn: bk!.startsOn,
   });
   bk!.groupId = id;
   db.persist();
@@ -1116,4 +1117,18 @@ export function reportReview(id: string, reason: string) {
   m().reports[id] = { reason: reason.trim(), at: new Date().toISOString() };
   db.persist();
   return { ok: true as const };
+}
+
+// ── the connected story (Step 2B, demo only) ───────────────────────────────────
+/** Moves a group opened in a booked slot `days` earlier: the group, its booking and the request. */
+export function shiftOpenedGroup(groupId: string, days: number) {
+  const g = m().newGroups.find((x) => x.id === groupId);
+  if (!g?.startsOn) fail(404, 'not_found', 'Only a group opened in a booked slot can move.');
+  g!.startsOn = addDays(g!.startsOn!, -days);
+  for (const b of m().bookings.filter((x) => x.groupId === groupId)) {
+    b.startsOn = addDays(b.startsOn, -days);
+    const r = m().requests.find((x) => x.bookingId === b.id);
+    if (r) r.startsOn = addDays(r.startsOn, -days);
+  }
+  db.persist();
 }

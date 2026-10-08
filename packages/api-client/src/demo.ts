@@ -50,7 +50,24 @@ async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Pr
   return json as T;
 }
 
+/** The connected story (Step 2B): where it is, and the ids the screens and tests need. */
+export interface StoryState {
+  requestId: string | null;
+  stage: string | null;
+  bookingId: string | null;
+  groupId: string | null;
+  enrolmentId: string | null;
+  sessionsDone: number;
+  followupExtra: boolean;
+}
+
 export const demoApi = {
+  /** The connected story's controls: reset it, jump to step N (1–9), complete the next session. */
+  story: () => call<StoryState>('GET', '/__demo/story'),
+  storyReset: () => call<StoryState>('POST', '/__demo/story/reset', {}),
+  storyJump: (step: number) => call<StoryState>('POST', '/__demo/story/jump', { step }),
+  storySessionDone: () => call<StoryState>('POST', '/__demo/story/session-done', {}),
+  storyExtra: (on: boolean) => call<StoryState>('POST', '/__demo/story/extra', { on }),
   state: () => call<DemoSnapshot>('GET', '/__demo/state'),
   /** A fresh demo-followup scenario; `centreName` renames the sample centre (landing, path A). */
   reset: (centreName?: string) =>

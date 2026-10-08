@@ -9,7 +9,7 @@
  */
 import type { L } from '../data';
 import * as mfx from '../data';
-import { allGroups, sessionsOf as marketplaceSessions } from '../db';
+import { allGroups, enrolmentRows, market, sessionsOf as marketplaceSessions } from '../db';
 import { addDays, cairoToUtc, cairoToday, isoWeekday } from '../time';
 import * as fx from './data';
 
@@ -111,6 +111,58 @@ export function demoWorld(): WorldData {
       active: true,
     })),
     startDate: null,
+  };
+}
+
+/** Seats that make a student part of a group's follow-up (paid and running). */
+const MEMBER_STATUSES = ['confirmed', 'past_due'];
+
+/**
+ * The connected story (Step 2B): a group a teacher opens in a booked slot at the demo centre joins
+ * the follow-up world, with the students who hold a paid seat as its members. Their guardian is
+ * the parent's guardian record, so approved updates reach the parent's P09.
+ */
+export function withOpenedGroups(base: WorldData): WorldData {
+  if (base.kind !== 'demo') return base;
+  const opened = market().newGroups.filter((g) => g.centreId === fx.DEMO_CENTRE_ID);
+  if (!opened.length) return base;
+  const groups: WorldGroup[] = [];
+  const members: WorldData['members'] = [];
+  const students = [...base.students];
+  const parentGuardian = base.guardians.find((x) => x.userId === mfx.parent.id);
+  for (const og of opened) {
+    const g = allGroups().find((x) => x.id === og.id) ?? og;
+    const teacherUser = mfx.staff.find((u) => u.teacherId === g.teacherId);
+    if (!teacherUser) continue;
+    const subject = mfx.subjects.find((x) => x.id === g.subjectId)!.name;
+    const year = mfx.schoolYears.find((x) => x.id === g.schoolYearId)!.short;
+    groups.push({
+      id: g.id,
+      name: { en: `${year.en} · ${subject.en}`, ar: `${year.ar} · ${subject.ar}` },
+      subject,
+      teacherUserId: teacherUser.id,
+      weekdays: g.weekdays,
+      startTime: g.startTime,
+      endTime: g.endTime,
+    });
+    for (const e of enrolmentRows())
+      if (e.groupId === g.id && MEMBER_STATUSES.includes(e.status)) {
+        members.push({ groupId: g.id, studentId: e.studentId });
+        const child = mfx.children.find((c) => c.id === e.studentId);
+        if (child && parentGuardian && !students.some((x) => x.id === child.id))
+          students.push({
+            id: child.id,
+            name: child.name,
+            gender: null,
+            guardianId: parentGuardian.id,
+          });
+      }
+  }
+  return {
+    ...base,
+    groups: [...base.groups, ...groups],
+    members: [...base.members, ...members],
+    students,
   };
 }
 

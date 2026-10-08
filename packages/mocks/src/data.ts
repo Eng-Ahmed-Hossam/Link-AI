@@ -277,6 +277,8 @@ export interface GroupFx {
   seatCap: number;
   /** Seats already taken by other (fixture) students in upcoming sessions, by index; the last value repeats. */
   takenUpcoming: number[];
+  /** A group opened in a booked slot starts on the booking's first day (no sessions before it). */
+  startsOn?: string;
 }
 
 export const groups: GroupFx[] = [

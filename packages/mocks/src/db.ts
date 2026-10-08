@@ -215,6 +215,8 @@ function save() {
 
 export function resetMockDb() {
   state = fresh();
+  // Ids of groups opened after a reset repeat (grp-new-…): drop calendars cached before it.
+  clearSessionCache();
   save();
 }
 
@@ -282,6 +284,8 @@ function ratingFrom(dist: [number, number, number, number, number]): RatingSumma
 }
 
 /** Sessions of a group: from 5 weeks ago to 9 weeks ahead, on its weekdays (Cairo dates). */
+/** Cleared when a group's calendar moves (the connected story's "Simulate session done"). */
+export const clearSessionCache = () => sessionCache.clear();
 const sessionCache = new Map<
   string,
   { id: string; date: string; startsAt: string; endsAt: string }[]
@@ -295,6 +299,7 @@ export function sessionsOf(groupId: string) {
   const out: { id: string; date: string; startsAt: string; endsAt: string }[] = [];
   for (let d = -35; d <= 63; d++) {
     const date = addDays(today, d);
+    if (g.startsOn && date < g.startsOn) continue;
     if (g.weekdays.includes(isoWeekday(date))) {
       out.push({
         id: `${groupId}~${date}`,
@@ -1124,4 +1129,31 @@ export function createReview(
   s.idem[key] = { kind: 'review', id: row.id };
   save();
   return { replayed: false, dto: { id: row.id, status: row.status } };
+}
+
+// ── the connected story (Step 2B, demo only) ───────────────────────────────────
+/** `grp-x~2026-10-17` → the same session id `days` earlier (session ids carry their Cairo date). */
+const shiftSessionId = (id: string, days: number) => {
+  const [g, date] = id.split('~');
+  return date ? `${g}~${addDays(date, -days)}` : id;
+};
+
+/** Lands every pending payment webhook now (Jump to step: no waiting for the mock provider). */
+export function settlePayments() {
+  const s = load();
+  for (const e of s.enrolments) if (e.pendingWebhook) e.pendingWebhook.dueAt = 0;
+  tick();
+  save();
+}
+
+/** Moves one group's enrolments `days` earlier with its calendar ("Simulate session done"). */
+export function shiftGroupEnrolments(groupId: string, days: number) {
+  const s = load();
+  for (const e of s.enrolments.filter((x) => x.groupId === groupId)) {
+    e.sessionIds = e.sessionIds.map((id) => shiftSessionId(id, days));
+    e.firstSessionId = shiftSessionId(e.firstSessionId, days);
+    if (e.periodStart) e.periodStart = addDays(e.periodStart, -days);
+  }
+  clearSessionCache();
+  save();
 }

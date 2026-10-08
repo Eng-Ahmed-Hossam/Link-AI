@@ -55,6 +55,7 @@ import { addDays, cairoToday } from '../time';
 import * as fx from './data';
 import {
   demoWorld,
+  withOpenedGroups,
   sessionsOfGroup,
   type Session,
   type StaffRole,
@@ -377,7 +378,8 @@ const nextId = (prefix: string) => `${prefix}-${++load().seq}`;
 // ── lookups ────────────────────────────────────────────────────────────────────
 let demoWorldCache: WorldData | null = null;
 /** The active world: the pilot's imported one, or the demo fixtures. */
-export const world = (): WorldData => load().world ?? (demoWorldCache ??= demoWorld());
+export const world = (): WorldData =>
+  load().world ?? withOpenedGroups((demoWorldCache ??= demoWorld()));
 export const isPilot = () => world().kind === 'pilot';
 const G = fx.DEMO_GROUP_ID;
 const studentFx = (id: string) => world().students.find((s) => s.id === id);
@@ -3297,4 +3299,22 @@ export function checkSeat(userId: string, caseId: string, lang: Lang) {
   c.timeline.push({ at: new Date().toISOString(), kind: 'seat_checked', text, actorId: userId });
   save();
   return { text, seatsLeft: left, groupId: alt.id };
+}
+
+// ── the connected story (Step 2B, demo only) ───────────────────────────────────
+/** `grp-x~2026-10-17` → the same session id `days` earlier (session ids carry their Cairo date). */
+const shiftSessionId = (id: string, days: number) => {
+  const [g, date] = id.split('~');
+  return date ? `${g}~${addDays(date, -days)}` : id;
+};
+
+/** Moves one group's session records `days` earlier with its calendar ("Simulate session done"). */
+export function shiftGroupRecords(groupId: string, days: number) {
+  const s = load();
+  for (const r of s.records.filter((x) => x.groupId === groupId)) {
+    r.sessionId = shiftSessionId(r.sessionId, days);
+    r.date = addDays(r.date, -days);
+    r.startsAt = new Date(Date.parse(r.startsAt) - days * 86_400_000).toISOString();
+  }
+  save();
 }

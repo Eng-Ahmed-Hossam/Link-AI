@@ -6,6 +6,7 @@ import { authed, langOf, problem, withScenario } from './http';
 import { followupHandlers, demoHandlers } from './followup/handlers';
 import { ownerHandlers } from './followup/owner-handlers';
 import { marketHandlers } from './market/handlers';
+import { storyHandlers } from './story/handlers';
 
 /** Mock mode accepts this code for every phone number. */
 export const MOCK_OTP = '123456';
@@ -16,6 +17,7 @@ const pageOf = <T>(data: T[]) => ({ data, nextCursor: null });
 export const handlers = [
   // Demo controls first: the offline switch must short-circuit every API call.
   ...demoHandlers,
+  ...storyHandlers,
   // ── Auth (MKT-ACC-01) ─────────────────────────────────────────────────────────
   http.post('*/v1/auth/otp/request', async ({ request }) => {
     const { phone } = (await request.json()) as { phone: string };
