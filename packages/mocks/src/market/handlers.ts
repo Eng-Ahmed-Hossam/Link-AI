@@ -8,22 +8,34 @@ import type {
   RentEstimateBody,
   ReviewTab,
   RoomRequestBody,
+  StaffPermission,
   TeacherSelfPatch,
 } from '@link/api-client';
 import * as fx from '../data';
 import { MockProblem } from '../db';
 import { authed, problem } from '../http';
 import * as mk from './logic';
+import { SAMPLE_RECEPTION_PERMISSIONS, parentCentreIds } from '../followup/db';
 
 /** The signed-in user's marketplace roles (sample accounts: followup/data.ts staff). */
 const who = (userId: string) => fx.staff.find((u) => u.id === userId);
 const STAFF_CENTRE = 'cen-nour';
-/** Owner or Reception of this centre (one sample centre has staff accounts). */
-function staffOf(userId: string, centreId: string, ownerOnly = false) {
+/**
+ * Owner, or staff of this centre holding the permission (10 §1: `bookings.manage` for room
+ * requests, `reviews.reply` for reviews). One sample centre has staff accounts.
+ */
+function staffOf(
+  userId: string,
+  centreId: string,
+  ownerOnly = false,
+  permission?: StaffPermission,
+) {
   const u = who(userId);
-  const ok =
-    centreId === STAFF_CENTRE &&
-    (u?.role === 'centre_owner' || (!ownerOnly && u?.role === 'centre_staff'));
+  const staffOk =
+    !ownerOnly &&
+    u?.role === 'centre_staff' &&
+    (!permission || SAMPLE_RECEPTION_PERMISSIONS.includes(permission));
+  const ok = centreId === STAFF_CENTRE && (u?.role === 'centre_owner' || staffOk);
   if (!ok)
     throw new MockProblem(
       403,
@@ -122,7 +134,7 @@ export const marketHandlers = [
   http.post(
     '*/v1/reviews/:id/reply',
     authed(async ({ request, params, userId }) => {
-      staffOf(userId, STAFF_CENTRE);
+      staffOf(userId, STAFF_CENTRE, false, 'reviews.reply');
       const { body } = (await request.json()) as { body: string };
       return HttpResponse.json(mk.replyReview(params.id!, body));
     }),
@@ -130,7 +142,7 @@ export const marketHandlers = [
   http.post(
     '*/v1/reviews/:id/report',
     authed(async ({ request, params, userId }) => {
-      staffOf(userId, STAFF_CENTRE);
+      staffOf(userId, STAFF_CENTRE, false, 'reviews.reply');
       const { reason } = (await request.json()) as { reason: string };
       return HttpResponse.json(mk.reportReview(params.id!, reason));
     }),
@@ -176,7 +188,7 @@ export const marketHandlers = [
       if (q.get('scope') === 'mine')
         return HttpResponse.json(mk.myRequests(teacherOf(userId), lang));
       const centreId = q.get('centreId') ?? STAFF_CENTRE;
-      staffOf(userId, centreId);
+      staffOf(userId, centreId, false, 'bookings.manage');
       return HttpResponse.json(mk.centreRequests(centreId, lang));
     }),
   ),
@@ -195,7 +207,7 @@ export const marketHandlers = [
   http.post(
     '*/v1/room-requests/:id/stage',
     authed(async ({ request, params, userId, lang }) => {
-      staffOf(userId, STAFF_CENTRE);
+      staffOf(userId, STAFF_CENTRE, false, 'bookings.manage');
       const { stage, at } = (await request.json()) as {
         stage: 'phone_call' | 'meeting';
         at?: string;
@@ -206,14 +218,14 @@ export const marketHandlers = [
   http.post(
     '*/v1/room-requests/:id/approve',
     authed(({ params, userId, lang }) => {
-      staffOf(userId, STAFF_CENTRE);
+      staffOf(userId, STAFF_CENTRE, false, 'bookings.manage');
       return HttpResponse.json(mk.approveRequest(params.id!, lang));
     }),
   ),
   http.post(
     '*/v1/room-requests/:id/decline',
     authed(async ({ request, params, userId, lang }) => {
-      staffOf(userId, STAFF_CENTRE);
+      staffOf(userId, STAFF_CENTRE, false, 'bookings.manage');
       const { reason } = (await request.json()) as { reason: string };
       return HttpResponse.json(mk.declineRequest(params.id!, reason, lang));
     }),
@@ -240,6 +252,14 @@ export const marketHandlers = [
   http.get(
     '*/v1/teachers/me/bookings',
     authed(({ userId, lang }) => HttpResponse.json(mk.teacherBookings(teacherOf(userId), lang))),
+  ),
+  http.get(
+    '*/v1/me/features',
+    authed(({ userId }) =>
+      HttpResponse.json({
+        followupExtra: parentCentreIds(userId).some((c) => mk.features(c).followupExtra),
+      }),
+    ),
   ),
   http.get(
     '*/v1/teachers/me/features',

@@ -63,6 +63,7 @@ import type {
   RuleChangeBody,
   RuleView,
   StaffMember,
+  StaffPermission,
 } from './followup';
 import type {
   AutoApproveRules,
@@ -327,8 +328,10 @@ export const ownerApi = {
   rejectRule: (centreId: string, code: string) =>
     request<RuleView>('POST', `/v1/centres/${centreId}/rules/${code}/reject`),
   staff: (centreId: string) => request<StaffMember[]>('GET', `/v1/centres/${centreId}/staff`),
-  invite: (centreId: string, body: { phone: string; role: StaffMember['role'] }) =>
-    request<StaffMember[]>('POST', `/v1/centres/${centreId}/staff/invites`, { body }),
+  invite: (
+    centreId: string,
+    body: { phone: string; role: StaffMember['role']; permissions?: StaffPermission[] },
+  ) => request<StaffMember[]>('POST', `/v1/centres/${centreId}/staff/invites`, { body }),
   activity: (centreId: string) => request<ActivityLog>('GET', `/v1/centres/${centreId}/activity`),
   reviseMessage: (id: string) => request<ParentMessage>('POST', `/v1/messages/${id}/revise`),
   seatCheck: (caseId: string) =>
@@ -517,6 +520,8 @@ export const marketApi = {
   earnings: () => request<Earnings>('GET', '/v1/teachers/me/earnings'),
   /** The teacher's centre(s) with the follow-up extra (Follow-up tab). */
   teacherFeatures: () => request<CentreFeatures>('GET', '/v1/teachers/me/features'),
+  /** A parent: whether any of their children's centres has the extra (P09 updates feed). */
+  parentFeatures: () => request<CentreFeatures>('GET', '/v1/me/features'),
 };
 
 export const isExtractionReady = (

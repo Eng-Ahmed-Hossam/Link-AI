@@ -7,13 +7,7 @@
 import type { Money } from './types';
 
 export type Facility =
-  | 'ac'
-  | 'fan'
-  | 'projector'
-  | 'sound'
-  | 'whiteboard'
-  | 'smart_board'
-  | 'wheelchair';
+  'ac' | 'fan' | 'projector' | 'sound' | 'whiteboard' | 'smart_board' | 'wheelchair';
 
 /** One rent rule per hall (C05). `percent` is a whole percentage of the fees parents paid. */
 export type RentBasis = 'fixed_per_session' | 'per_student_per_session' | 'percent_of_fees';
@@ -66,12 +60,7 @@ export interface AutoApproveRules {
 }
 
 export type RequestStage =
-  | 'requested'
-  | 'phone_call'
-  | 'meeting'
-  | 'approved'
-  | 'declined'
-  | 'withdrawn';
+  'requested' | 'phone_call' | 'meeting' | 'approved' | 'declined' | 'withdrawn';
 
 export interface RequestTeacher {
   id: string;
@@ -192,6 +181,9 @@ export interface ReviewsReceived {
 
 export interface CentreProfileEdit {
   id: string;
+  /** The public page: /{lang}/centres/{slug}. */
+  slug: string;
+  distanceKm: number;
   name: string;
   area: string;
   address: string;

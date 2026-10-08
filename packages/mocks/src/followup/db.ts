@@ -47,6 +47,7 @@ import type {
   RuleChangeBody,
   RuleView,
   StaffMember,
+  StaffPermission,
 } from '@link/api-client';
 import * as mfx from '../data';
 import { MockProblem, groupDto, type Lang } from '../db';
@@ -276,7 +277,12 @@ interface FuState {
   demo: DemoState;
   rules: RuleRow[];
   /** Pending staff invites (A16); part of the scenario, so Reset clears them. */
-  invites: { phone: string; role: StaffMember['role']; at: string }[];
+  invites: {
+    phone: string;
+    role: StaffMember['role'];
+    at: string;
+    permissions?: StaffPermission[];
+  }[];
   /** CF-34: the owner asks the teacher to correct a confirmed record (teachers correct, owners ask). */
   correctionRequests?: CorrectionRequestRow[];
   /** Pilot only: the imported world. Demo state leaves it out and uses the fixtures. */
@@ -2986,6 +2992,15 @@ export function rejectRule(userId: string, code: string, lang: Lang) {
 }
 
 // ── staff (A16, FUP-STF-01) ────────────────────────────────────────────────────
+const STAFF_PERMISSIONS: StaffPermission[] = ['bookings.manage', 'reviews.reply'];
+/** The sample Reception desk handles room requests and reviews (sample data, MKT-ACC-04). */
+export const SAMPLE_RECEPTION_PERMISSIONS: StaffPermission[] = ['bookings.manage', 'reviews.reply'];
+const permissionsOf = (role: StaffMember['role']): StaffPermission[] =>
+  role === 'owner'
+    ? [...STAFF_PERMISSIONS]
+    : role === 'reception'
+      ? [...SAMPLE_RECEPTION_PERMISSIONS]
+      : [];
 export function staffList(userId: string, lang: Lang): StaffMember[] {
   requireStaff(userId);
   const ar = lang === 'ar';
@@ -3014,6 +3029,7 @@ export function staffList(userId: string, lang: Lang): StaffMember[] {
         user: { id: u.id, displayName: tx(u.name, lang)! },
         role: u.role,
         scope: scope(u),
+        permissions: permissionsOf(u.role),
         lastActiveAt: last(u.id),
         status: u.active ? ('active' as const) : ('removed' as const),
       })),
@@ -3021,6 +3037,7 @@ export function staffList(userId: string, lang: Lang): StaffMember[] {
       user: { id: `invite-${n}`, displayName: maskPhone(i.phone) },
       role: i.role,
       scope: '—',
+      permissions: i.role === 'reception' ? (i.permissions ?? []) : [],
       lastActiveAt: null,
       status: 'invite_pending' as const,
     })),
@@ -3120,7 +3137,7 @@ export const TITLES: Record<StaffRole, mfx.L> = {
 
 export function inviteStaff(
   userId: string,
-  b: { phone: string; role: StaffMember['role'] },
+  b: { phone: string; role: StaffMember['role']; permissions?: StaffPermission[] },
   lang: Lang,
 ) {
   if (!isOwner(userId)) throw new MockProblem(403, 'forbidden', 'Only the owner manages staff.');
@@ -3129,7 +3146,13 @@ export function inviteStaff(
     throw new MockProblem(422, 'invalid_phone', 'Enter an Egyptian mobile number.');
   if (!['reception', 'teacher'].includes(b.role))
     throw new MockProblem(422, 'validation_failed', 'Pick a role.');
-  load().invites.push({ phone: b.phone, role: b.role, at: new Date().toISOString() });
+  const permissions = (b.permissions ?? []).filter((x) => STAFF_PERMISSIONS.includes(x));
+  load().invites.push({
+    phone: b.phone,
+    role: b.role,
+    at: new Date().toISOString(),
+    ...(b.role === 'reception' ? { permissions } : {}),
+  });
   save();
   audit('access.invited', userId, {
     en: `Staff invited (${b.role}) — invite pending`,
@@ -3181,6 +3204,12 @@ export function activity(userId: string, lang: Lang): ActivityLog {
 // ── parent feed (P09, FUP-MSG-08) ──────────────────────────────────────────────
 const SENT: DeliveryStatus[] = ['queued', 'sent', 'delivered', 'read'];
 /** Approved (and handed to the provider) messages only. Confirmed attendance is off by default (OD-41). */
+/** The centres where this parent's children follow up (one centre per world). */
+export function parentCentreIds(userId: string): string[] {
+  const w = world();
+  return w.guardians.some((g) => g.userId === userId) ? [w.centre.id] : [];
+}
+
 export function parentUpdates(userId: string, lang: Lang): ParentUpdate[] {
   const s = load();
   const mine = new Set(

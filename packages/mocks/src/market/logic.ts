@@ -481,7 +481,8 @@ export function centreSchedule(centreId: string, lang: Lang): CentreSchedule {
       }
     }
   return {
-    days: SLOT_DAYS,
+    // The next six working days from today, in date order (the centre's week has no Friday).
+    days: [...SLOT_DAYS].sort((a, b) => (dates[a] ?? '').localeCompare(dates[b] ?? '')),
     dates,
     halls: hs.map((h) => ({ id: h.id, name: tr(h.name, lang), capacity: h.capacity })),
     cells,
@@ -847,6 +848,8 @@ export function centreProfile(centreId: string, lang: Lang): CentreProfileEdit {
   const r = ratingOf(c.ratingDist);
   return {
     id: c.id,
+    slug: c.slug,
+    distanceKm: c.distanceKm,
     name: tr(c.name, lang),
     area: tr(c.area, lang),
     address: tr(c.address, lang),

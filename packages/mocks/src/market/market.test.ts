@@ -2,7 +2,14 @@
 // Test names carry rule / story / decision IDs.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { setupServer } from 'msw/node';
-import { ApiError, marketApi, setApiBaseUrl, setApiLocale, setAuthToken } from '@link/api-client';
+import {
+  ApiError,
+  marketApi,
+  ownerApi,
+  setApiBaseUrl,
+  setApiLocale,
+  setAuthToken,
+} from '@link/api-client';
 import { handlers } from '../handlers';
 import { resetMockDb } from '../db';
 import { cairoToday, addDays } from '../time';
@@ -244,5 +251,52 @@ describe('groups, enrolments, reviews', () => {
     expect((await marketApi.centreFeatures('cen-nile')).followupExtra).toBe(false);
     as('usr-salma');
     expect((await marketApi.teacherFeatures()).followupExtra).toBe(true);
+  });
+
+  it('OD-58: without the extra a parent gets no updates feed (P09)', async () => {
+    as('usr-parent');
+    expect((await marketApi.parentFeatures()).followupExtra).toBe(true);
+    await fetch(`${BASE}/__demo/features`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ centreId: C, followupExtra: false }),
+    });
+    expect((await marketApi.parentFeatures()).followupExtra).toBe(false);
+    expect((await ownerApi.parentUpdates()).data).toEqual([]);
+  });
+});
+
+describe('staff and schedule', () => {
+  it('A16 MKT-ACC-04 AC1: a Reception invite carries bookings.manage / reviews.reply', async () => {
+    const before = await ownerApi.staff(C);
+    expect(before.find((m) => m.role === 'reception')?.permissions).toEqual([
+      'bookings.manage',
+      'reviews.reply',
+    ]);
+    expect(before.find((m) => m.role === 'teacher')?.permissions).toEqual([]);
+    const after = await ownerApi.invite(C, {
+      phone: '+201011112222',
+      role: 'reception',
+      permissions: ['reviews.reply'],
+    });
+    expect(after.find((m) => m.status === 'invite_pending')?.permissions).toEqual([
+      'reviews.reply',
+    ]);
+  });
+
+  it('10 §1: Reception (bookings.manage) works the room requests; a teacher cannot', async () => {
+    as('usr-reception');
+    expect((await marketApi.centreRequests(C)).length).toBeGreaterThan(0);
+    as('usr-salma');
+    expect((await err(marketApi.centreRequests(C))).problem.status).toBe(403);
+  });
+
+  it('C03: the week runs from today in date order (no Friday)', async () => {
+    const s = await marketApi.schedule(C);
+    const dates = s.days.map((d) => s.dates[d]!);
+    expect([...dates].sort()).toEqual(dates);
+    expect(dates[0]).toBe(
+      [0, 1].map((i) => addDays(cairoToday(), i)).find((d) => new Date(d).getUTCDay() !== 5),
+    );
   });
 });

@@ -3,6 +3,7 @@ import type { AssistantEvent, RuleChangeBody, StaffMember } from '@link/api-clie
 import { MockProblem } from '../db';
 import { authed, langOf, problem, userIdOf } from '../http';
 import * as fu from './db';
+import { features } from '../market/logic';
 import { ASSISTANT_VOICE_FIXTURE, assistantTurn, briefing } from './assistant';
 import { bridge } from './voice-bridge';
 
@@ -93,7 +94,7 @@ export const ownerHandlers = [
     '*/v1/centres/:id/staff/invites',
     authed(async ({ request, params, userId, lang }) => {
       centre(params.id);
-      const b = (await request.json()) as { phone: string; role: StaffMember['role'] };
+      const b = (await request.json()) as Parameters<typeof fu.inviteStaff>[1];
       return HttpResponse.json(fu.inviteStaff(userId, b, lang), { status: 201 });
     }),
   ),
@@ -106,8 +107,14 @@ export const ownerHandlers = [
   ),
   http.get(
     '*/v1/me/updates',
+    // Without the Follow-up extra (OD-58) a centre sends no updates, so the feed is empty.
     authed(({ userId, lang }) =>
-      HttpResponse.json({ data: fu.parentUpdates(userId, lang), nextCursor: null }),
+      HttpResponse.json({
+        data: fu.parentCentreIds(userId).some((c) => features(c).followupExtra)
+          ? fu.parentUpdates(userId, lang)
+          : [],
+        nextCursor: null,
+      }),
     ),
   ),
   http.get(
