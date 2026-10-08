@@ -269,6 +269,15 @@ export interface TeacherSelf {
   availability: { weekday: number; am: boolean; pm: boolean }[];
   reviewEachEnrolment: boolean;
   payoutAccount: string;
+  /** What the teacher teaches now (J02 "For which group?"): one entry per group. */
+  teaches: {
+    groupId: string;
+    subjectId: string;
+    schoolYearId: string;
+    label: string;
+    students: number;
+    monthlyFee: Money;
+  }[];
 }
 export interface TeacherSelfPatch {
   about?: string;
@@ -302,6 +311,11 @@ export interface TeacherBooking {
   end: string;
   startsOn: string;
   groupId: string | null;
+  /** From the room request that booked it: what the new group will teach. */
+  subjectId: string | null;
+  schoolYearId: string | null;
+  /** "Physics • Sec 2". */
+  label: string | null;
 }
 
 export interface TeacherEnrolment {

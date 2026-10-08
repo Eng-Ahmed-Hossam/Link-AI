@@ -565,18 +565,21 @@ export function earnings(teacherKey: string, lang: Lang): Earnings {
   const parentsPaid = byGroup.reduce((a, g) => a + g.amount.amountPt, 0);
   // The commission is taken from each payment, so it is rounded per group (OD-16).
   const commission = byGroup.reduce((a, g) => a + feeOf(g.amount.amountPt, pct), 0);
-  const rent = m()
-    .bookings.filter((b) => b.teacherKey === teacherKey)
-    .map((b) => {
-      const h = hallRow(b.hallId);
+  // One line per hall (each centre's rent on its own line, J07): bookings in the same hall add up.
+  const perHall = new Map<string, number>();
+  for (const b of m().bookings.filter((x) => x.teacherKey === teacherKey))
+    perHall.set(b.hallId, (perHall.get(b.hallId) ?? 0) + bookingRent(b, month).rent);
+  const rent = [...perHall]
+    .filter(([, pt]) => pt > 0)
+    .map(([hallId, pt]) => {
+      const h = hallRow(hallId);
       return {
         centre: tr(centreFx(h.centreId).name, lang),
         hall: tr(h.name, lang),
         rule: ruleDto(h),
-        amount: money(bookingRent(b, month).rent),
+        amount: money(pt),
       };
-    })
-    .filter((r) => r.amount.amountPt > 0);
+    });
   const rentTotal = rent.reduce((a, r) => a + r.amount.amountPt, 0);
   const keep = parentsPaid - commission - rentTotal;
   const paid = db
@@ -706,6 +709,17 @@ export function teacherSelf(teacherKey: string, lang: Lang): TeacherSelf {
     availability: edits.availability ?? base?.availability ?? [],
     reviewEachEnrolment: db.reviewEachEnrolment(teacherKey),
     payoutAccount: base?.payoutAccount ?? '••••',
+    teaches: db
+      .allGroups()
+      .filter((g) => g.teacherId === teacherKey)
+      .map((g) => ({
+        groupId: g.id,
+        subjectId: g.subjectId,
+        schoolYearId: g.schoolYearId,
+        label: `${tr(fx.subjects.find((x) => x.id === g.subjectId)!.name, lang)} • ${yearShort(g.schoolYearId, lang)}`,
+        students: studentsOf(g.id),
+        monthlyFee: money(g.monthlyFeePt),
+      })),
   };
 }
 export function patchTeacherSelf(teacherKey: string, p: TeacherSelfPatch, lang: Lang) {
@@ -723,6 +737,8 @@ export const teacherBookings = (teacherKey: string, lang: Lang): TeacherBooking[
     .map((b) => {
       const h = hallRow(b.hallId);
       const c = centreFx(h.centreId);
+      const r = b.requestId ? m().requests.find((x) => x.id === b.requestId) : undefined;
+      const subject = r ? fx.subjects.find((x) => x.id === r.subjectId) : undefined;
       return {
         id: b.id,
         centre: { id: c.id, name: tr(c.name, lang) },
@@ -732,6 +748,10 @@ export const teacherBookings = (teacherKey: string, lang: Lang): TeacherBooking[
         end: b.end,
         startsOn: b.startsOn,
         groupId: b.groupId,
+        subjectId: r?.subjectId ?? null,
+        schoolYearId: r?.schoolYearId ?? null,
+        label:
+          r && subject ? `${tr(subject.name, lang)} • ${yearShort(r.schoolYearId, lang)}` : null,
       };
     });
 
