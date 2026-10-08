@@ -105,13 +105,14 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 | POST | `/v1/auth/logout` | any | Revoke the refresh token | ✓ | MKT-ACC-04 |
 | GET | `/v1/me` | any | Profile, roles, language; `centreIds` (owner or staff) and `teacherId` (added 2026-10-08, so the apps open the right workspace) | — read | MKT-ACC-03 |
 | PATCH | `/v1/me` | any | Name, language | ✓ | MKT-ACC-03 |
-| POST | `/v1/me/roles` | any | Add the role `parent`, `teacher` or `centre_owner` | ✓ | MKT-ACC-02 |
+| POST | `/v1/me/roles` | any | Add the role `parent` or `teacher`. `centre_owner` answers 409 `centre_application_required`: owners come from a join request (C01) | ✓ | MKT-ACC-02 |
 | POST | `/v1/me/devices` | any | Register a push token (platform, app) | ✓ | MKT-NTF-02 |
 | DELETE | `/v1/me/devices/{id}` | any | Remove a push token | ✓ | MKT-NTF-02 |
 | GET | `/v1/me/children` | parent | List children | — read | MKT-ACC-05 |
 | POST | `/v1/me/children` | parent | Add a child (records `child_data_processing` consent) | ✓ | MKT-ACC-05 |
 | PATCH / DELETE | `/v1/children/{id}` | parent | Edit / archive a child | ✓ | MKT-ACC-05 |
 | GET | `/v1/me/consents` | any | Current consents (by `user_id`; never cached) | — read | BR-DAT-03 |
+| GET | `/v1/feature-flags` | public (any) | Feature flags: the global ones, merged with the caller's centre and teacher scopes when signed in: `{flags: {key: boolean}}` (added 2026-10-08, E0-09) | — read | OD-58 |
 | GET | `/v1/me/features` | parent | Paid extras on for any centre where the parent's children study: `{followupExtra}` (added 2026-10-08; P09 updates feed) | — read | OD-58 |
 | PUT | `/v1/me/consents` | any | Grant or withdraw a consent | ✓ | BR-DAT-03 |
 | POST | `/v1/me/data-requests` | any | PDPL access / correction / deletion request | ✓ | MKT-OPS-09 |
@@ -127,7 +128,7 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 | Method | Path | Who | Purpose | Idem | Req |
 |---|---|---|---|---|---|
 | POST | `/v1/leads` | public | Landing-page "Get started" form → `org.leads` (rate-limited, bot-filtered at the WAF) | ✓ | MKT-WEB-01 |
-| POST | `/v1/centre-applications` | centre_owner | Join request (C01) | ✓ | MKT-CEN-01 |
+| POST | `/v1/centre-applications` | public | Join request (C01), stored as a `centre` lead. When that phone number signs in with a code (so the number is verified), the centre is created with `verification = pending` and the caller becomes its `centre_owner` (decided 2026-10-08) | ✓ | MKT-CEN-01 |
 | GET | `/v1/centres/{id}` · `/v1/centres/by-slug/{slug}` | public | Public profile | — read | MKT-DSC-04 |
 | GET | `/v1/centres/{id}/profile` | owner, staff | The C02 editing view: public fields plus halls, completeness, badges and `locationUnderReview` (added 2026-10-08) | — read | MKT-CEN-02, CF-44 |
 | GET | `/v1/centres/{id}/features` | owner, staff | Paid extras for this centre: `{followupExtra}` (added 2026-10-08) | — read | OD-58 |
