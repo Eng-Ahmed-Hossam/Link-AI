@@ -2,7 +2,7 @@
 
 Every role → app → screen → status: the quickest way to find your way around. Product rules: [PRODUCT_BRIEF](../PRODUCT_BRIEF.md). Screen details and differences from Figma: [screen log](../frontend/screen-log.md). Figma inventory: [docs/11 §7](../11-design-system.md#7-screen-inventory).
 
-"· Follow-up" marks a screen of the paid extra (on in the demo, OD-58). Thumbnails are the Arabic screenshots from the e2e runs. Run the demo with `pnpm demo`; every screen with one-click sign-in is at http://localhost:3000/ar/dev.
+One way in: the role chooser at `/{lang}/try` opens each app signed in as a sample user. One home per role: Parent → Search, Teacher → My groups, Centre owner → Room schedule. "· Follow-up" marks a screen of the paid extra (on in the demo, OD-58). Thumbnails are the Arabic screenshots from the e2e runs. Run the demo with `pnpm demo`; every screen with one-click sign-in is at http://localhost:3000/ar/dev.
 
 ## Visitor: Website (`apps/web`, route group `(site)`)
 
@@ -11,7 +11,7 @@ Every role → app → screen → status: the quickest way to find your way arou
 | ID | Screen | Route | Figma | Status | Screenshot |
 |---|---|---|---|---|---|
 | W00 | Landing page (copy of Figma) | `/{lang}` | [68:616](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=68-616) | built | <img src="../frontend/screenshots/landing/W00-landing.ar.desktop.png" width="96" alt=""> |
-| W-TRY | Try Link (becomes the role chooser, Step 2) | `/{lang}/try` | — | built | <img src="../frontend/screenshots/landing/W-TRY-demo.ar.mobile.png" width="96" alt=""> |
+| W-TRY | Try Link: choose a role (Parent · Teacher · Centre owner) | `/{lang}/try` | — | built | <img src="../frontend/screenshots/landing/W-TRY.ar.mobile.png" width="96" alt=""> |
 | W-PILOT | Request a free pilot | `/{lang}/pilot` | — | built | <img src="../frontend/screenshots/landing/W-PILOT.ar.mobile.png" width="96" alt=""> |
 | W-SIGNIN | Sign in (pilot centres) | `/{lang}/sign-in` | — | built | <img src="../frontend/screenshots/landing/W-SIGNIN.en.mobile.png" width="96" alt=""> |
 
@@ -34,20 +34,20 @@ Every role → app → screen → status: the quickest way to find your way arou
 
 ## Teacher: Teacher app (`apps/teacher-app`, Expo)
 
-15 of 23 built.
+23 of 23 built.
 
 | ID | Screen | Route | Figma | Status | Screenshot |
 |---|---|---|---|---|---|
-| T14 | Sign in (phone + code) | `/sign-in` | [23:237](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=23-237) | to build (a demo one-click sign-in exists) | — |
-| J01 | Find a room to rent | — | [59:358](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=59-358) | to build | — |
-| J02 | Request a room slot | — | [59:462](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=59-462) | to build | — |
-| J03 | My room requests | — | [51:341](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=51-341) | to build | — |
-| J04 | My teacher profile | — | [51:447](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=51-447) | to build | — |
-| J05 | My groups & fees | `/groups (read-only parts, with T09)` | [60:358](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=60-358) | to build (fees and seats) | — |
-| J06 | Enrolment requests | — | [60:452](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=60-452) | to build | — |
-| J07 | Earnings | — | [61:373](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=61-373) | to build | — |
-| T09 | My groups | `/groups` | [18:146](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=18-146) | built | <img src="../frontend/screenshots/batch-5/T09.ar.png" width="96" alt=""> |
-| T01 | Today · Follow-up | `/today` | [7:183](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=7-183) | built | <img src="../frontend/screenshots/batch-5/T01.ar.png" width="96" alt=""> |
+| T14 | Sign in (phone + code) | `/sign-in` | [23:237](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=23-237) | built | <img src="../frontend/screenshots/batch-3/T14.ar.png" width="96" alt=""> |
+| J01 | Rooms near you | `/rooms` | [59:358](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=59-358) | built | <img src="../frontend/screenshots/batch-3/J01.ar.png" width="96" alt=""> |
+| J02 | Request a slot | `/room/[hallId]` | [59:462](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=59-462) | built | <img src="../frontend/screenshots/batch-3/J02.ar.png" width="96" alt=""> |
+| J03 | My room requests | `/room-requests` | [51:341](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=51-341) | built | <img src="../frontend/screenshots/batch-3/J03.ar.png" width="96" alt=""> |
+| J04 | My teacher profile | `/profile` | [51:447](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=51-447) | built | <img src="../frontend/screenshots/batch-3/J04.ar.png" width="96" alt=""> |
+| J05 | My groups & fees (home; one screen with T09) | `/groups` | [60:358](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=60-358) | built | <img src="../frontend/screenshots/batch-3/J05.ar.png" width="96" alt=""> |
+| J06 | New enrolments | `/enrolments` | [60:452](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=60-452) | built | <img src="../frontend/screenshots/batch-3/J06.ar.png" width="96" alt=""> |
+| J07 | Earnings | `/earnings` | [61:373](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=61-373) | built | <img src="../frontend/screenshots/batch-3/J07.ar.png" width="96" alt=""> |
+| T09 | My groups (follow-up parts, with J05) | `/groups` | [18:146](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=18-146) | built | <img src="../frontend/screenshots/batch-5/T09.ar.png" width="96" alt=""> |
+| T01 | Today (the Follow-up tab) · Follow-up | `/today` | [7:183](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=7-183) | built | <img src="../frontend/screenshots/batch-5/T01.ar.png" width="96" alt=""> |
 | T02 | Confirm attendance · Follow-up | `/record/[id]/attendance` | [7:209](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=7-209) | built | <img src="../frontend/screenshots/batch-5/T02.ar.png" width="96" alt=""> |
 | T03 | Scores · Follow-up | `/record/[id]/scores` | [7:242](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=7-242) | built | <img src="../frontend/screenshots/batch-5/T03.ar.png" width="96" alt=""> |
 | T04 | Observation · Follow-up | `/record/[id]/observation` | [7:272](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=7-272) | built | <img src="../frontend/screenshots/batch-5/T04.ar.png" width="96" alt=""> |
@@ -64,19 +64,20 @@ Every role → app → screen → status: the quickest way to find your way arou
 
 ## Centre owner / staff: Centre web (`apps/web`, desktop)
 
-17 of 27 built.
+26 of 28 built.
 
 | ID | Screen | Route | Figma | Status | Screenshot |
 |---|---|---|---|---|---|
-| A18 | Owner sign-in | `/{lang}/centre` | [31:233](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=31-233) | to build (a demo one-click sign-in exists) | — |
-| C01 | Add my centre to Link | — | [45:273](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=45-273) | to build | — |
-| C02 | Public profile editor | — | [46:274](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=46-274) | to build | — |
-| C03 | Room schedule | — | [56:375](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=56-375) | to build | — |
-| C04 | Reviews & private feedback | — | [48:295](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=48-295) | to build | — |
-| C05 | Rooms & rent | — | [57:364](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=57-364) | to build | — |
-| C06 | Room requests | — | [49:307](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=49-307) | to build | — |
-| C07 | Rent income | — | [58:358](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=58-358) | to build | — |
-| A16 | Staff & access | `…/staff` | [29:215](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=29-215) | built (marketplace roles: Step 2) | <img src="../frontend/screenshots/batch-6/A16.ar.png" width="96" alt=""> |
+| A18 | Owner sign-in (phone + code) | `/{lang}/centre` | [31:233](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=31-233) | built | <img src="../frontend/screenshots/batch-2/A18.ar.png" width="96" alt=""> |
+| C01 | Add my centre to Link | `/{lang}/add-your-centre` | [45:273](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=45-273) | built | <img src="../frontend/screenshots/batch-2/C01.ar.png" width="96" alt=""> |
+| C02 | Public profile editor | `…/profile` | [46:274](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=46-274) | built | <img src="../frontend/screenshots/batch-2/C02.ar.png" width="96" alt=""> |
+| C03 | Room schedule (home) | `/{lang}/centre/[id]/schedule` | [56:375](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=56-375) | built | <img src="../frontend/screenshots/batch-2/C03.ar.png" width="96" alt=""> |
+| C04 | Reviews & private feedback | `…/reviews` | [48:295](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=48-295) | built | <img src="../frontend/screenshots/batch-2/C04.ar.png" width="96" alt=""> |
+| C05 | Rooms & rent | `…/rooms` | [57:364](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=57-364) | built | <img src="../frontend/screenshots/batch-2/C05.ar.png" width="96" alt=""> |
+| C06 | Room requests | `…/requests` | [49:307](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=49-307) | built | <img src="../frontend/screenshots/batch-2/C06.ar.png" width="96" alt=""> |
+| C07 | Rent income | `…/rent-income` | [58:358](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=58-358) | built | <img src="../frontend/screenshots/batch-2/C07.ar.png" width="96" alt=""> |
+| C-EXTRA | Follow-up: what's included (centres without the extra) | `…/followup-extra` | — | built | <img src="../frontend/screenshots/batch-2/C-EXTRA.ar.png" width="96" alt=""> |
+| A16 | Staff & access (with marketplace permissions) | `…/staff` | [29:215](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=29-215) | built | <img src="../frontend/screenshots/batch-2/A16.ar.png" width="96" alt=""> |
 | A01 | Today · Follow-up | `/{lang}/centre/[id]/today` | [5:2](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=5-2) | built | <img src="../frontend/screenshots/batch-6/A01.ar.png" width="96" alt=""> |
 | A02 | Follow-ups · Follow-up | `…/follow-ups` | [5:83](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=5-83) | built | <img src="../frontend/screenshots/batch-6/A02.ar.png" width="96" alt=""> |
 | A03 | Follow-up case · Follow-up | `…/follow-ups/[caseId]` | [5:153](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=5-153) | built | <img src="../frontend/screenshots/batch-6/A03.ar.png" width="96" alt=""> |
