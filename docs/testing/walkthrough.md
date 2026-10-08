@@ -20,7 +20,7 @@ For Ahmed: walk through every feature yourself, in Arabic and English. Each step
 | Owner web (centre) | http://localhost:3000/ar/centre | |
 | Teacher app (phone size) | http://localhost:8081 (press F12 → phone icon for a phone-sized window) | |
 | Parent app | http://localhost:3000/ar/welcome | |
-| Demo controls | The amber **Demo controls** button at the bottom of any web page. It plays the outside world: the WhatsApp provider, the parent's phone, the network. | زر «Demo controls» الأصفر أسفل أي صفحة. |
+| Demo controls | The amber **Demo controls** button on the dev index, http://localhost:3000/ar/dev (keep it open in a second tab). It plays the outside world: the WhatsApp provider, the parent's phone, the network. Product pages show only the demo banner (Step 2A.6). | زر «Demo controls» الأصفر في صفحة ‎/ar/dev‎ (افتحها في تبويب ثانٍ). |
 | Reset | Demo controls → **Reset scenario**. The teacher app keeps its device drafts in the browser: for a clean teacher, use a private window. | للبدء من جديد: Demo controls ← Reset scenario. |
 | Speech-to-text | Demo controls → **Speech-to-text: fixture** gives the scripted note below every time. **local Whisper (real)** listens to your own voice. | «fixture» يعطي نفس الملاحظة كل مرة؛ «Whisper» يسمع صوتك الحقيقي. |
 

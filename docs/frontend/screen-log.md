@@ -157,3 +157,35 @@ The landing page (`/{lang}`) is a copy of Figma frame 68:616, section by section
 
 **Performance:** the picture renders are 2x WebP; the icons come from one SVG sprite (`scripts/landing-sprite.mjs`); the hero's pictures appear after load (they fade in on Figma's loop anyway); the product tabs need no JavaScript. Lighthouse mobile on a production build: Arabic 90–91, English 90; accessibility, best practices and SEO 100.
 
+
+## Step 2A · one connected product (2026-10-08)
+
+Role chooser, centre marketplace screens (Batch 2), teacher marketplace screens (Batch 3) and Follow-up as a paid extra (OD-58). Mock data only: the shared mock server in the demo, MSW on the public site. Screenshots: `docs/frontend/screenshots/batch-2/` (centre, 1440) and `batch-3/` (teacher, 390); Figma side-by-sides in `docs/frontend/compare/<ID>.png` (Figma · EN · AR).
+
+| Screen | Route | Status | Stories covered | Differs from Figma (CF) | Screenshots |
+|---|---|---|---|---|---|
+| Role chooser | `/{lang}/try` | built | 2A.1 | No Figma frame: three cards (Parent · Teacher · Centre owner); each opens that role's app signed in as a sample user, without resetting the shared story | `W-TRY.ar.mobile` |
+| Demo banner | every app page in the demo | built | 2A.6 | "Demo — sample data · Switch role · Reset demo" only; Demo controls only on `/{lang}/dev` | `W-TRY-demo.ar.mobile` |
+| A18 Owner sign-in | `/{lang}/centre` | built | MKT-ACC-01 | CF-02 (phone code, no email/password); the left panel says what the marketplace does (Figma's copy was follow-up first); demo shortcuts for the sample owner and Reception under the form | `A18.ar`, `A18.en` |
+| C01 Add my centre | `/{lang}/add-your-centre` | built | MKT-CEN-01 | CF-45 | `C01.ar`, `C01.en` |
+| C02 Public profile | `/{lang}/centre/{id}/profile` | built | MKT-CEN-02 | CF-44 (no "Edit pin", no "+ Add room"); photos are sample gradients (no uploads in the demo); "Listed" switch per room | `C02.ar`, `C02.en` |
+| C03 Room schedule (owner home) | `/{lang}/centre/{id}/schedule` | built | MKT-CEN-04 | The six working days from today, in date order; seats per session ("16 / 20") from the enrolments; Follow-up "Today" card with the extra | `C03.ar`, `C03.en` |
+| C04 Reviews | `/{lang}/centre/{id}/reviews` | built | MKT-REV-03 | Reply or report only (BR-REV-06); private feedback takes no public reply; Arabic tab counts in brackets (a middle dot next to «٢» reads as «٠٢») | `C04.ar`, `C04.en` |
+| C05 Rooms & rent | `/{lang}/centre/{id}/rooms` | built | MKT-CEN-03, MKT-HAL-05 | CF-43; one rent rule per hall; per-student rule shows the OD-13 note | `C05.ar`, `C05.en` |
+| C06 Room requests | `/{lang}/centre/{id}/requests` | built | MKT-HAL-04, MKT-HAL-05 AC2 | "Approve instantly" only when every rule is met (checked from the data); forward only; declining asks for a reason | `C06.ar`, `C06.en` |
+| C07 Rent income | `/{lang}/centre/{id}/rent-income` | built | MKT-LED-08 | CF-13 (Link fee and "To you" columns; totals from the rows, not Figma's); next transfer on Thursday (OD-04); side cards under the table below 1536 px | `C07.ar`, `C07.en` |
+| A16 Staff (marketplace part) | `/{lang}/centre/{id}/staff` | built | MKT-ACC-06 | Reception invites carry `bookings.manage` / `reviews.reply` (checkboxes, not in Figma); Figma's tabs (Rules · Staff · Guardian contacts · Centre profile) not built | `A16.ar`, `A16.en` |
+| What's included (Follow-up) | `/{lang}/centre/{id}/followup-extra` | built | OD-58 | No Figma frame; no prices, "Contact us"; follow-up pages lead here when the centre has no extra | `C-EXTRA.ar`, `C-EXTRA.en` |
+| T14 Sign in | `/sign-in` (teacher app) | built | MKT-ACC-01 | CF-50 | `T14.ar`, `T14.en` |
+| J01 Rooms near you | `/rooms` | built | MKT-HAL-01 | Filters: group size, distance, days (no "Rent ▾" sort); the map is drawn (no map provider in the demo) | `J01.ar`, `J01.en` |
+| J02 Request a slot | `/room/{hallId}` | built | MKT-HAL-02 | Every group listed with where and when it meets, plus "A new group"; the rent estimate's lines come from the server (CF-13) | `J02.ar`, `J02.en` |
+| J03 My room requests | `/room-requests` | built | MKT-HAL-03 | CF-46 | `J03.ar`, `J03.en` |
+| J04 My profile | `/profile` | built | MKT-TCH-01, MKT-TCH-02 | "Review each enrolment" switch added (OD-08) | `J04.ar`, `J04.en` |
+| J05 My groups & fees | `/groups` | built | MKT-GRP-01, MKT-GRP-02 | CF-30 (merged with T09); fees per month and per session (CF-05); seats ≤ the hall; "Open a group" in an approved slot; no "Free trial session" (OD-22, BR-ENR-12) | `J05.ar`, `J05.en` |
+| J06 New enrolments | `/enrolments` | built | MKT-ENR-10 | CF-47 | `J06.ar`, `J06.en` |
+| J07 Earnings | `/earnings` (tab) | built | MKT-LED-07 | CF-48; one rent line per hall | `J07.ar`, `J07.en` |
+| Teacher tabs | — | built | 2A.5, 2A.6 | CF-49 | — |
+
+**Sample data:** Al Nour's Room 1 and Room 3 have 24 and 20 seats (Figma: 20 and 12) so the existing groups' seat caps fit their halls (seats ≤ hall). The demo centre has four halls; the 2B story brief says two (to settle in 2B).
+
+**Strings to review:** the website spells the brand «لينك» and the apps "Link" (the new centre screens follow the apps; C01 is a website page and follows the website).

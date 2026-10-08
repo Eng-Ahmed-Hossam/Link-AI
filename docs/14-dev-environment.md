@@ -122,7 +122,7 @@ Names and purpose only. **Never commit values.** `.env.example` lists every name
 | `EXPO_PUBLIC_SENTRY_DSN` | Teacher app error reporting |
 | `NEXT_PUBLIC_API_MODE`, `EXPO_PUBLIC_API_MODE` | `mock` (default): MSW handlers in the app, state per browser/device · `mock-server`: the same handlers over HTTP from `pnpm mock:server`, one shared state for all apps · `live`: core-api |
 | `NEXT_PUBLIC_USE_MOCKS`, `EXPO_PUBLIC_USE_MOCKS` | Older switch; `false` means `live`. `*_API_MODE` wins when set |
-| `NEXT_PUBLIC_APP_ENV`, `EXPO_PUBLIC_APP_ENV` + `*_DEMO_CONTROLS` | `local` + `1` shows the dev-only **Demo controls** (reset scenario, mock provider events, parent reply, offline, Phase 2 switch). Never with `live`, never in production builds |
+| `NEXT_PUBLIC_APP_ENV`, `EXPO_PUBLIC_APP_ENV` + `*_DEMO_CONTROLS` | `local` + `1` shows the dev-only **Demo controls** (reset scenario, mock provider events, parent reply, offline, Phase 2 switch) on the web dev index `/{lang}/dev` only (Step 2A.6), and in the teacher app unless a visitor came from the role chooser. Never with `live`, never in production builds |
 | `MOCK_SERVER_PORT`, `MOCK_SERVER_URL` | Mock server port (4010) and the URL the scenario script calls |
 | `DEMO_DEFAULT_FLAGS` | Demo flags on the mock server's first run (no `packages/mocks/.data/demo-flags.json` yet). `pnpm demo` sets `phase2-only`: Phase 2 on, marketplace off (the MVP pilot). Empty: both on |
 

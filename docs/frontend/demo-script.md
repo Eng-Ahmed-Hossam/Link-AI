@@ -6,7 +6,7 @@ The Demo Day path on the shared mock server: A01 → A02 → A03 → V07/V03 →
 
 1. `pnpm demo` → wait for "web 3000 · teacher 8081 · mock 4010".
 2. Two windows side by side: the teacher app at `http://localhost:8081` (phone size) and the owner web at `http://localhost:3000/ar/centre` (sign in as **Reception**, code `123456`).
-3. Demo controls (amber button, bottom corner) → **Reset scenario**. Check: Phase 2 on, marketplace off. A01 shows Nour as overdue and no case for Mariam yet.
+3. Demo controls (amber button on http://localhost:3000/ar/dev, kept open in a second tab) → **Reset scenario**. Check: Phase 2 on, marketplace off. A01 shows Nour as overdue and no case for Mariam yet.
 4. Microphone allowed in both browsers. A third tab with the parent PWA at `http://localhost:3000/ar/children` (parent `…0001`).
 
 ## The script

@@ -2,6 +2,14 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-08 — Step 2A: one connected product
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| 2A-1 | `docs/13-open-decisions.md` | CF-42 to CF-50: owner menu groups, C05 tabs and auto-approve switch, C02 pin and "Add room", C01 copy, J03 "Confirm booking", J06 actions, J07 payment methods, teacher tabs, T14 sign-up note | Every difference from Figma in the 2A screens, with what we built |
+| 2A-2 | `docs/frontend/screen-log.md` | "Step 2A" section: role chooser, demo banner, A18, C01–C07, A16, "What's included", T14, J01–J07 | Step 2A screen records |
+| 2A-3 | `docs/product/app-map.md` | Regenerated from the route manifest | New screens and the role chooser |
+
 ## 2026-10-08 — Step 1 approved
 
 | # | File | What changed | Why |
