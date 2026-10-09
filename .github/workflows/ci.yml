@@ -49,6 +49,34 @@ jobs:
         run: pnpm db:types && git diff --exit-code apps/core-api/src/db/schema.ts
       - run: pnpm test:api
 
+  # The connected story in LIVE mode (real core-api, Postgres, sign-in codes from sms-sink): every
+  # push to main (decided 2026-10-09). The full live e2e suite runs on demand or nightly (e2e-live.yml).
+  story-live:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/env-local.mjs
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm --filter @link/web exec playwright install --with-deps chromium
+      # pnpm dev (started by the Playwright config): services, migrations, seed, core-api, web, teacher app.
+      - run: node scripts/e2e-modes.mjs live story.spec.ts
+        env: { CI: '1' }
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: story-live-traces
+          path: apps/web/test-results
+          retention-days: 7
+
   python:
     runs-on: ubuntu-latest
     steps:

@@ -1,6 +1,6 @@
 # Real backend plan (R0)
 
-**Status:** R0 approved 2026-10-08 (decisions in §8). R1 built — see §9. R2–R4 not started. **Scope:** replace the mock server with core-api for everything the apps call today, locally (`docker compose` + `pnpm dev`), with real accounts, Postgres, per-centre isolation, server-side rules and provider adapters running against local fakes. **Not in scope:** deployment, real provider accounts, the ops console beyond review moderation, app stores, analytics.
+**Status:** R0 approved 2026-10-08; R1 approved 2026-10-09; R2a built (§9). R2b, R3, R4 not started. **Scope:** replace the mock server with core-api for everything the apps call today, locally (`docker compose` + `pnpm dev`), with real accounts, Postgres, per-centre isolation, server-side rules and provider adapters running against local fakes. **Not in scope:** deployment, real provider accounts, the ops console beyond review moderation, app stores, analytics.
 
 Read for this plan: PRODUCT_BRIEF, docs 05, 06, 07 (§2, §2a–§2d), 08, 10, ADR-0001 to ADR-0009 (0009 for the pilot request email only), `docs/product/sample-only.md`, `docs/product/app-map.md`, the mock handlers (`packages/mocks/src/**/handlers.ts`), `packages/api-client/src/*`, migrations 0001–0003, `infra/local/`.
 
@@ -275,4 +275,16 @@ Differences from this plan, decided while building:
 - core-api runs with `tsx` (no build step) locally; a production build arrives with deployment.
 - `GET /v1/feature-flags` added (07) so the web reads flags from the server in live mode.
 - Ops users are not seeded with phones that sign in: ops use SSO (MKT-OPS-08), not in this phase.
+
+### R2a — halls, room requests, groups, search (built 2026-10-09)
+
+R1-review changes first: C01 rate limits (10/hour per IP, 3/day per phone); pending centres hidden and refusing requests and bookings until verified; `pnpm ops:verify-centre` and the local "Verify centre" Demo control (audited); `GET /v1/feature-flags` signed-in and scoped by RLS; key IDs on encrypted phones and `platform.data_keys`, with a start-up warning; teacher invites wait for an accept and the profile stays hidden until complete (`invited` → `incomplete` → `active`); docs/10 says Expo web is not a production target; docs/13 OD-60 (consent pack).
+
+Built: migrations 0006–0007 (room_open_slots, teacher_applications, room_bookings + room_booking_slots with the no-double-booking exclusion constraint, groups with the seat-cap trigger, group_sessions, review_stats, the public views, the CF-44 trigger); 29 new endpoints (C02, C03, C05, auto-approve, J01–J03, C06, my bookings, J04, J05, P02–P06, invites); the demo seed mirrors the mock's halls, bookings, groups, sessions and the C06 pipeline; the connected story runs in live mode to step 3 (`apps/web/e2e-modes/story.spec.ts`, the same spec as mock).
+
+Differences from the plan:
+- Migration numbers: 0006 holds the R1-review changes, 0007 the R2a market tables; reviews and money (planned 0009–0011) move to R2b.
+- Subjects: the API takes any subject ID of the right code plus a school year and stores the one subject row of that curriculum and year (`subjectForYear`), so the apps keep one subject list.
+- Distances without a location are measured from a sample point in Maadi (P02 will pass the device location).
+- Seats taken are 0 until enrolments exist (R2b); one function (`market/seats.ts`) changes then.
 

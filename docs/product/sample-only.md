@@ -13,6 +13,6 @@ Everything in the connected story runs on the mock server (`pnpm demo`) or in th
 | **Voice notes** | Fixture speech-to-text, or local Whisper on this laptop; audio stays on the device. | The ai-service with real speech-to-text, encrypted audio deleted after 30 days, PDPL consent. |
 | **Maps and location** | A drawn map with pins; distances from sample data; "Location under review" is cleared by a Demo control. | Geocoding and a map provider; the ops console to verify a moved pin (CF-44). |
 | **Photos** | Coloured tiles; "+ Add photo" counts up. | Uploads to object storage (signed URLs), review before publishing. |
-| **Link ops** | No ops console: centre join requests (C01), teacher verification, review reports and refunds are only stored. | The ops console (L01–L03): verify centres and teachers, moderate reviews, refunds and disputes. |
+| **Link ops** | No ops console (locally, `pnpm ops:verify-centre` and the Demo controls stand in for centre verification): centre join requests (C01), teacher verification, review reports and refunds are only stored. | The ops console (L01–L03): verify centres and teachers, moderate reviews, refunds and disputes. |
 | **Notifications** | Stage changes, approvals and new enrolments are not notified. | In-app and SMS/WhatsApp notifications (MKT-NTF). |
 | **Contact email** | The site's contact address and `PILOT_REQUEST_TO` are not set; the request email provider key is empty. | The real address, and the email provider key in the server-side `.env.production`. |

@@ -5,6 +5,7 @@
 //   4. web :3000 and the teacher app :8081, both with API_MODE=live
 // Sign-in codes go to sms-sink: http://localhost:8093 . `pnpm demo` is still the mock-data demo.
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { ROOT, fail, loadEnv, redact, run } from './lib/env.mjs';
@@ -36,8 +37,26 @@ const pg = createRequire(join(ROOT, 'apps', 'core-api', 'package.json'))('pg');
 const client = new pg.Client({ connectionString: process.env.DATABASE_URL_MIGRATOR });
 await client.connect();
 const { rows } = await client.query('SELECT count(*)::int AS n FROM identity.users');
+// docs/10 §5: the stored data names the keys that wrote it; say so when .env.local changed them.
+const fp = (buf) => createHash('sha256').update(buf).digest('hex').slice(0, 12);
+const current = {
+  field: fp(Buffer.from(process.env.FIELD_KEY_LOCAL ?? '', 'base64').subarray(0, 32)),
+  lookup: fp(process.env.HMAC_KEY_LOOKUP ?? ''),
+};
+const keys = await client.query('SELECT purpose, key_id FROM platform.data_keys');
 await client.end();
-if (reset || rows[0].n === 0) run(process.execPath, [join(ROOT, 'scripts', 'db.mjs'), 'seed']);
+const changed = keys.rows.filter((r) => current[r.purpose] !== r.key_id).map((r) => r.purpose);
+if (changed.length && !reset)
+  console.warn(
+    [
+      '',
+      `WARNING: the data in Postgres was written with other keys (${changed.join(', ')}) than .env.local has.`,
+      '  Phones cannot be read and sign-ins will not find their accounts. Run: pnpm dev --reset',
+      '',
+    ].join('\n'),
+  );
+if (reset || rows[0].n === 0)
+  run(process.execPath, [join(ROOT, 'scripts', 'db.mjs'), 'seed', '--reset']);
 else console.log(`Database has data (${rows[0].n} users); kept. pnpm dev --reset re-seeds it.`);
 
 start('api', ['scripts/core-api.mjs', 'dev', 'all'], {}, 'node');
@@ -46,7 +65,8 @@ await waitFor(`${API}/ready`);
 start('web', ['--filter', '@link/web', 'dev'], {
   NEXT_PUBLIC_API_MODE: 'live',
   NEXT_PUBLIC_APP_ENV: 'local',
-  NEXT_PUBLIC_DEMO_CONTROLS: '',
+  // Local Demo controls: the story and the stand-in for Link ops (never in a production build).
+  NEXT_PUBLIC_DEMO_CONTROLS: '1',
   CORE_API_URL: API,
 });
 start(

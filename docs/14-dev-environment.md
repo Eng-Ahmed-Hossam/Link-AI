@@ -156,6 +156,8 @@ All commands are Node scripts, so they run the same in PowerShell, cmd and bash.
 | `pnpm dev:reset` | Drop the local volumes, start §2, migrate and seed (asks first; `--yes` skips) | real |
 | `pnpm db:migrate` / `db:rollback` / `db:status` | dbmate, as `app_migrator` (ADR-0006); `db:migrate` also sets local role passwords | real |
 | `pnpm db:seed` / `pnpm seed:demo` | **Wipe** the app tables and load the demo world: the same people, phones, centres and halls as the mock fixtures (`apps/core-api/seeds/demo.ts`, deterministic IDs, phones encrypted). `APP_ENV=local` only | real |
+| `pnpm seed:demo --reset` | Without `--reset`, `seed:demo` fills only an empty database; `--reset` wipes your local data and loads the demo world again | real |
+| `pnpm ops:verify-centre <centreId|phone>` | Local stand-in for Link ops: a pending centre (C01) or a moved pin becomes verified; audited. `APP_ENV=local` only; also in the live Demo controls | real |
 | `pnpm db:types` | Regenerate the Kysely row types (`apps/core-api/src/db/schema.ts`) from the migrated schema; CI fails on a diff | real |
 | `node scripts/env-local.mjs [--force]` | Write a fresh `.env.local` (local ports, random secrets); refuses to overwrite without `--force` | real |
 | `pnpm env:check` | Fail if code reads an env name missing from `.env.example` | real |

@@ -2,6 +2,17 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-09 — R2a: halls, room requests, groups and search on the real backend
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| R2a-1 | `docs/07-api.md` | C01 rate limits; `/v1/me/invites` + accept; feature flags signed-in and scoped; `PATCH /v1/teachers/me` takes `displayName`, `subjectIds` and returns `profileStatus`; room search weekdays are ISO (1–7) — fixes R1's wrong "0 = Sunday" note; `centre_not_verified` | R1 review, R2a |
+| R2a-2 | `docs/06-data-model.md` | `teachers.profile_status`, `rooms.photo`, `groups` slot columns, `review_stats` shape, the public views, the CF-44 trigger, `platform.data_keys` | R2a schema |
+| R2a-3 | `docs/10-security-privacy.md` | Expo web is not a production target; key IDs on encrypted values | R1 review |
+| R2a-4 | `docs/13-open-decisions.md` | A0: OD-60 approve the consent pack; contact email blank for now | R1 review |
+| R2a-5 | `docs/RUNNING.md`, `docs/14-dev-environment.md` | What is real after R2a, the key warning, a click-it-yourself list, `ops:verify-centre`, `seed:demo --reset`, the Next cache fix | R2a report |
+| R2a-6 | `docs/plan/real-backend.md` | R2a progress and differences from the plan | R2a |
+
 ## 2026-10-09 — R1: real backend, platform and accounts
 
 | # | File | What changed | Why |

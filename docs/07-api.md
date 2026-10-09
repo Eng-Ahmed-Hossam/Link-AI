@@ -81,6 +81,7 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 | OTP verify per phone | 5 tries per code |
 | Authenticated user | 120 requests / min |
 | Public search per IP | 60 requests / min |
+| Centre join request (C01, public) | 10 / hour per IP, 3 / day per phone (added 2026-10-09) |
 
 ### Real-time
 - Assistant replies (Phase 2) stream over **SSE**: `GET /v1/assistant/threads/{id}/stream`.
@@ -112,7 +113,9 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 | POST | `/v1/me/children` | parent | Add a child (records `child_data_processing` consent) | ✓ | MKT-ACC-05 |
 | PATCH / DELETE | `/v1/children/{id}` | parent | Edit / archive a child | ✓ | MKT-ACC-05 |
 | GET | `/v1/me/consents` | any | Current consents (by `user_id`; never cached) | — read | BR-DAT-03 |
-| GET | `/v1/feature-flags` | public (any) | Feature flags: the global ones, merged with the caller's centre and teacher scopes when signed in: `{flags: {key: boolean}}` (added 2026-10-08, E0-09) | — read | OD-58 |
+| GET | `/v1/feature-flags` | any (signed in) | Feature flags for the caller's own scope only: the global ones merged with their centres and teacher profile: `{flags: {key: boolean}}` (added 2026-10-08; signed-in only since 2026-10-09, E0-09) | — read | OD-58 |
+| GET | `/v1/me/invites` | any | Centre invitations waiting for an answer (added 2026-10-09) | — read | MKT-ACC-06 |
+| POST | `/v1/me/invites/{id}/accept` | the invited person | Accept. A teacher invite needs this accept; a staff invite starts at the first sign-in. An invited teacher's profile stays hidden from parents until accepted and complete (name and a subject) | ✓ | MKT-ACC-06 |
 | GET | `/v1/me/features` | parent | Paid extras on for any centre where the parent's children study: `{followupExtra}` (added 2026-10-08; P09 updates feed) | — read | OD-58 |
 | PUT | `/v1/me/consents` | any | Grant or withdraw a consent | ✓ | BR-DAT-03 |
 | POST | `/v1/me/data-requests` | any | PDPL access / correction / deletion request | ✓ | MKT-OPS-09 |
@@ -150,7 +153,7 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 |---|---|---|---|---|---|
 | GET | `/v1/teachers/{id}` · `/v1/teachers/by-slug/{slug}` | public | Public profile | — read | MKT-DSC-05 |
 | GET | `/v1/teachers/me` | teacher | Own profile | — read | MKT-TCH-01 |
-| PATCH | `/v1/teachers/me` | teacher | Profile, subjects, availability, settings | ✓ | MKT-TCH-01 |
+| PATCH | `/v1/teachers/me` | teacher | Profile, subjects (`subjectIds`), name (`displayName`), availability, settings. The response's `profileStatus` is `invited`, `incomplete` or `active`; parents see only `active` (decided 2026-10-09) | ✓ | MKT-TCH-01 |
 | POST | `/v1/teachers/me/verification` | teacher | Start eKYC; returns the provider session | ✓ | MKT-TCH-02 |
 | POST | `/v1/teachers/me/documents/upload-url` | teacher | Degree / reference upload | ✓ | MKT-TCH-02 |
 | GET | `/v1/teachers/me/features` | teacher | Paid extras on for any centre the teacher works in: `{followupExtra}` (added 2026-10-08; Follow-up tab) | — read | OD-58 |
@@ -158,9 +161,9 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 ### Hall booking
 | Method | Path | Who | Purpose | Idem | Money | Req |
 |---|---|---|---|---|---|---|
-| GET | `/v1/rooms/search?lat&lng&radiusKm&minCapacity&weekday&from&to&maxRentPt&facilities` | teacher | Find halls (J01). `weekday` is a comma-separated list (0 = Sunday … 6 = Saturday); without `lat`/`lng` the teacher's area is used | — read | — | MKT-HAL-01 |
+| GET | `/v1/rooms/search?lat&lng&radiusKm&minCapacity&weekday&from&to&maxRentPt&facilities` | teacher | Find halls (J01) of verified centres. `weekday` is a comma-separated list of ISO weekdays (1 = Monday … 7 = Sunday); without `lat`/`lng` distances are from the sample area (R2a) | — read | — | MKT-HAL-01 |
 | POST | `/v1/rooms/{id}/rent-estimate` | teacher | Estimate from slots, students and fee (J02); pure calculation | — read (no write) | teacher → centre (estimate) | BR-BKG-07 |
-| POST | `/v1/room-requests` | teacher | Request slot(s) | ✓ | — | MKT-HAL-02 |
+| POST | `/v1/room-requests` | teacher | Request slot(s). A pending (unverified) centre answers 409 `centre_not_verified` | ✓ | — | MKT-HAL-02 |
 | GET | `/v1/room-requests?scope=mine` | teacher | My requests (J03) | — read | — | MKT-HAL-03 |
 | GET | `/v1/room-requests?centreId&stage` | owner, staff | Pipeline (C06) | — read | — | MKT-HAL-04 |
 | POST | `/v1/room-requests/{id}/stage` | owner, staff | Move to `phone_call` / `meeting`, with an optional time | ✓ | — | MKT-HAL-04 |
