@@ -114,14 +114,19 @@ export const handlers = [
       });
     }),
   ),
-  // Teacher invitations (decided 2026-10-09): the sample world has none waiting.
+  // Teacher invitations (decided 2026-10-09): one waits in the sample world (+20 10 0000 0008).
   http.get(
     '*/v1/me/invites',
-    authed(() => HttpResponse.json([])),
+    authed(({ userId, lang }) => HttpResponse.json(db.invitesFor(userId, lang))),
   ),
   http.post(
     '*/v1/me/invites/:id/accept',
-    authed(() => problem(404, 'not_found', 'This invitation does not exist or you cannot see it.')),
+    authed(({ params, userId, lang }) => {
+      const left = db.acceptInvite(userId, params.id!, lang);
+      return left
+        ? HttpResponse.json(left)
+        : problem(404, 'not_found', 'This invitation does not exist or you cannot see it.');
+    }),
   ),
   http.get(
     '*/v1/me/consents',
@@ -394,7 +399,8 @@ export const handlers = [
       throw e;
     }
   }),
-  http.post('*/__mock/fawry/:enrolmentId/pay', ({ params }) => {
+  // The parent pays at a Fawry outlet: the same Demo path as core-api's (local only there).
+  http.post('*/__demo/fawry/:enrolmentId/pay', ({ params }) => {
     db.payFawryAtOutlet(String(params.enrolmentId));
     return HttpResponse.json({ ok: true });
   }),

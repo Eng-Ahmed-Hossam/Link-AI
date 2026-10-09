@@ -278,6 +278,8 @@
   "parent.pay.failedBody",
   "parent.pay.expiredTitle",
   "parent.pay.expiredBody",
+  "parent.pay.lateRefundTitle",
+  "parent.pay.lateRefundBody",
   "parent.pay.startAgain",
   "parent.pay.sessionFullTitle",
   "parent.pay.sessionFullBody",
@@ -1880,5 +1882,9 @@
   "teacher.profile.completeTitle",
   "teacher.profile.completeBody",
   "teacher.profile.name",
-  "teacher.profile.subjectsLabel"
+  "teacher.profile.subjectsLabel",
+  "parent.results.useMyLocation",
+  "parent.results.usingMyLocation",
+  "parent.results.nearYou",
+  "parent.results.locationOff"
 ]

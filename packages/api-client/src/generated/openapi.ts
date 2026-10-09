@@ -136,6 +136,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/centres/{id}/rent-income": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** C07 from the ledger and rent invoices: rent, Link fee, net (owner only) */
+        get: operations["getRentIncome"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/centres/{id}/rooms": {
         parameters: {
             query?: never;
@@ -241,6 +258,142 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/enrolments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hold a seat in every covered session (10 min; Fawry 24 h after checkout) */
+        post: operations["createEnrolment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/enrolments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One enrolment: one of the 8 states, never cached */
+        get: operations["getEnrolment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/enrolments/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** J06 with reviewEachEnrolment on: accept */
+        post: operations["acceptEnrolment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/enrolments/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel before paying, or before the first session (refund requested) */
+        post: operations["cancelEnrolment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/enrolments/{id}/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The provider hosted page, or a Fawry reference; again after a failed attempt */
+        post: operations["checkoutEnrolment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/enrolments/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** J06 with reviewEachEnrolment on: decline, with an automatic full refund */
+        post: operations["declineEnrolment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/enrolments/{id}/plan/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop the next renewal; the paid month stays */
+        post: operations["cancelPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/enrolments/{id}/refund-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** After the first session: a refund review by Link ops (dispute) */
+        post: operations["requestRefund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/feature-flags": {
         parameters: {
             query?: never;
@@ -293,6 +446,23 @@ export interface paths {
         patch: operations["patchGroup"];
         trace?: never;
     };
+    "/v1/groups/{id}/waitlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join the waitlist of a full group (free) */
+        post: operations["joinWaitlist"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me": {
         parameters: {
             query?: never;
@@ -340,6 +510,23 @@ export interface paths {
         get: operations["getConsents"];
         /** Grant or withdraw one consent */
         put: operations["putConsent"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/enrolments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My children enrolments (P09) */
+        get: operations["listMyEnrolments"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -398,6 +585,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/reviews-received": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** C04 tabs: visibility=public, visibility=private, status=reported; owners and staff pass centreId */
+        get: operations["listReviewsReceived"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/roles": {
         parameters: {
             query?: never;
@@ -409,6 +613,57 @@ export interface paths {
         put?: never;
         /** Add the role parent, teacher or centre_owner */
         post: operations["addRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A verified parent reviews, after the first session, once per target and term */
+        post: operations["createReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reviews/{id}/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The target replies publicly (never edits, hides or deletes) */
+        post: operations["replyReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reviews/{id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The target reports a review to Link ops */
+        post: operations["reportReview"];
         delete?: never;
         options?: never;
         head?: never;
@@ -655,6 +910,40 @@ export interface paths {
         patch: operations["patchTeacherSelf"];
         trace?: never;
     };
+    "/v1/teachers/me/earnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** J07 from the ledger: parents paid, Link commission, rent per hall, next payout */
+        get: operations["getTeacherEarnings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/teachers/me/enrolments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** J06: paid enrolments in my groups */
+        get: operations["listTeacherEnrolments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/teachers/me/features": {
         parameters: {
             query?: never;
@@ -683,6 +972,57 @@ export interface paths {
         get: operations["listTeacherGroups"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/waitlist/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Leave the waitlist; an open offer goes to the next family */
+        delete: operations["leaveWaitlist"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/waitlist/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept a live offer: the offered seat becomes a hold, and the checkout opens */
+        post: operations["acceptWaitlistOffer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/webhooks/payments/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Provider to Link: signature verified first, deduplicated on the provider event ID */
+        post: operations["paymentWebhook"];
         delete?: never;
         options?: never;
         head?: never;
@@ -875,6 +1215,20 @@ export interface components {
                 teachersRenting: number;
             };
         };
+        CheckoutBody: {
+            method: components["schemas"]["PaymentMethod"];
+        };
+        CheckoutResult: {
+            /** @description The provider's hosted page (no card field in Link) */
+            checkoutUrl: string;
+            /** @constant */
+            kind: "redirect";
+        } | {
+            expiresAt: string;
+            fawryReference: string;
+            /** @constant */
+            kind: "fawry";
+        };
         Child: {
             curriculum: components["schemas"]["CurriculumRef"];
             displayName: string;
@@ -900,6 +1254,35 @@ export interface components {
         Created: {
             id: string;
         };
+        CreateEnrolmentBody: {
+            /**
+             * Format: uuid
+             * @description Monthly and single-month plans
+             */
+            firstSessionId?: string;
+            /** Format: uuid */
+            groupId: string;
+            paymentPlan: components["schemas"]["PaymentPlan"];
+            /**
+             * Format: uuid
+             * @description Per-session plan
+             */
+            sessionId?: string;
+            sharePhone: boolean;
+            /** Format: uuid */
+            studentId: string;
+        };
+        CreateReviewBody: {
+            body: string;
+            /** Format: uuid */
+            enrolmentId: string;
+            stars: number;
+            tags: components["schemas"]["ReviewTag"][];
+            /** @enum {string} */
+            targetType: "centre" | "teacher";
+            /** @enum {string} */
+            visibility: "public" | "private";
+        };
         /** @enum {string} */
         Curriculum: "NATIONAL" | "IGCSE" | "AMERICAN" | "NILE";
         CurriculumRef: {
@@ -916,6 +1299,82 @@ export interface components {
         DeclineBody: {
             reason: string;
         };
+        Earnings: {
+            byGroup: {
+                amount: components["schemas"]["Money"];
+                id: string;
+                name: string;
+                students: number;
+            }[];
+            commission: components["schemas"]["Money"];
+            commissionPercent: number;
+            /** @description What the teacher keeps this month, after Link commission and rent */
+            keep: components["schemas"]["Money"];
+            methods: {
+                method: components["schemas"]["PaymentMethod"];
+                percent: number;
+            }[];
+            month: string;
+            nextPayout: {
+                account: string;
+                amount: components["schemas"]["Money"];
+                on: string;
+            };
+            parentsPaid: components["schemas"]["Money"];
+            rent: {
+                amount: components["schemas"]["Money"];
+                centre: string;
+                hall: string;
+                rule: components["schemas"]["RentRule"];
+            }[];
+            rentTotal: components["schemas"]["Money"];
+        };
+        Enrolment: {
+            canReview: boolean;
+            fawry: {
+                expiresAt: string;
+                reference: string;
+            } | null;
+            firstSession: {
+                id: string;
+                startsAt: string;
+            };
+            firstSessionStarted: boolean;
+            group: components["schemas"]["GroupSummary"];
+            holdExpiresAt: string | null;
+            id: string;
+            lastPaymentFailed: boolean;
+            method: components["schemas"]["PaymentMethod"] | null;
+            /** @description Receipt once the webhook confirmed the payment (never from a redirect, BR-MNY-12) */
+            payment: {
+                amount: components["schemas"]["Money"];
+                cardLast4: string | null;
+                method: components["schemas"]["PaymentMethod"];
+                paidAt: string;
+            } | null;
+            phoneShared: boolean;
+            plan: components["schemas"]["PaymentPlan"];
+            /** @description Fee snapshot at reservation (OD-39) */
+            price: components["schemas"]["Money"];
+            /** @description Human reference, e.g. LNK-20931 (MKT-ENR-06) */
+            reference: string;
+            refund: components["schemas"]["Refund"] | null;
+            renewsOn: string | null;
+            /** @description Sessions of the paid period (BR-ENR-13) */
+            sessionIds: string[];
+            status: components["schemas"]["EnrolmentStatus"];
+            student: components["schemas"]["Child"];
+            teacherReviewsEnrolments: boolean;
+        };
+        EnrolmentPage: {
+            data: components["schemas"]["Enrolment"][];
+            nextCursor: string | null;
+        };
+        /**
+         * @description The 8 states of 08 §4; refund state lives on the refund (BR-ENR-14)
+         * @enum {string}
+         */
+        EnrolmentStatus: "pending_payment" | "awaiting_teacher" | "confirmed" | "past_due" | "cancelled" | "expired" | "declined" | "ended";
         /** @enum {string} */
         Facility: "ac" | "fan" | "projector" | "sound" | "whiteboard" | "smart_board" | "wheelchair";
         FeatureFlags: {
@@ -1013,6 +1472,8 @@ export interface components {
         Me: {
             /** @description Centres where the user is owner or staff */
             centreIds?: string[];
+            /** @description Parent: the area search measures from when no location is shared (a name only) */
+            homeArea?: string | null;
             id: string;
             /** @enum {string} */
             language: "ar" | "en";
@@ -1080,6 +1541,10 @@ export interface components {
             refreshToken?: string;
             user: components["schemas"]["Me"];
         };
+        /** @enum {string} */
+        PaymentMethod: "card" | "fawry" | "wallet";
+        /** @enum {string} */
+        PaymentPlan: "monthly_recurring" | "single_month" | "per_session";
         PersonRef: {
             displayName: string;
             id: string;
@@ -1129,6 +1594,19 @@ export interface components {
             /** @description Teacher app; the web sends the cookie */
             refreshToken?: string;
         };
+        Refund: {
+            amount: components["schemas"]["Money"];
+            createdAt: string;
+            id: string;
+            /** @enum {string} */
+            policy: "before_first_session" | "dispute" | "teacher_declined" | "group_cancelled" | "late_payment_no_seat";
+            status: components["schemas"]["RefundStatus"];
+        };
+        RefundRequestBody: {
+            reason?: string;
+        };
+        /** @enum {string} */
+        RefundStatus: "requested" | "approved" | "processing" | "succeeded" | "failed" | "rejected";
         /** @enum {string} */
         RentBasis: "fixed_per_session" | "per_student_per_session" | "percent_of_fees";
         RentEstimate: {
@@ -1149,10 +1627,56 @@ export interface components {
             slots: components["schemas"]["WeeklySlot"][];
             students: number;
         };
+        RentIncome: {
+            feePercent: number;
+            halls: number;
+            month: string;
+            nextTransfer: {
+                account: string;
+                amount: components["schemas"]["Money"];
+                on: string;
+            };
+            roomUsePercent: number;
+            rows: components["schemas"]["RentIncomeRow"][];
+            teachers: number;
+            totals: {
+                collected: components["schemas"]["Money"];
+                linkFee: components["schemas"]["Money"];
+                net: components["schemas"]["Money"];
+                outstanding: components["schemas"]["Money"];
+                rentDue: components["schemas"]["Money"];
+            };
+        };
+        RentIncomeRow: {
+            dueOn: string | null;
+            feesBase: components["schemas"]["Money"] | null;
+            hall: {
+                id: string;
+                name: string;
+            };
+            linkFee: components["schemas"]["Money"];
+            net: components["schemas"]["Money"];
+            /** @enum {string} */
+            paidVia: "link" | "due";
+            rent: components["schemas"]["Money"];
+            rentRule: components["schemas"]["RentRule"];
+            sessions: number;
+            studentSessions: number;
+            teacher: {
+                id: string;
+                name: string;
+            };
+        };
         RentRule: {
             amount: components["schemas"]["Money"] | null;
             basis: components["schemas"]["RentBasis"];
             percent: number | null;
+        };
+        ReplyBody: {
+            body: string;
+        };
+        ReportBody: {
+            reason: string;
         };
         /** @enum {string} */
         RequestStage: "requested" | "phone_call" | "meeting" | "approved" | "declined" | "withdrawn";
@@ -1163,6 +1687,57 @@ export interface components {
             rating: number | null;
             reviewCount: number;
             verifiedId: boolean;
+        };
+        ReviewCreated: {
+            id: string;
+            /** @enum {string} */
+            status: "pending_checks" | "published" | "held";
+        };
+        ReviewReceived: {
+            body: string;
+            createdAt: string;
+            id: string;
+            reply: {
+                at: string;
+                body: string;
+            } | null;
+            reported: {
+                at: string;
+                reason: string;
+            } | null;
+            schoolYear: string;
+            stars: number;
+            target: {
+                /** @enum {string} */
+                kind: "centre" | "teacher";
+                name: string;
+            };
+            /** @enum {string} */
+            visibility: "public" | "private";
+        };
+        ReviewsReceived: {
+            counts: {
+                private: number;
+                public: number;
+                reported: number;
+            };
+            items: components["schemas"]["ReviewReceived"][];
+            mentions: {
+                count: number;
+                tag: string;
+            }[];
+            summary: {
+                centre: {
+                    count: number;
+                    rating: number;
+                };
+                privateThisMonth: number;
+                teachers: {
+                    count: number;
+                    name: string;
+                    rating: number;
+                }[];
+            };
         };
         /** @enum {string} */
         ReviewTag: "communication" | "organised" | "location" | "good_value" | "explains_clearly" | "patient" | "homework_feedback" | "exam_prep";
@@ -1358,6 +1933,24 @@ export interface components {
             data: components["schemas"]["TeacherCard"][];
             nextCursor: string | null;
         };
+        TeacherEnrolment: {
+            /** @description Only with reviewEachEnrolment on (OD-08) */
+            canDecide: boolean;
+            createdAt: string;
+            group: {
+                centre: string;
+                id: string;
+                name: string;
+                room: string;
+            };
+            id: string;
+            method: components["schemas"]["PaymentMethod"] | null;
+            paid: components["schemas"]["Money"] | null;
+            parent: string;
+            plan: components["schemas"]["PaymentPlan"];
+            status: string;
+            student: string;
+        };
         TeacherGroup: {
             centre: {
                 displayName: string;
@@ -1463,12 +2056,33 @@ export interface components {
             refreshToken?: string;
         };
         UpdateMeBody: {
+            homeArea?: string | null;
             /** @enum {string} */
             language?: "ar" | "en";
             name?: string;
         };
         /** @enum {string} */
         Verification: "verified" | "pending" | "missing";
+        WaitlistAcceptBody: {
+            method: components["schemas"]["PaymentMethod"];
+            paymentPlan: components["schemas"]["PaymentPlan"];
+        };
+        WaitlistBody: {
+            /** Format: uuid */
+            studentId: string;
+        };
+        WaitlistEntry: {
+            id: string;
+            /** @description 1-based place in line (MKT-ENR-09 AC1) */
+            position: number;
+            /** @enum {string} */
+            status: "waiting" | "offered" | "converted" | "expired" | "left";
+        };
+        WebhookAck: {
+            outcome: string;
+            /** @constant */
+            received: true;
+        };
         WeeklySlot: {
             end: string;
             start: string;
@@ -1808,6 +2422,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CentreProfileEdit"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    getRentIncome: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentIncome"];
                 };
             };
             /** @description `unauthenticated` */
@@ -2293,6 +2956,490 @@ export interface operations {
             };
         };
     };
+    createEnrolment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEnrolmentBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Enrolment"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `seat_unavailable`, `already_enrolled` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `plan_not_offered`, `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    getEnrolment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Enrolment"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    acceptEnrolment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherEnrolment"] | null;
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_awaiting_teacher` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    cancelEnrolment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Enrolment"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `after_first_session` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    checkoutEnrolment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckoutBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutResult"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `hold_expired` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `method_not_allowed`, `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `provider_unavailable` */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    declineEnrolment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherEnrolment"] | null;
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_awaiting_teacher` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    cancelPlan: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Enrolment"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    requestRefund: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundRequestBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Enrolment"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     getFeatureFlags: {
         parameters: {
             query?: never;
@@ -2471,6 +3618,62 @@ export interface operations {
                 };
             };
             /** @description `seat_cap_above_hall`, `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    joinWaitlist: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WaitlistBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitlistEntry"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2712,6 +3915,35 @@ export interface operations {
             };
         };
     };
+    listMyEnrolments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrolmentPage"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     getParentFeatures: {
         parameters: {
             query?: never;
@@ -2822,6 +4054,48 @@ export interface operations {
             };
         };
     };
+    listReviewsReceived: {
+        parameters: {
+            query?: {
+                centreId?: string;
+                status?: "reported";
+                visibility?: "public" | "private";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewsReceived"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     addRole: {
         parameters: {
             query?: never;
@@ -2849,6 +4123,190 @@ export interface operations {
             };
             /** @description `unauthenticated` */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    createReview: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateReviewBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewCreated"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_verified_parent` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `already_reviewed` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    replyReview: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplyBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ok"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `private_feedback`, `already_replied` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    reportReview: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ok"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3647,6 +5105,64 @@ export interface operations {
             };
         };
     };
+    getTeacherEarnings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Earnings"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    listTeacherEnrolments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherEnrolment"][];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     getTeacherFeatures: {
         parameters: {
             query?: never;
@@ -3696,6 +5212,170 @@ export interface operations {
             };
             /** @description `unauthenticated` */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    leaveWaitlist: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    acceptWaitlistOffer: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WaitlistAcceptBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutResult"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `offer_expired` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    paymentWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookAck"];
+                };
+            };
+            /** @description `invalid_signature` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -70,6 +70,9 @@ export interface SearchQuery {
   sort?: 'best_match' | 'distance' | 'rating' | 'fee';
   q?: string;
   cursor?: string;
+  /** The browser's location, only after the parent shares it; rounded, never stored (2026-10-09). */
+  lat?: number;
+  lng?: number;
 }
 
 /** Trust badges come from Link's data, never from the owner (MKT-DSC-04). */
@@ -77,18 +80,9 @@ export type TrustBadge = 'verified';
 
 // ── Enrolment and payment (MKT-ENR) ────────────────────────────────────────────
 /** The 8 enrolment states (08 §4). Refund state lives on `refunds`, never here (BR-ENR-14). */
-export type EnrolmentStatus =
-  | 'pending_payment'
-  | 'awaiting_teacher'
-  | 'confirmed'
-  | 'past_due'
-  | 'cancelled'
-  | 'expired'
-  | 'declined'
-  | 'ended';
-
-export type PaymentPlan = 'monthly_recurring' | 'single_month' | 'per_session';
-export type PaymentMethod = 'card' | 'fawry' | 'wallet';
+export type EnrolmentStatus = Schemas['EnrolmentStatus'];
+export type PaymentPlan = Schemas['PaymentPlan'];
+export type PaymentMethod = Schemas['PaymentMethod'];
 
 /** Methods allowed per plan (BR-PMT-02, BR-PMT-03, OD-10). */
 export const METHODS_FOR_PLAN: Record<PaymentPlan, PaymentMethod[]> = {
@@ -97,93 +91,14 @@ export const METHODS_FOR_PLAN: Record<PaymentPlan, PaymentMethod[]> = {
   per_session: ['card', 'fawry', 'wallet'],
 };
 
-export type RefundStatus =
-  'requested' | 'approved' | 'processing' | 'succeeded' | 'failed' | 'rejected';
-
-export interface Refund {
-  id: string;
-  status: RefundStatus;
-  amount: Money;
-  policy:
-    | 'before_first_session'
-    | 'dispute'
-    | 'teacher_declined'
-    | 'group_cancelled'
-    | 'late_payment_no_seat';
-  createdAt: string;
-}
-
-export interface Enrolment {
-  id: string;
-  /** Human reference, e.g. LNK-20931 (MKT-ENR-06). LTR isolate in the UI. */
-  reference: string;
-  status: EnrolmentStatus;
-  plan: PaymentPlan;
-  method: PaymentMethod | null;
-  group: GroupSummary;
-  student: Child;
-  /** Fee snapshot at reservation (OD-39). */
-  price: Money;
-  /** While `pending_payment`; passing it makes the enrolment `expired` (BR-ENR-01, BR-ENR-05). */
-  holdExpiresAt: string | null;
-  /** Sessions this enrolment covers (BR-ENR-13). */
-  sessionIds: string[];
-  firstSession: { id: string; startsAt: string };
-  phoneShared: boolean;
-  /** Teacher's `reviewEachEnrolment` (OD-08): show the confirmation step. */
-  teacherReviewsEnrolments: boolean;
-  renewsOn: string | null;
-  /** Receipt once the webhook confirmed the payment (never from a redirect, BR-MNY-12). */
-  payment: {
-    amount: Money;
-    method: PaymentMethod;
-    cardLast4: string | null;
-    paidAt: string;
-  } | null;
-  /** Last attempt failed; the hold keeps running and the parent can retry (BR-ENR-05). */
-  lastPaymentFailed: boolean;
-  fawry: { reference: string; expiresAt: string } | null;
-  /** Shown separately from the enrolment status (MKT-ENR-08). */
-  refund: Refund | null;
-  firstSessionStarted: boolean;
-  /** Verified parent after the first session (BR-REV-01), and not yet reviewed this term (BR-REV-02). */
-  canReview: boolean;
-}
-
-export interface CreateEnrolmentBody {
-  groupId: string;
-  studentId: string;
-  paymentPlan: PaymentPlan;
-  /** Monthly and single-month plans. */
-  firstSessionId?: string;
-  /** Per-session plan. */
-  sessionId?: string;
-  sharePhone: boolean;
-}
-
-export type CheckoutResult =
-  | { kind: 'redirect'; checkoutUrl: string }
-  | { kind: 'fawry'; fawryReference: string; expiresAt: string };
-
-export interface WaitlistEntry {
-  id: string;
-  status: 'waiting' | 'offered' | 'converted' | 'expired' | 'left';
-  /** 1-based position in line (MKT-ENR-09 AC1). */
-  position: number;
-}
+export type RefundStatus = Schemas['RefundStatus'];
+export type Refund = Schemas['Refund'];
+export type Enrolment = Schemas['Enrolment'];
+export type CreateEnrolmentBody = Schemas['CreateEnrolmentBody'];
+export type CheckoutResult = Schemas['CheckoutResult'];
+export type WaitlistEntry = Schemas['WaitlistEntry'];
+export type WaitlistAcceptBody = Schemas['WaitlistAcceptBody'];
 
 // ── Reviews (MKT-REV) ──────────────────────────────────────────────────────────
-export interface CreateReviewBody {
-  enrolmentId: string;
-  targetType: 'centre' | 'teacher';
-  stars: number;
-  tags: ReviewTag[];
-  /** ≤ 600 characters (06 reviews.body). */
-  body: string;
-  visibility: 'public' | 'private';
-}
-
-export interface ReviewCreated {
-  id: string;
-  status: 'pending_checks' | 'published' | 'held';
-}
+export type CreateReviewBody = Schemas['CreateReviewBody'];
+export type ReviewCreated = Schemas['ReviewCreated'];

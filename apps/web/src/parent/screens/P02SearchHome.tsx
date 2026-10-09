@@ -85,7 +85,7 @@ export function P02SearchHome() {
   return (
     <>
       <PageTitle
-        context={t('parent.search.area')}
+        context={me.data?.homeArea ?? t('parent.search.area')}
         title={
           signedIn && firstName
             ? t('parent.search.hi', { name: firstName })

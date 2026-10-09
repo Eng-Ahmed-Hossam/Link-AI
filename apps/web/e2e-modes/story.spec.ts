@@ -1,8 +1,9 @@
 // Step 2B · the connected story, end to end across roles, by clicking: teacher (Expo web, 390) →
 // owner (1440) → parent (390) → Reception (1440) and back. One spec, so every step starts from what
 // the one before left. It runs in BOTH API modes (E2E_MODE=mock | live): the mock server, or the
-// real core-api with real sign-in (codes from sms-sink). Live mode runs the steps core-api serves so
-// far (LIVE_STORY_STEPS, R2a: 1–3). In mock mode it saves the numbered Arabic screenshots in
+// real core-api with real sign-in (codes from sms-sink) and real payments on fake-pay. Live mode runs
+// the steps core-api serves so far (LIVE_STORY_STEPS, R2b: 1–7). In mock mode it saves the numbered
+// Arabic screenshots in
 // docs/frontend/walkthroughs/connected-story/ (docs/testing/walkthrough.md follows the same steps).
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -10,8 +11,8 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 import { axe } from '../e2e-demo/helpers';
 import { API, MODE, PEOPLE, TEACHER_APP, codeFor, fixtureId as id, ready } from './helpers';
 
-/** Live mode runs the story up to this step (R2a: 3; R2b: 7; R3: 9). Mock mode runs all nine. */
-const LIVE_STORY_STEPS = Number(process.env.LIVE_STORY_STEPS ?? 3);
+/** Live mode runs the story up to this step (R2b: 7; R3: 9). Mock mode runs all nine. */
+const LIVE_STORY_STEPS = Number(process.env.LIVE_STORY_STEPS ?? 7);
 const runs = (step: number) => MODE === 'mock' || step <= LIVE_STORY_STEPS;
 
 // A stuck click fails within half a minute, not at the end of the story's long timeout.
@@ -213,10 +214,19 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
     await expect(parent.locator('input[autocomplete^="cc-"]')).toHaveCount(0);
     await snap(parent, 'parent-P07-pay');
     await parent.getByRole('button', { name: /^ادفع .* واحجز$/ }).click();
-    await parent.waitForURL(/mock-checkout/);
-    await ready(parent);
-    await snap(parent, 'parent-mock-provider');
-    await parent.getByRole('button', { name: 'تجربة دفع ناجح' }).click();
+    if (MODE === 'live') {
+      // The provider's hosted page (fake-pay): it simulates the result; no card field anywhere.
+      await parent.waitForURL(/:8091\/checkout\//);
+      await expect(parent.locator('input[autocomplete^="cc-"], input[name*="card"]')).toHaveCount(
+        0,
+      );
+      await parent.getByTestId('fake-pay-succeed').click();
+    } else {
+      await parent.waitForURL(/mock-checkout/);
+      await ready(parent);
+      await snap(parent, 'parent-mock-provider');
+      await parent.getByRole('button', { name: 'تجربة دفع ناجح' }).click();
+    }
     await parent.waitForURL(/\/done$/);
     await expect(parent.getByRole('heading', { name: 'تم حجز المكان!' })).toBeVisible({
       timeout: 20_000,

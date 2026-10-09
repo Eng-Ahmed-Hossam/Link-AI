@@ -97,6 +97,15 @@ interface State {
   waitlist: { id: string; groupId: string; studentId: string }[];
   /** Phone → OTP attempts for the current code. */
   otp: Record<string, { attempts: number; sentAt: number }>;
+  /** Teacher invitations waiting for an answer (decided 2026-10-09). */
+  invites?: {
+    id: string;
+    phone: string;
+    centreId: string;
+    role: 'teacher';
+    invitedAt: string;
+    status: 'pending' | 'accepted';
+  }[];
   /** Known accounts (phone → user). The sample parent is pre-registered. */
   users: Record<string, { id: string; name: string | null; roles: string[] }>;
   extraChildren: {
@@ -147,6 +156,7 @@ function fresh(): State {
       ),
     },
     extraChildren: [],
+    invites: seedInvites(today),
     settings: { holdSeconds: HOLD_SECONDS_DEFAULT, scenario: 'default', reviewEachEnrolment: {} },
     seq: 20900,
     market: seedMarket(today),
@@ -642,6 +652,54 @@ export function addChild(
   s.extraChildren.push(row);
   save();
   return childrenOf(userId, lang).find((c) => c.id === row.id)!;
+}
+
+/**
+ * One pending teacher invitation in the sample world: مركز النور invited a new teacher's number,
+ * so the teacher app's invite screen (sign in with +20 10 0000 0008) has something to accept.
+ */
+export const INVITED_TEACHER_PHONE = '+201000000008';
+function seedInvites(today: string): NonNullable<State['invites']> {
+  return [
+    {
+      id: 'inv-teacher-nour',
+      phone: INVITED_TEACHER_PHONE,
+      centreId: 'cen-nour',
+      role: 'teacher',
+      invitedAt: cairoToUtc(addDays(today, -1), '11:00'),
+      status: 'pending',
+    },
+  ];
+}
+const phoneOf = (userId: string) =>
+  Object.entries(load().users).find(([, u]) => u.id === userId)?.[0] ?? null;
+
+/** Invitations waiting for this user (GET /v1/me/invites). */
+export function invitesFor(userId: string, lang: Lang) {
+  const s = load();
+  s.invites ??= seedInvites(cairoToday());
+  const phone = phoneOf(userId);
+  return s.invites
+    .filter((i) => i.status === 'pending' && i.phone === phone)
+    .map((i) => ({
+      id: i.id,
+      centre: { id: i.centreId, name: t(centreFx(i.centreId).name, lang) },
+      role: i.role,
+      invitedAt: i.invitedAt,
+    }));
+}
+
+/** Accept: the teacher role becomes active (the profile then asks for a name and subject). */
+export function acceptInvite(userId: string, inviteId: string, lang: Lang) {
+  const s = load();
+  const inv = (s.invites ?? []).find(
+    (i) => i.id === inviteId && i.status === 'pending' && i.phone === phoneOf(userId),
+  );
+  if (!inv) return null;
+  inv.status = 'accepted';
+  addRole(userId, inv.role);
+  save();
+  return invitesFor(userId, lang);
 }
 
 export function userByPhone(phone: string) {

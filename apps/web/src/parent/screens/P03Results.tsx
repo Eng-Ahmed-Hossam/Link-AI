@@ -3,7 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCurricula, useSearchCentres, useSubjects, type SearchQuery } from '@link/api-client';
+import {
+  useCurricula,
+  useMe,
+  useSearchCentres,
+  useSubjects,
+  type SearchQuery,
+} from '@link/api-client';
 import { formatKm, formatMoney, formatNumber } from '@link/i18n';
 import {
   Button,
@@ -22,6 +28,8 @@ import { useI18n } from '../../i18n-client';
 import { QueryState } from '../QueryState';
 import { CentreCover } from '../CentreCover';
 import { money, seatStateTone } from '../format';
+import { forgetLocation, shareLocation, useNearPoint } from '../near';
+import { useSession } from '../../session';
 
 const MAADI = { lat: 29.9602 - 0.004, lng: 31.2569 + 0.002 }; // the parent's chosen area (fixture)
 const DISTANCES = [2, 5, 10];
@@ -51,8 +59,13 @@ export function P03Results() {
     sort: (get('sort') as SearchQuery['sort']) ?? 'best_match',
     q: get('q'),
   };
+  const near = useNearPoint();
+  const [locationNote, setLocationNote] = useState<null | 'denied' | 'unavailable'>(null);
+  const { session } = useSession();
+  const me = useMe({ enabled: !!session });
   const view = get('view') ?? 'map';
-  const res = useSearchCentres(query);
+  const res = useSearchCentres(near ? { ...query, ...near } : query);
+  const area = near ? t('parent.results.nearYou') : (me.data?.homeArea ?? t('parent.search.area'));
 
   const set = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(sp.toString());
@@ -73,7 +86,7 @@ export function P03Results() {
   return (
     <>
       <PageTitle
-        context={t('parent.search.area')}
+        context={area}
         title={title}
         subtitle={
           res.data
@@ -92,6 +105,17 @@ export function P03Results() {
         aria-label={t('parent.results.filters')}
         className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]"
       >
+        <FilterChip
+          pressed={!!near}
+          onPressedChange={async (on) => {
+            setLocationNote(null);
+            if (!on) return forgetLocation();
+            const r = await shareLocation();
+            if (r !== 'ok') setLocationNote(r);
+          }}
+        >
+          {t(near ? 'parent.results.usingMyLocation' : 'parent.results.useMyLocation')}
+        </FilterChip>
         <FilterChip pressed onPressedChange={() => setSheet('distance')} aria-haspopup="dialog">
           {t('parent.results.within', { km: formatNumber(query.radiusKm!, locale) })}
         </FilterChip>
@@ -131,6 +155,11 @@ export function P03Results() {
           {t('parent.results.verified')}
         </FilterChip>
       </div>
+      {locationNote ? (
+        <p role="status" className="text-caption text-muted">
+          {t('parent.results.locationOff')}
+        </p>
+      ) : null}
 
       <QueryState
         query={res}

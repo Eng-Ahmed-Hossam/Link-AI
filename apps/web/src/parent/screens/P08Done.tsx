@@ -68,11 +68,23 @@ export function P08Done({ id }: { id: string }) {
         <p className="text-body text-muted">{t('parent.done.confirmingBody')}</p>
       </Card>
     );
+  // BR-ENR-06: the money came after the seat was gone; it is refunded in full, automatically.
+  const lateRefund = e.status === 'expired' && e.refund?.policy === 'late_payment_no_seat';
   if (e.status === 'expired' || e.status === 'cancelled')
     return (
       <ErrorState
-        title={t(e.status === 'expired' ? 'parent.pay.expiredTitle' : 'parent.status.cancelled')}
-        body={t('parent.pay.expiredBody')}
+        title={t(
+          lateRefund
+            ? 'parent.pay.lateRefundTitle'
+            : e.status === 'expired'
+              ? 'parent.pay.expiredTitle'
+              : 'parent.status.cancelled',
+        )}
+        body={
+          lateRefund
+            ? t('parent.pay.lateRefundBody', { amount: money(e.refund!.amount, locale) })
+            : t('parent.pay.expiredBody')
+        }
         action={
           <Link
             href={`/${locale}/teachers/${e.group.teacher.slug}/reserve?group=${e.group.id}`}
@@ -309,7 +321,7 @@ function FawryPending({ e }: { e: Enrolment }) {
       {process.env.NODE_ENV !== 'production' ? (
         <Button
           variant="secondary"
-          onClick={() => fetch(apiUrl(`/__mock/fawry/${e.id}/pay`), { method: 'POST' })}
+          onClick={() => fetch(apiUrl(`/__demo/fawry/${e.id}/pay`), { method: 'POST' })}
           lang="en"
         >
           Simulate payment at a Fawry outlet (mock)

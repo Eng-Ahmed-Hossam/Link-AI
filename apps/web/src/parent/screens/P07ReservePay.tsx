@@ -172,7 +172,10 @@ export function P07ReservePay({ id }: { id: string }) {
       attemptKey.current ??= newIdempotencyKey();
       const c = await api.checkout(enrolmentId, method, attemptKey.current);
       attemptKey.current = null;
-      if (c.kind === 'redirect') router.push(`/${locale}${c.checkoutUrl}`);
+      // The provider's hosted page: another site in live mode (fake-pay), a route of ours in mock.
+      if (c.kind === 'redirect')
+        if (/^https?:\/\//.test(c.checkoutUrl)) window.location.assign(c.checkoutUrl);
+        else router.push(`/${locale}${c.checkoutUrl}`);
       else router.push(`/${locale}/reserve/${enrolmentId}/done`);
     } catch (err) {
       if (err instanceof ApiError && err.code === 'seat_unavailable') {

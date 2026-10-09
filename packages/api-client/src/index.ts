@@ -30,6 +30,7 @@ import type {
   TeacherProfile,
   UpdateMeBody,
   WaitlistEntry,
+  WaitlistAcceptBody,
   Page,
 } from './types';
 import type {
@@ -323,6 +324,10 @@ export const api = {
     request<Enrolment>('POST', `/v1/enrolments/${id}/refund-requests`, { body: { reason } }),
   joinWaitlist: (groupId: string, studentId: string) =>
     request<WaitlistEntry>('POST', `/v1/groups/${groupId}/waitlist`, { body: { studentId } }),
+  /** Accept a live waitlist offer: the seat becomes a hold and the checkout opens (BR-ENR-10). */
+  acceptWaitlistOffer: (entryId: string, body: WaitlistAcceptBody, idempotencyKey: string) =>
+    request<CheckoutResult>('POST', `/v1/waitlist/${entryId}/accept`, { body, idempotencyKey }),
+  leaveWaitlist: (entryId: string) => request<void>('DELETE', `/v1/waitlist/${entryId}`),
   // Reviews (MKT-REV)
   createReview: (body: CreateReviewBody, idempotencyKey: string) =>
     request<ReviewCreated>('POST', '/v1/reviews', { body, idempotencyKey }),

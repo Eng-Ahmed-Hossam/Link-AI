@@ -885,7 +885,8 @@ export function createGroup(teacherKey: string, b: NewGroupBody) {
   return { id };
 }
 
-const PLAN_OK = ['awaiting_teacher', 'confirmed', 'pending_payment', 'past_due'];
+// BR-ENR-07: the teacher sees a student once paid (docs win over the earlier mock).
+const PLAN_OK = ['awaiting_teacher', 'confirmed', 'past_due'];
 export function teacherEnrolments(teacherKey: string, lang: Lang): TeacherEnrolment[] {
   const gs = db.allGroups().filter((g) => g.teacherId === teacherKey);
   const review = db.reviewEachEnrolment(teacherKey);
