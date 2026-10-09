@@ -109,6 +109,9 @@ services:
       FAKE_PAY_PUBLIC_URL: http://localhost:${FAKE_PAY_HOST_PORT:-8091}
       # core-api runs on the host; host.docker.internal reaches it from Docker Desktop.
       FAKE_PAY_WEBHOOK_URL: ${FAKE_PAY_WEBHOOK_URL:-}
+    # Linux (CI) has no host.docker.internal by default; Docker Desktop ignores this mapping.
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     ports:
       - '${FAKE_PAY_HOST_PORT:-8091}:8091'
     healthcheck:
