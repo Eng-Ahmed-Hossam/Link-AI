@@ -81,6 +81,8 @@ export interface MarketState {
     /** Set when that number signs in: the pending centre made from the request (07 §2). */
     centreId?: string;
     ownerId?: string;
+    /** Link ops (a local stand-in) verified the centre. */
+    verified?: boolean;
   })[];
   seq: number;
 }

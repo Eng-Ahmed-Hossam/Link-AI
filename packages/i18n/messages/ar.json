@@ -1875,5 +1875,13 @@
   "sms.staffInvite.body": "لينك: أضافك {centre} إلى فريقه. ادخل برقم الموبايل ده.",
   "server.staff.scope.owner": "كل المجموعات",
   "server.staff.scope.reception": "كل الطلاب • المتابعات",
-  "server.staff.scope.teacher": "مجموعاته فقط"
+  "server.staff.scope.teacher": "مجموعاته فقط",
+  "server.centre.closedDay": "{day} مغلق",
+  "teacher.invite.title": "مركز دعاك",
+  "teacher.invite.body": "{centre} دعاك للتدريس عنده على لينك. اقبل الدعوة، وبعدها اكتب اسمك والمواد اللي بتدرّسها عشان أولياء الأمور يلاقوك.",
+  "teacher.invite.accept": "قبول الدعوة",
+  "teacher.profile.completeTitle": "كمّل ملفك",
+  "teacher.profile.completeBody": "أولياء الأمور يشوفوك لما يكون في ملفك اسمك ومادة واحدة على الأقل.",
+  "teacher.profile.name": "اسمك كما سيظهر لأولياء الأمور",
+  "teacher.profile.subjectsLabel": "المواد اللي بتدرّسها"
 }

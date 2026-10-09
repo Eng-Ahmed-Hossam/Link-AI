@@ -18,3 +18,15 @@ describe('platform basics', () => {
     expect(x.toString('utf8')).not.toContain('1000000003');
   });
 });
+
+describe('docs/10 §5 key IDs', () => {
+  it('every encrypted value names its key; another key is reported, not misread', async () => {
+    const { FieldCipher, LocalKeyWrapper, KeyMismatchError } =
+      await import('../../src/platform/crypto');
+    const a = new FieldCipher(new LocalKeyWrapper(Buffer.alloc(32, 1).toString('base64')));
+    const b = new FieldCipher(new LocalKeyWrapper(Buffer.alloc(32, 2).toString('base64')));
+    const x = a.encrypt('+201000000003');
+    expect(FieldCipher.keyIdOf(x)).toBe(a.keyId);
+    expect(() => b.decrypt(x)).toThrow(KeyMismatchError);
+  });
+});

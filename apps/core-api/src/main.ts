@@ -5,6 +5,8 @@ import { type SmsSender, SMS_SENDER } from './adapters/sms';
 import { coreProviders } from './app.module';
 import { loadConfig, isLocal } from './config';
 import { Phones } from './identity/phone';
+import { FieldCipher } from './platform/crypto';
+import { currentKeyIds, KEY_MISMATCH_HELP, keyMismatches } from './platform/data-keys';
 import { Database } from './platform/db';
 import { createLogger } from './platform/logger';
 import { Redises } from './platform/redis';
@@ -22,8 +24,15 @@ const log = createLogger(config.LOG_LEVEL, `core-api:${entry}`);
 
 async function api() {
   const { app } = await createApi(config, log);
+  await warnOnKeyMismatch(app.get(Database), app.get(FieldCipher));
   await app.listen(config.CORE_API_PORT);
   log.info({ port: config.CORE_API_PORT, env: config.APP_ENV }, 'core-api listening');
+}
+
+/** docs/10 §5: data written with other keys cannot be read; say so loudly at start-up. */
+async function warnOnKeyMismatch(db: Database, cipher: FieldCipher) {
+  const bad = await keyMismatches(db, currentKeyIds(cipher.keyId, config.HMAC_KEY_LOOKUP));
+  if (bad.length) log.error({ mismatches: bad }, KEY_MISMATCH_HELP);
 }
 
 async function worker() {

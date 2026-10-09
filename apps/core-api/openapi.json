@@ -274,6 +274,112 @@
         }
       }
     },
+    "/v1/centres/{id}": {
+      "patch": {
+        "operationId": "patchCentre",
+        "summary": "Edit the profile (owner); a moved pin puts the location under review (CF-44)",
+        "tags": [
+          "centres"
+        ],
+        "x-rules": [
+          "MKT-CEN-02",
+          "CF-44"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "A UUID per action; a retry with the same key and body replays the first response (07 §1)",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CentrePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CentreProfileEdit"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`invalid_location`, `validation_failed`, `idempotency_key_reused`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/centres/{id}/features": {
       "get": {
         "operationId": "getCentreFeatures",
@@ -337,6 +443,513 @@
           },
           "422": {
             "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/centres/{id}/profile": {
+      "get": {
+        "operationId": "getCentreProfileEdit",
+        "summary": "C02 editing view: public fields, halls, completeness, badges, location under review",
+        "tags": [
+          "centres"
+        ],
+        "x-rules": [
+          "MKT-CEN-02",
+          "CF-44"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CentreProfileEdit"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/centres/{id}/rooms": {
+      "get": {
+        "operationId": "listHalls",
+        "summary": "Halls with their weekly slots (C05)",
+        "tags": [
+          "centres"
+        ],
+        "x-rules": [
+          "MKT-CEN-03"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Hall"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "addHall",
+        "summary": "Add a hall (owner, CF-44): listed, the whole weekly grid open",
+        "tags": [
+          "centres"
+        ],
+        "x-rules": [
+          "MKT-CEN-03",
+          "CF-44"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "A UUID per action; a retry with the same key and body replays the first response (07 §1)",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewHallBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Hall"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`, `idempotency_key_reused`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/centres/{id}/schedule": {
+      "get": {
+        "operationId": "getCentreSchedule",
+        "summary": "C03: who uses which hall, seats filled, free slots, the next six working days",
+        "tags": [
+          "centres"
+        ],
+        "x-rules": [
+          "MKT-CEN-04"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CentreSchedule"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/centres/{id}/settings/auto-approve": {
+      "get": {
+        "operationId": "getAutoApprove",
+        "summary": "Auto-approve rules (off by default)",
+        "tags": [
+          "centres"
+        ],
+        "x-rules": [
+          "MKT-HAL-05"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoApproveRules"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putAutoApprove",
+        "summary": "Change the auto-approve rules (owner)",
+        "tags": [
+          "centres"
+        ],
+        "x-rules": [
+          "MKT-HAL-05"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "A UUID per action; a retry with the same key and body replays the first response (07 §1)",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutoApproveRules"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoApproveRules"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`, `idempotency_key_reused`",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -531,6 +1144,83 @@
         }
       }
     },
+    "/v1/centres/by-slug/{slug}": {
+      "get": {
+        "operationId": "getCentreBySlug",
+        "summary": "P04: a verified centre, its teachers and the groups for the child",
+        "tags": [
+          "search"
+        ],
+        "x-rules": [
+          "MKT-DSC-04",
+          "CF-44"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]{1,80}$"
+            }
+          },
+          {
+            "name": "schoolYearId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "subjectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CentreProfileWithGroups"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/curricula": {
       "get": {
         "operationId": "listCurricula",
@@ -562,14 +1252,21 @@
     "/v1/feature-flags": {
       "get": {
         "operationId": "getFeatureFlags",
-        "summary": "Feature flags for the caller: global, merged with their centre and teacher scopes",
+        "summary": "Feature flags for the signed-in caller: global, merged with their own centre and teacher scopes",
         "tags": [
           "features"
         ],
         "x-rules": [
           "E0-09"
         ],
-        "security": [],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -577,6 +1274,262 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FeatureFlags"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/groups": {
+      "post": {
+        "operationId": "createGroup",
+        "summary": "J05: a group in a booked slot; seats never above the hall; sessions from the slot",
+        "tags": [
+          "groups"
+        ],
+        "x-rules": [
+          "MKT-GRP-01",
+          "CF-05"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "A UUID per action; a retry with the same key and body replays the first response (07 §1)",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewGroupBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Created"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`booking_has_group`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`seat_cap_above_hall`, `validation_failed`, `idempotency_key_reused`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/groups/{id}": {
+      "patch": {
+        "operationId": "patchGroup",
+        "summary": "J05: fees, seats (at most the hall, at least the seats taken), monthly plan",
+        "tags": [
+          "groups"
+        ],
+        "x-rules": [
+          "MKT-GRP-02"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "A UUID per action; a retry with the same key and body replays the first response (07 §1)",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`seat_cap_below_filled`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`seat_cap_above_hall`, `validation_failed`, `idempotency_key_reused`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getGroup",
+        "summary": "A published group with seats left per upcoming session",
+        "tags": [
+          "groups"
+        ],
+        "x-rules": [
+          "MKT-ENR-01"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -982,6 +1935,139 @@
         }
       }
     },
+    "/v1/me/invites": {
+      "get": {
+        "operationId": "listMyInvites",
+        "summary": "Invitations from centres waiting for my answer",
+        "tags": [
+          "account"
+        ],
+        "x-rules": [
+          "MKT-ACC-06"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Invite"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/invites/{id}/accept": {
+      "post": {
+        "operationId": "acceptInvite",
+        "summary": "Accept a centre invitation; a teacher profile stays hidden until accepted and complete",
+        "tags": [
+          "account"
+        ],
+        "x-rules": [
+          "MKT-ACC-06"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "A UUID per action; a retry with the same key and body replays the first response (07 §1)",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Invite"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`, `idempotency_key_reused`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me/roles": {
       "post": {
         "operationId": "addRole",
@@ -1057,6 +2143,1259 @@
         }
       }
     },
+    "/v1/room-bookings": {
+      "get": {
+        "operationId": "listMyBookings",
+        "summary": "My bookings (scope=mine): a group can be opened in a booked slot (J05)",
+        "tags": [
+          "rooms"
+        ],
+        "x-rules": [
+          "MKT-GRP-01"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mine"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TeacherBooking"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/room-requests": {
+      "post": {
+        "operationId": "requestRoom",
+        "summary": "J02: request free, listed slots; auto-approved only when the centre switched it on",
+        "tags": [
+          "rooms"
+        ],
+        "x-rules": [
+          "MKT-HAL-02",
+          "MKT-HAL-05"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "A UUID per action; a retry with the same key and body replays the first response (07 §1)",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomRequestBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`slot_taken`, `centre_not_verified`, `hall_not_listed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`, `idempotency_key_reused`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listRoomRequests",
+        "summary": "scope=mine: my requests (J03); centreId: the centre pipeline (C06)",
+        "tags": [
+          "rooms"
+        ],
+        "x-rules": [
+          "MKT-HAL-03",
+          "MKT-HAL-04"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mine"
+              ]
+            }
+          },
+          {
+            "name": "centreId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RoomRequest"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/room-requests/{id}/approve": {
+      "post": {
+        "operationId": "approveRoomRequest",
+        "summary": "C06: approval books the slot (CF-46); a taken slot is refused",
+        "tags": [
+          "rooms"
+        ],
+        "x-rules": [
+          "MKT-HAL-04",
+          "CF-46"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "A UUID per action; a retry with the same key and body replays the first response (07 §1)",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`slot_taken`, `centre_not_verified`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`, `idempotency_key_reused`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/room-requests/{id}/decline": {
+      "post": {
+        "operationId": "declineRoomRequest",
+        "summary": "C06: decline with a reason",
+        "tags": [
+          "rooms"
+        ],
+        "x-rules": [
+          "MKT-HAL-04"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "A UUID per action; a retry with the same key and body replays the first response (07 §1)",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclineBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`reason_required`, `validation_failed`, `idempotency_key_reused`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/room-requests/{id}/stage": {
+      "post": {
+        "operationId": "moveRoomRequest",
+        "summary": "C06: forward only, phone call then meeting",
+        "tags": [
+          "rooms"
+        ],
+        "x-rules": [
+          "MKT-HAL-04"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "A UUID per action; a retry with the same key and body replays the first response (07 §1)",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StageBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`stage_backwards`, `request_closed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`, `idempotency_key_reused`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/room-requests/{id}/withdraw": {
+      "post": {
+        "operationId": "withdrawRoomRequest",
+        "summary": "J03: the teacher withdraws an undecided request",
+        "tags": [
+          "rooms"
+        ],
+        "x-rules": [
+          "MKT-HAL-03"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "A UUID per action; a retry with the same key and body replays the first response (07 §1)",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`, `idempotency_key_reused`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/rooms/{id}": {
+      "patch": {
+        "operationId": "patchHall",
+        "summary": "Edit a hall: one rent rule, seats never below a group in it, closed slots (owner)",
+        "tags": [
+          "centres"
+        ],
+        "x-rules": [
+          "MKT-CEN-03"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "A UUID per action; a retry with the same key and body replays the first response (07 §1)",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HallPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Hall"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`capacity_below_group`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`, `idempotency_key_reused`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/rooms/{id}/rent-estimate": {
+      "post": {
+        "operationId": "rentEstimate",
+        "summary": "J02: rent, Link commission and what the teacher keeps (a pure calculation)",
+        "tags": [
+          "rooms"
+        ],
+        "x-rules": [
+          "BR-BKG-07",
+          "OD-02"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RentEstimateBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentEstimate"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/rooms/search": {
+      "get": {
+        "operationId": "searchRooms",
+        "summary": "J01: listed halls of verified centres with free slots, nearest first",
+        "tags": [
+          "rooms"
+        ],
+        "x-rules": [
+          "MKT-HAL-01"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "minCapacity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Seats needed",
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "weekday",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Comma-separated ISO weekdays: 1 = Monday … 7 = Sunday",
+              "type": "string",
+              "pattern": "^[1-7](,[1-7])*$"
+            }
+          },
+          {
+            "name": "radiusKm",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RoomSearchResult"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/search/centres": {
+      "get": {
+        "operationId": "searchCentres",
+        "summary": "P02/P03: verified centres with matching groups within the radius (default 5 km)",
+        "tags": [
+          "search"
+        ],
+        "x-rules": [
+          "MKT-DSC-01",
+          "MKT-DSC-02"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "curriculumId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "schoolYearId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "subjectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "radiusKm",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "minRating",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "maxFeePt",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "seatsOpen",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "verifiedOnly",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "best_match",
+                "distance",
+                "rating",
+                "fee"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchCentresResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/search/teachers": {
+      "get": {
+        "operationId": "searchTeachers",
+        "summary": "P03: active teachers with matching groups within the radius",
+        "tags": [
+          "search"
+        ],
+        "x-rules": [
+          "MKT-DSC-02"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "curriculumId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "schoolYearId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "subjectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "radiusKm",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "minRating",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "maxFeePt",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "seatsOpen",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "verifiedOnly",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "best_match",
+                "distance",
+                "rating",
+                "fee"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherCardPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/subjects": {
       "get": {
         "operationId": "listSubjects",
@@ -1113,6 +3452,178 @@
         }
       }
     },
+    "/v1/teachers/by-slug/{slug}": {
+      "get": {
+        "operationId": "getTeacherBySlug",
+        "summary": "P05: an active teacher and their groups",
+        "tags": [
+          "search"
+        ],
+        "x-rules": [
+          "MKT-DSC-05"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]{1,80}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherProfile"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/teachers/me": {
+      "get": {
+        "operationId": "getTeacherSelf",
+        "summary": "Own profile, verification, settings and what the teacher teaches",
+        "tags": [
+          "teachers"
+        ],
+        "x-rules": [
+          "MKT-TCH-01"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherSelf"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchTeacherSelf",
+        "summary": "Profile, subjects, availability, settings; name, a subject and an accepted invite make it public",
+        "tags": [
+          "teachers"
+        ],
+        "x-rules": [
+          "MKT-TCH-01",
+          "OD-08"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "A UUID per action; a retry with the same key and body replays the first response (07 §1)",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeacherSelfPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherSelf"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`, `idempotency_key_reused`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/teachers/me/features": {
       "get": {
         "operationId": "getTeacherFeatures",
@@ -1154,6 +3665,51 @@
           }
         }
       }
+    },
+    "/v1/teachers/me/groups": {
+      "get": {
+        "operationId": "listTeacherGroups",
+        "summary": "My groups with seats filled and the next session (follow-up parts arrive in R3)",
+        "tags": [
+          "teachers"
+        ],
+        "x-rules": [
+          "CF-30"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TeacherGroup"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1172,6 +3728,29 @@
         },
         "required": [
           "role"
+        ]
+      },
+      "AutoApproveRules": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "verifiedId": {
+            "type": "boolean"
+          },
+          "minRating": {
+            "type": "number"
+          },
+          "fitsCapacity": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled",
+          "verifiedId",
+          "minRating",
+          "fitsCapacity"
         ]
       },
       "CentreApplicationBody": {
@@ -1250,6 +3829,80 @@
           "id"
         ]
       },
+      "CentreCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "distanceKm": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RatingSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "teacherCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "fromSessionFee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seatState": {
+            "$ref": "#/components/schemas/SeatState"
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "area",
+          "distanceKm",
+          "rating",
+          "teacherCount",
+          "fromSessionFee",
+          "seatState",
+          "verified",
+          "lat",
+          "lng"
+        ]
+      },
       "CentreFeatures": {
         "type": "object",
         "properties": {
@@ -1260,6 +3913,702 @@
         },
         "required": [
           "followupExtra"
+        ]
+      },
+      "CentreLocation": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "address": {
+            "type": "string"
+          },
+          "underReview": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "lat",
+          "lng",
+          "address",
+          "underReview"
+        ]
+      },
+      "CentrePatch": {
+        "type": "object",
+        "properties": {
+          "about": {
+            "type": "string",
+            "maxLength": 600
+          },
+          "photos": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 12
+          },
+          "location": {
+            "description": "CF-44: a moved pin is under review until Link ops verify it",
+            "type": "object",
+            "properties": {
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              },
+              "address": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "lat",
+              "lng",
+              "address"
+            ]
+          }
+        }
+      },
+      "CentreProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "governorate": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "distanceKm": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "hours": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "weekday": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 7
+                },
+                "opens": {
+                  "type": "string",
+                  "pattern": "^\\d{2}:\\d{2}$"
+                },
+                "closes": {
+                  "type": "string",
+                  "pattern": "^\\d{2}:\\d{2}$"
+                }
+              },
+              "required": [
+                "weekday",
+                "opens",
+                "closes"
+              ]
+            }
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RatingSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ratingDistribution": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "stars": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "stars",
+                "count"
+              ]
+            }
+          },
+          "trustBadges": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "const": "verified"
+            }
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subject": {
+                  "$ref": "#/components/schemas/SubjectRef"
+                },
+                "curriculum": {
+                  "$ref": "#/components/schemas/CurriculumRef"
+                },
+                "yearsLabel": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "subject",
+                "curriculum",
+                "yearsLabel"
+              ]
+            }
+          },
+          "teachers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "subjects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "rating": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RatingSummary"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "fromSessionFee": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Money"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "centreNames": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "verified": {
+                  "type": "boolean"
+                },
+                "subjectLabel": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "slug",
+                "displayName",
+                "subjects",
+                "rating",
+                "fromSessionFee",
+                "centreNames",
+                "verified",
+                "subjectLabel"
+              ]
+            }
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicReview"
+            }
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "locationUnderReview": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "area",
+          "governorate",
+          "address",
+          "distanceKm",
+          "verified",
+          "hours",
+          "rating",
+          "ratingDistribution",
+          "trustBadges",
+          "subjects",
+          "teachers",
+          "reviews",
+          "lat",
+          "lng",
+          "locationUnderReview"
+        ]
+      },
+      "CentreProfileEdit": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "distanceKm": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "about": {
+            "type": "string"
+          },
+          "photos": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "hours": {
+            "type": "string"
+          },
+          "liveOnMap": {
+            "type": "boolean"
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "completeness": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "badges": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rating": {
+            "type": "object",
+            "properties": {
+              "avg": {
+                "type": "number"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "avg",
+              "count"
+            ]
+          },
+          "teachers": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "halls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Hall"
+            }
+          },
+          "location": {
+            "$ref": "#/components/schemas/CentreLocation"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "distanceKm",
+          "name",
+          "area",
+          "address",
+          "about",
+          "photos",
+          "hours",
+          "liveOnMap",
+          "verified",
+          "completeness",
+          "badges",
+          "rating",
+          "teachers",
+          "halls",
+          "location"
+        ]
+      },
+      "CentreProfileWithGroups": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "governorate": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "distanceKm": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "hours": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "weekday": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 7
+                },
+                "opens": {
+                  "type": "string",
+                  "pattern": "^\\d{2}:\\d{2}$"
+                },
+                "closes": {
+                  "type": "string",
+                  "pattern": "^\\d{2}:\\d{2}$"
+                }
+              },
+              "required": [
+                "weekday",
+                "opens",
+                "closes"
+              ]
+            }
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RatingSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ratingDistribution": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "stars": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "stars",
+                "count"
+              ]
+            }
+          },
+          "trustBadges": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "const": "verified"
+            }
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subject": {
+                  "$ref": "#/components/schemas/SubjectRef"
+                },
+                "curriculum": {
+                  "$ref": "#/components/schemas/CurriculumRef"
+                },
+                "yearsLabel": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "subject",
+                "curriculum",
+                "yearsLabel"
+              ]
+            }
+          },
+          "teachers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "subjects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "rating": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RatingSummary"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "fromSessionFee": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Money"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "centreNames": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "verified": {
+                  "type": "boolean"
+                },
+                "subjectLabel": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "slug",
+                "displayName",
+                "subjects",
+                "rating",
+                "fromSessionFee",
+                "centreNames",
+                "verified",
+                "subjectLabel"
+              ]
+            }
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicReview"
+            }
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "locationUnderReview": {
+            "type": "boolean"
+          },
+          "groupsForChild": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupSummary"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "area",
+          "governorate",
+          "address",
+          "distanceKm",
+          "verified",
+          "hours",
+          "rating",
+          "ratingDistribution",
+          "trustBadges",
+          "subjects",
+          "teachers",
+          "reviews",
+          "lat",
+          "lng",
+          "locationUnderReview",
+          "groupsForChild"
+        ]
+      },
+      "CentreSchedule": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            }
+          },
+          "dates": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "halls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "capacity": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "capacity"
+              ]
+            }
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleCell"
+            }
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "roomUsePercent": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "freeSlots": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "averageSeatsFilledPercent": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "teachersRenting": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "roomUsePercent",
+              "freeSlots",
+              "averageSeatsFilledPercent",
+              "teachersRenting"
+            ]
+          }
+        },
+        "required": [
+          "days",
+          "dates",
+          "halls",
+          "cells",
+          "stats"
         ]
       },
       "Child": {
@@ -1363,6 +4712,17 @@
           "at"
         ]
       },
+      "Created": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
       "Curriculum": {
         "type": "string",
         "enum": [
@@ -1417,6 +4777,30 @@
           "schoolYears"
         ]
       },
+      "DeclineBody": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "Facility": {
+        "type": "string",
+        "enum": [
+          "ac",
+          "fan",
+          "projector",
+          "sound",
+          "whiteboard",
+          "smart_board",
+          "wheelchair"
+        ]
+      },
       "FeatureFlags": {
         "type": "object",
         "properties": {
@@ -1433,6 +4817,369 @@
         },
         "required": [
           "flags"
+        ]
+      },
+      "GroupPatch": {
+        "type": "object",
+        "properties": {
+          "monthlyFeePt": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "sessionFeePt": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "seatCap": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offersMonthlyRecurring": {
+            "type": "boolean"
+          }
+        }
+      },
+      "GroupSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "teacher": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "rating": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RatingSummary"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "slug",
+              "displayName",
+              "rating"
+            ]
+          },
+          "centre": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "area": {
+                "type": "string"
+              },
+              "address": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "slug",
+              "name",
+              "area",
+              "address"
+            ]
+          },
+          "room": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "subject": {
+            "$ref": "#/components/schemas/SubjectRef"
+          },
+          "curriculum": {
+            "$ref": "#/components/schemas/CurriculumRef"
+          },
+          "schoolYear": {
+            "$ref": "#/components/schemas/SchoolYearRef"
+          },
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            }
+          },
+          "startTime": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$"
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$"
+          },
+          "sessionFee": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "monthlyFee": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "sessionsPerMonth": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offersMonthlyRecurring": {
+            "type": "boolean"
+          },
+          "seatCap": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "published",
+              "closed"
+            ]
+          },
+          "upcomingSessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionSeats"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "teacher",
+          "centre",
+          "room",
+          "subject",
+          "curriculum",
+          "schoolYear",
+          "weekdays",
+          "startTime",
+          "endTime",
+          "sessionFee",
+          "monthlyFee",
+          "sessionsPerMonth",
+          "offersMonthlyRecurring",
+          "seatCap",
+          "status",
+          "upcomingSessions"
+        ]
+      },
+      "Hall": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "centreId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "capacity": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Facility"
+            }
+          },
+          "rentRule": {
+            "$ref": "#/components/schemas/RentRule"
+          },
+          "listed": {
+            "type": "boolean",
+            "description": "Shown on the Link map; an unlisted hall takes no requests"
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "weekday": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 7
+                },
+                "start": {
+                  "type": "string",
+                  "pattern": "^\\d{2}:\\d{2}$"
+                },
+                "end": {
+                  "type": "string",
+                  "pattern": "^\\d{2}:\\d{2}$"
+                },
+                "state": {
+                  "$ref": "#/components/schemas/SlotState"
+                }
+              },
+              "required": [
+                "weekday",
+                "start",
+                "end",
+                "state"
+              ]
+            }
+          },
+          "freeSlotsPerWeek": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "photo": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "centreId",
+          "name",
+          "capacity",
+          "facilities",
+          "rentRule",
+          "listed",
+          "slots",
+          "freeSlotsPerWeek",
+          "photo"
+        ]
+      },
+      "HallPatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "capacity": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Facility"
+            }
+          },
+          "rentRule": {
+            "type": "object",
+            "properties": {
+              "basis": {
+                "$ref": "#/components/schemas/RentBasis"
+              },
+              "amountPt": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "percent": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "basis"
+            ]
+          },
+          "listed": {
+            "type": "boolean"
+          },
+          "closedSlots": {
+            "description": "Slots the owner keeps closed",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeeklySlot"
+            }
+          }
+        }
+      },
+      "Invite": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "centre": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "teacher",
+              "reception"
+            ]
+          },
+          "invitedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "centre",
+          "role",
+          "invitedAt"
         ]
       },
       "InviteStaffBody": {
@@ -1508,6 +5255,25 @@
           "roles"
         ]
       },
+      "Money": {
+        "type": "object",
+        "properties": {
+          "amountPt": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Integer piasters (BR-MNY)"
+          },
+          "currency": {
+            "type": "string",
+            "const": "EGP"
+          }
+        },
+        "required": [
+          "amountPt",
+          "currency"
+        ]
+      },
       "NewChildBody": {
         "type": "object",
         "properties": {
@@ -1531,6 +5297,126 @@
           "displayName",
           "curriculumId",
           "schoolYearId"
+        ]
+      },
+      "NewGroupBody": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "schoolYearId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "monthlyFeePt": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "sessionFeePt": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "seatCap": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offersMonthlyRecurring": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "bookingId",
+          "subjectId",
+          "schoolYearId",
+          "monthlyFeePt",
+          "sessionFeePt",
+          "seatCap",
+          "offersMonthlyRecurring"
+        ]
+      },
+      "NewHallBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "capacity": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Facility"
+            }
+          },
+          "rentRule": {
+            "type": "object",
+            "properties": {
+              "basis": {
+                "$ref": "#/components/schemas/RentBasis"
+              },
+              "amountPt": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "percent": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "basis"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "capacity",
+          "facilities",
+          "rentRule"
+        ]
+      },
+      "Ok": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "ok"
         ]
       },
       "OtpRequestBody": {
@@ -1676,6 +5562,65 @@
         "additionalProperties": {},
         "description": "RFC 9457 problem. Clients switch on `code`."
       },
+      "PublicReview": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "stars": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewTag"
+            }
+          },
+          "body": {
+            "type": "string"
+          },
+          "schoolYearName": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string"
+          },
+          "reply": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "body": {
+                    "type": "string"
+                  },
+                  "authorName": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "body",
+                  "authorName"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "stars",
+          "tags",
+          "body",
+          "schoolYearName",
+          "publishedAt",
+          "reply"
+        ]
+      },
       "PutConsentBody": {
         "type": "object",
         "properties": {
@@ -1701,6 +5646,24 @@
           "version"
         ]
       },
+      "RatingSummary": {
+        "type": "object",
+        "properties": {
+          "avg": {
+            "type": "string",
+            "description": "One decimal: \"4.7\""
+          },
+          "count": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "avg",
+          "count"
+        ]
+      },
       "RefreshBody": {
         "type": "object",
         "properties": {
@@ -1710,6 +5673,182 @@
           }
         }
       },
+      "RentBasis": {
+        "type": "string",
+        "enum": [
+          "fixed_per_session",
+          "per_student_per_session",
+          "percent_of_fees"
+        ]
+      },
+      "RentEstimate": {
+        "type": "object",
+        "properties": {
+          "sessionsPerMonth": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "fees": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "rent": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "commission": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "commissionPercent": {
+            "type": "number"
+          },
+          "keep": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "autoApprove": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "meets": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "enabled",
+              "meets"
+            ]
+          }
+        },
+        "required": [
+          "sessionsPerMonth",
+          "fees",
+          "rent",
+          "commission",
+          "commissionPercent",
+          "keep",
+          "autoApprove"
+        ]
+      },
+      "RentEstimateBody": {
+        "type": "object",
+        "properties": {
+          "hallId": {
+            "type": "string"
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeeklySlot"
+            }
+          },
+          "students": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "monthlyFeePt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "hallId",
+          "slots",
+          "students",
+          "monthlyFeePt"
+        ]
+      },
+      "RentRule": {
+        "type": "object",
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/RentBasis"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "basis",
+          "amount",
+          "percent"
+        ]
+      },
+      "RequestStage": {
+        "type": "string",
+        "enum": [
+          "requested",
+          "phone_call",
+          "meeting",
+          "approved",
+          "declined",
+          "withdrawn"
+        ]
+      },
+      "RequestTeacher": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rating": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "reviewCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "verifiedId": {
+            "type": "boolean"
+          },
+          "isNew": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "rating",
+          "reviewCount",
+          "verifiedId",
+          "isNew"
+        ]
+      },
+      "ReviewTag": {
+        "type": "string",
+        "enum": [
+          "communication",
+          "organised",
+          "location",
+          "good_value",
+          "explains_clearly",
+          "patient",
+          "homework_feedback",
+          "exam_prep"
+        ]
+      },
       "Role": {
         "type": "string",
         "enum": [
@@ -1717,6 +5856,401 @@
           "teacher",
           "centre_owner",
           "centre_staff"
+        ]
+      },
+      "RoomRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "centre": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "area": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "area"
+            ]
+          },
+          "hall": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "capacity": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "capacity"
+            ]
+          },
+          "teacher": {
+            "$ref": "#/components/schemas/RequestTeacher"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "schoolYear": {
+            "type": "string"
+          },
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            }
+          },
+          "start": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$"
+          },
+          "end": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$"
+          },
+          "expectedStudents": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "startsOn": {
+            "type": "string"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/RequestStage"
+          },
+          "stageAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "checks": {
+            "type": "object",
+            "properties": {
+              "verifiedId": {
+                "type": "boolean"
+              },
+              "rating": {
+                "type": "boolean"
+              },
+              "fitsCapacity": {
+                "type": "boolean"
+              },
+              "slotFree": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "verifiedId",
+              "rating",
+              "fitsCapacity",
+              "slotFree"
+            ]
+          },
+          "meetsRules": {
+            "type": "boolean"
+          },
+          "rentRule": {
+            "$ref": "#/components/schemas/RentRule"
+          },
+          "declinedReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "centre",
+          "hall",
+          "teacher",
+          "subject",
+          "schoolYear",
+          "weekdays",
+          "start",
+          "end",
+          "expectedStudents",
+          "startsOn",
+          "stage",
+          "stageAt",
+          "checks",
+          "meetsRules",
+          "rentRule",
+          "declinedReason",
+          "createdAt"
+        ]
+      },
+      "RoomRequestBody": {
+        "type": "object",
+        "properties": {
+          "hallId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "slots": {
+            "maxItems": 7,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeeklySlot"
+            }
+          },
+          "groupId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "schoolYearId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "expectedStudents": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "startsOn": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          }
+        },
+        "required": [
+          "hallId",
+          "slots",
+          "groupId",
+          "subjectId",
+          "schoolYearId",
+          "expectedStudents",
+          "startsOn"
+        ]
+      },
+      "RoomSearchQuery": {
+        "type": "object",
+        "properties": {
+          "minCapacity": {
+            "description": "Seats needed",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "weekday": {
+            "description": "Comma-separated ISO weekdays: 1 = Monday … 7 = Sunday",
+            "type": "string",
+            "pattern": "^[1-7](,[1-7])*$"
+          },
+          "radiusKm": {
+            "type": "number"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          }
+        }
+      },
+      "RoomSearchResult": {
+        "type": "object",
+        "properties": {
+          "hall": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "capacity": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "facilities": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Facility"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "capacity",
+              "facilities"
+            ]
+          },
+          "centre": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "area": {
+                "type": "string"
+              },
+              "distanceKm": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "area",
+              "distanceKm"
+            ]
+          },
+          "freeSlots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeeklySlot"
+            }
+          },
+          "rentRule": {
+            "$ref": "#/components/schemas/RentRule"
+          },
+          "fits": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hall",
+          "centre",
+          "freeSlots",
+          "rentRule",
+          "fits"
+        ]
+      },
+      "ScheduleCell": {
+        "type": "object",
+        "properties": {
+          "hallId": {
+            "type": "string"
+          },
+          "weekday": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "start": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$"
+          },
+          "end": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "teaching",
+              "booked",
+              "free"
+            ]
+          },
+          "teacher": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "group": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "seats": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "filled": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "cap": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "filled",
+                  "cap"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "startsOn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rentRule": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RentRule"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "hallId",
+          "weekday",
+          "start",
+          "end",
+          "kind",
+          "teacher",
+          "group",
+          "seats",
+          "startsOn",
+          "rentRule"
         ]
       },
       "SchoolYearRef": {
@@ -1741,6 +6275,154 @@
           "code",
           "name",
           "shortName"
+        ]
+      },
+      "SearchCentresResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CentreCard"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "centres": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "teachers": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "centres",
+              "teachers"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor",
+          "totals"
+        ]
+      },
+      "SearchQuery": {
+        "type": "object",
+        "properties": {
+          "curriculumId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "schoolYearId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "radiusKm": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 50
+          },
+          "minRating": {
+            "type": "number"
+          },
+          "maxFeePt": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "seatsOpen": {
+            "type": "string"
+          },
+          "verifiedOnly": {
+            "type": "string"
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "best_match",
+              "distance",
+              "rating",
+              "fee"
+            ]
+          },
+          "q": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "cursor": {
+            "type": "string"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          }
+        }
+      },
+      "SeatState": {
+        "type": "string",
+        "enum": [
+          "open",
+          "waitlist"
+        ]
+      },
+      "SessionSeats": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "endsAt": {
+            "type": "string"
+          },
+          "seatsLeft": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "seatCap": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "startsAt",
+          "endsAt",
+          "seatsLeft",
+          "seatCap"
+        ]
+      },
+      "SlotState": {
+        "type": "string",
+        "enum": [
+          "free",
+          "taken",
+          "closed"
         ]
       },
       "StaffMember": {
@@ -1798,6 +6480,24 @@
           "reviews.reply"
         ]
       },
+      "StageBody": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string",
+            "enum": [
+              "phone_call",
+              "meeting"
+            ]
+          },
+          "at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
+        ]
+      },
       "SubjectRef": {
         "type": "object",
         "properties": {
@@ -1816,6 +6516,670 @@
           "code",
           "name"
         ]
+      },
+      "TeacherBooking": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "centre": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "hall": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "capacity": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "capacity"
+            ]
+          },
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            }
+          },
+          "start": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$"
+          },
+          "end": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$"
+          },
+          "startsOn": {
+            "type": "string"
+          },
+          "groupId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subjectId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "schoolYearId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "centre",
+          "hall",
+          "weekdays",
+          "start",
+          "end",
+          "startsOn",
+          "groupId",
+          "subjectId",
+          "schoolYearId",
+          "label"
+        ]
+      },
+      "TeacherCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RatingSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fromSessionFee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "centreNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "displayName",
+          "subjects",
+          "rating",
+          "fromSessionFee",
+          "centreNames",
+          "verified"
+        ]
+      },
+      "TeacherCardPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TeacherCard"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "TeacherGroup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "centre": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "displayName"
+            ]
+          },
+          "room": {
+            "type": "string"
+          },
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            }
+          },
+          "startTime": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$"
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$"
+          },
+          "sessionFee": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "monthlyFee": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "offersMonthlyRecurring": {
+            "type": "boolean"
+          },
+          "seatCap": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "seatsFilled": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "nextSession": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "startsAt": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "startsAt"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "followup": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "studentCount": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "recordsComplete": {
+                    "type": "object",
+                    "properties": {
+                      "confirmed": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "eligible": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": [
+                      "confirmed",
+                      "eligible"
+                    ]
+                  },
+                  "openFollowUps": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "studentCount",
+                  "recordsComplete",
+                  "openFollowUps"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "centre",
+          "room",
+          "weekdays",
+          "startTime",
+          "endTime",
+          "sessionFee",
+          "monthlyFee",
+          "offersMonthlyRecurring",
+          "seatCap",
+          "seatsFilled",
+          "nextSession",
+          "followup"
+        ]
+      },
+      "TeacherProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubjectRef"
+            }
+          },
+          "curricula": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurriculumRef"
+            }
+          },
+          "yearsExperience": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RatingSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "centreCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "tagCounts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tag": {
+                  "$ref": "#/components/schemas/ReviewTag"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "tag",
+                "count"
+              ]
+            }
+          },
+          "recordedPct": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupSummary"
+            }
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicReview"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "displayName",
+          "subjects",
+          "curricula",
+          "yearsExperience",
+          "bio",
+          "verified",
+          "rating",
+          "centreCount",
+          "tagCounts",
+          "recordedPct",
+          "groups",
+          "reviews"
+        ]
+      },
+      "TeacherSelf": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "subjects": {
+            "type": "string"
+          },
+          "yearsExperience": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "rating": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "reviewCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "openToSlots": {
+            "type": "boolean"
+          },
+          "about": {
+            "type": "string"
+          },
+          "verification": {
+            "type": "object",
+            "properties": {
+              "nationalId": {
+                "$ref": "#/components/schemas/Verification"
+              },
+              "degree": {
+                "$ref": "#/components/schemas/Verification"
+              },
+              "references": {
+                "type": "object",
+                "properties": {
+                  "added": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "needed": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "added",
+                  "needed"
+                ]
+              }
+            },
+            "required": [
+              "nationalId",
+              "degree",
+              "references"
+            ]
+          },
+          "availability": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "weekday": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 7
+                },
+                "am": {
+                  "type": "boolean"
+                },
+                "pm": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "weekday",
+                "am",
+                "pm"
+              ]
+            }
+          },
+          "reviewEachEnrolment": {
+            "type": "boolean"
+          },
+          "payoutAccount": {
+            "type": "string"
+          },
+          "teaches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "groupId": {
+                  "type": "string"
+                },
+                "subjectId": {
+                  "type": "string"
+                },
+                "schoolYearId": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "where": {
+                  "type": "string"
+                },
+                "students": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "monthlyFee": {
+                  "$ref": "#/components/schemas/Money"
+                }
+              },
+              "required": [
+                "groupId",
+                "subjectId",
+                "schoolYearId",
+                "label",
+                "where",
+                "students",
+                "monthlyFee"
+              ]
+            }
+          },
+          "profileStatus": {
+            "type": "string",
+            "enum": [
+              "invited",
+              "incomplete",
+              "active"
+            ],
+            "description": "Parents see the teacher only when active (name and a subject, invite accepted)"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "subjects",
+          "yearsExperience",
+          "rating",
+          "reviewCount",
+          "openToSlots",
+          "about",
+          "verification",
+          "availability",
+          "reviewEachEnrolment",
+          "payoutAccount",
+          "teaches",
+          "profileStatus"
+        ]
+      },
+      "TeacherSelfPatch": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "subjectIds": {
+            "description": "What the teacher teaches (07 §2)",
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "about": {
+            "type": "string",
+            "maxLength": 600
+          },
+          "openToSlots": {
+            "type": "boolean"
+          },
+          "availability": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "weekday": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 7
+                },
+                "am": {
+                  "type": "boolean"
+                },
+                "pm": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "weekday",
+                "am",
+                "pm"
+              ]
+            }
+          },
+          "reviewEachEnrolment": {
+            "type": "boolean"
+          }
+        }
       },
       "TokenPair": {
         "type": "object",
@@ -1844,6 +7208,37 @@
             ]
           }
         }
+      },
+      "Verification": {
+        "type": "string",
+        "enum": [
+          "verified",
+          "pending",
+          "missing"
+        ]
+      },
+      "WeeklySlot": {
+        "type": "object",
+        "properties": {
+          "weekday": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "start": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$"
+          },
+          "end": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$"
+          }
+        },
+        "required": [
+          "weekday",
+          "start",
+          "end"
+        ]
       }
     },
     "securitySchemes": {

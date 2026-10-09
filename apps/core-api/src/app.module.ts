@@ -18,6 +18,10 @@ import { AuthGuard, ContractCheckInterceptor, IdempotencyInterceptor } from './p
 import { LOGGER, type Logger } from './platform/logger';
 import { Redises } from './platform/redis';
 import { Reference, ReferenceController } from './ref/reference';
+import { Groups, GroupsController } from './market/groups';
+import { Halls, HallsController } from './market/halls';
+import { Requests, RequestsController } from './market/requests';
+import { Search, SearchController } from './market/search';
 
 /** Shared services, built from the typed config. Used by every entrypoint (api, worker, gateway). */
 export function coreProviders(
@@ -54,6 +58,10 @@ export function coreProviders(
       [Database, Reference],
       (db: Database, ref: Reference) => new Children(db, ref),
     ),
+    factory(Halls, [Database], (db: Database) => new Halls(db)),
+    factory(Requests, [Database], (db: Database) => new Requests(db)),
+    factory(Groups, [Database], (db: Database) => new Groups(db)),
+    factory(Search, [Database], (db: Database) => new Search(db)),
   ];
 }
 
@@ -69,6 +77,10 @@ export async function apiModule(
     MeController,
     ReferenceController,
     CentresController,
+    HallsController,
+    RequestsController,
+    GroupsController,
+    SearchController,
   ];
   if (isLocal(c)) controllers.push((await import('./dev/dev.controller')).DevController);
   @Module({})

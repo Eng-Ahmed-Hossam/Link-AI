@@ -28,7 +28,6 @@ const NO_RLS: Record<string, string> = {
   'ref.subjects': 'public reference data',
   'platform.outbox_events': 'app_user may only INSERT (no SELECT grant)',
   'platform.inbox_events': 'app_worker only (no app_user grant)',
-  'platform.feature_flags': 'flags, no personal data; app_user may only SELECT',
   'public.schema_migrations': 'dbmate bookkeeping',
   'public.spatial_ref_sys': 'PostGIS reference data',
 };

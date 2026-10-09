@@ -1875,5 +1875,13 @@
   "sms.staffInvite.body": "Link: {centre} added you to its team. Sign in with this mobile number.",
   "server.staff.scope.owner": "All groups",
   "server.staff.scope.reception": "All students • Follow-ups",
-  "server.staff.scope.teacher": "Own groups only"
+  "server.staff.scope.teacher": "Own groups only",
+  "server.centre.closedDay": "{day} closed",
+  "teacher.invite.title": "A centre invited you",
+  "teacher.invite.body": "{centre} invited you to teach there on Link. Accept, then add your name and subjects so parents can find you.",
+  "teacher.invite.accept": "Accept the invitation",
+  "teacher.profile.completeTitle": "Complete your profile",
+  "teacher.profile.completeBody": "Parents see you once your profile has your name and at least one subject.",
+  "teacher.profile.name": "Your name, as parents will see it",
+  "teacher.profile.subjectsLabel": "What you teach"
 }

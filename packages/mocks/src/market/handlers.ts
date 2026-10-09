@@ -330,6 +330,11 @@ export const marketHandlers = [
     const { centreId } = (await request.json()) as { centreId: string };
     return HttpResponse.json(mk.verifyCentreLocation(centreId));
   }),
+  http.get('*/__demo/pending-centres', () => HttpResponse.json(mk.pendingCentres())),
+  http.post('*/__demo/verify-centre', async ({ request }) => {
+    const { centreId } = (await request.json()) as { centreId: string };
+    return HttpResponse.json(mk.verifyCentre(centreId));
+  }),
   http.post('*/__demo/features', async ({ request }) => {
     const { centreId, followupExtra } = (await request.json()) as {
       centreId: string;

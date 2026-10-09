@@ -85,6 +85,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/centres/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit the profile (owner); a moved pin puts the location under review (CF-44) */
+        patch: operations["patchCentre"];
+        trace?: never;
+    };
     "/v1/centres/{id}/features": {
         parameters: {
             query?: never;
@@ -95,6 +112,76 @@ export interface paths {
         /** Paid extras for this centre */
         get: operations["getCentreFeatures"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/centres/{id}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** C02 editing view: public fields, halls, completeness, badges, location under review */
+        get: operations["getCentreProfileEdit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/centres/{id}/rooms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Halls with their weekly slots (C05) */
+        get: operations["listHalls"];
+        put?: never;
+        /** Add a hall (owner, CF-44): listed, the whole weekly grid open */
+        post: operations["addHall"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/centres/{id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** C03: who uses which hall, seats filled, free slots, the next six working days */
+        get: operations["getCentreSchedule"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/centres/{id}/settings/auto-approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Auto-approve rules (off by default) */
+        get: operations["getAutoApprove"];
+        /** Change the auto-approve rules (owner) */
+        put: operations["putAutoApprove"];
         post?: never;
         delete?: never;
         options?: never;
@@ -114,6 +201,23 @@ export interface paths {
         put?: never;
         /** Invite staff by phone, with permissions (owner only) */
         post: operations["inviteStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/centres/by-slug/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** P04: a verified centre, its teachers and the groups for the child */
+        get: operations["getCentreBySlug"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -144,7 +248,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Feature flags for the caller: global, merged with their centre and teacher scopes */
+        /** Feature flags for the signed-in caller: global, merged with their own centre and teacher scopes */
         get: operations["getFeatureFlags"];
         put?: never;
         post?: never;
@@ -152,6 +256,41 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** J05: a group in a booked slot; seats never above the hall; sessions from the slot */
+        post: operations["createGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A published group with seats left per upcoming session */
+        get: operations["getGroup"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** J05: fees, seats (at most the hall, at least the seats taken), monthly plan */
+        patch: operations["patchGroup"];
         trace?: never;
     };
     "/v1/me": {
@@ -225,6 +364,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Invitations from centres waiting for my answer */
+        get: operations["listMyInvites"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/invites/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept a centre invitation; a teacher profile stays hidden until accepted and complete */
+        post: operations["acceptInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/roles": {
         parameters: {
             query?: never;
@@ -236,6 +409,194 @@ export interface paths {
         put?: never;
         /** Add the role parent, teacher or centre_owner */
         post: operations["addRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/room-bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My bookings (scope=mine): a group can be opened in a booked slot (J05) */
+        get: operations["listMyBookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/room-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** scope=mine: my requests (J03); centreId: the centre pipeline (C06) */
+        get: operations["listRoomRequests"];
+        put?: never;
+        /** J02: request free, listed slots; auto-approved only when the centre switched it on */
+        post: operations["requestRoom"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/room-requests/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** C06: approval books the slot (CF-46); a taken slot is refused */
+        post: operations["approveRoomRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/room-requests/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** C06: decline with a reason */
+        post: operations["declineRoomRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/room-requests/{id}/stage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** C06: forward only, phone call then meeting */
+        post: operations["moveRoomRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/room-requests/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** J03: the teacher withdraws an undecided request */
+        post: operations["withdrawRoomRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rooms/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit a hall: one rent rule, seats never below a group in it, closed slots (owner) */
+        patch: operations["patchHall"];
+        trace?: never;
+    };
+    "/v1/rooms/{id}/rent-estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** J02: rent, Link commission and what the teacher keeps (a pure calculation) */
+        post: operations["rentEstimate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rooms/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** J01: listed halls of verified centres with free slots, nearest first */
+        get: operations["searchRooms"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/search/centres": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** P02/P03: verified centres with matching groups within the radius (default 5 km) */
+        get: operations["searchCentres"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/search/teachers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** P03: active teachers with matching groups within the radius */
+        get: operations["searchTeachers"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -259,6 +620,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/teachers/by-slug/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** P05: an active teacher and their groups */
+        get: operations["getTeacherBySlug"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/teachers/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Own profile, verification, settings and what the teacher teaches */
+        get: operations["getTeacherSelf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Profile, subjects, availability, settings; name, a subject and an accepted invite make it public */
+        patch: operations["patchTeacherSelf"];
+        trace?: never;
+    };
     "/v1/teachers/me/features": {
         parameters: {
             query?: never;
@@ -276,6 +672,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/teachers/me/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My groups with seats filled and the next session (follow-up parts arrive in R3) */
+        get: operations["listTeacherGroups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -283,6 +696,12 @@ export interface components {
         AddRoleBody: {
             /** @enum {string} */
             role: "parent" | "teacher" | "centre_owner";
+        };
+        AutoApproveRules: {
+            enabled: boolean;
+            fitsCapacity: boolean;
+            minRating: number;
+            verifiedId: boolean;
         };
         CentreApplicationBody: {
             address: string;
@@ -299,9 +718,162 @@ export interface components {
         CentreApplicationResult: {
             id: string;
         };
+        CentreCard: {
+            area: string;
+            distanceKm: number | null;
+            fromSessionFee: components["schemas"]["Money"] | null;
+            id: string;
+            lat: number;
+            lng: number;
+            name: string;
+            rating: components["schemas"]["RatingSummary"] | null;
+            seatState: components["schemas"]["SeatState"];
+            slug: string;
+            teacherCount: number;
+            verified: boolean;
+        };
         CentreFeatures: {
             /** @description The Follow-up paid extra is on */
             followupExtra: boolean;
+        };
+        CentreLocation: {
+            address: string;
+            lat: number;
+            lng: number;
+            underReview: boolean;
+        };
+        CentrePatch: {
+            about?: string;
+            /** @description CF-44: a moved pin is under review until Link ops verify it */
+            location?: {
+                address: string;
+                lat: number;
+                lng: number;
+            };
+            photos?: number;
+        };
+        CentreProfile: {
+            address: string;
+            area: string;
+            distanceKm: number | null;
+            governorate: string;
+            hours: {
+                closes: string;
+                opens: string;
+                weekday: number;
+            }[];
+            id: string;
+            lat: number;
+            lng: number;
+            locationUnderReview: boolean;
+            name: string;
+            rating: components["schemas"]["RatingSummary"] | null;
+            ratingDistribution: {
+                count: number;
+                stars: number;
+            }[];
+            reviews: components["schemas"]["PublicReview"][];
+            slug: string;
+            subjects: {
+                curriculum: components["schemas"]["CurriculumRef"];
+                subject: components["schemas"]["SubjectRef"];
+                yearsLabel: string;
+            }[];
+            teachers: {
+                centreNames: string[];
+                displayName: string;
+                fromSessionFee: components["schemas"]["Money"] | null;
+                id: string;
+                rating: components["schemas"]["RatingSummary"] | null;
+                slug: string;
+                subjectLabel: string;
+                subjects: string[];
+                verified: boolean;
+            }[];
+            trustBadges: "verified"[];
+            verified: boolean;
+        };
+        CentreProfileEdit: {
+            about: string;
+            address: string;
+            area: string;
+            badges: string[];
+            completeness: number;
+            distanceKm: number;
+            halls: components["schemas"]["Hall"][];
+            hours: string;
+            id: string;
+            liveOnMap: boolean;
+            location: components["schemas"]["CentreLocation"];
+            name: string;
+            photos: number;
+            rating: {
+                avg: number;
+                count: number;
+            };
+            slug: string;
+            teachers: number;
+            verified: boolean;
+        };
+        CentreProfileWithGroups: {
+            address: string;
+            area: string;
+            distanceKm: number | null;
+            governorate: string;
+            groupsForChild: components["schemas"]["GroupSummary"][];
+            hours: {
+                closes: string;
+                opens: string;
+                weekday: number;
+            }[];
+            id: string;
+            lat: number;
+            lng: number;
+            locationUnderReview: boolean;
+            name: string;
+            rating: components["schemas"]["RatingSummary"] | null;
+            ratingDistribution: {
+                count: number;
+                stars: number;
+            }[];
+            reviews: components["schemas"]["PublicReview"][];
+            slug: string;
+            subjects: {
+                curriculum: components["schemas"]["CurriculumRef"];
+                subject: components["schemas"]["SubjectRef"];
+                yearsLabel: string;
+            }[];
+            teachers: {
+                centreNames: string[];
+                displayName: string;
+                fromSessionFee: components["schemas"]["Money"] | null;
+                id: string;
+                rating: components["schemas"]["RatingSummary"] | null;
+                slug: string;
+                subjectLabel: string;
+                subjects: string[];
+                verified: boolean;
+            }[];
+            trustBadges: "verified"[];
+            verified: boolean;
+        };
+        CentreSchedule: {
+            cells: components["schemas"]["ScheduleCell"][];
+            dates: {
+                [key: string]: string;
+            };
+            days: number[];
+            halls: {
+                capacity: number;
+                id: string;
+                name: string;
+            }[];
+            stats: {
+                averageSeatsFilledPercent: number;
+                freeSlots: number;
+                roomUsePercent: number;
+                teachersRenting: number;
+            };
         };
         Child: {
             curriculum: components["schemas"]["CurriculumRef"];
@@ -325,6 +897,9 @@ export interface components {
             studentId: string | null;
             version: string;
         };
+        Created: {
+            id: string;
+        };
         /** @enum {string} */
         Curriculum: "NATIONAL" | "IGCSE" | "AMERICAN" | "NILE";
         CurriculumRef: {
@@ -338,11 +913,96 @@ export interface components {
             name: string;
             schoolYears: components["schemas"]["SchoolYearRef"][];
         };
+        DeclineBody: {
+            reason: string;
+        };
+        /** @enum {string} */
+        Facility: "ac" | "fan" | "projector" | "sound" | "whiteboard" | "smart_board" | "wheelchair";
         FeatureFlags: {
             /** @description Global flags merged with the caller’s centre and teacher scopes */
             flags: {
                 [key: string]: boolean;
             };
+        };
+        GroupPatch: {
+            monthlyFeePt?: number;
+            offersMonthlyRecurring?: boolean;
+            seatCap?: number;
+            sessionFeePt?: number;
+        };
+        GroupSummary: {
+            centre: {
+                address: string;
+                area: string;
+                id: string;
+                name: string;
+                slug: string;
+            };
+            curriculum: components["schemas"]["CurriculumRef"];
+            endTime: string;
+            id: string;
+            monthlyFee: components["schemas"]["Money"];
+            offersMonthlyRecurring: boolean;
+            room: {
+                name: string;
+            };
+            schoolYear: components["schemas"]["SchoolYearRef"];
+            seatCap: number;
+            sessionFee: components["schemas"]["Money"];
+            sessionsPerMonth: number;
+            startTime: string;
+            /** @enum {string} */
+            status: "published" | "closed";
+            subject: components["schemas"]["SubjectRef"];
+            teacher: {
+                displayName: string;
+                id: string;
+                rating: components["schemas"]["RatingSummary"] | null;
+                slug: string;
+            };
+            upcomingSessions: components["schemas"]["SessionSeats"][];
+            weekdays: number[];
+        };
+        Hall: {
+            capacity: number;
+            centreId: string;
+            facilities: components["schemas"]["Facility"][];
+            freeSlotsPerWeek: number;
+            id: string;
+            /** @description Shown on the Link map; an unlisted hall takes no requests */
+            listed: boolean;
+            name: string;
+            photo: number;
+            rentRule: components["schemas"]["RentRule"];
+            slots: {
+                end: string;
+                start: string;
+                state: components["schemas"]["SlotState"];
+                weekday: number;
+            }[];
+        };
+        HallPatch: {
+            capacity?: number;
+            /** @description Slots the owner keeps closed */
+            closedSlots?: components["schemas"]["WeeklySlot"][];
+            facilities?: components["schemas"]["Facility"][];
+            listed?: boolean;
+            name?: string;
+            rentRule?: {
+                amountPt?: number | null;
+                basis: components["schemas"]["RentBasis"];
+                percent?: number | null;
+            };
+        };
+        Invite: {
+            centre: {
+                id: string;
+                name: string;
+            };
+            id: string;
+            invitedAt: string;
+            /** @enum {string} */
+            role: "teacher" | "reception";
         };
         InviteStaffBody: {
             permissions?: components["schemas"]["StaffPermission"][];
@@ -360,12 +1020,44 @@ export interface components {
             roles: components["schemas"]["Role"][];
             teacherId?: string | null;
         };
+        Money: {
+            /** @description Integer piasters (BR-MNY) */
+            amountPt: number;
+            /** @constant */
+            currency: "EGP";
+        };
         NewChildBody: {
             /** Format: uuid */
             curriculumId: string;
             displayName: string;
             /** Format: uuid */
             schoolYearId: string;
+        };
+        NewGroupBody: {
+            /** Format: uuid */
+            bookingId: string;
+            monthlyFeePt: number;
+            offersMonthlyRecurring: boolean;
+            /** Format: uuid */
+            schoolYearId: string;
+            seatCap: number;
+            sessionFeePt: number;
+            /** Format: uuid */
+            subjectId: string;
+        };
+        NewHallBody: {
+            capacity: number;
+            facilities: components["schemas"]["Facility"][];
+            name: string;
+            rentRule: {
+                amountPt?: number | null;
+                basis: components["schemas"]["RentBasis"];
+                percent?: number | null;
+            };
+        };
+        Ok: {
+            /** @constant */
+            ok: true;
         };
         OtpRequestBody: {
             phone: string;
@@ -409,6 +1101,18 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        PublicReview: {
+            body: string;
+            id: string;
+            publishedAt: string;
+            reply: {
+                authorName: string;
+                body: string;
+            } | null;
+            schoolYearName: string;
+            stars: number;
+            tags: components["schemas"]["ReviewTag"][];
+        };
         PutConsentBody: {
             granted: boolean;
             kind: components["schemas"]["ConsentKind"];
@@ -416,12 +1120,142 @@ export interface components {
             /** @description Text version the person saw */
             version: string;
         };
+        RatingSummary: {
+            /** @description One decimal: "4.7" */
+            avg: string;
+            count: number;
+        };
         RefreshBody: {
             /** @description Teacher app; the web sends the cookie */
             refreshToken?: string;
         };
         /** @enum {string} */
+        RentBasis: "fixed_per_session" | "per_student_per_session" | "percent_of_fees";
+        RentEstimate: {
+            autoApprove: {
+                enabled: boolean;
+                meets: boolean;
+            };
+            commission: components["schemas"]["Money"];
+            commissionPercent: number;
+            fees: components["schemas"]["Money"];
+            keep: components["schemas"]["Money"];
+            rent: components["schemas"]["Money"];
+            sessionsPerMonth: number;
+        };
+        RentEstimateBody: {
+            hallId: string;
+            monthlyFeePt: number;
+            slots: components["schemas"]["WeeklySlot"][];
+            students: number;
+        };
+        RentRule: {
+            amount: components["schemas"]["Money"] | null;
+            basis: components["schemas"]["RentBasis"];
+            percent: number | null;
+        };
+        /** @enum {string} */
+        RequestStage: "requested" | "phone_call" | "meeting" | "approved" | "declined" | "withdrawn";
+        RequestTeacher: {
+            id: string;
+            isNew: boolean;
+            name: string;
+            rating: number | null;
+            reviewCount: number;
+            verifiedId: boolean;
+        };
+        /** @enum {string} */
+        ReviewTag: "communication" | "organised" | "location" | "good_value" | "explains_clearly" | "patient" | "homework_feedback" | "exam_prep";
+        /** @enum {string} */
         Role: "parent" | "teacher" | "centre_owner" | "centre_staff";
+        RoomRequest: {
+            centre: {
+                area: string;
+                id: string;
+                name: string;
+            };
+            checks: {
+                fitsCapacity: boolean;
+                rating: boolean;
+                slotFree: boolean;
+                verifiedId: boolean;
+            };
+            createdAt: string;
+            declinedReason: string | null;
+            end: string;
+            expectedStudents: number;
+            hall: {
+                capacity: number;
+                id: string;
+                name: string;
+            };
+            id: string;
+            meetsRules: boolean;
+            rentRule: components["schemas"]["RentRule"];
+            schoolYear: string;
+            stage: components["schemas"]["RequestStage"];
+            stageAt: string | null;
+            start: string;
+            startsOn: string;
+            subject: string;
+            teacher: components["schemas"]["RequestTeacher"];
+            weekdays: number[];
+        };
+        RoomRequestBody: {
+            expectedStudents: number;
+            groupId: string | null;
+            /** Format: uuid */
+            hallId: string;
+            /** Format: uuid */
+            schoolYearId: string;
+            slots: components["schemas"]["WeeklySlot"][];
+            /** Format: date */
+            startsOn: string;
+            /** Format: uuid */
+            subjectId: string;
+        };
+        RoomSearchQuery: {
+            lat?: number;
+            lng?: number;
+            /** @description Seats needed */
+            minCapacity?: number;
+            radiusKm?: number;
+            /** @description Comma-separated ISO weekdays: 1 = Monday … 7 = Sunday */
+            weekday?: string;
+        };
+        RoomSearchResult: {
+            centre: {
+                area: string;
+                distanceKm: number;
+                id: string;
+                name: string;
+            };
+            fits: boolean;
+            freeSlots: components["schemas"]["WeeklySlot"][];
+            hall: {
+                capacity: number;
+                facilities: components["schemas"]["Facility"][];
+                id: string;
+                name: string;
+            };
+            rentRule: components["schemas"]["RentRule"];
+        };
+        ScheduleCell: {
+            end: string;
+            group: string | null;
+            hallId: string;
+            /** @enum {string} */
+            kind: "teaching" | "booked" | "free";
+            rentRule: components["schemas"]["RentRule"] | null;
+            seats: {
+                cap: number;
+                filled: number;
+            } | null;
+            start: string;
+            startsOn: string | null;
+            teacher: string | null;
+            weekday: number;
+        };
         SchoolYearRef: {
             code: string;
             id: string;
@@ -429,6 +1263,44 @@ export interface components {
             /** @description Short form for chips: "Sec 2" (07 §2a P-4) */
             shortName: string;
         };
+        SearchCentresResult: {
+            data: components["schemas"]["CentreCard"][];
+            nextCursor: string | null;
+            totals: {
+                centres: number;
+                teachers: number;
+            };
+        };
+        SearchQuery: {
+            /** Format: uuid */
+            curriculumId?: string;
+            cursor?: string;
+            lat?: number;
+            lng?: number;
+            maxFeePt?: number;
+            minRating?: number;
+            q?: string;
+            radiusKm?: number;
+            /** Format: uuid */
+            schoolYearId?: string;
+            seatsOpen?: string;
+            /** @enum {string} */
+            sort?: "best_match" | "distance" | "rating" | "fee";
+            /** Format: uuid */
+            subjectId?: string;
+            verifiedOnly?: string;
+        };
+        /** @enum {string} */
+        SeatState: "open" | "waitlist";
+        SessionSeats: {
+            endsAt: string;
+            id: string;
+            seatCap: number;
+            seatsLeft: number;
+            startsAt: string;
+        };
+        /** @enum {string} */
+        SlotState: "free" | "taken" | "closed";
         StaffMember: {
             lastActiveAt: string | null;
             /** @description Marketplace permissions (A16, MKT-ACC-06 AC1) */
@@ -442,10 +1314,149 @@ export interface components {
         };
         /** @enum {string} */
         StaffPermission: "bookings.manage" | "reviews.reply";
+        StageBody: {
+            at?: string;
+            /** @enum {string} */
+            stage: "phone_call" | "meeting";
+        };
         SubjectRef: {
             code: string;
             id: string;
             name: string;
+        };
+        TeacherBooking: {
+            centre: {
+                id: string;
+                name: string;
+            };
+            end: string;
+            groupId: string | null;
+            hall: {
+                capacity: number;
+                id: string;
+                name: string;
+            };
+            id: string;
+            label: string | null;
+            schoolYearId: string | null;
+            start: string;
+            startsOn: string;
+            subjectId: string | null;
+            weekdays: number[];
+        };
+        TeacherCard: {
+            centreNames: string[];
+            displayName: string;
+            fromSessionFee: components["schemas"]["Money"] | null;
+            id: string;
+            rating: components["schemas"]["RatingSummary"] | null;
+            slug: string;
+            subjects: string[];
+            verified: boolean;
+        };
+        TeacherCardPage: {
+            data: components["schemas"]["TeacherCard"][];
+            nextCursor: string | null;
+        };
+        TeacherGroup: {
+            centre: {
+                displayName: string;
+                id: string;
+            };
+            endTime: string;
+            followup: {
+                openFollowUps: number;
+                recordsComplete: {
+                    confirmed: number;
+                    eligible: number;
+                };
+                studentCount: number;
+            } | null;
+            id: string;
+            monthlyFee: components["schemas"]["Money"];
+            name: string;
+            nextSession: {
+                id: string;
+                startsAt: string;
+            } | null;
+            offersMonthlyRecurring: boolean;
+            room: string;
+            seatCap: number;
+            seatsFilled: number;
+            sessionFee: components["schemas"]["Money"];
+            startTime: string;
+            weekdays: number[];
+        };
+        TeacherProfile: {
+            bio: string | null;
+            centreCount: number;
+            curricula: components["schemas"]["CurriculumRef"][];
+            displayName: string;
+            groups: components["schemas"]["GroupSummary"][];
+            id: string;
+            rating: components["schemas"]["RatingSummary"] | null;
+            recordedPct: number | null;
+            reviews: components["schemas"]["PublicReview"][];
+            slug: string;
+            subjects: components["schemas"]["SubjectRef"][];
+            tagCounts: {
+                count: number;
+                tag: components["schemas"]["ReviewTag"];
+            }[];
+            verified: boolean;
+            yearsExperience: number | null;
+        };
+        TeacherSelf: {
+            about: string;
+            availability: {
+                am: boolean;
+                pm: boolean;
+                weekday: number;
+            }[];
+            id: string;
+            name: string;
+            openToSlots: boolean;
+            payoutAccount: string;
+            /**
+             * @description Parents see the teacher only when active (name and a subject, invite accepted)
+             * @enum {string}
+             */
+            profileStatus: "invited" | "incomplete" | "active";
+            rating: number | null;
+            reviewCount: number;
+            reviewEachEnrolment: boolean;
+            subjects: string;
+            teaches: {
+                groupId: string;
+                label: string;
+                monthlyFee: components["schemas"]["Money"];
+                schoolYearId: string;
+                students: number;
+                subjectId: string;
+                where: string;
+            }[];
+            verification: {
+                degree: components["schemas"]["Verification"];
+                nationalId: components["schemas"]["Verification"];
+                references: {
+                    added: number;
+                    needed: number;
+                };
+            };
+            yearsExperience: number;
+        };
+        TeacherSelfPatch: {
+            about?: string;
+            availability?: {
+                am: boolean;
+                pm: boolean;
+                weekday: number;
+            }[];
+            displayName?: string;
+            openToSlots?: boolean;
+            reviewEachEnrolment?: boolean;
+            /** @description What the teacher teaches (07 §2) */
+            subjectIds?: string[];
         };
         TokenPair: {
             accessToken?: string;
@@ -455,6 +1466,13 @@ export interface components {
             /** @enum {string} */
             language?: "ar" | "en";
             name?: string;
+        };
+        /** @enum {string} */
+        Verification: "verified" | "pending" | "missing";
+        WeeklySlot: {
+            end: string;
+            start: string;
+            weekday: number;
         };
     };
     responses: never;
@@ -658,6 +1676,71 @@ export interface operations {
             };
         };
     };
+    patchCentre: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CentrePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CentreProfileEdit"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `forbidden` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `invalid_location`, `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     getCentreFeatures: {
         parameters: {
             query?: never;
@@ -697,6 +1780,332 @@ export interface operations {
                 };
             };
             /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    getCentreProfileEdit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CentreProfileEdit"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    listHalls: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Hall"][];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    addHall: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewHallBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Hall"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `forbidden` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    getCentreSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CentreSchedule"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    getAutoApprove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutoApproveRules"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    putAutoApprove: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AutoApproveRules"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutoApproveRules"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `forbidden` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -821,6 +2230,49 @@ export interface operations {
             };
         };
     };
+    getCentreBySlug: {
+        parameters: {
+            query?: {
+                schoolYearId?: string;
+                subjectId?: string;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CentreProfileWithGroups"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     listCurricula: {
         parameters: {
             query?: never;
@@ -857,6 +2309,174 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FeatureFlags"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    createGroup: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewGroupBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Created"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `booking_has_group` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `seat_cap_above_hall`, `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    getGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupSummary"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    patchGroup: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ok"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `seat_cap_below_filled` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `seat_cap_above_hall`, `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -1121,6 +2741,87 @@ export interface operations {
             };
         };
     };
+    listMyInvites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invite"][];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    acceptInvite: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invite"][];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     addRole: {
         parameters: {
             query?: never;
@@ -1166,6 +2867,640 @@ export interface operations {
             };
         };
     };
+    listMyBookings: {
+        parameters: {
+            query: {
+                scope: "mine";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherBooking"][];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    listRoomRequests: {
+        parameters: {
+            query?: {
+                centreId?: string;
+                scope?: "mine";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomRequest"][];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    requestRoom: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoomRequestBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomRequest"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `slot_taken`, `centre_not_verified`, `hall_not_listed` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    approveRoomRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomRequest"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `slot_taken`, `centre_not_verified` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    declineRoomRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeclineBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomRequest"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `reason_required`, `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    moveRoomRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StageBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomRequest"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `stage_backwards`, `request_closed` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    withdrawRoomRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomRequest"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    patchHall: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HallPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Hall"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `forbidden` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `capacity_below_group` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    rentEstimate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RentEstimateBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentEstimate"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    searchRooms: {
+        parameters: {
+            query?: {
+                lat?: number;
+                lng?: number;
+                minCapacity?: number;
+                radiusKm?: number;
+                weekday?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomSearchResult"][];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    searchCentres: {
+        parameters: {
+            query?: {
+                curriculumId?: string;
+                cursor?: string;
+                lat?: number;
+                lng?: number;
+                maxFeePt?: number;
+                minRating?: number;
+                q?: string;
+                radiusKm?: number;
+                schoolYearId?: string;
+                seatsOpen?: string;
+                sort?: "best_match" | "distance" | "rating" | "fee";
+                subjectId?: string;
+                verifiedOnly?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchCentresResult"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    searchTeachers: {
+        parameters: {
+            query?: {
+                curriculumId?: string;
+                cursor?: string;
+                lat?: number;
+                lng?: number;
+                maxFeePt?: number;
+                minRating?: number;
+                q?: string;
+                radiusKm?: number;
+                schoolYearId?: string;
+                seatsOpen?: string;
+                sort?: "best_match" | "distance" | "rating" | "fee";
+                subjectId?: string;
+                verifiedOnly?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherCardPage"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     listSubjects: {
         parameters: {
             query?: {
@@ -1198,6 +3533,120 @@ export interface operations {
             };
         };
     };
+    getTeacherBySlug: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherProfile"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    getTeacherSelf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherSelf"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    patchTeacherSelf: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A UUID per action; a retry with the same key and body replays the first response (07 §1) */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeacherSelfPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherSelf"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     getTeacherFeatures: {
         parameters: {
             query?: never;
@@ -1214,6 +3663,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CentreFeatures"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    listTeacherGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherGroup"][];
                 };
             };
             /** @description `unauthenticated` */

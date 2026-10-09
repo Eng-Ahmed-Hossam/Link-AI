@@ -114,6 +114,15 @@ export const handlers = [
       });
     }),
   ),
+  // Teacher invitations (decided 2026-10-09): the sample world has none waiting.
+  http.get(
+    '*/v1/me/invites',
+    authed(() => HttpResponse.json([])),
+  ),
+  http.post(
+    '*/v1/me/invites/:id/accept',
+    authed(() => problem(404, 'not_found', 'This invitation does not exist or you cannot see it.')),
+  ),
   http.get(
     '*/v1/me/consents',
     authed(({ userId }) => HttpResponse.json({ data: db.consentsOf(userId) })),

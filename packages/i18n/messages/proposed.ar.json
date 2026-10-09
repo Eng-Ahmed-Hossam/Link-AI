@@ -1872,5 +1872,13 @@
   "sms.staffInvite.body",
   "server.staff.scope.owner",
   "server.staff.scope.reception",
-  "server.staff.scope.teacher"
+  "server.staff.scope.teacher",
+  "server.centre.closedDay",
+  "teacher.invite.title",
+  "teacher.invite.body",
+  "teacher.invite.accept",
+  "teacher.profile.completeTitle",
+  "teacher.profile.completeBody",
+  "teacher.profile.name",
+  "teacher.profile.subjectsLabel"
 ]

@@ -84,10 +84,15 @@ switch (cmd) {
     if (process.env.APP_ENV !== 'local')
       fail('seed:demo wipes the app tables; APP_ENV must be local.');
     // tsx: the seed imports the mock fixtures (TypeScript workspace packages).
-    run(process.execPath, [
-      join(dirname(requireCore.resolve('tsx/package.json')), 'dist', 'cli.mjs'),
-      join(coreApi, 'seeds', 'demo.ts'),
-    ]);
+    run(
+      process.execPath,
+      [
+        join(dirname(requireCore.resolve('tsx/package.json')), 'dist', 'cli.mjs'),
+        join(coreApi, 'seeds', 'demo.ts'),
+        ...process.argv.slice(3),
+      ],
+      { cwd: coreApi },
+    );
     break;
   default:
     fail('Usage: node scripts/db.mjs migrate|rollback|status|types|seed');

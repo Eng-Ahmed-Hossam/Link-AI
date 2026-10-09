@@ -6,6 +6,7 @@ type Schemas = components['schemas'];
 export type PersonRef = Schemas['PersonRef'];
 export type StaffPermission = Schemas['StaffPermission'];
 export type StaffMember = Schemas['StaffMember'];
+export type TeacherGroup = Schemas['TeacherGroup'];
 
 /**
  * Phase 2 (follow-up) draft types. docs/07 §3 lists the endpoints in outline only, so every shape
@@ -123,31 +124,6 @@ export interface RosterRow {
   latestScore: { score: number; maxScore: number; title: string } | null;
   noteCount: number;
   flags: SignalSummary[];
-}
-
-/** T09 merged with J05 (CF-30): marketplace parts always; `followup` only with the Phase 2 flag. */
-export interface TeacherGroup {
-  id: string;
-  name: string;
-  centre: PersonRef;
-  room: string;
-  weekdays: number[];
-  startTime: string;
-  endTime: string;
-  sessionFee: { amountPt: number; currency: 'EGP' };
-  monthlyFee: { amountPt: number; currency: 'EGP' };
-  offersMonthlyRecurring: boolean;
-  seatCap: number;
-  /** Seats filled in the next session. */
-  seatsFilled: number;
-  nextSession: { id: string; startsAt: string } | null;
-  /** Null when the group has no follow-up subscription. */
-  followup: {
-    studentCount: number;
-    /** Confirmed / eligible past sessions in the last 5 weeks ("6 / 7"). */
-    recordsComplete: { confirmed: number; eligible: number };
-    openFollowUps: number;
-  } | null;
 }
 
 export interface TeacherToday {

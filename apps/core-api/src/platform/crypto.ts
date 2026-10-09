@@ -7,9 +7,12 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes }
  * - `FieldCipher`: envelope encryption. Every value gets its own AES-256-GCM data key; the data key
  *   is wrapped by the key-encryption key (locally `FIELD_KEY_LOCAL`, elsewhere KMS `KMS_KEY_FIELDS`).
  *
- * Stored layout (v1): 0x01 | wrapped DEK (iv 12 · tag 16 · key 32) | iv 12 | tag 16 | ciphertext.
+ * Stored layout (v2): 0x02 | key-ID length (1) | key ID (ASCII) | wrapped DEK (iv 12 · tag 16 ·
+ * key 32) | iv 12 | tag 16 | ciphertext. The key ID says which key-encryption key wrapped it, so a
+ * changed key is reported as such instead of failing as corrupt data. (v1 had no key ID.)
  */
-const VERSION = 0x01;
+const VERSION = 0x02;
+const V1 = 0x01;
 const IV = 12;
 const TAG = 16;
 const KEY = 32;
@@ -28,7 +31,25 @@ function open(key: Buffer, sealed: Buffer) {
   return Buffer.concat([d.update(sealed.subarray(IV + TAG)), d.final()]);
 }
 
+/** A short, non-secret fingerprint of a key: the first 12 hex digits of its SHA-256. */
+export const keyFingerprint = (key: Buffer | string) =>
+  createHash('sha256').update(key).digest('hex').slice(0, 12);
+
+export class KeyMismatchError extends Error {
+  constructor(
+    readonly storedKeyId: string,
+    readonly currentKeyId: string,
+  ) {
+    super(
+      `Data encrypted with key ${storedKeyId}, but the current key is ${currentKeyId}. ` +
+        'Locally: the key in .env.local changed — run pnpm seed:demo --reset.',
+    );
+  }
+}
+
 export interface KeyWrapper {
+  /** Fingerprint of the key-encryption key. */
+  readonly id: string;
   wrap(dataKey: Buffer): Buffer;
   unwrap(wrapped: Buffer): Buffer;
 }
@@ -36,9 +57,11 @@ export interface KeyWrapper {
 /** Local key-encryption key from `.env.local` (aws-local keeps KMS keys in memory only). */
 export class LocalKeyWrapper implements KeyWrapper {
   private readonly kek: Buffer;
+  readonly id: string;
   constructor(base64Key: string) {
     this.kek = Buffer.from(base64Key, 'base64').subarray(0, KEY);
     if (this.kek.length !== KEY) throw new Error('FIELD_KEY_LOCAL must be 32 bytes');
+    this.id = keyFingerprint(this.kek);
   }
   wrap(dataKey: Buffer) {
     return seal(this.kek, dataKey);
@@ -51,11 +74,18 @@ export class LocalKeyWrapper implements KeyWrapper {
 export class FieldCipher {
   constructor(private readonly keys: KeyWrapper) {}
 
+  /** The fingerprint of the key that encrypts new values. */
+  get keyId() {
+    return this.keys.id;
+  }
+
   encrypt(plain: string): Buffer {
     const dek = randomBytes(KEY);
+    const id = Buffer.from(this.keys.id, 'ascii');
     try {
       return Buffer.concat([
-        Buffer.from([VERSION]),
+        Buffer.from([VERSION, id.length]),
+        id,
         this.keys.wrap(dek),
         seal(dek, Buffer.from(plain, 'utf8')),
       ]);
@@ -64,11 +94,23 @@ export class FieldCipher {
     }
   }
 
+  /** The key ID a stored value was written with (null for v1 values, which carry none). */
+  static keyIdOf(stored: Buffer): string | null {
+    if (stored[0] !== VERSION) return null;
+    return stored.subarray(2, 2 + stored[1]!).toString('ascii');
+  }
+
   decrypt(stored: Buffer): string {
-    if (stored[0] !== VERSION) throw new Error('unknown field-encryption version');
-    const dek = this.keys.unwrap(stored.subarray(1, 1 + WRAPPED));
+    let body: Buffer;
+    if (stored[0] === VERSION) {
+      const storedId = FieldCipher.keyIdOf(stored)!;
+      if (storedId !== this.keys.id) throw new KeyMismatchError(storedId, this.keys.id);
+      body = stored.subarray(2 + stored[1]!);
+    } else if (stored[0] === V1) body = stored.subarray(1);
+    else throw new Error('unknown field-encryption version');
+    const dek = this.keys.unwrap(body.subarray(0, WRAPPED));
     try {
-      return open(dek, stored.subarray(1 + WRAPPED)).toString('utf8');
+      return open(dek, body.subarray(WRAPPED)).toString('utf8');
     } finally {
       dek.fill(0);
     }

@@ -4,19 +4,17 @@
 // same people, same phones, same centres and halls. IDs are deterministic UUIDs derived from the
 // mock IDs (`demoId('cen-nour')`), so a reset gives the same IDs every time.
 // It WIPES the app tables first, so it refuses to run unless APP_ENV=local.
-import { createHash } from 'node:crypto';
 import { Kysely, PostgresDialect, sql } from 'kysely';
 import pg from 'pg';
 import { Redis } from 'ioredis';
 import * as fx from '@link/mocks/fixtures';
-import { halls } from '@link/mocks/market-fixtures';
-import { FieldCipher, LocalKeyWrapper, lookupHmac } from '../src/platform/crypto';
+import * as mfx from '@link/mocks/market-fixtures';
+import { FieldCipher, LocalKeyWrapper, keyFingerprint, lookupHmac } from '../src/platform/crypto';
+import { SLOT_DAYS, SLOT_TIMES, plus2h, sessionTimes } from '../src/market/model';
+import { addDays, cairoToUtc, cairoToday } from '../src/platform/time';
 
-/** Deterministic UUID for a fixture ID (v4 layout; sample data only). */
-export function demoId(key: string) {
-  const h = createHash('sha256').update(`link-demo:${key}`).digest('hex');
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${'89ab'[parseInt(h[16]!, 16) % 4]}${h.slice(17, 20)}-${h.slice(20, 32)}`;
-}
+export { demoId } from './demo-id';
+import { demoId } from './demo-id';
 
 /** Second owner and centre: tenant B for `pnpm test:rls`. */
 export const OWNER_B_PHONE = '+201000000007';
@@ -24,6 +22,14 @@ const RLS_CENTRE = 'cen-nile';
 
 /** Tables the seed owns, emptied in one statement (CASCADE follows the in-schema FKs). */
 const TABLES = [
+  'platform.data_keys',
+  'market.review_stats',
+  'market.group_sessions',
+  'market.groups',
+  'market.room_booking_slots',
+  'market.room_bookings',
+  'market.teacher_applications',
+  'market.room_open_slots',
   'audit.audit_events',
   'platform.outbox_events',
   'platform.inbox_events',
@@ -109,7 +115,7 @@ export async function seedDemo(migratorUrl: string) {
       'ref.subjects',
       fx.schoolYears.flatMap((y) =>
         fx.subjects.map((s) => ({
-          id: demoId(`${s.id}:${y.id}`),
+          id: y.id === fx.schoolYears[0]!.id ? demoId(s.id) : demoId(`${s.id}:${y.id}`),
           curriculum_id: demoId(y.curriculumId),
           school_year_id: demoId(y.id),
           code: s.code,
@@ -118,6 +124,8 @@ export async function seedDemo(migratorUrl: string) {
         })),
       ),
     );
+    const subjectRow = (subjectId: string, yearId: string) =>
+      yearId === fx.schoolYears[0]!.id ? demoId(subjectId) : demoId(`${subjectId}:${yearId}`);
     await put('ref.academic_terms', [
       {
         id: demoId('term-2026-t1'),
@@ -193,8 +201,16 @@ export async function seedDemo(migratorUrl: string) {
         owner_id: ownerOf(c.id),
         name: c.name.ar,
         slug: c.slug,
-        about_en: null,
-        about_ar: null,
+        about_en: mfx.centreExtra[c.id]?.about.en ?? null,
+        about_ar: mfx.centreExtra[c.id]?.about.ar ?? null,
+        photos: JSON.stringify(
+          Array.from({ length: mfx.centreExtra[c.id]?.photos ?? 0 }, (_, i) => ({ sample: i })),
+        ),
+        // MKT-HAL-05: off by default; the rules are Figma C05's.
+        settings: JSON.stringify({
+          autoApprove: { enabled: false, verifiedId: true, minRating: 4.5, fitsCapacity: true },
+          shareAttendanceWithParents: false,
+        }),
         governorate: c.governorate.ar,
         area: c.area.ar,
         address: c.address.ar,
@@ -206,7 +222,7 @@ export async function seedDemo(migratorUrl: string) {
     );
     await put(
       'market.rooms',
-      halls.map((h) => ({
+      mfx.halls.map((h) => ({
         id: demoId(h.id),
         centre_id: demoId(h.centreId),
         name: h.name.ar,
@@ -224,7 +240,25 @@ export async function seedDemo(migratorUrl: string) {
               : { type: 'fixed_per_session', amountPt: h.rule.amountPt },
         ),
         listed: h.listed,
+        photo: h.photo,
       })),
+    );
+    // The weekly grid of every hall (C05); the owner's closed slots are not offered.
+    await put(
+      'market.room_open_slots',
+      mfx.halls.flatMap((h) =>
+        SLOT_DAYS.flatMap((weekday) =>
+          SLOT_TIMES.map((start) => ({
+            id: demoId(`slot:${h.id}:${weekday}:${start}`),
+            room_id: demoId(h.id),
+            centre_id: demoId(h.centreId),
+            weekday,
+            start_time: start,
+            end_time: plus2h(start),
+            listed: !h.closed.includes(`${weekday}|${start}`),
+          })),
+        ),
+      ),
     );
     await put(
       'org.teachers',
@@ -238,10 +272,223 @@ export async function seedDemo(migratorUrl: string) {
         years_experience: t.yearsExperience,
         verification: t.verified ? 'verified' : 'pending',
         verified_at: t.verified ? '2026-09-02T10:00:00Z' : null,
-        open_to_slots: true,
+        open_to_slots: mfx.teacherSelf[t.id]?.openToSlots ?? true,
+        availability: JSON.stringify(mfx.teacherSelf[t.id]?.availability ?? []),
         settings: JSON.stringify({ reviewEachEnrolment: t.reviewEachEnrolment }),
+        profile_status: 'active',
       })),
     );
+    // Room applicants (C06): sample teachers with no group yet, so not in the parent directory.
+    await put(
+      'identity.users',
+      mfx.applicants.map((a, i) => ({
+        id: demoId(`usr-${a.id}`),
+        ...phone(`+2010000003${String(i + 1).padStart(2, '0')}`),
+        name: a.name.ar,
+        language: 'ar',
+      })),
+    );
+    await put(
+      'org.teachers',
+      mfx.applicants.map((a) => ({
+        id: demoId(a.id),
+        user_id: demoId(`usr-${a.id}`),
+        display_name: a.name.ar,
+        slug: a.id,
+        verification: a.verifiedId ? 'verified' : 'pending',
+        open_to_slots: true,
+        profile_status: 'active',
+      })),
+    );
+    // What each teacher teaches: the subject of every group they have.
+    await put(
+      'org.teacher_subjects',
+      [
+        ...new Set(
+          fx.groups.map((g) => `${g.teacherId}|${subjectRow(g.subjectId, g.schoolYearId)}`),
+        ),
+        ...mfx.applicants.map((a) => `${a.id}|${subjectRow(a.subjectId, 'sy-sec2')}`),
+      ].map((k) => ({ teacher_id: demoId(k.split('|')[0]!), subject_id: k.split('|')[1]! })),
+    );
+    // Ms Salma's checks (J04): degree verified, one reference of two.
+    await put('org.verification_checks', [
+      {
+        id: demoId('vc-salma-degree'),
+        subject_type: 'teacher',
+        subject_id: demoId('tch-salma'),
+        check_code: 'degree',
+        status: 'done',
+        done_at: '2026-09-02T10:00:00Z',
+      },
+      {
+        id: demoId('vc-salma-ref1'),
+        subject_type: 'teacher',
+        subject_id: demoId('tch-salma'),
+        check_code: 'reference',
+        status: 'done',
+        done_at: '2026-09-02T10:00:00Z',
+      },
+    ]);
+    // Ratings (BR-REV-07): the fixtures' published-review distributions (reviews themselves: R2b).
+    const toDist = (rating: number | null, count: number) => {
+      if (rating === null || !count) return [0, 0, 0, 0, 0];
+      const five = Math.round((rating - 4) * count);
+      return [five, count - five, 0, 0, 0];
+    };
+    await put('market.review_stats', [
+      ...fx.centres.map((c) => ({
+        target_type: 'centre',
+        target_id: demoId(c.id),
+        distribution: c.ratingDist,
+      })),
+      ...fx.teachers.map((t) => ({
+        target_type: 'teacher',
+        target_id: demoId(t.id),
+        distribution: t.ratingDist,
+        tag_counts: JSON.stringify(t.tagCounts),
+      })),
+      ...mfx.applicants.map((a) => ({
+        target_type: 'teacher',
+        target_id: demoId(a.id),
+        distribution: toDist(a.rating, a.reviewCount),
+      })),
+    ]);
+
+    // ── Bookings and groups (the fixture groups, and the C06 pipeline) ─────────
+    const today = cairoToday();
+    const hallOf = (g: (typeof fx.groups)[number]) =>
+      mfx.halls.find((h) => h.centreId === g.centreId && h.roomLabel === g.room.en);
+    const ruleOf = (h: (typeof mfx.halls)[number]) =>
+      h.rule.basis === 'percent_of_fees'
+        ? { type: 'percent_of_fees', pct: Number(h.rule.percent).toFixed(2) }
+        : h.rule.basis === 'per_student_per_session'
+          ? { type: 'per_student_per_session', amountPt: h.rule.amountPt, countBasis: 'enrolled' }
+          : { type: 'fixed_per_session', amountPt: h.rule.amountPt };
+    const minutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+    const bookings: Record<string, unknown>[] = [];
+    const bookingSlots: Record<string, unknown>[] = [];
+    const addBooking = (
+      key: string,
+      h: (typeof mfx.halls)[number],
+      teacherKey: string,
+      slots: { weekday: number; start: string; end: string }[],
+      startsOn: string,
+      applicationId: string | null,
+    ) => {
+      const id = demoId(key);
+      bookings.push({
+        id,
+        room_id: demoId(h.id),
+        centre_id: demoId(h.centreId),
+        teacher_id: demoId(teacherKey),
+        application_id: applicationId,
+        weekly_slots: JSON.stringify(slots),
+        rent_rule: JSON.stringify(ruleOf(h)),
+        starts_on: startsOn,
+      });
+      for (const s of slots)
+        bookingSlots.push({
+          booking_id: id,
+          room_id: demoId(h.id),
+          centre_id: demoId(h.centreId),
+          weekday: s.weekday,
+          minutes: `[${minutes(s.start)},${minutes(s.end)})`,
+          active_dates: `[${startsOn},)`,
+        });
+      return id;
+    };
+    const groupRows: Record<string, unknown>[] = [];
+    const sessionRows: Record<string, unknown>[] = [];
+    for (const g of fx.groups) {
+      const h = hallOf(g);
+      if (!h) continue;
+      const startsOn = addDays(today, -35);
+      const bookingId = addBooking(
+        `bk-${g.id}`,
+        h,
+        g.teacherId,
+        g.weekdays.map((weekday) => ({ weekday, start: g.startTime, end: g.endTime })),
+        startsOn,
+        null,
+      );
+      groupRows.push({
+        id: demoId(g.id),
+        teacher_id: demoId(g.teacherId),
+        centre_id: demoId(g.centreId),
+        room_booking_id: bookingId,
+        subject_id: subjectRow(g.subjectId, g.schoolYearId),
+        curriculum_id: demoId(g.curriculumId),
+        school_year_id: demoId(g.schoolYearId),
+        weekdays: g.weekdays,
+        start_time: g.startTime,
+        end_time: g.endTime,
+        seat_cap: g.seatCap,
+        monthly_fee_pt: g.monthlyFeePt,
+        session_fee_pt: g.sessionFeePt,
+        offers_monthly_recurring: g.offersMonthlyRecurring,
+        starts_on: startsOn,
+      });
+      for (const s of sessionTimes({
+        weekdays: g.weekdays,
+        startTime: g.startTime,
+        endTime: g.endTime,
+        startsOn,
+      }))
+        sessionRows.push({
+          id: demoId(`ses:${g.id}:${s.date}`),
+          group_id: demoId(g.id),
+          centre_id: demoId(g.centreId),
+          starts_at: s.startsAt,
+          ends_at: s.endsAt,
+          // Past sessions took place (the held job marks them; the seed writes them so).
+          status: new Date(s.endsAt) < new Date() ? 'held' : 'scheduled',
+          status_changed_at: new Date(s.endsAt) < new Date() ? s.endsAt : null,
+        });
+    }
+    const applications = mfx.requests.map((r) => {
+      const h = mfx.halls.find((x) => x.id === r.hallId)!;
+      return {
+        id: demoId(r.id),
+        teacher_id: demoId(r.teacherKey),
+        centre_id: demoId(h.centreId),
+        room_id: demoId(h.id),
+        subject_id: subjectRow(r.subjectId, r.schoolYearId),
+        requested_slots: JSON.stringify(
+          r.weekdays.map((weekday) => ({ weekday, start: r.start, end: r.end })),
+        ),
+        expected_students: r.expectedStudents,
+        starts_on: addDays(today, r.startsInDays),
+        stage: r.stage,
+        scheduled_contact_at: r.stageAt
+          ? cairoToUtc(addDays(today, r.stageAt.inDays), r.stageAt.time)
+          : null,
+        created_at: cairoToUtc(addDays(today, -r.createdDaysAgo), '10:00'),
+      };
+    });
+    await put('market.teacher_applications', applications);
+    const approvedBookings: [string, string][] = [];
+    for (const r of mfx.requests.filter((x) => x.stage === 'approved')) {
+      const h = mfx.halls.find((x) => x.id === r.hallId)!;
+      const id = addBooking(
+        `bk-${r.id}`,
+        h,
+        r.teacherKey,
+        r.weekdays.map((weekday) => ({ weekday, start: r.start, end: r.end })),
+        addDays(today, r.startsInDays),
+        demoId(r.id),
+      );
+      approvedBookings.push([demoId(r.id), id]);
+    }
+    await put('market.room_bookings', bookings);
+    await put('market.room_booking_slots', bookingSlots);
+    for (const [applicationId, bookingId] of approvedBookings)
+      await db
+        .updateTable('market.teacher_applications')
+        .set({ room_booking_id: bookingId })
+        .where('id', '=', applicationId)
+        .execute();
+    await put('market.groups', groupRows);
+    await put('market.group_sessions', sessionRows);
 
     // ── Roles ────────────────────────────────────────────────────────────────────
     const role = (key: string, userId: string, r: string, extra: Record<string, unknown> = {}) => ({
@@ -276,6 +523,9 @@ export async function seedDemo(migratorUrl: string) {
         .map((t) =>
           role(`teacher-${t.id}`, teacherUser(t.id), 'teacher', { teacher_id: demoId(t.id) }),
         ),
+      ...mfx.applicants.map((a) =>
+        role(`teacher-${a.id}`, demoId(`usr-${a.id}`), 'teacher', { teacher_id: demoId(a.id) }),
+      ),
     ]);
 
     // ── The sample parent's children (Mariam and Youssef) ────────────────────────
@@ -348,6 +598,13 @@ export async function seedDemo(migratorUrl: string) {
         'landing.phase2_sections',
         'ai.review_moderation',
       ].map((key) => ({ key, scope_type: 'global', enabled: false })),
+      // OD-58: the Follow-up paid extra is on for Al Nour in the demo (as in the mock).
+      { key: 'followup.extra', scope_type: 'centre', scope_id: demoId('cen-nour'), enabled: true },
+    ]);
+    // docs/10 §5: which keys wrote this data (checked at start-up).
+    await put('platform.data_keys', [
+      { purpose: 'field', key_id: cipher.keyId },
+      { purpose: 'lookup', key_id: keyFingerprint(hmacKey) },
     ]);
   } finally {
     await db.destroy();
@@ -379,6 +636,19 @@ export async function seedDemo(migratorUrl: string) {
 
 // Run directly: `pnpm seed:demo`.
 if (process.argv[1] && /seeds[\\/]demo\.ts$/.test(process.argv[1])) {
+  // `pnpm seed:demo` fills an empty database; `--reset` wipes your local data first.
+  if (!process.argv.includes('--reset')) {
+    const c = new pg.Client({ connectionString: env('DATABASE_URL_MIGRATOR') });
+    await c.connect();
+    const { rows } = await c.query('SELECT count(*)::int AS n FROM identity.users');
+    await c.end();
+    if (rows[0].n > 0) {
+      console.log(
+        `The database has data (${rows[0].n} users). pnpm seed:demo --reset wipes it and loads the demo world again.`,
+      );
+      process.exit(0);
+    }
+  }
   const { counts } = await seedDemo(env('DATABASE_URL_MIGRATOR'));
   console.log('Demo world seeded (sample data only):');
   for (const [t, n] of Object.entries(counts)) console.log(`  ${t.padEnd(28)} ${n}`);

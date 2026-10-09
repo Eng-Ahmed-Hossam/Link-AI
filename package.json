@@ -60,7 +60,8 @@
     "test:api": "node scripts/test-api.mjs all",
     "test:rls": "node scripts/test-api.mjs rls",
     "test:e2e:mock": "node scripts/e2e-modes.mjs mock",
-    "test:e2e:live": "node scripts/e2e-modes.mjs live"
+    "test:e2e:live": "node scripts/e2e-modes.mjs live",
+    "ops:verify-centre": "node scripts/ops.mjs verify-centre"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

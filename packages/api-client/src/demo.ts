@@ -1,6 +1,6 @@
 /**
- * Demo controls client (dev only). Talks to `/__demo/*`, which exists only in the mock handlers
- * (`mock` and `mock-server` API modes). Apps render the controls only when APP_ENV=local and the
+ * Demo controls client (dev only). Talks to `/__demo/*`: the mock handlers (`mock`, `mock-server`)
+ * or, in live mode on a developer machine, core-api's DevController (APP_ENV=local only). Apps render the controls only when APP_ENV=local and the
  * demo flag are set, and never in production builds. Imported only as `@link/api-client/demo`, so
  * the main entry (and every pilot or production bundle) carries no `/__demo` call.
  */
@@ -51,6 +51,13 @@ async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Pr
 }
 
 /** The connected story (Step 2B): where it is, and the ids the screens and tests need. */
+export interface PendingCentre {
+  id: string;
+  name: string;
+  pendingVerification: boolean;
+  locationUnderReview: boolean;
+}
+
 export interface StoryState {
   requestId: string | null;
   stage: string | null;
@@ -64,6 +71,10 @@ export interface StoryState {
 export const demoApi = {
   /** The connected story's controls: reset it, jump to step N (1–9), complete the next session. */
   story: () => call<StoryState>('GET', '/__demo/story'),
+  /** Local stand-in for Link ops (the ops console comes later): centres waiting for verification. */
+  pendingCentres: () => call<PendingCentre[]>('GET', '/__demo/pending-centres'),
+  verifyCentre: (centreId: string) =>
+    call<{ id: string; name: string }[]>('POST', '/__demo/verify-centre', { centreId }),
   storyReset: () => call<StoryState>('POST', '/__demo/story/reset', {}),
   storyJump: (step: number) => call<StoryState>('POST', '/__demo/story/jump', { step }),
   storySessionDone: () => call<StoryState>('POST', '/__demo/story/session-done', {}),

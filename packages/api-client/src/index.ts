@@ -8,6 +8,7 @@ import type {
   CheckoutResult,
   ConsentState,
   Child,
+  Invite,
   CreateEnrolmentBody,
   CreateReviewBody,
   CurriculumRef,
@@ -272,6 +273,10 @@ export const api = {
   /** E0-09: global flags, merged with the caller's centre and teacher scopes. */
   featureFlags: () => request<{ flags: Record<string, boolean> }>('GET', '/v1/feature-flags'),
   me: () => request<Me>('GET', '/v1/me'),
+  /** Centre invitations waiting for an answer; a teacher invite needs the teacher's accept. */
+  myInvites: () => request<Invite[]>('GET', '/v1/me/invites'),
+  acceptInvite: (id: string) =>
+    request<Invite[]>('POST', `/v1/me/invites/${id}/accept`, { body: {} }),
   addRole: (role: Role) => request<Me>('POST', '/v1/me/roles', { body: { role } }),
   updateMe: (body: UpdateMeBody, idempotencyKey: string) =>
     request<Me>('PATCH', '/v1/me', { body, idempotencyKey }),
@@ -647,6 +652,12 @@ export const useSubjects = (curriculumId?: string, schoolYearId?: string) =>
     queryFn: () => api.subjects(curriculumId, schoolYearId),
     staleTime: Infinity,
   });
+/** The subject search starts with (Maths), by its code, so the ID works in every API mode. */
+export const DEFAULT_SUBJECT_CODE = 'MATH';
+export const useDefaultSubjectId = () => {
+  const s = useSubjects();
+  return s.data?.find((x) => x.code === DEFAULT_SUBJECT_CODE)?.id ?? s.data?.[0]?.id;
+};
 export const useSearchCentres = (q: SearchQuery, opts?: Opts<SearchCentresResult>) =>
   useQuery({ queryKey: queryKeys.searchCentres(q), queryFn: () => api.searchCentres(q), ...opts });
 export const useSearchTeachers = (q: SearchQuery, opts?: Opts<Page<TeacherCard>>) =>

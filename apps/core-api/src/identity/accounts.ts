@@ -70,11 +70,14 @@ export class Accounts {
           requestId,
         });
       }
+      // Staff invites start at the first sign-in; a teacher invite waits for the teacher's own
+      // accept (decided 2026-10-09: GET /v1/me/invites, POST …/accept).
       const invites = await tx
         .updateTable('identity.role_assignments')
         .set({ status: 'active' })
         .where('user_id', '=', user.id)
         .where('status', '=', 'invited')
+        .where('role', '<>', 'teacher')
         .returning(['id', 'centre_id', 'role'])
         .execute();
       for (const i of invites)
@@ -270,7 +273,12 @@ export class Accounts {
   }
 
   /** The teacher profile behind a teacher role (verification not started; MKT-TCH-02 later). */
-  async ensureTeacher(tx: Tx, userId: string) {
+  /**
+   * The teacher profile behind a teacher role. A profile created by a centre's invite starts
+   * `invited` (hidden from parents until the teacher accepts and completes it); one created by the
+   * teacher's own sign-up starts `incomplete` (until a name and a subject are set).
+   */
+  async ensureTeacher(tx: Tx, userId: string, via: 'signup' | 'invite' = 'signup') {
     const existing = await tx
       .selectFrom('org.teachers')
       .select('id')
@@ -290,6 +298,7 @@ export class Accounts {
         user_id: userId,
         display_name: u?.name ?? '',
         slug: `teacher-${id.slice(-12)}`,
+        profile_status: via === 'invite' ? 'invited' : 'incomplete',
       })
       .execute();
     return id;

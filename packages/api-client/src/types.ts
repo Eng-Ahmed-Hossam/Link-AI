@@ -22,12 +22,19 @@ export type CurriculumRef = Schemas['CurriculumRef'];
 export type SchoolYearRef = Schemas['SchoolYearRef'];
 export type SubjectRef = Schemas['SubjectRef'];
 export type Child = Schemas['Child'];
-
-/** BR-MNY: money is always integer piasters. */
-export interface Money {
-  amountPt: number;
-  currency: 'EGP';
-}
+export type Invite = Schemas['Invite'];
+export type Money = Schemas['Money'];
+export type RatingSummary = Schemas['RatingSummary'];
+export type SeatState = Schemas['SeatState'];
+export type CentreCard = Schemas['CentreCard'];
+export type TeacherCard = Schemas['TeacherCard'];
+export type SearchCentresResult = Schemas['SearchCentresResult'];
+export type SessionSeats = Schemas['SessionSeats'];
+export type GroupSummary = Schemas['GroupSummary'];
+export type ReviewTag = Schemas['ReviewTag'];
+export type PublicReview = Schemas['PublicReview'];
+export type CentreProfile = Schemas['CentreProfile'];
+export type TeacherProfile = Schemas['TeacherProfile'];
 
 /** RFC 9457 problem details with a stable `code` (07 §1). */
 export interface ProblemDetails {
@@ -49,43 +56,6 @@ export interface Page<T> {
 // ── Auth and account (MKT-ACC) ─────────────────────────────────────────────────
 
 // ── Discovery (MKT-DSC) ────────────────────────────────────────────────────────
-export interface RatingSummary {
-  /** Average of published public reviews (BR-REV-07), one decimal: "4.7". */
-  avg: string;
-  count: number;
-}
-
-/** Seat availability shown on pins and cards (P02, P03, P06). */
-/** CF-28 (closed): every full group accepts a waitlist, so there is no "No seats" state in Phase 1. */
-export type SeatState = 'open' | 'waitlist';
-
-export interface CentreCard {
-  id: string;
-  slug: string;
-  name: string;
-  area: string;
-  distanceKm: number | null;
-  rating: RatingSummary | null;
-  /** Teachers for the searched subject at this centre. */
-  teacherCount: number;
-  /** Lowest per-session fee among matching groups. */
-  fromSessionFee: Money | null;
-  seatState: SeatState;
-  verified: boolean;
-  lat: number;
-  lng: number;
-}
-
-export interface TeacherCard {
-  id: string;
-  slug: string;
-  displayName: string;
-  subjects: string[];
-  rating: RatingSummary | null;
-  fromSessionFee: Money | null;
-  centreNames: string[];
-  verified: boolean;
-}
 
 export interface SearchQuery {
   curriculumId?: string;
@@ -102,110 +72,8 @@ export interface SearchQuery {
   cursor?: string;
 }
 
-export interface SearchCentresResult extends Page<CentreCard> {
-  /** "12 centres • 31 Maths teachers within 5 km" (MKT-DSC-02 AC3). PLACEHOLDER (P03). */
-  totals: { centres: number; teachers: number };
-}
-
-export interface SessionSeats {
-  id: string;
-  startsAt: string;
-  endsAt: string;
-  /** seat_cap − seats used(s), per session (BR-ENR-02). */
-  seatsLeft: number;
-  seatCap: number;
-}
-
-export interface GroupSummary {
-  id: string;
-  teacher: { id: string; slug: string; displayName: string; rating: RatingSummary | null };
-  centre: { id: string; slug: string; name: string; area: string; address: string };
-  room: { name: string };
-  subject: SubjectRef;
-  curriculum: CurriculumRef;
-  schoolYear: SchoolYearRef;
-  /** ISO weekdays (1 = Monday … 7 = Sunday). */
-  weekdays: number[];
-  /** Local Cairo times, "17:00". */
-  startTime: string;
-  endTime: string;
-  sessionFee: Money;
-  monthlyFee: Money;
-  /** For information only (BR-PMT-04). */
-  sessionsPerMonth: number;
-  offersMonthlyRecurring: boolean;
-  seatCap: number;
-  status: 'published' | 'closed';
-  /** Upcoming sessions with seats left (07: GET /v1/groups/{id}). */
-  upcomingSessions: SessionSeats[];
-}
-
-export type ReviewTag =
-  | 'communication'
-  | 'organised'
-  | 'location'
-  | 'good_value'
-  | 'explains_clearly'
-  | 'patient'
-  | 'homework_feedback'
-  | 'exam_prep';
-
-export interface PublicReview {
-  id: string;
-  stars: number;
-  tags: ReviewTag[];
-  body: string;
-  /** Shown as "Verified parent • <school year>" (BR-REV-03). */
-  schoolYearName: string;
-  publishedAt: string;
-  reply: { body: string; authorName: string } | null;
-}
-
 /** Trust badges come from Link's data, never from the owner (MKT-DSC-04). */
 export type TrustBadge = 'verified';
-
-export interface CentreProfile {
-  id: string;
-  slug: string;
-  name: string;
-  area: string;
-  governorate: string;
-  address: string;
-  distanceKm: number | null;
-  verified: boolean;
-  /** Opening hours per weekday (ISO), Cairo local. */
-  hours: { weekday: number; opens: string; closes: string }[];
-  rating: RatingSummary | null;
-  /** Star → count, for the distribution bars. PLACEHOLDER (P04). */
-  ratingDistribution: { stars: number; count: number }[];
-  trustBadges: TrustBadge[];
-  subjects: { subject: SubjectRef; curriculum: CurriculumRef; yearsLabel: string }[];
-  teachers: (TeacherCard & { subjectLabel: string })[];
-  reviews: PublicReview[];
-  lat: number;
-  lng: number;
-  /** CF-44: the owner moved the pin; Link ops have not checked it yet. */
-  locationUnderReview: boolean;
-}
-
-export interface TeacherProfile {
-  id: string;
-  slug: string;
-  displayName: string;
-  subjects: SubjectRef[];
-  curricula: CurriculumRef[];
-  yearsExperience: number | null;
-  bio: string | null;
-  verified: boolean;
-  rating: RatingSummary | null;
-  centreCount: number;
-  /** "What parents mention most" (MKT-DSC-05 AC1). */
-  tagCounts: { tag: ReviewTag; count: number }[];
-  /** Phase 2 "% recorded" badge (flag `teacher.recorded_badge`). Null in Phase 1. */
-  recordedPct: number | null;
-  groups: GroupSummary[];
-  reviews: PublicReview[];
-}
 
 // ── Enrolment and payment (MKT-ENR) ────────────────────────────────────────────
 /** The 8 enrolment states (08 §4). Refund state lives on `refunds`, never here (BR-ENR-14). */

@@ -755,7 +755,7 @@ export function teacherSelf(teacherKey: string, lang: Lang): TeacherSelf {
   const r = ratingOf(tch.ratingDist);
   return {
     id: tch.id,
-    name: tr(tch.name, lang),
+    name: (edits as { displayName?: string }).displayName ?? tr(tch.name, lang),
     subjects: base ? tr(base.subjects, lang) : '',
     yearsExperience: tch.yearsExperience,
     rating: r.rating,
@@ -782,6 +782,8 @@ export function teacherSelf(teacherKey: string, lang: Lang): TeacherSelf {
         students: studentsOf(g.id),
         monthlyFee: money(g.monthlyFeePt),
       })),
+    // The sample teachers are all public (decided 2026-10-09: invited / incomplete are hidden).
+    profileStatus: 'active',
   };
 }
 export function patchTeacherSelf(teacherKey: string, p: TeacherSelfPatch, lang: Lang) {
@@ -1001,6 +1003,34 @@ export function convertApplications(e164: string, userId: string) {
   if (added) db.persist();
   return added;
 }
+/** Local stand-in for Link ops: centres from C01 waiting for verification, and moved pins. */
+export function pendingCentres() {
+  const fromC01 = m()
+    .applications.filter((a) => a.centreId && !a.verified)
+    .map((a) => ({
+      id: a.centreId!,
+      name: a.centreName,
+      pendingVerification: true,
+      locationUnderReview: false,
+    }));
+  const moved = Object.entries(m().centreEdits)
+    .filter(([, e]) => e.location?.underReview)
+    .map(([id]) => ({
+      id,
+      name: tr(centreFx(id).name, 'en'),
+      pendingVerification: false,
+      locationUnderReview: true,
+    }));
+  return [...fromC01, ...moved];
+}
+export function verifyCentre(centreId: string) {
+  const a = m().applications.find((x) => x.centreId === centreId);
+  if (a) a.verified = true;
+  verifyCentreLocation(centreId);
+  db.persist();
+  return [{ id: centreId, name: a?.centreName ?? centreId }];
+}
+
 export const ownedApplicationCentres = (userId: string) =>
   m()
     .applications.filter((a) => a.ownerId === userId && a.centreId)

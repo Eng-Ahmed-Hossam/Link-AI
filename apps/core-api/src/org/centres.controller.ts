@@ -20,9 +20,12 @@ import { uuidv7 } from '../platform/ids';
 import { enqueue } from '../platform/outbox';
 import { Problem, forbidden, notFound } from '../platform/problem';
 import { requestIdOf } from '../platform/request-context';
+import { hit, Redises } from '../platform/redis';
 
 const STAFF_PERMISSIONS = ['bookings.manage', 'reviews.reply'] as const;
 type StaffPermission = (typeof STAFF_PERMISSIONS)[number];
+/** C01 join requests: starting values (07 §1 rate limits), like the other public endpoints. */
+export const C01_LIMITS = { perIpHour: 10, perPhoneDay: 3 };
 /** Version label of the C01 "Link may contact me" text (stored on the lead). */
 const C01_CONSENT_VERSION = 'c01-draft-2026-10';
 
@@ -36,15 +39,31 @@ export class CentresController {
     @Inject(Database) private readonly db: Database,
     @Inject(Phones) private readonly phones: Phones,
     @Inject(Accounts) private readonly accounts: Accounts,
+    @Inject(Redises) private readonly redis: Redises,
   ) {}
 
   /** C01 (MKT-CEN-01): stored as a lead; it becomes a centre when the number signs in. */
   @Endpoint(routes.centreApplication)
-  apply(@Input() i: In<typeof routes.centreApplication>, @Req() req: Request) {
+  async apply(@Input() i: In<typeof routes.centreApplication>, @Req() req: Request) {
     const b = i.body;
     if (!b.consent)
       throw new Problem(422, 'consent_required', 'Tick the box so Link can contact you.');
     const e164 = toE164(b.phone);
+    // 07 §1 rate limits (starting values): a public form, so per address and per phone.
+    for (const [key, limit, window] of [
+      [this.redis.key('rl', 'c01', 'ip', req.ip ?? 'unknown'), C01_LIMITS.perIpHour, 3600],
+      [
+        this.redis.key('rl', 'c01', 'p', this.phones.redisKey(e164)),
+        C01_LIMITS.perPhoneDay,
+        86_400,
+      ],
+    ] as const) {
+      const { count, retryAfter } = await hit(this.redis.state, key, window);
+      if (count > limit)
+        throw new Problem(429, 'rate_limited', 'Too many requests. Try again later.', {
+          retryAfterSeconds: retryAfter,
+        });
+    }
     return this.db.asSystem(async (tx) => {
       const id = uuidv7();
       await tx
@@ -124,7 +143,8 @@ export class CentresController {
         .where('status', '<>', 'revoked')
         .executeTakeFirst();
       if (existing) return;
-      const teacherId = role === 'teacher' ? await this.accounts.ensureTeacher(sys, userId) : null;
+      const teacherId =
+        role === 'teacher' ? await this.accounts.ensureTeacher(sys, userId, 'invite') : null;
       const signedInBefore = await sys
         .selectFrom('identity.auth_sessions')
         .select('id')

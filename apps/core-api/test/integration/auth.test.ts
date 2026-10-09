@@ -405,24 +405,24 @@ describe('MKT-ACC-06 staff invites', () => {
 });
 
 describe('E0-09 feature flags (OD-58)', () => {
-  it('global flags for anyone; the Follow-up extra per centre', async () => {
-    const anon = await new Client(api).call<{ flags: Record<string, boolean> }>(
-      'GET',
-      '/v1/feature-flags',
-    );
-    expect(anon.body.flags['marketplace.enabled']).toBe(true);
+  it('signed-in only; global flags plus the Follow-up extra of the caller’s own centre', async () => {
+    expect((await new Client(api).call('GET', '/v1/feature-flags')).status).toBe(401);
     const owner = new Client(api);
     const o = await owner.signIn(PHONES.owner);
     const centreId = o.user.centreIds[0]!;
+    const flags = await owner.call<{ flags: Record<string, boolean> }>('GET', '/v1/feature-flags');
+    expect(flags.body.flags['marketplace.enabled']).toBe(true);
+    await sql`UPDATE platform.feature_flags SET enabled = false WHERE key = 'followup.extra' AND scope_id = ${centreId}`.execute(
+      api.db,
+    );
     expect((await owner.call('GET', `/v1/centres/${centreId}/features`)).body).toEqual({
       followupExtra: false,
     });
-    await sql`INSERT INTO platform.feature_flags (key, scope_type, scope_id, enabled)
-              VALUES ('followup.extra', 'centre', ${centreId}, true)`.execute(api.db);
+    await sql`UPDATE platform.feature_flags SET enabled = true WHERE key = 'followup.extra' AND scope_id = ${centreId}`.execute(
+      api.db,
+    );
     expect((await owner.call('GET', `/v1/centres/${centreId}/features`)).body).toEqual({
       followupExtra: true,
     });
-    const flags = await owner.call<{ flags: Record<string, boolean> }>('GET', '/v1/feature-flags');
-    expect(flags.body.flags['followup.extra']).toBe(true);
   });
 });
