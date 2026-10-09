@@ -6,6 +6,7 @@ import { Database } from '../../src/platform/db';
 import { uuidv7 } from '../../src/platform/ids';
 import { demoId } from '../../seeds/demo';
 import { type Api, startApi } from '../helpers';
+import { followupRowsOfB } from './rows-b';
 
 /** App schemas: every table in them needs RLS, unless listed here with the reason. */
 const SCHEMAS = [
@@ -54,6 +55,7 @@ beforeAll(async () => {
       object_ref: B.centre,
     })
     .execute();
+  await followupRowsOfB(api);
 });
 afterAll(async () => {
   await db.close();
@@ -115,6 +117,15 @@ describe('10 §2 centre A never sees centre B', () => {
         'market.enrolments',
         'ledger.payments',
         'market.reviews',
+        // R3 follow-up tables: centre A never reads B's records, flags, cases or messages.
+        'records.session_records',
+        'records.record_entries',
+        'records.notes',
+        'records.voice_notes',
+        'followup.signals',
+        'followup.cases',
+        'followup.case_events',
+        'messaging.messages',
       ]),
     );
     expect((await tables()).filter((t) => !t.readable && t.centre).map((t) => t.name)).toEqual(

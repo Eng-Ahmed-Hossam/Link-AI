@@ -41,7 +41,9 @@ export async function createApi(config: Config, log: Logger, overrides: Override
   // The signed voice upload (PUT /v1/voice-notes/{id}/audio) carries raw audio bytes, ≤ 15 MB.
   app.use(
     express.raw({
-      type: (req) => req.method === 'PUT' && /^\/v1\/voice-notes\/[^/]+\/audio/.test(req.url ?? ''),
+      type: (req) =>
+        (req.method === 'PUT' && /^\/v1\/voice-notes\/[^/]+\/audio/.test(req.url ?? '')) ||
+        (req.method === 'POST' && /^\/v1\/assistant\/transcribe/.test(req.url ?? '')),
       limit: '15mb',
     }),
   );

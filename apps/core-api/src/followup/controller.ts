@@ -6,6 +6,7 @@ import { MessagingWebhookBody } from '../contract/followup';
 import { Caller, Endpoint, type In, Input, type Principal } from '../platform/http';
 import { Problem, notFound } from '../platform/problem';
 import { requestIdOf } from '../platform/request-context';
+import { Assistant } from './assistant';
 import { Cases } from './cases';
 import { Messages } from './messages';
 import { Owner } from './owner';
@@ -24,7 +25,30 @@ export class FollowupController {
     @Inject(Messages) private readonly messages: Messages,
     @Inject(Owner) private readonly owner: Owner,
     @Inject(WHATSAPP_SENDER) private readonly sender: WhatsAppSender,
+    @Inject(Assistant) private readonly assistant: Assistant,
   ) {}
+
+  // ── Ask Link (off unless a local LLM is configured) ──────────────────────────
+  @Endpoint(routes.assistantBriefing)
+  briefing(@Caller() p: Principal) {
+    return this.assistant.briefing(p.userId, p.lang);
+  }
+  @Endpoint(routes.assistantTurn)
+  async turn(
+    @Caller() p: Principal,
+    @Input() i: In<typeof routes.assistantTurn>,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const events = await this.assistant.turn(p.userId, i.body.text, p.lang);
+    res.setHeader('content-type', 'text/event-stream');
+    res.setHeader('cache-control', 'no-cache');
+    return events.map((e) => `data: ${JSON.stringify(e)}\n\n`).join('');
+  }
+  @Endpoint(routes.assistantTranscribe)
+  transcribe(@Caller() _p: Principal, @Req() req: Request) {
+    const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+    return this.assistant.transcribe(body, req.header('content-type') ?? 'audio/webm');
+  }
 
   // ── teacher ──────────────────────────────────────────────────────────────────
   @Endpoint(routes.teacherToday)

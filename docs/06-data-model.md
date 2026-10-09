@@ -737,6 +737,12 @@ id, provider, line_id, kind (`missing_in_ledger` \| `missing_at_provider` \| `am
 
 ## 6. `records` (Phase 2)
 
+> **Built in R3 (2026-10-09), migrations `0012_records` → `0015_messaging`** (sections 6–8). Added on the way, all with RLS (centre staff by centre, the teacher by `teacher_id`, the system role for workers) and in the cross-tenant suites:
+> - `session_records.teacher_id` (the teacher's own rows without a join) and one record per `group_session_id` (UNIQUE). A database trigger refuses any change to the entries of a confirmed record unless it comes with a correction (`app.correction_id`), refuses a score above the assessment's maximum (`score_out_of_range` — blocked, never capped) and refuses deletes.
+> - `voice_notes.data_class` (`synthetic` \| `consented_real`), `delete_after` (upload + 30 days), `transcript_delete_after` (+ 90 days) and the status `audio_deleted`; the `voice-retention` worker job enforces both (docs/10 §4). `voice_extractions` keeps `resolved` and `discarded` items.
+> - `cases.group_id`; `case_events` (append-only timeline: raised, assigned, attempt, dismissed, reopened, seat check); `signals_one_open` is a partial `UNIQUE NULLS NOT DISTINCT` index (INV-08).
+> - `messages.group_id`, `delivery_status`, `provider_message_id` (UNIQUE), `sent_manually_by/at`, `revises_id`; CHECK `messages_approved_before_send` and a trigger that locks text and facts after approval; `message_status_events` (append-only, one row per provider event).
+
 ### session_records
 | Field | Type | Notes |
 |---|---|---|

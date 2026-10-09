@@ -366,7 +366,13 @@ Centre and teacher profiles add `ratingDistribution`: published public reviews p
 
 ## 2b. Proposed — from frontend Batch 5 (Phase 2, teacher app)
 
-**Status: proposed, mock only.** §3 lists Phase 2 endpoints in outline. The teacher app (T01–T13, V01–V02) is built on the shapes below; the draft types are in `packages/api-client/src/followup.ts` (all `PLACEHOLDER`) and the mock implementation in `packages/mocks/src/followup/`. Nothing is in OpenAPI yet.
+**Status: built in core-api (R3, 2026-10-09)** and in OpenAPI (`apps/core-api/src/contract/followup-routes.ts`); the response types in `packages/api-client/src/followup.ts` are now the generated ones. The mock (`packages/mocks/src/followup/`) keeps the same shapes. What R3 added or changed on the way:
+
+- **The Follow-up extra is checked on the server.** When `followup.extra` is off for the centre, every endpoint below and in §2c answers **403 `extra_not_enabled`** (a centre the caller cannot see stays 404, 10 §2); a voice upload is refused and no rule runs (`evaluate` returns nothing). The marketplace endpoints are unaffected.
+- `PUT /v1/voice-notes/{id}/audio?exp=…&sig=…` is the signed `uploadUrl` (HMAC, 15 minutes, audio ≤ 15 MB). The audio goes to S3 with SSE-KMS (aws-local locally); `uploaded` emits `voice.uploaded` and the `voice` consumer hands it to ai-service. A note of class `consented_real` is never sent to a provider outside this machine (`data_safety_refused`).
+- `POST /v1/internal/voice-results/{id}` — ai-service → core-api only (loopback and `x-link-internal-token`); not for apps. A name matched to someone off the roster becomes unknown; an ambiguous match with fewer than two candidates becomes unknown (never guess).
+- `POST /v1/session-records/{id}/correction-requests` (owner asks the teacher, FUP-REC-08) and `POST /v1/correction-requests/{id}/close` (the teacher).
+- 422 `score_out_of_range` is also enforced by the database (a trigger), and a confirmed record changes only through a correction.
 
 | Method | Path | Body → response (draft types) | Rules the mock enforces |
 |---|---|---|---|
@@ -392,7 +398,13 @@ Owner-side endpoints (cases, messages, assistant, demo controls) are in §2c.
 
 ## 2c. Proposed — from frontend Batch 6 (Phase 2, owner web, messages, assistant)
 
-**Status: proposed, mock only.** The owner web (A01–A17, V03/V04/V06/V07) and the parent updates feed are built on these shapes; types in `packages/api-client/src/followup.ts` (all `PLACEHOLDER`), mock in `packages/mocks/src/followup/` (`db.ts`, `owner-handlers.ts`, `assistant.ts`). Every `/v1/centres/{id}/*` call checks that the caller is staff of that centre (403 otherwise; 404 for a centre the caller cannot see, 10 §2). Not in OpenAPI yet; Step 2 (core-api) turns this table into the contract.
+**Status: built in core-api (R3, 2026-10-09)**, in OpenAPI, same shapes as the mock (`packages/mocks/src/followup/`). Every `/v1/centres/{id}/*` call checks that the caller is staff of that centre (403 otherwise; 404 for a centre the caller cannot see, 10 §2); every call here answers 403 `extra_not_enabled` when the centre's Follow-up extra is off. Added in R3:
+
+- `POST /v1/messages/{id}/sent-manually` — "I sent it" (OD-56): only an approved message on the manual path; records who and when. It never sets `delivered`.
+- `POST /v1/webhooks/messaging/{provider}` — provider → Link (`whatsapp-fake` locally), verified by `x-whatsapp-fake-signature: sha256=<HMAC>`; deduped on the provider event ID. **A message's delivery status changes only here** (BR-APR-11), forward only. An inbound `STOP` writes a `whatsapp_updates` consent withdrawal at once.
+- `GET /v1/me/centre-groups` — the parent's centres and groups with the extra on (P09 filter).
+- Approve needs `messages.approve` **and** the tick; the text is locked after approval (a database trigger, not only the API).
+- **Ask Link** (`/v1/assistant/*`) answers **503 `assistant_unavailable`** unless a local language model is configured (`OLLAMA_URL`); the scripted assistant of the mock is never used in live mode. With a local model: read tier only, student names replaced by `<S#>` tokens before the model, `act` returns `needs_approval` and never acts. Threads (§3) are not built.
 
 | Method | Path | Body → response (draft types) | Rules the mock enforces |
 |---|---|---|---|
@@ -419,7 +431,7 @@ Owner-side endpoints (cases, messages, assistant, demo controls) are in §2c.
 | POST | `/v1/assistant/turns` | `{text}` → `text/event-stream` of `AssistantEvent` (`tier`, `token`, `draft`, `list`, `needs_approval`, `done`) | Acts as the signed-in user; tiers read / draft / act — act never acts, it returns `needs_approval`; more than one student match → it asks (never guesses); drafts only from confirmed facts |
 | POST | `/v1/assistant/transcribe` | audio bytes → `{text, language}` | Mock returns a fixture; Step 2 sends it through ai-service |
 
-**Demo-only (`APP_ENV=local`, never in production builds):** `GET /__demo/state[/{lang}]`, `POST /__demo/reset`, `POST /__demo/settings` (`phase2`, `marketplace`, `offline`, `sttDown`, `confirmFault`), `POST /__demo/new-day`, `POST /__demo/provider` (`advance` \| `fail` — the only way a message status moves, BR-APR-11), `POST /__demo/reply` (an inbound guardian reply with summary and intent). docs/14 §5.2.
+**Demo-only (`APP_ENV=local`, never in production builds):** `GET /__demo/state[/{lang}]`, `POST /__demo/reset`, `POST /__demo/settings` (`phase2`, `marketplace`, `offline`, `sttDown`, `confirmFault`), `POST /__demo/new-day`, `POST /__demo/provider` (`advance` \| `fail` — the only way a message status moves, BR-APR-11), `POST /__demo/reply` (an inbound guardian reply with summary and intent). docs/14 §5.2. In live mode (R3) `provider` and `reply` do not change Link's data themselves: they ask `whatsapp-fake`, which sends the signed webhook; `POST /__demo/voice-result` returns a fixture extraction when ai-service is not running.
 
 ## 2d. Proposed — concierge pilot and CF-34/CF-39 (2026-10-04)
 

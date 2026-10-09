@@ -245,10 +245,13 @@ export class DevController implements OnModuleDestroy {
     await this.setFlag(FLAG.marketplace, 'global', null, true);
     for (const k of PHASE2) await this.setFlag(k, 'global', null, true);
     await this.setFlag(FLAG.followupExtra, 'centre', STORY.centreId, true);
-    // As the mock: Ms Salma's existing group gets its latest record (everyone present), so the
+    // As the mock: Ms Salma's existing groups get their latest record (everyone present), so the
     // story group's first session is the record Today asks for in step 8.
-    const due = (await this.records.teacherToday(STORY.teacherUser, 'en')).recordDue;
-    if (due) await this.confirmWith(due.groupId, due.sessionId, () => 'present');
+    for (let i = 0; i < 10; i++) {
+      const due = (await this.records.teacherToday(STORY.teacherUser, 'en')).recordDue;
+      if (!due) break;
+      await this.confirmWith(due.groupId, due.sessionId, () => 'present');
+    }
     return this.story();
   }
 

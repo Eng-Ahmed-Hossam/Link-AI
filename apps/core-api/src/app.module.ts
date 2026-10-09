@@ -9,6 +9,7 @@ import {
   WhatsAppFakeSender,
   type WhatsAppSender,
 } from './adapters/whatsapp';
+import { Assistant } from './followup/assistant';
 import { Cases } from './followup/cases';
 import { FollowupController } from './followup/controller';
 import { Messages } from './followup/messages';
@@ -155,6 +156,7 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
       (db: Database, w: WhatsAppSender, p: Phones) => new Messages(db, w, p, log),
     ),
     factory(Owner, [Database], (db: Database) => new Owner(db)),
+    factory(Assistant, [Cases, Messages], (cs: Cases, m: Messages) => new Assistant(cs, m, c, log)),
   ];
 }
 

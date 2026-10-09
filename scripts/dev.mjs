@@ -1,11 +1,13 @@
 // pnpm dev — Link on this machine with the real backend (live mode). Sample data only.
-//   1. local services (Postgres, Redis ×2, aws-local, sms-sink, mail-sink, fake-pay)
+//   1. local services (Postgres, Redis ×2, aws-local, sms-sink, mail-sink, fake-pay, whatsapp-fake)
 //   2. migrations, and the demo world when the database is empty (`--reset` re-seeds it)
 //   3. core-api: api :4000, worker, messaging-gateway :4002 (restart on change)
 //   4. web :3000 and the teacher app :8081, both with API_MODE=live
+//   5. ai-service :8090 (local Whisper + the extraction), if installed (pnpm ai:models done)
 // Sign-in codes go to sms-sink: http://localhost:8093 . `pnpm demo` is still the mock-data demo.
 import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { ROOT, fail, loadEnv, redact, run } from './lib/env.mjs';
@@ -59,7 +61,29 @@ if (reset || rows[0].n === 0)
   run(process.execPath, [join(ROOT, 'scripts', 'db.mjs'), 'seed', '--reset']);
 else console.log(`Database has data (${rows[0].n} users); kept. pnpm dev --reset re-seeds it.`);
 
-start('api', ['scripts/core-api.mjs', 'dev', 'all'], {}, 'node');
+// Voice notes (R3): ai-service on 127.0.0.1 with a fresh token, when it is installed. Without it a
+// voice note answers "Type the note instead" (503 stt_unavailable). Sample audio only: a note of
+// class consented_real never leaves this machine (docs/10 §7). DEV_AI=0 skips it.
+const aiDir = join(ROOT, 'apps', 'ai-service');
+const aiReady =
+  process.env.DEV_AI !== '0' &&
+  existsSync(join(aiDir, '.venv')) &&
+  existsSync(join(aiDir, '.models', 'large-v3-turbo', 'model.bin'));
+const aiToken = randomBytes(24).toString('base64url');
+if (aiReady)
+  start(
+    'ai',
+    ['--directory', aiDir, 'run', 'python', '-m', 'ai_service'],
+    { AI_SERVICE_TOKEN: aiToken, AI_SERVICE_HOST: '127.0.0.1', AI_PRELOAD: '0', PYTHONUTF8: '1' },
+    'uv',
+  );
+
+start(
+  'api',
+  ['scripts/core-api.mjs', 'dev', 'all'],
+  aiReady ? { AI_SERVICE_URL: 'http://127.0.0.1:8090', AI_SERVICE_TOKEN: aiToken } : {},
+  'node',
+);
 await waitFor(`${API}/ready`);
 
 start('web', ['--filter', '@link/web', 'dev'], {
@@ -91,5 +115,8 @@ Link — live mode on this machine (sample data only; ${redact(probe.stdout.trim
   Teacher app  http://localhost:8081                 +20 10 0000 0002 (Ms Salma)
   Codes        ${SMS}                 every SMS lands here; nothing is sent
   core-api     ${API}/ready · ${API}/v1/curricula
-  Still on mock in live mode: see docs/RUNNING.md (R1 serves sign-in and accounts only).
+  WhatsApp     http://localhost:${process.env.WHATSAPP_FAKE_HOST_PORT || 8094}                 approved parent messages land here; nothing is sent
+  Voice notes  ${aiReady ? 'ai-service on 127.0.0.1:8090 (local Whisper)' : 'off: pnpm ai:models installs local speech-to-text'}
+  Ask Link     ${process.env.OLLAMA_URL ? `on (${process.env.OLLAMA_URL})` : 'off (set OLLAMA_URL to a local Ollama)'}
+  What is real and what is not: docs/RUNNING.md
 `);

@@ -58,8 +58,21 @@ export async function openFlagIds(sys: Tx, studentIds: string[], groupId?: strin
 }
 
 /** Full signals: the evidence records, the rule text as it stood, the group (BR-APR-04). */
-export async function signals(sys: Tx, ids: string[], lang: Lang) {
-  if (!ids.length) return new Map<string, ReturnType<typeof Object>>();
+type SignalSummaryDto = Awaited<ReturnType<typeof signalSummaries>>[number];
+export interface SignalDto extends SignalSummaryDto {
+  group: { id: string; name: string };
+  evidence: {
+    recordId: string;
+    sessionDate: string;
+    attendance: 'present' | 'absent' | 'late' | 'not_recorded';
+    confirmedBy: { id: string; displayName: string };
+  }[];
+  ruleText: string;
+  raisedAt: string;
+}
+
+export async function signals(sys: Tx, ids: string[], lang: Lang): Promise<Map<string, SignalDto>> {
+  if (!ids.length) return new Map();
   const summaries = await signalSummaries(sys, ids, lang);
   const rows = await sys
     .selectFrom('followup.signals')
@@ -96,7 +109,7 @@ export async function signals(sys: Tx, ids: string[], lang: Lang) {
     sys,
     recs.rows.map((r) => r.confirmed_by),
   );
-  const out = new Map<string, unknown>();
+  const out = new Map<string, SignalDto>();
   for (const r of rows) {
     const s = summaries.find((x) => x.id === r.id)!;
     const g = groups.get(r.group_id);
@@ -197,7 +210,7 @@ export async function cases(sys: Tx, ids: string[], lang: Lang) {
         c.id,
         {
           id: c.id,
-          signal: sigs.get(c.signal_id) as never,
+          signal: sigs.get(c.signal_id)!,
           student: ref(names, c.student_id),
           assignee: { ...ref(names, c.assignee_id), role: title(c.assignee_id, c.centre_id) },
           status: c.status as

@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { demoId } from '../../seeds/demo';
 import { type Api, Client, PHONES, startApi } from '../helpers';
+import { followupRowsOfB } from './rows-b';
 
 type Spec = {
   paths: Record<string, Record<string, { operationId: string; security?: unknown[] }>>;
@@ -36,6 +37,20 @@ const SWEEP: Record<
   '/v1/reviews/{id}': { actor: 'ownerA', ids: () => ({ id: bReviewId }) },
   '/v1/waitlist/{id}': { actor: 'ownerA', ids: () => ({ id: bWaitlistId }) },
   '/v1/webhooks/payments/{provider}': { public: 'provider to Link, verified by its signature' },
+  // R3 follow-up: centre B's records, cases, messages, notes and voice notes, asked by the owner
+  // of centre A (Ms Salma teaches at both centres, so the teacher of A is not the asker here).
+  '/v1/session-records/{id}': { actor: 'ownerA', ids: () => ({ id: b.record }) },
+  '/v1/record-entries/{id}': { actor: 'ownerA', ids: () => ({ id: b.entry }) },
+  '/v1/correction-requests/{id}': { actor: 'ownerA', ids: () => ({ id: b.request }) },
+  '/v1/students/{id}': { actor: 'ownerA', ids: () => ({ id: demoId('stu-youssef') }) },
+  '/v1/notes/{id}': { actor: 'ownerA', ids: () => ({ id: b.note }) },
+  '/v1/voice-notes/{id}': { actor: 'ownerA', ids: () => ({ id: b.voice }) },
+  '/v1/voice-notes/{id}/audio': { public: 'the signed upload URL is the credential (15 minutes)' },
+  '/v1/voice-extractions/{id}': { actor: 'ownerA', ids: () => ({ id: b.extraction }) },
+  '/v1/internal/voice-results/{id}': { public: 'ai-service → core-api: loopback and shared token' },
+  '/v1/cases/{id}': { actor: 'ownerA', ids: () => ({ id: b.case }) },
+  '/v1/messages/{id}': { actor: 'ownerA', ids: () => ({ id: b.message }) },
+  '/v1/webhooks/messaging/{provider}': { public: 'provider to Link, verified by its signature' },
   '/v1/centres/by-slug/{slug}': { public: 'public centre profile (P04)' },
   '/v1/teachers/by-slug/{slug}': { public: 'public teacher profile (P05)' },
 };
@@ -59,6 +74,17 @@ const BODIES: Record<string, unknown> = {
   replyReview: { body: 'Thanks.' },
   reportReview: { reason: 'Not ours.' },
   requestRefund: { reason: 'x' },
+  openSessionRecord: { groupSessionId: '0190f0f0-0000-7000-8000-000000000001' },
+  saveSessionRecordDraft: { entries: [] },
+  addCorrection: { field: 'attendance', newValue: 'present', reason: 'x' },
+  requestCorrection: { text: 'x' },
+  addStudentNote: { groupId: '0190f0f0-0000-7000-8000-000000000001', tag: 'behaviour', body: 'x' },
+  addCaseAttempt: { channel: 'phone', result: 'reached' },
+  dismissCase: { reason: 'x' },
+  editMessage: { text: 'x' },
+  approveMessage: { checked: true },
+  resolveVoiceIdentity: { itemId: 'i1', studentId: '0190f0f0-0000-7000-8000-000000000001' },
+  discardVoiceItem: { itemId: 'i1' },
 };
 /**
  * GET /v1/groups/{id} is the public group card (P06); its PATCH is the teacher's. Any parent may
@@ -81,6 +107,8 @@ let api: Api;
 let bRequestId = '';
 let bReviewId = '';
 let bWaitlistId = '';
+/** Follow-up rows of centre B (Nile Academy), written as the table owner for the sweep. */
+let b: Awaited<ReturnType<typeof followupRowsOfB>>;
 const clients = {} as Record<Actor, Client>;
 beforeAll(async () => {
   api = await startApi();
@@ -137,6 +165,7 @@ beforeAll(async () => {
       guardian_id: e.guardian_id,
     })
     .execute();
+  b = await followupRowsOfB(api);
 });
 afterAll(() => api.close());
 

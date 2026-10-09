@@ -7,6 +7,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { demoId } from '../../seeds/demo';
 import { FieldCipher, LocalKeyWrapper, lookupHmac } from '../../src/platform/crypto';
 import { uuidv7 } from '../../src/platform/ids';
+import { createServer } from 'node:http';
+import { ManualSender } from '../../src/adapters/whatsapp';
+import { Assistant } from '../../src/followup/assistant';
+import { Messages } from '../../src/followup/messages';
+import { Phones } from '../../src/identity/phone';
+import { createLogger } from '../../src/platform/logger';
 import { AI_TOKEN, type Api, Client, PHONES, startApi } from '../helpers';
 
 let api: Api;
@@ -564,6 +570,34 @@ describe('Cases and parent messages (FUP-CAS, FUP-MSG, BR-APR-02/10/11, BR-DAT-0
     expect(a.body).toMatchObject({ status: 'not_sendable', guardian: { stopped: true } });
   });
 
+  it('OD-56 manual path: "I sent it" is a contact attempt by that person, never a delivery', async () => {
+    const cipher = new FieldCipher(new LocalKeyWrapper(api.config.FIELD_KEY_LOCAL!));
+    const manual = new Messages(
+      api.s.db,
+      new ManualSender(),
+      new Phones(api.config.HMAC_KEY_LOOKUP, cipher),
+      createLogger('silent', 'test'),
+    );
+    const d = await reception().call<{ id: string }>('POST', '/v1/messages/drafts', { caseId });
+    const recUser = (await reception().call<{ id: string }>('GET', '/v1/me')).body.id;
+    const a = await manual.approve(recUser, d.body.id, { checked: true }, 'en');
+    expect(a).toMatchObject({ status: 'approved', channel: null });
+    const m = await manual.sentManually(recUser, d.body.id, 'en');
+    expect(m.status).toBe('approved'); // never Delivered or Read (BR-APR-11)
+    expect(m.sentManually?.by.id).toBe(recUser);
+    await expect(manual.sentManually(recUser, d.body.id, 'en')).rejects.toMatchObject({
+      code: 'already_sent',
+    });
+    const c = await reception().call<{ attempts: { channel: string; messageId: string }[] }>(
+      'GET',
+      `/v1/cases/${caseId}`,
+    );
+    expect(c.body.attempts.find((x) => x.messageId === d.body.id)?.channel).toBe('whatsapp_manual');
+    // With a provider that sends, "I sent it" is refused: Link sends, and only provider events count.
+    const queued = await reception().call('POST', `/v1/messages/${messageId}/sent-manually`);
+    expect(code(queued)).toBe('not_approved');
+  });
+
   it('FUP-CAS-03/04, BR-APR-10: an outcome keeps the case open; dismiss needs a reason; reopen', async () => {
     const o = await reception().call<{ status: string }>('POST', `/v1/cases/${caseId}/attempts`, {
       channel: 'phone',
@@ -921,14 +955,70 @@ describe('The Follow-up extra enforced on the server (OD-58, R3.3)', () => {
       { id: string; followup: { recordsComplete: unknown } | null }[]
     >('GET', '/v1/teachers/me/groups');
     expect(on.body.find((x) => x.id === WS)!.followup).not.toBeNull();
+    // On again: the teacher and the parent read it as on (the centre's flag row is staff-only
+    // under RLS, so these two read it for their own centres through the system role).
+    expect(
+      (await teacher().call<{ followupExtra: boolean }>('GET', '/v1/teachers/me/features')).body
+        .followupExtra,
+    ).toBe(true);
+    expect(
+      (await clients.parent.call<{ followupExtra: boolean }>('GET', '/v1/me/features')).body
+        .followupExtra,
+    ).toBe(true);
   });
 
   it('R3.4: Ask Link is off in live mode without a local LLM (the scripted assistant never runs here)', async () => {
     const f = await owner().call<{ flags: Record<string, boolean> }>('GET', '/v1/feature-flags');
     expect(f.body.flags['followup.assistant']).toBe(false);
-    const turn = await owner().call('POST', '/v1/assistant/turns', {
-      text: 'Who needs a call today?',
+    for (const [m, path, body] of [
+      ['GET', '/v1/assistant/briefing', undefined],
+      ['POST', '/v1/assistant/turns', { text: 'Who needs a call today?' }],
+    ] as const) {
+      const r = await owner().call(m, path, body);
+      expect({ path, status: r.status, code: code(r) }).toEqual({
+        path,
+        status: 503,
+        code: 'assistant_unavailable',
+      });
+    }
+  });
+
+  it('R3.4, docs/10 §7: with a local LLM, Ask Link reads only; no student name reaches the model; it never acts', async () => {
+    const prompts: string[] = [];
+    const ollama = createServer((req, res) => {
+      let raw = '';
+      req.on('data', (c) => (raw += c));
+      req.on('end', () => {
+        const p = (JSON.parse(raw) as { prompt: string }).prompt;
+        prompts.push(p);
+        const tok = /<S\d+>/.exec(p.split('Facts')[1] ?? '')?.[0] ?? '';
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ response: `${tok} needs a call today.` }));
+      });
     });
-    expect([404, 503]).toContain(turn.status);
+    await new Promise<void>((r) => ollama.listen(0, '127.0.0.1', () => r()));
+    const port = (ollama.address() as { port: number }).port;
+    const assistant = new Assistant(
+      api.s.cases,
+      api.s.messages,
+      { ...api.config, OLLAMA_URL: `http://127.0.0.1:${port}` },
+      createLogger('silent', 'test'),
+    );
+    try {
+      const ownerId = (await owner().call<{ id: string }>('GET', '/v1/me')).body.id;
+      const b = await assistant.briefing(ownerId, 'en');
+      expect(b.items.length).toBeGreaterThan(0);
+      const events = await assistant.turn(ownerId, 'Who needs a call today?', 'en');
+      expect(events[0]).toEqual({ type: 'tier', tier: 'read' });
+      const names = b.items.map((i) => i.student.displayName);
+      for (const n of names) for (const p of prompts) expect(p).not.toContain(n.split(' ')[0]);
+      const text = events.flatMap((e) => (e.type === 'token' ? [e.text] : [])).join('');
+      expect(names.some((n) => text.includes(n))).toBe(true); // restored after the model
+      const act = await assistant.turn(ownerId, 'Approve and send it', 'en');
+      expect(act.map((e) => e.type)).toEqual(['tier', 'needs_approval', 'done']);
+      expect(prompts).toHaveLength(1); // the act request never reached the model
+    } finally {
+      ollama.close();
+    }
   });
 });

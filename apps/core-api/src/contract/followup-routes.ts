@@ -634,4 +634,44 @@ export const followupRoutes = {
     auth: user,
     response: f.CentreGroupList,
   }),
+
+  // ── Ask Link (07 §2c, D7): off in live mode unless a local LLM is configured (R3.4) ──
+  assistantBriefing: def({
+    name: 'getAssistantBriefing',
+    method: 'get',
+    path: '/v1/assistant/briefing',
+    summary: 'V07: the open follow-ups, read from the data (503 when Ask Link is off)',
+    tag: 'assistant',
+    rules: ['FUP-DSH-05'],
+    auth: user,
+    response: z.unknown(),
+    errors: [{ status: 503, code: 'assistant_unavailable' }],
+  }),
+  assistantTurn: def({
+    name: 'assistantTurn',
+    method: 'post',
+    path: '/v1/assistant/turns',
+    summary:
+      'A turn as server-sent events: read tier only; names never reach the model; never acts',
+    tag: 'assistant',
+    rules: ['FUP-DSH-05', 'BR-APR-02'],
+    auth: user,
+    body: z.object({ text: z.string().max(2000) }),
+    response: z.unknown(),
+    errors: [{ status: 503, code: 'assistant_unavailable' }],
+  }),
+  assistantTranscribe: def({
+    name: 'assistantTranscribe',
+    method: 'post',
+    path: '/v1/assistant/transcribe',
+    summary: 'A spoken question → text through local speech-to-text (sample data only)',
+    tag: 'assistant',
+    rules: ['FUP-DSH-05'],
+    auth: user,
+    response: z.unknown(),
+    errors: [
+      { status: 503, code: 'assistant_unavailable' },
+      { status: 503, code: 'stt_unavailable' },
+    ],
+  }),
 } satisfies Record<string, RouteDef>;

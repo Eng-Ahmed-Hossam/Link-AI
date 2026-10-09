@@ -2,7 +2,7 @@
 // owner (1440) → parent (390) → Reception (1440) and back. One spec, so every step starts from what
 // the one before left. It runs in BOTH API modes (E2E_MODE=mock | live): the mock server, or the
 // real core-api with real sign-in (codes from sms-sink) and real payments on fake-pay. Live mode runs
-// the steps core-api serves so far (LIVE_STORY_STEPS, R2b: 1–7). In mock mode it saves the numbered
+// all nine steps since R3 (LIVE_STORY_STEPS can stop it earlier). In mock mode it saves the numbered
 // Arabic screenshots in
 // docs/frontend/walkthroughs/connected-story/ (docs/testing/walkthrough.md follows the same steps).
 import { mkdirSync } from 'node:fs';
@@ -11,8 +11,8 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 import { axe } from '../e2e-demo/helpers';
 import { API, MODE, PEOPLE, TEACHER_APP, codeFor, fixtureId as id, ready } from './helpers';
 
-/** Live mode runs the story up to this step (R2b: 7; R3: 9). Mock mode runs all nine. */
-const LIVE_STORY_STEPS = Number(process.env.LIVE_STORY_STEPS ?? 7);
+/** Live mode runs the story up to this step (R3: all nine, as mock mode). */
+const LIVE_STORY_STEPS = Number(process.env.LIVE_STORY_STEPS ?? 9);
 const runs = (step: number) => MODE === 'mock' || step <= LIVE_STORY_STEPS;
 
 // A stuck click fails within half a minute, not at the end of the story's long timeout.
@@ -60,8 +60,8 @@ const seatsLeft = async (groupId: string) => {
  * A browser window for one role. Mock: through the role chooser like a visitor. Live: the real
  * phone sign-in of each app (T14, A18, P01), with the code from sms-sink.
  */
-async function enter(browser: Browser, role: 'owner' | 'parent' | 'teacher') {
-  const desktop = role === 'owner';
+async function enter(browser: Browser, role: 'owner' | 'parent' | 'teacher' | 'reception') {
+  const desktop = role === 'owner' || role === 'reception';
   const ctx = await browser.newContext({
     viewport: desktop ? { width: 1440, height: 1000 } : { width: 390, height: 844 },
   });
@@ -77,17 +77,17 @@ async function enter(browser: Browser, role: 'owner' | 'parent' | 'teacher') {
       await expect(page.getByTestId('screen-t09')).toBeVisible({ timeout: 60_000 });
       return page;
     }
-    await page.goto(role === 'owner' ? '/ar/centre' : '/ar/welcome');
+    const centre = role === 'owner' || role === 'reception';
+    await page.goto(centre ? '/ar/centre' : '/ar/welcome');
     await ready(page);
-    const national = role === 'owner' ? PEOPLE.owner : PEOPLE.parent;
+    const national =
+      role === 'owner' ? PEOPLE.owner : role === 'reception' ? PEOPLE.reception : PEOPLE.parent;
     await page.locator('input[type=tel]').fill(national);
     await (
-      role === 'owner'
-        ? page.getByTestId('owner-send-code')
-        : page.locator('form button[type=submit]')
+      centre ? page.getByTestId('owner-send-code') : page.locator('form button[type=submit]')
     ).click();
     await page.locator('input[autocomplete=one-time-code]').fill(await codeFor(national, since));
-    await page.waitForURL(role === 'owner' ? /\/schedule$/ : /\/search$/, { timeout: 60_000 });
+    await page.waitForURL(centre ? /\/centre\/[^/]+\// : /\/search$/, { timeout: 60_000 });
     return page;
   }
   await page.goto('/ar/try');
@@ -195,10 +195,8 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
   const parent = await enter(browser, 'parent');
   await test.step('4 · Parent (P02 → P06 → P07 → P08): a seat by card, then the Fawry variant', async () => {
     expect(await seatsLeft(groupId)).toBe(24);
-    await parent
-      .getByRole('link', { name: /مركز النور/ })
-      .first()
-      .click();
+    // The centre card (by its link): the teacher list below also names the centre, and may load first.
+    await parent.locator('a[href$="/centres/al-nour-maadi"]').first().click();
     await parent.waitForURL(/\/centres\/al-nour-maadi/);
     await ready(parent);
     await snap(parent, 'parent-P04-centre');
@@ -303,7 +301,11 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
   });
 
   if (!runs(8)) return;
-  const reception = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  // Reception: the role chooser in mock mode; a real phone sign-in in live mode.
+  const reception =
+    MODE === 'live'
+      ? await enter(browser, 'reception')
+      : await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await test.step('8 · Follow-up: two absences → a flag → Reception → the parent sees the update', async () => {
     // The teacher records the first session by typing, with Mariam absent.
     const recordSession = async (shotName?: string) => {
@@ -311,7 +313,7 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
       await expect(tid('record-due')).toContainText('٢ ثانوي');
       await tid('complete-record').click();
       await expect(tid('screen-t02')).toBeVisible();
-      await tid('att-chd-mariam-absent').click();
+      await tid(`att-${id('chd-mariam')}-absent`).click();
       if (shotName) await snap(teacher, shotName, false);
       await tid('to-scores').click();
       await tid('to-observation').click();
@@ -331,15 +333,17 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
     await expect(owner.getByText('مريم حسن').first()).toBeVisible();
     await snap(owner, 'owner-A01-flag');
     // Reception approves the parent message.
-    await reception.goto('/ar/centre');
-    await reception.getByRole('button', { name: /استقبال/ }).click();
-    await reception.waitForURL(/\/centre\/cen-nour\//);
+    if (MODE === 'mock') {
+      await reception.goto('/ar/centre');
+      await reception.getByRole('button', { name: /استقبال/ }).click();
+      await reception.waitForURL(/\/centre\/cen-nour\//);
+    }
     const c = (await (await fetch(`${API}/__demo/state/en`)).json()).cases.find(
       (x: { student: string; status: string }) =>
         x.student === 'Mariam Hassan' && x.status !== 'resolved',
     );
     expect(c.assignee).toBe('Dina Adel');
-    await reception.goto(`/ar/centre/cen-nour/follow-ups/${c.id}`);
+    await reception.goto(`/ar/centre/${id('cen-nour')}/follow-ups/${c.id}`);
     await reception.getByTestId('draft-message').click();
     await expect(reception.getByTestId('grounded')).toBeVisible();
     await reception.locator('#checked-facts').click();
@@ -354,7 +358,7 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
     await expect(parent.getByTestId('updates-feed').first()).toBeVisible();
     await snap(parent, 'parent-P09-update');
     // Reception logs the outcome.
-    await reception.goto(`/ar/centre/cen-nour/follow-ups/${c.id}/outcome`);
+    await reception.goto(`/ar/centre/${id('cen-nour')}/follow-ups/${c.id}/outcome`);
     await reception.getByTestId('outcome-method').selectOption('phone');
     await reception.getByTestId('outcome-result').selectOption('reached');
     await reception.getByTestId('save-outcome').click();

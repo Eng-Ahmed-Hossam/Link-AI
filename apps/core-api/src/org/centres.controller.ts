@@ -256,9 +256,19 @@ export class CentresController {
         .where('teacher_id', '=', ctx.teacherId)
         .execute();
       const ids = new Set([...roles.map((c) => c.centre_id!), ...groups.map((g) => g.centre_id)]);
-      for (const id of ids)
-        if (await centreFlag(tx, FLAG.followupExtra, id)) return { followupExtra: true };
-      return { followupExtra: false };
+      return { followupExtra: await this.anyExtra([...ids]) };
+    });
+  }
+
+  /**
+   * Whether any of these centres has the Follow-up extra. The caller's centres are found under RLS
+   * first; the centre-scoped flag rows are visible to centre staff only, so a teacher or a parent
+   * reads them through the system role, for exactly those centres.
+   */
+  private anyExtra(centreIds: string[]) {
+    return this.db.asSystem(async (sys) => {
+      for (const id of centreIds) if (await centreFlag(sys, FLAG.followupExtra, id)) return true;
+      return false;
     });
   }
 
@@ -274,9 +284,7 @@ export class CentresController {
         .where('guardian_id', '=', ctx.guardianId)
         .where('status', 'in', ['awaiting_teacher', 'confirmed', 'past_due', 'ended'])
         .execute();
-      for (const r of rows)
-        if (await centreFlag(tx, FLAG.followupExtra, r.centre_id)) return { followupExtra: true };
-      return { followupExtra: false };
+      return { followupExtra: await this.anyExtra(rows.map((r) => r.centre_id)) };
     });
   }
 
