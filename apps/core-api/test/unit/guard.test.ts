@@ -130,7 +130,13 @@ describe('Production guard', () => {
   });
 
   it('demo routes: local, or staging with DEMO_ROUTES=1 — never production', () => {
-    const local = loadConfig({ ...process.env, APP_ENV: 'local' });
+    const local = loadConfig({
+      ...prodEnv(),
+      LINK_ENV: undefined,
+      APP_ENV: 'local',
+      FIELD_KEY_LOCAL: key(),
+      SMS_SINK_URL: 'http://localhost:8093',
+    });
     const staging = loadConfig({
       ...prodEnv(),
       APP_ENV: 'staging',

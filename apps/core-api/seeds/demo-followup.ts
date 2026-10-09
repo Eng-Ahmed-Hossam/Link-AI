@@ -26,8 +26,10 @@ export async function seedFollowup(migratorUrl: string) {
       const teacher = demoId('tch-salma');
       const teacherUser = demoId('usr-salma');
       await centreRules(tx, centre);
+      // The same "took place or is today" list the API records from, so on a session day the
+      // open session is today's (not two open sessions: the absence streak would break).
       const today = cairoToday();
-      const past = (await sessionsOf(tx, [group])).filter((s) => s.date < today);
+      const past = await sessionsOf(tx, [group], 'past', today);
       const seeded = past.slice(-5, -1);
       if (seeded.length < 2) return;
       const rosters = [];
