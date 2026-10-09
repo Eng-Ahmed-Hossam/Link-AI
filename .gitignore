@@ -1,6 +1,7 @@
 .env*
 !.env.example
 !apps/pilot/.env.pilot.example
+!deploy/.env.production.example
 .turbo
 .next
 .expo

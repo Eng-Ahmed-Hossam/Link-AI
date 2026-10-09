@@ -77,6 +77,7 @@ async function worker() {
   let stopping = false;
   const stop = async () => {
     stopping = true;
+    healthServer.close();
     await app.close();
     await Promise.allSettled([db.close(), app.get(Redises).close()]);
     process.exit(0);
@@ -84,6 +85,16 @@ async function worker() {
   process.on('SIGINT', stop);
   process.on('SIGTERM', stop);
   log.info({ consumers: consumers.map((c) => c.name) }, 'worker started');
+  // /health for the deployment: 200 while the loops keep turning (the relay ticks every 0.5 s).
+  let lastTick = Date.now();
+  const health = express();
+  health.get('/health', (_req, res) => {
+    const age = Math.round((Date.now() - lastTick) / 1000);
+    res
+      .status(age < 60 ? 200 : 503)
+      .json({ status: age < 60 ? 'ok' : 'stalled', lastTickSecondsAgo: age });
+  });
+  const healthServer = health.listen(config.WORKER_HEALTH_PORT);
   const loop = async (name: string, every: number, fn: () => Promise<unknown>) => {
     while (!stopping) {
       try {
@@ -91,6 +102,7 @@ async function worker() {
       } catch (err) {
         log.error({ err, job: name }, 'job failed');
       }
+      lastTick = Date.now();
       await new Promise((r) => setTimeout(r, every));
     }
   };
@@ -173,7 +185,8 @@ async function gateway() {
 async function guard() {
   const kind = linkEnv();
   const problems = productionProblems(config);
-  if (kind === 'production') {
+  // The database is checked only once the settings are right (it may not even be reachable).
+  if (kind === 'production' && !problems.length) {
     const db = new Database(config.DATABASE_URL, config.DATABASE_URL_WORKER);
     try {
       problems.push(...(await sampleWorldProblems(db)));

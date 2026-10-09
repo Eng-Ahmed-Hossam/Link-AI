@@ -101,9 +101,15 @@ const env = (k: string) => {
 };
 
 export async function seedDemo(migratorUrl: string) {
-  if (process.env.APP_ENV !== 'local')
-    throw new Error('seed:demo wipes the app tables: it runs only with APP_ENV=local.');
-  const cipher = new FieldCipher(new LocalKeyWrapper(env('FIELD_KEY_LOCAL')));
+  // A developer machine, or staging with demo routes (pnpm prod:local) — never production.
+  const staging = process.env.LINK_ENV === 'staging' && process.env.DEMO_ROUTES === '1';
+  if (process.env.LINK_ENV === 'production' || (process.env.APP_ENV !== 'local' && !staging))
+    throw new Error(
+      'seed:demo wipes the app tables: it runs only with APP_ENV=local (or staging with DEMO_ROUTES=1).',
+    );
+  const cipher = new FieldCipher(
+    new LocalKeyWrapper(process.env.FIELD_KEY_LOCAL ?? env('FIELD_KEY')),
+  );
   const hmacKey = env('HMAC_KEY_LOOKUP');
   const phone = (e164: string) => ({
     phone_hmac: lookupHmac(hmacKey, e164),

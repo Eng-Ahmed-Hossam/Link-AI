@@ -50,6 +50,37 @@ jobs:
         run: pnpm db:types && git diff --exit-code apps/core-api/src/db/schema.ts
       - run: pnpm test:api
       - run: pnpm test:money
+      # Backups (docs/operations.md): an encrypted backup of the test database, restored into a
+      # fresh database, and the cross-tenant RLS suite run against the restored copy.
+      - name: Backup → restore → RLS suite on the restored copy
+        run: |
+          export BACKUP_PASSPHRASE="ci-$(openssl rand -hex 16)" BACKUP_DIR="$RUNNER_TEMP/backups" ENV_FILE=/nonexistent PG_DATABASE=link_test
+          export PG_EXEC="docker compose -f infra/local/docker-compose.yml --env-file .env.local exec -T postgres"
+          deploy/backup.sh
+          deploy/restore.sh "$(ls -t "$BACKUP_DIR"/*.dump.enc | head -1)" link_test_restored
+          TEST_DB_NAME=link_test_restored pnpm test:rls
+
+  # The production images (ship job S1): built to prove they build; never pushed anywhere.
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/docker-mirror
+      - name: core-api (api, worker, gateway, migrate)
+        run: docker build -f apps/core-api/Dockerfile -t link/core-api:ci .
+      - name: web (production)
+        run: docker build -f apps/web/Dockerfile -t link/web:ci --build-arg NEXT_PUBLIC_SITE_URL=https://link.example .
+      - name: ai-service
+        run: docker build -f apps/ai-service/Dockerfile -t link/ai-service:ci .
+      - name: The production guard refuses local settings
+        run: |
+          out=$(docker run --rm -e LINK_ENV=production -e APP_ENV=staging -e DATABASE_URL=postgres://x@db/link -e DATABASE_URL_WORKER=postgres://x@db/link -e REDIS_CACHE_URL=redis://r -e REDIS_STATE_URL=redis://r -e HMAC_KEY_LOOKUP=$(openssl rand -hex 32) -e FIELD_KEY=$(openssl rand -base64 32) -e JWT_ISSUER=http://localhost:4000 -e JWT_AUDIENCE=link -e JWT_SIGNING_KEY_ID=local-dev -e JWT_SIGNING_KEY=$(openssl rand -base64 32) -e PAYMENT_PROVIDER=none -e PAYMENT_WEBHOOK_SECRET=$(openssl rand -hex 16) -e WHATSAPP_PROVIDER=manual -e WHATSAPP_WEBHOOK_SECRET=$(openssl rand -hex 16) -e SMS_PROVIDER=fake -e SMS_SINK_URL=http://sms-sink:8090 link/core-api:ci api 2>&1 || true)
+          echo "$out" | grep -v '^{'
+          echo "$out" | grep -q 'Refusing to start with LINK_ENV=production'
+          echo "$out" | grep -q 'SMS_SINK_URL'
+      - name: Image sizes
+        run: docker images --format '{{.Repository}}:{{.Tag}}  {{.Size}}' --filter 'reference=link/*'
 
   # The connected story in LIVE mode (real core-api, Postgres, sign-in codes from sms-sink): every
   # push to main and every pull request into main (decided 2026-10-09; PRs since R4). A newer push

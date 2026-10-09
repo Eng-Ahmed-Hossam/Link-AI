@@ -30,6 +30,7 @@ export const PORTS = [
   { port: 8081, what: 'teacher app', docker: false },
   { port: 4000, what: 'core-api', docker: false },
   { port: 4002, what: 'messaging-gateway', docker: false },
+  { port: 4003, what: 'worker health', docker: false },
   { port: 4010, what: 'mock server (pnpm demo)', docker: false },
   { port: 8090, what: 'ai-service', docker: false },
   { port: 5432, what: 'Postgres', docker: true, env: 'POSTGRES_HOST_PORT' },

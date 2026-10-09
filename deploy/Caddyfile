@@ -1,0 +1,30 @@
+# Link's front door (ship job S1): automatic HTTPS for LINK_DOMAIN (Let's Encrypt), HSTS, and the
+# only public routes: the web, and core-api's /v1 API on the same origin (session cookies stay
+# first-party). /v1/internal (ai-service's callback) and /__demo never leave the server.
+{
+	email {$ACME_EMAIL}
+}
+
+{$LINK_DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+	# JSON is limited by core-api itself (100 kB); voice audio uploads up to 15 MB.
+	request_body {
+		max_size 16MB
+	}
+	handle /v1/internal/* {
+		respond 404
+	}
+	handle /__demo* {
+		respond 404
+	}
+	handle /v1/* {
+		reverse_proxy api:4000
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}

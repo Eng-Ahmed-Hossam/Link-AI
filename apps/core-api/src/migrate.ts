@@ -28,13 +28,15 @@ export function upPart(sqlText: string) {
 }
 
 async function main() {
-  const client = new pg.Client({ connectionString: url });
-  // Wait for the database (the container may still be starting).
+  // Wait for the database (the container may still be starting); a pg client connects once.
+  let client: pg.Client;
   for (let i = 0; ; i++) {
+    client = new pg.Client({ connectionString: url });
     try {
       await client.connect();
       break;
     } catch (e) {
+      await client.end().catch(() => {});
       if (i >= 30) throw e;
       await new Promise((r) => setTimeout(r, 1000));
     }

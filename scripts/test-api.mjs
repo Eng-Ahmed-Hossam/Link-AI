@@ -18,9 +18,13 @@ const { DATABASE_URL_MIGRATOR } = requireEnv(
   'DATABASE_URL_WORKER',
 );
 
+// TEST_DB_NAME: another test database, e.g. a restored backup (CI's restore test); its name must
+// contain link_test, so the suites' own guard still recognises it as a test database.
+const DB = process.env.TEST_DB_NAME || 'link_test';
+if (!DB.includes('link_test')) fail('TEST_DB_NAME must contain link_test.');
 const toTestDb = (url) => {
   const u = new URL(url);
-  u.pathname = '/link_test';
+  u.pathname = `/${DB}`;
   return u.toString();
 };
 const toRedisDb1 = (url) => {
@@ -40,7 +44,7 @@ const exists = spawnSync(
     '-U',
     'postgres',
     '-tAc',
-    "SELECT 1 FROM pg_database WHERE datname = 'link_test'",
+    `SELECT 1 FROM pg_database WHERE datname = '${DB}'`,
   ),
   { cwd: ROOT, encoding: 'utf8' },
 );
@@ -50,12 +54,12 @@ const psql = (...a) =>
     'docker',
     compose('exec', '-T', 'postgres', 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', ...a),
   );
-if (fresh && exists.stdout.trim() === '1') psql('-c', 'DROP DATABASE link_test WITH (FORCE)');
+if (fresh && exists.stdout.trim() === '1') psql('-c', `DROP DATABASE ${DB} WITH (FORCE)`);
 if (fresh || exists.stdout.trim() !== '1') {
-  psql('-c', 'CREATE DATABASE link_test OWNER app_migrator');
+  psql('-c', `CREATE DATABASE ${DB} OWNER app_migrator`);
   psql(
     '-d',
-    'link_test',
+    DB,
     '-c',
     'CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS btree_gist; ALTER SCHEMA public OWNER TO app_migrator;',
   );

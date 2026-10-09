@@ -1,0 +1,22 @@
+# syntax=docker/dockerfile:1.7
+# The teacher app's web build, for STAGING only (pnpm prod:local runs the connected story in it).
+# docs/10 §5: the Expo web build is not a production target — real teachers use the Android app
+# (docs/teacher-app-android.md). Built from the repo root:
+#   docker build -f apps/teacher-app/Dockerfile.web --build-arg EXPO_PUBLIC_API_BASE_URL=… .
+FROM node:24-alpine AS build
+WORKDIR /repo
+ENV CI=1 EXPO_PUBLIC_API_MODE=live EXPO_PUBLIC_APP_ENV=staging
+ARG EXPO_PUBLIC_API_BASE_URL=http://localhost:4000
+ENV EXPO_PUBLIC_API_BASE_URL=$EXPO_PUBLIC_API_BASE_URL
+RUN corepack enable
+COPY . .
+RUN --mount=type=secret,id=extra_ca,required=false \
+    if [ -s /run/secrets/extra_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/extra_ca; fi \
+ && pnpm install --frozen-lockfile --filter @link/teacher-app... \
+ && pnpm --filter @link/teacher-app exec expo export --platform web --output-dir dist-web --clear
+
+FROM caddy:2-alpine
+COPY --from=build /repo/apps/teacher-app/dist-web /srv
+# A single-page app: every path serves index.html.
+RUN printf ':8081 {\n\troot * /srv\n\ttry_files {path} /index.html\n\tfile_server\n}\n' > /etc/caddy/Caddyfile
+EXPOSE 8081

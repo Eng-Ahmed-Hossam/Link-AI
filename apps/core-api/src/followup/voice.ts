@@ -8,6 +8,7 @@ import type { Database, Tx } from '../platform/db';
 import { uuidv7 } from '../platform/ids';
 import type { Logger } from '../platform/logger';
 import { enqueue } from '../platform/outbox';
+import { linkEnv } from '../platform/guard';
 import { Problem, forbidden, notFound } from '../platform/problem';
 import { addDays } from '../platform/time';
 import { type Lang, namesOf, ref, requireExtra, sessionStudents } from './world';
@@ -86,9 +87,12 @@ export class Voice {
       throw new Problem(403, 'invalid_signature', 'This upload link is not valid.');
   }
 
-  /** Data class (ADR-0007): locally every note is sample audio; real notes need the consent pack. */
+  /**
+   * Data class (ADR-0007): locally and in staging every note is sample audio; real notes need the
+   * consent pack (S2), so production refuses a voice note until it exists.
+   */
   private dataClass(): 'synthetic' | 'consented_real' | null {
-    return this.c.APP_ENV === 'local' ? 'synthetic' : null;
+    return this.c.APP_ENV === 'local' || linkEnv() === 'staging' ? 'synthetic' : null;
   }
 
   private dto(v: { id: string; session_record_id: string; status: string; duration_s: number }) {

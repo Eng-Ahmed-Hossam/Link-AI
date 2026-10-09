@@ -67,7 +67,9 @@
     "test:e2e:live": "node scripts/e2e-modes.mjs live",
     "ops:verify-centre": "node scripts/ops.mjs verify-centre",
     "ops:refunds": "node scripts/ops.mjs refunds",
-    "voice:try": "node scripts/voice-try.mjs"
+    "voice:try": "node scripts/voice-try.mjs",
+    "prod:local": "node scripts/prod-local.mjs",
+    "prod:env": "node scripts/prod-env.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

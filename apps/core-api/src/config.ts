@@ -92,6 +92,8 @@ const schema = z
     WHATSAPP_FAKE_URL: z.string().url().default('http://localhost:8094'),
     WHATSAPP_WEBHOOK_SECRET: z.string().min(16).default('local-whatsapp-fake-secret'),
     GATEWAY_PORT: z.coerce.number().int().positive().default(4002),
+    /** The worker's own /health (deploy health checks): its loops must have run recently. */
+    WORKER_HEALTH_PORT: z.coerce.number().int().positive().default(4003),
   })
   .superRefine((c, ctx) => {
     // Local only: the key-encryption key comes from .env.local (docs/10 §5); elsewhere KMS.
@@ -147,7 +149,8 @@ const schema = z
 export type Config = z.infer<typeof schema>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const r = schema.safeParse(env);
+  // An empty value (`NAME=` in an env file) means "not set", so defaults and optional rules apply.
+  const r = schema.safeParse(Object.fromEntries(Object.entries(env).filter(([, v]) => v !== '')));
   if (!r.success) {
     const lines = r.error.issues.map((i) => `  ${i.path.join('.')}: ${i.message}`);
     throw new Error(`core-api configuration is invalid:\n${lines.join('\n')}`);
