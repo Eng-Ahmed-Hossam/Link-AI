@@ -253,22 +253,22 @@ export class Cases {
         .select(['id', 'teacher_id', 'subject_id', 'school_year_id'])
         .where('id', '=', c.group_id)
         .executeTakeFirstOrThrow();
-      const { rows } = await sql<{ id: string; left: number }>`
-        SELECT o.id, (o.seat_cap - coalesce((SELECT committed FROM market.seats_committed(ARRAY[s.id])), 0))::int AS left
+      const { rows } = await sql<{ id: string; seats_left: number }>`
+        SELECT o.id, (o.seat_cap - coalesce((SELECT committed FROM market.seats_committed(ARRAY[s.id])), 0))::int AS seats_left
         FROM market.groups o
         JOIN LATERAL (SELECT id FROM market.group_sessions WHERE group_id = o.id AND starts_at > now()
                       AND status = 'scheduled' ORDER BY starts_at LIMIT 1) s ON true
         WHERE o.teacher_id = ${g.teacher_id} AND o.subject_id = ${g.subject_id}
           AND o.school_year_id = ${g.school_year_id} AND o.id <> ${g.id} AND o.status = 'published'
-        ORDER BY left DESC LIMIT 1`.execute(sys);
+        ORDER BY seats_left DESC LIMIT 1`.execute(sys);
       const alt = rows[0];
       let text: { en: string; ar: string };
       if (alt) {
         const info = await groupInfo(sys, alt.id);
         const days = info.weekdays.join(', ');
         text = {
-          en: `Seat check: ${info.name.en} (days ${days}, ${info.startTime}) — ${alt.left} seats left`,
-          ar: `فحص مقعد: ${info.name.ar} (${info.startTime}) — ${arNum(Math.max(0, alt.left))} مقاعد متاحة`,
+          en: `Seat check: ${info.name.en} (days ${days}, ${info.startTime}) — ${alt.seats_left} seats left`,
+          ar: `فحص مقعد: ${info.name.ar} (${info.startTime}) — ${arNum(Math.max(0, alt.seats_left))} مقاعد متاحة`,
         };
       } else
         text = {
@@ -282,7 +282,11 @@ export class Cases {
         text,
         actorId: userId,
       });
-      return { text: text[lang], seatsLeft: Math.max(0, alt?.left ?? 0), groupId: alt?.id ?? null };
+      return {
+        text: text[lang],
+        seatsLeft: Math.max(0, alt?.seats_left ?? 0),
+        groupId: alt?.id ?? null,
+      };
     });
   }
 }

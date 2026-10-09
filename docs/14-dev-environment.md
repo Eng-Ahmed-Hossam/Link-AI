@@ -163,6 +163,7 @@ All commands are Node scripts, so they run the same in PowerShell, cmd and bash.
 | `node scripts/env-local.mjs [--force]` | Write a fresh `.env.local` (local ports, random secrets); refuses to overwrite without `--force` | real |
 | `pnpm env:check` | Fail if code reads an env name missing from `.env.example` | real |
 | `pnpm dev` | Live mode on this machine: §2 services, migrations, the demo world if the database is empty (`--reset` re-seeds), core-api (api :4000, worker, messaging-gateway :4002; restart on change), web :3000 and the teacher app :8081 with `API_MODE=live`. Codes go to sms-sink :8093. ai-service :8090 too when it is installed (`pnpm ai:models`); whatsapp-fake :8094 catches approved parent messages. The ops console is not started yet | real (R1) |
+| `pnpm voice:try [file.wav]` | One sample voice note end to end against `pnpm dev` (needs ai-service): sign-in as Ms Salma, the record due, signed upload to aws-local S3, draft extraction; prints the times and the STT / LLM model versions. Synthetic bench audio by default | real (R3) |
 | `pnpm lint` | ESLint + RTL check; `ruff` for ai-service | real |
 | `pnpm typecheck` | `tsc`; `mypy` for ai-service | real |
 | `pnpm test` | Unit tests (every package; core-api's without a database) | real |

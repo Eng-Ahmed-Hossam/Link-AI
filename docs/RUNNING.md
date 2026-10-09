@@ -100,7 +100,7 @@ The ops console (verification, refunds and moderation go through `pnpm ops:*` lo
 19. **Log the outcome**: Reception → the follow-up → Log outcome → Phone, Reached → it waits for confirmation; or Dismiss with a reason (it can be reopened).
 20. **STOP**: Demo controls → "Parent sends STOP". Draft and approve another message for Mariam's parent: it is not sent ("not sendable — stopped"), at once. ("I sent it" is the manual path, used when `WHATSAPP_PROVIDER=manual`.)
 21. **Rules**: owner → Rules → change "2 absences" to 3 → a new version; as Reception the same change is a proposal the owner approves or rejects. Activity log shows each step.
-22. **A voice note** (needs `pnpm ai:models`): teacher app → the record → hold the mic, say "مريم غابت، ويوسف جاب ١٥ من ٢٠" → the draft shows Mariam absent and Youssef 15/20 for you to check; a name not on the roster stays unmatched.
+22. **A voice note** (needs `pnpm ai:models`): teacher app → the record → hold the mic, say "مريم غابت، ويوسف جاب ١٥ من ٢٠" → the draft shows Mariam absent and Youssef 15/20 for you to check; a name not on the roster stays unmatched. To time one from the terminal: `pnpm voice:try` (signs in as Ms Salma, uploads a synthetic bench clip, prints upload → draft time and the models ai-service ran).
 23. **Extra off**: Demo controls → Follow-up extra off for مركز النور: the owner's Follow-ups, the teacher's Follow-up tab and the parent's Updates disappear; the API answers 403; booking a seat still works.
 
 Codes: http://localhost:8093. Payments and webhooks: http://localhost:8091/api/webhooks. WhatsApp: http://localhost:8094. Reset everything: Demo controls → Reset story.
