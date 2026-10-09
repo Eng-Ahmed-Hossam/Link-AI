@@ -44,7 +44,8 @@ const schema = z
     QUEUE_NOTIFICATIONS: z.string().min(1).default('link-notifications'),
     DLQ_NOTIFICATIONS: z.string().min(1).default('link-notifications-dlq'),
     // Payments (docs/08): the local fake provider until a real one is chosen (OD-46).
-    PAYMENT_PROVIDER: z.enum(['fake']).default('fake'),
+    /** fake: fake-pay locally; none: no provider yet (checkout off, a Follow-up-only pilot). */
+    PAYMENT_PROVIDER: z.enum(['fake', 'none']).default('fake'),
     PAYMENT_WEBHOOK_SECRET: z.string().min(16),
     FAKE_PAY_URL: z.string().url().optional(),
     /** The web app's public address: where the hosted checkout sends the parent back. */

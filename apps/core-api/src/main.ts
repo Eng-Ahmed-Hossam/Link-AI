@@ -8,6 +8,7 @@ import { Phones } from './identity/phone';
 import { FieldCipher } from './platform/crypto';
 import { currentKeyIds, KEY_MISMATCH_HELP, keyMismatches } from './platform/data-keys';
 import { Database } from './platform/db';
+import { formatProblems, linkEnv, productionProblems, sampleWorldProblems } from './platform/guard';
 import { createLogger } from './platform/logger';
 import { Redises } from './platform/redis';
 import { createApi } from './server';
@@ -164,12 +165,38 @@ async function gateway() {
   }
 }
 
+/**
+ * The production guard (docs/security-checklist.md): with LINK_ENV=production, refuse to start
+ * while a fake provider, a demo route, a local key or the sample world is configured. Every wrong
+ * setting is printed by name, never its value.
+ */
+async function guard() {
+  const kind = linkEnv();
+  const problems = productionProblems(config);
+  if (kind === 'production') {
+    const db = new Database(config.DATABASE_URL, config.DATABASE_URL_WORKER);
+    try {
+      problems.push(...(await sampleWorldProblems(db)));
+    } finally {
+      await db.close();
+    }
+  }
+  if (problems.length) {
+    const msg = formatProblems(kind, problems);
+    console.error(msg);
+    log.fatal({ linkEnv: kind, problems }, 'production guard refused to start');
+    process.exit(1);
+  }
+}
+
 const run = { api, worker, gateway }[entry];
 if (!run) {
   log.error({ entry }, 'unknown entrypoint: use api, worker or gateway');
   process.exit(1);
 }
-run().catch((err: unknown) => {
-  log.fatal({ err }, 'start-up failed');
-  process.exit(1);
-});
+guard()
+  .then(run)
+  .catch((err: unknown) => {
+    log.fatal({ err }, 'start-up failed');
+    process.exit(1);
+  });

@@ -10,7 +10,8 @@
     "start": "node ../../scripts/core-api.mjs start",
     "openapi:generate": "tsx scripts/openapi.ts",
     "openapi:check": "tsx scripts/openapi.ts --check",
-    "test": "vitest run test/unit"
+    "test": "vitest run test/unit",
+    "build": "node scripts/build.mjs"
   },
   "devDependencies": {
     "@link/api-client": "workspace:*",
@@ -21,6 +22,7 @@
     "@types/node": "^26.6.4",
     "@types/pg": "^8.23.1",
     "dbmate": "^2.36.0",
+    "esbuild": "0.28.2",
     "fast-check": "^4.10.2",
     "kysely-codegen": "^0.20.0",
     "openapi-typescript": "^7.13.0",

@@ -1,7 +1,12 @@
 import { Module, type DynamicModule, type Provider, type Type } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AiServiceClient, VOICE_AI, type VoiceAi } from './adapters/ai';
-import { FakePayProvider, PAYMENT_PROVIDER, type PaymentProvider } from './adapters/payments';
+import {
+  FakePayProvider,
+  NoPaymentProvider,
+  PAYMENT_PROVIDER,
+  type PaymentProvider,
+} from './adapters/payments';
 import { AUDIO_STORE, type AudioStore, FileAudioStore, S3AudioStore } from './adapters/storage';
 import {
   ManualSender,
@@ -17,7 +22,8 @@ import { Owner } from './followup/owner';
 import { Records } from './followup/records';
 import { Voice } from './followup/voice';
 import { type SmsSender, SMS_SENDER, SmsSinkSender } from './adapters/sms';
-import { type Config, isLocal } from './config';
+import { type Config } from './config';
+import { demoRoutesAllowed } from './platform/guard';
 import { Accounts } from './identity/accounts';
 import { AuthController } from './identity/auth.controller';
 import { MeController } from './identity/me.controller';
@@ -90,7 +96,11 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
     factory(
       PAYMENT_PROVIDER,
       [],
-      () => overrides.payments ?? new FakePayProvider(c.FAKE_PAY_URL!, c.PAYMENT_WEBHOOK_SECRET),
+      () =>
+        overrides.payments ??
+        (c.PAYMENT_PROVIDER === 'none'
+          ? new NoPaymentProvider()
+          : new FakePayProvider(c.FAKE_PAY_URL!, c.PAYMENT_WEBHOOK_SECRET)),
     ),
     factory(Halls, [Database, Seats], (db: Database, s: Seats) => new Halls(db, s)),
     factory(Requests, [Database], (db: Database) => new Requests(db)),
@@ -185,7 +195,7 @@ export async function apiModule(
     ReviewsController,
     FollowupController,
   ];
-  if (isLocal(c)) controllers.push((await import('./dev/dev.controller')).DevController);
+  if (demoRoutesAllowed(c)) controllers.push((await import('./dev/dev.controller')).DevController);
   @Module({})
   class ApiModule {}
   return {
