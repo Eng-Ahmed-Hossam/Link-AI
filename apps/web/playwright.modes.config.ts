@@ -25,6 +25,8 @@ export default defineConfig({
   webServer: LIVE
     ? {
         command: 'node ../../scripts/dev.mjs',
+        // The specs never use real speech-to-text: no ai-service (as DEMO_AI=0 below).
+        env: { DEV_AI: '0' },
         url: 'http://localhost:4000/ready',
         reuseExistingServer: true,
         // A cold machine builds the local service images first (CI).

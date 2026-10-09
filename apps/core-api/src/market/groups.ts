@@ -1,3 +1,4 @@
+import type { Records } from '../followup/records';
 import { Controller, Inject, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { sql } from 'kysely';
@@ -56,6 +57,8 @@ export class Groups {
   constructor(
     private readonly db: Database,
     private readonly seats: Seats,
+    /** R3: the follow-up part of "My groups" (records complete, open follow-ups). */
+    private readonly followup?: { summaries: Records['summaries'] },
   ) {}
 
   self(userId: string, lang: Lang) {
@@ -202,27 +205,36 @@ export class Groups {
     });
   }
 
-  /** "My groups" (CF-30): fees, seats filled in the next session, where it meets. */
-  teacherGroups(userId: string, lang: Lang) {
-    return this.db.asUser(userId, async (tx, ctx) =>
-      (await this.teacherGroupsIn(tx, teacherOf(ctx), lang)).map((g) => ({
-        id: g.id,
-        name: g.name,
-        centre: g.centre,
-        room: g.room,
-        weekdays: g.weekdays,
-        startTime: g.startTime,
-        endTime: g.endTime,
-        sessionFee: g.sessionFee,
-        monthlyFee: g.monthlyFee,
-        offersMonthlyRecurring: g.offersMonthlyRecurring,
-        seatCap: g.seatCap,
-        seatsFilled: g.seatsFilled,
-        nextSession: g.nextSession,
-        // The follow-up parts (records complete, open follow-ups) arrive with R3.
-        followup: null,
-      })),
+  /** "My groups" (CF-30): fees, seats filled in the next session, where it meets, follow-up. */
+  async teacherGroups(userId: string, lang: Lang) {
+    const rows = await this.db.asUser(userId, async (tx, ctx) =>
+      this.teacherGroupsIn(tx, teacherOf(ctx), lang),
     );
+    // The follow-up part only for groups at centres with the extra (OD-58); null otherwise.
+    const fu = this.followup
+      ? await this.db.asSystem((sys) =>
+          this.followup!.summaries(
+            sys,
+            rows.map((g) => g.id),
+          ),
+        )
+      : new Map();
+    return rows.map((g) => ({
+      id: g.id,
+      name: g.name,
+      centre: g.centre,
+      room: g.room,
+      weekdays: g.weekdays,
+      startTime: g.startTime,
+      endTime: g.endTime,
+      sessionFee: g.sessionFee,
+      monthlyFee: g.monthlyFee,
+      offersMonthlyRecurring: g.offersMonthlyRecurring,
+      seatCap: g.seatCap,
+      seatsFilled: g.seatsFilled,
+      nextSession: g.nextSession,
+      followup: fu.get(g.id) ?? null,
+    }));
   }
 
   private async teacherGroupsIn(tx: Tx, teacherId: string, lang: Lang) {

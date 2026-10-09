@@ -151,7 +151,14 @@ export const Earnings = named(
   z.object({
     month: z.string(),
     keep: Money.describe('What the teacher keeps this month, after Link commission and rent'),
-    nextPayout: z.object({ on: z.string(), amount: Money, account: z.string() }),
+    nextPayout: z.object({
+      on: z.string(),
+      amount: Money,
+      heldForRent: Money.describe(
+        'Rent held back for the next rent invoice (CF-54): not paid out on this Thursday',
+      ),
+      account: z.string(),
+    }),
     parentsPaid: Money,
     commission: Money,
     commissionPercent: z.number(),

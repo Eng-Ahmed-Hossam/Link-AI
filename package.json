@@ -62,7 +62,9 @@
     "test:money": "node scripts/test-api.mjs money",
     "test:e2e:mock": "node scripts/e2e-modes.mjs mock",
     "test:e2e:live": "node scripts/e2e-modes.mjs live",
-    "ops:verify-centre": "node scripts/ops.mjs verify-centre"
+    "ops:verify-centre": "node scripts/ops.mjs verify-centre",
+    "ops:refunds": "node scripts/ops.mjs refunds",
+    "voice:try": "node scripts/voice-try.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

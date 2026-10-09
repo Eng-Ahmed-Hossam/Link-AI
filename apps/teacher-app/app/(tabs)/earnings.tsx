@@ -91,6 +91,20 @@ export default function Earnings() {
                     testID="rent-line"
                   />
                 ))}
+                <Row
+                  label={t('teacher.earnings.heldForRent', {
+                    date: longDay(d.nextPayout.on, locale),
+                  })}
+                  value={egp(d.nextPayout.heldForRent, locale)}
+                  testID="held-for-rent"
+                />
+                <Row
+                  label={t('teacher.earnings.nextPayoutAmount', {
+                    date: longDay(d.nextPayout.on, locale),
+                  })}
+                  value={egp(d.nextPayout.amount, locale)}
+                  testID="next-payout-amount"
+                />
                 <View style={styles.between}>
                   <Text style={textStyle(locale, 'label')}>{t('teacher.earnings.payout')}</Text>
                   <Text

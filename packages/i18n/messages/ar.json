@@ -1853,6 +1853,8 @@
   "teacher.earnings.commission": "عمولة لينك ({pct, number}٪، توضيحية)",
   "teacher.earnings.rentTo": "إيجار {centre} • {hall} ({rule})",
   "teacher.earnings.payout": "صافي تحويلك",
+  "teacher.earnings.heldForRent": "محجوز للإيجار (لا يُحوَّل يوم {date})",
+  "teacher.earnings.nextPayoutAmount": "التحويل القادم ({date})",
   "teacher.earnings.you": "أنت",
   "teacher.earnings.byGroup": "حسب المجموعة",
   "teacher.earnings.students": "{count, plural, zero {لا طلاب} one {طالب واحد} two {طالبان} few {{n} طلاب} many {{n} طالبًا} other {{n} طالب}}",

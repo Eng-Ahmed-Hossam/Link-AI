@@ -2,6 +2,15 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-09 — R3: follow-up on the real backend (and the R2b money fixes)
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| R3-1 | `docs/08-payments-ledger.md`, `docs/13-open-decisions.md` | §3 "Held for rent" (CF-54, new, built as the default); P5 worked example at a 2.5 % gateway fee (no new rule: P5 and OD-15 already said Link pays it); P7 note on `pnpm ops:refunds`; CF-51, CF-52 (one line: an offer is open 24 h, then passes to the next parent; the seat starts at the next session), CF-53 decided | Ahmed's R2b review |
+| R3-2 | `docs/06-data-model.md` | §6–8 built: `teacher_id`, one record per session, the entry guard trigger, voice data class and deletion dates, `case_events`, `message_status_events`, message lock and provider ID | R3 schema (migrations 0012–0015) |
+| R3-3 | `docs/07-api.md` | §2b and §2c are built and in OpenAPI; 403 `extra_not_enabled`; the signed audio upload; the internal voice-result route; correction requests; "I sent it"; the messaging webhook; `/v1/me/centre-groups`; Ask Link 503 `assistant_unavailable` without a local model; demo provider/reply go through whatsapp-fake | R3 |
+| R3-4 | `docs/14-dev-environment.md`, `docs/RUNNING.md`, `docs/product/sample-only.md`, `docs/plan/real-backend.md` | whatsapp-fake (8094), the voice/messaging/followup queues, the new env vars; what is real now; the R3 click list from step 12; §9 R3 | R3 |
+
 ## 2026-10-09 — R2b: seats, payments, ledger, statements and reviews on the real backend
 
 | # | File | What changed | Why |

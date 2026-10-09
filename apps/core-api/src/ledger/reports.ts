@@ -34,20 +34,33 @@ export class Reports {
     private readonly halls: Halls,
   ) {}
 
-  /** The teacher's balances (08 §3): pending, available, rent reserve, next payout. */
+  /**
+   * The teacher's balances (08 §3, CF-54): pending, available, the rent held back, next payout.
+   * "Held for rent" is the rent the teacher will owe at the next rent invoice: for every booking,
+   * each month not invoiced yet up to the month of the next payout, all its sessions still planned
+   * (held so far and still scheduled). A payout never pays out money the 1st's invoice needs.
+   */
   async teacherBalances(sys: Tx, teacherId: string) {
     const pending = await balance(sys, ACCOUNT.teacherPending(teacherId));
     const available = await balance(sys, ACCOUNT.teacherAvailable(teacherId));
-    const month = monthOf(cairoToday());
+    const today = cairoToday();
+    const months = [...new Set([monthOf(today), monthOf(nextThursday(today))])];
     const bookings = await sys
       .selectFrom('market.room_bookings')
       .select('id')
       .where('teacher_id', '=', teacherId)
-      .where('status', '<>', 'ended')
+      .where((w) =>
+        w.or([
+          w('status', '<>', 'ended'),
+          w('ends_on', '>=', sql<Date>`${monthRange(months[0]!).from}::date`),
+        ]),
+      )
       .execute();
     let rentReserve = 0;
     for (const b of bookings)
-      rentReserve += (await bookingMonth(sys, b.id, month, 'held'))?.grossPt ?? 0;
+      for (const m of months)
+        if (!(await this.invoiceFor(sys, b.id, m)))
+          rentReserve += (await bookingMonth(sys, b.id, m, 'planned'))?.grossPt ?? 0;
     // Released funds whose payment the provider has not settled yet cannot be paid out (BR-OUT-02).
     const unsettled = await sql<{ n: string }>`
       SELECT coalesce(sum(p.amount_pt - coalesce(p.commission_pt, 0)
@@ -57,8 +70,9 @@ export class Reports {
       WHERE p.payee_type = 'teacher' AND p.payee_id = ${teacherId} AND p.released_at IS NOT NULL AND p.settled_at IS NULL`.execute(
       sys,
     );
-    const next = Math.max(0, available - rentReserve - Number(unsettled.rows[0]!.n));
-    return { pending, available, rentReserve, nextPayout: next };
+    const payable = Math.max(0, available - Number(unsettled.rows[0]!.n));
+    const heldForRent = Math.min(rentReserve, payable);
+    return { pending, available, rentReserve, heldForRent, nextPayout: payable - heldForRent };
   }
 
   /** J07 · Earnings for the current month (MKT-LED-07). */
@@ -172,6 +186,7 @@ export class Reports {
           nextPayout: {
             on: nextThursday(),
             amount: money(bal.nextPayout),
+            heldForRent: money(bal.heldForRent),
             account: masked(account?.display_last4),
           },
           parentsPaid: money(parentsPaid),

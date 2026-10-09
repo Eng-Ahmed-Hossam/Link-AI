@@ -663,6 +663,8 @@ export function earnings(teacherKey: string, lang: Lang): Earnings {
     nextPayout: {
       on: nextThursday(),
       amount: money(Math.max(0, keep)),
+      // CF-54: the month's rent is held back for the 1st's invoice (never paid out on Thursday).
+      heldForRent: money(Math.min(rentTotal, Math.max(0, parentsPaid - commission))),
       account: self?.payoutAccount ?? '••••',
     },
     parentsPaid: money(parentsPaid),

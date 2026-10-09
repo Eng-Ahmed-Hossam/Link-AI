@@ -16,6 +16,7 @@ import { addDays, cairoToUtc, cairoToday } from '../src/platform/time';
 export { demoId } from './demo-id';
 import { demoId } from './demo-id';
 import { seedMoney } from './demo-money';
+import { seedFollowup } from './demo-followup';
 
 /** Second owner and centre: tenant B for `pnpm test:rls`. */
 export const OWNER_B_PHONE = '+201000000007';
@@ -23,6 +24,26 @@ const RLS_CENTRE = 'cen-nile';
 
 /** Tables the seed owns, emptied in one statement (CASCADE follows the in-schema FKs). */
 const TABLES = [
+  'messaging.notification_log',
+  'messaging.inbound_messages',
+  'messaging.message_status_events',
+  'messaging.messages',
+  'followup.case_events',
+  'followup.case_attempts',
+  'followup.cases',
+  'followup.signals',
+  'followup.rule_versions',
+  'followup.rules',
+  'records.voice_extractions',
+  'records.voice_notes',
+  'records.notes',
+  'records.correction_requests',
+  'records.corrections',
+  'records.item_scores',
+  'records.assessment_items',
+  'records.record_entries',
+  'records.assessments',
+  'records.session_records',
   'ledger.reconciliation_issues',
   'ledger.provider_settlement_lines',
   'ledger.ledger_entries',
@@ -521,10 +542,17 @@ export async function seedDemo(migratorUrl: string) {
           ? role(u.id, demoId(u.id), 'teacher', { teacher_id: demoId(u.teacherId!) })
           : u.role === 'centre_owner'
             ? role(u.id, demoId(u.id), 'centre_owner', { centre_id: demoId('cen-nour') })
-            : // Reception at Al Nour: the marketplace permissions of A16 (MKT-ACC-06 AC1).
+            : // Reception at Al Nour: the marketplace permissions of A16 (MKT-ACC-06 AC1) and the
+              // follow-up desk's (10 §1): follow-ups, approving parent messages, reading records.
               role(u.id, demoId(u.id), 'centre_staff', {
                 centre_id: demoId('cen-nour'),
-                permissions: ['bookings.manage', 'reviews.reply'],
+                permissions: [
+                  'bookings.manage',
+                  'reviews.reply',
+                  'cases.manage',
+                  'messages.approve',
+                  'records.read',
+                ],
               }),
       ),
       role('owner-b', ownerB, 'centre_owner', { centre_id: demoId(RLS_CENTRE) }),
@@ -571,6 +599,18 @@ export async function seedDemo(migratorUrl: string) {
         consent_at: '2026-09-01T09:00:00Z',
       })),
     );
+    await put('org.consent_events', [
+      // The sample parent opted in to WhatsApp updates and SMS (FUP-MSG-07; sample only).
+      ...(['whatsapp_updates', 'sms_updates'] as const).map((kind) => ({
+        id: demoId(`consent:${kind}`),
+        user_id: demoId(fx.parent.id),
+        guardian_id: guardian,
+        kind,
+        granted: true,
+        version: 'draft-2026-10',
+        source: 'settings',
+      })),
+    ]);
     await put(
       'org.consent_events',
       fx.children.map((c) => ({
@@ -641,6 +681,9 @@ export async function seedDemo(migratorUrl: string) {
   } finally {
     await db.destroy();
   }
+
+  // R3: Ms Salma's follow-up history at Al Nour, through the real rules engine.
+  for (const [t, n] of Object.entries(await seedFollowup(migratorUrl))) counts[t] = n;
 
   // Codes, rate limits and idempotency keys of the old world go too.
   for (const url of [process.env.REDIS_STATE_URL, process.env.REDIS_CACHE_URL]) {

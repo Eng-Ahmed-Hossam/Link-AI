@@ -1,6 +1,6 @@
 # Real backend plan (R0)
 
-**Status:** R0 approved 2026-10-08; R1 approved 2026-10-09; R2a approved 2026-10-09; R2b built (§9). R3, R4 not started. **Scope:** replace the mock server with core-api for everything the apps call today, locally (`docker compose` + `pnpm dev`), with real accounts, Postgres, per-centre isolation, server-side rules and provider adapters running against local fakes. **Not in scope:** deployment, real provider accounts, the ops console beyond review moderation, app stores, analytics.
+**Status:** R0 approved 2026-10-08; R1 approved 2026-10-09; R2a approved 2026-10-09; R2b approved 2026-10-09; R3 built (§9), waiting for review. R4 not started. **Scope:** replace the mock server with core-api for everything the apps call today, locally (`docker compose` + `pnpm dev`), with real accounts, Postgres, per-centre isolation, server-side rules and provider adapters running against local fakes. **Not in scope:** deployment, real provider accounts, the ops console beyond review moderation, app stores, analytics.
 
 Read for this plan: PRODUCT_BRIEF, docs 05, 06, 07 (§2, §2a–§2d), 08, 10, ADR-0001 to ADR-0009 (0009 for the pilot request email only), `docs/product/sample-only.md`, `docs/product/app-map.md`, the mock handlers (`packages/mocks/src/**/handlers.ts`), `packages/api-client/src/*`, migrations 0001–0003, `infra/local/`.
 
@@ -300,3 +300,15 @@ Differences from the plan:
 - A card checkout cannot be paid after fake-pay closed it with the hold; a late payment is a Fawry reference paid after it expired (BR-PMT-07), and that is what the late-money tests use. The handler is the same for any late capture.
 - Decisions recorded: CF-51 (C04 shows teacher reviews of the centre's enrolments), CF-52 (a waitlist offer covers one month from the next session), CF-53 (J06 shows paid enrolments only; the mock was changed).
 
+### R3 — follow-up on the real backend (built 2026-10-09)
+
+R2b-review fixes first: the Thursday payout holds the rent the 1st's invoice will take ("Held for rent" on J07, CF-54); the gateway fee is Link's (docs/08 P5, OD-15, worked example at 2.5 %); `pnpm ops:refunds list | approve <id> | deny <id> "<reason>"` (local only; P7/P8 postings and an audit row; P08 shows the result); CF-51, CF-52 (offer open 24 h, then the next parent; the seat starts at the next session) and CF-53 decided.
+
+Built: migrations 0012–0015 (records, voice, followup, messaging; RLS on every table, in `test:rls`); session records with corrections and correction requests, notes; voice notes through a signed upload URL to S3 (SSE-KMS) → `voice.uploaded` → ai-service → a draft extraction with roster-only name matching; the rules engine (4 rules, versions, staff proposals the owner approves) run in the same transaction as the confirm, deduped one open signal per rule, student and group; cases with attempts, dismiss and reopen, a timeline; messages drafted from confirmed facts only, approved with the tick and `messages.approve`, locked after approval; the `WhatsAppSender` adapter with `whatsapp-fake` (8094, signed webhooks; status only from provider events; STOP at once) and the manual path ("I sent it"); the activity log from the audit table; the Follow-up extra checked on the server (403 `extra_not_enabled`, no voice, no rules); Ask Link off unless `OLLAMA_URL` (read tier only, names as tokens); retention job (audio 30 days, transcripts 90). The demo seed adds four confirmed records of Ms Salma's group, a flag and its overdue case, a quiz series and one correction, all through the same evaluator. The connected story runs all nine steps in live mode.
+
+Differences from the plan:
+- Migration numbers: 0012 records, 0013 voice, 0014 followup, 0015 messaging (the plan's 0013–0016).
+- `case_events` and `message_status_events` (append-only) were added for the timelines; `cases.group_id`, `messages.group_id` for RLS without joins.
+- A rule runs in the confirm's transaction (the confirm returns its signals, 07 §2b); the `followup` consumer re-runs on `record.corrected` and `note.saved`, safe to repeat (INV-08).
+- `/__demo/story/jump` is still mock-only.
+- `/v1/teachers/me/features` and `/v1/me/features` read the centre flag through the system role for the caller's own centres (the flag rows are staff-only under RLS).

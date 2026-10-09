@@ -71,6 +71,12 @@ const values = {
   DLQ_NOTIFICATIONS: 'link-local-notifications-dlq',
   QUEUE_PLATFORM_DEMO: 'link-local-platform-demo',
   DLQ_PLATFORM_DEMO: 'link-local-platform-demo-dlq',
+  QUEUE_VOICE: 'link-local-voice',
+  DLQ_VOICE: 'link-local-voice-dlq',
+  QUEUE_MESSAGING: 'link-local-messaging',
+  DLQ_MESSAGING: 'link-local-messaging-dlq',
+  QUEUE_FOLLOWUP: 'link-local-followup',
+  DLQ_FOLLOWUP: 'link-local-followup-dlq',
   JWT_ISSUER: 'http://localhost:4000',
   JWT_AUDIENCE: 'link-local',
   JWT_SIGNING_KEY_ID: 'local-dev',
@@ -89,6 +95,12 @@ const values = {
   FAKE_PAY_URL: 'http://localhost:8091',
   FAKE_PAY_WEBHOOK_URL: 'http://host.docker.internal:4000/v1/webhooks/payments/fake-pay',
   EMAIL_PROVIDER: 'fake',
+  WHATSAPP_PROVIDER: 'fake',
+  WHATSAPP_FAKE_URL: 'http://localhost:8094',
+  WHATSAPP_FAKE_HOST_PORT: '8094',
+  WHATSAPP_WEBHOOK_SECRET: secret(),
+  WHATSAPP_FAKE_WEBHOOK_URL: 'http://host.docker.internal:4000/v1/webhooks/messaging/whatsapp-fake',
+  GATEWAY_PORT: '4002',
 };
 
 for (const k of KEPT) if (existing[k]) values[k] = existing[k];

@@ -191,7 +191,41 @@ export function DemoControls({ showButton = true }: { showButton?: boolean }) {
               </p>
             </section>
           ) : null}
-          {CORE_API ? null : (
+          {CORE_API ? (
+            <fieldset className="flex flex-col gap-2" data-testid="live-provider-controls">
+              <legend className="text-label">WhatsApp (whatsapp-fake, :8094)</legend>
+              <p className="text-caption text-muted">
+                The latest approved message. Link changes its status only when the provider&apos;s
+                signed webhook arrives.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => run('Provider', () => demoApi.provider('advance'))}
+                >
+                  Advance: Sent → Delivered
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => run('Provider', () => demoApi.provider('fail'))}
+                >
+                  Fail delivery
+                </Button>
+                <Button variant="secondary" onClick={() => run('Reply', () => demoApi.reply())}>
+                  Parent replies
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => run('STOP', () => demoApi.reply('STOP'))}
+                >
+                  Parent sends STOP
+                </Button>
+                <Button variant="secondary" onClick={() => run('New day', demoApi.newDay)}>
+                  New day
+                </Button>
+              </div>
+            </fieldset>
+          ) : (
             <>
               <p className="text-caption text-muted">
                 Scenario demo-followup · {s?.records.confirmed ?? '–'} confirmed records ·{' '}

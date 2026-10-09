@@ -1853,6 +1853,8 @@
   "teacher.earnings.commission": "Link commission ({pct, number}%, illustrative)",
   "teacher.earnings.rentTo": "Rent to {centre} • {hall} ({rule})",
   "teacher.earnings.payout": "Your payout",
+  "teacher.earnings.heldForRent": "Held for rent (not paid out on {date})",
+  "teacher.earnings.nextPayoutAmount": "Next payout ({date})",
   "teacher.earnings.you": "You",
   "teacher.earnings.byGroup": "By group",
   "teacher.earnings.students": "{count, plural, one {{n} student} other {{n} students}}",

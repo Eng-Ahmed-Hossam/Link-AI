@@ -1886,5 +1886,7 @@
   "parent.results.useMyLocation",
   "parent.results.usingMyLocation",
   "parent.results.nearYou",
-  "parent.results.locationOff"
+  "parent.results.locationOff",
+  "teacher.earnings.heldForRent",
+  "teacher.earnings.nextPayoutAmount"
 ]
