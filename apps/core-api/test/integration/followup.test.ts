@@ -967,6 +967,68 @@ describe('The Follow-up extra enforced on the server (OD-58, R3.3)', () => {
     ).toBe(true);
   });
 
+  it('OD-58: the system-role flag read covers only the centres the caller belongs to (no other flag leaks)', async () => {
+    // A sample teacher with no group and no role anywhere: Al Nour's extra is on, and it must not
+    // show. Then one active role at Nile Academy: Nile's flag decides, Al Nour's never does.
+    const t = await api.db
+      .selectFrom('identity.users as u')
+      .innerJoin('org.teachers as t', 't.user_id', 'u.id')
+      .select(['u.id as userId', 't.id as teacherId'])
+      .where('u.phone_last4', '=', '0301')
+      .executeTakeFirstOrThrow();
+    const NILE = demoId('cen-nile');
+    const setExtra = async (centre: string, on: boolean) => {
+      await api.db
+        .deleteFrom('platform.feature_flags')
+        .where('key', '=', 'followup.extra')
+        .where('scope_id', '=', centre)
+        .execute();
+      await api.db
+        .insertInto('platform.feature_flags')
+        .values({ key: 'followup.extra', scope_type: 'centre', scope_id: centre, enabled: on })
+        .execute();
+    };
+    const other = new Client(api);
+    await other.signIn('+201000000301');
+    const features = async () =>
+      (await other.call<{ followupExtra: boolean }>('GET', '/v1/teachers/me/features')).body
+        .followupExtra;
+    const roleId = uuidv7();
+    try {
+      await setExtra(NOUR, true);
+      await setExtra(NILE, false);
+      expect(await features()).toBe(false);
+      await api.db
+        .insertInto('identity.role_assignments')
+        .values({
+          id: roleId,
+          user_id: t.userId,
+          role: 'teacher',
+          centre_id: NILE,
+          teacher_id: t.teacherId,
+          status: 'active',
+        })
+        .execute();
+      expect(await features()).toBe(false); // Nile off; Al Nour on is not theirs
+      await setExtra(NILE, true);
+      expect(await features()).toBe(true); // their own centre's flag
+      // And no endpoint takes another centre's ID: the per-centre read is staff-only (404).
+      const r = await other.call('GET', `/v1/centres/${NOUR}/features`);
+      expect(r.status).toBe(404);
+      const ownerB = new Client(api);
+      await ownerB.signIn(PHONES.ownerB);
+      expect((await ownerB.call('GET', `/v1/centres/${NOUR}/features`)).status).toBe(404);
+    } finally {
+      await api.db.deleteFrom('identity.role_assignments').where('id', '=', roleId).execute();
+      await api.db
+        .deleteFrom('platform.feature_flags')
+        .where('key', '=', 'followup.extra')
+        .where('scope_id', '=', NILE)
+        .execute();
+      await setExtra(NOUR, true);
+    }
+  });
+
   it('R3.4: Ask Link is off in live mode without a local LLM (the scripted assistant never runs here)', async () => {
     const f = await owner().call<{ flags: Record<string, boolean> }>('GET', '/v1/feature-flags');
     expect(f.body.flags['followup.assistant']).toBe(false);

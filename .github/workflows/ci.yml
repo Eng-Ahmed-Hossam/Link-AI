@@ -51,9 +51,13 @@ jobs:
       - run: pnpm test:money
 
   # The connected story in LIVE mode (real core-api, Postgres, sign-in codes from sms-sink): every
-  # push to main (decided 2026-10-09). The full live e2e suite runs on demand or nightly (e2e-live.yml).
+  # push to main and every pull request into main (decided 2026-10-09; PRs since R4). A newer push
+  # to the PR cancels the older run (concurrency above). The full live e2e suite runs on demand or
+  # nightly (e2e-live.yml).
   story-live:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

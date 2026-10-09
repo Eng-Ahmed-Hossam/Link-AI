@@ -1,6 +1,6 @@
 # Real backend plan (R0)
 
-**Status:** R0 approved 2026-10-08; R1 approved 2026-10-09; R2a approved 2026-10-09; R2b approved 2026-10-09; R3 built (§9), waiting for review. R4 not started. **Scope:** replace the mock server with core-api for everything the apps call today, locally (`docker compose` + `pnpm dev`), with real accounts, Postgres, per-centre isolation, server-side rules and provider adapters running against local fakes. **Not in scope:** deployment, real provider accounts, the ops console beyond review moderation, app stores, analytics.
+**Status:** R0 approved 2026-10-08; R1 approved 2026-10-09; R2a approved 2026-10-09; R2b approved 2026-10-09; R3 approved and merged 2026-10-09; R4 (run and hand over) built (§9), waiting for review. **Scope:** replace the mock server with core-api for everything the apps call today, locally (`docker compose` + `pnpm dev`), with real accounts, Postgres, per-centre isolation, server-side rules and provider adapters running against local fakes. **Not in scope:** deployment, real provider accounts, the ops console beyond review moderation, app stores, analytics.
 
 Read for this plan: PRODUCT_BRIEF, docs 05, 06, 07 (§2, §2a–§2d), 08, 10, ADR-0001 to ADR-0009 (0009 for the pilot request email only), `docs/product/sample-only.md`, `docs/product/app-map.md`, the mock handlers (`packages/mocks/src/**/handlers.ts`), `packages/api-client/src/*`, migrations 0001–0003, `infra/local/`.
 
@@ -312,3 +312,7 @@ Differences from the plan:
 - A rule runs in the confirm's transaction (the confirm returns its signals, 07 §2b); the `followup` consumer re-runs on `record.corrected` and `note.saved`, safe to repeat (INV-08).
 - `/__demo/story/jump` is still mock-only.
 - `/v1/teachers/me/features` and `/v1/me/features` read the centre flag through the system role for the caller's own centres (the flag rows are staff-only under RLS).
+
+### R4 — easy to run and hand over (2026-10-09)
+
+R3 merged to `main` (PR #1); CI runs the live story on pull requests into `main` too. Docs: one-page [RUNNING](../RUNNING.md), a Live / Mock column in the [app map](../product/app-map.md), a shorter [sample-only](../product/sample-only.md), [before real users](before-real-users.md) and the [local checks](../testing/local-checks.md) for Ahmed's PC. `pnpm setup`, `pnpm doctor`, `docs/setup-windows.md` and `docs/go-live-switches.md` come from the setup branch (`codex/setup-golive`), which was not on GitHub at R4; RUNNING links to them and gives the two commands they replace until it is merged.
