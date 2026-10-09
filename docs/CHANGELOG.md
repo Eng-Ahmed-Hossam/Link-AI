@@ -2,6 +2,8 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+- 2026-10-09 — `scripts/{setup,doctor}.mjs`, `docs/{setup-windows,go-live-switches}.md`: added one-command local setup, read-only diagnostics and the production provider switch inventory for repeatable onboarding and pilot planning.
+
 ## 2026-10-09 — R2b: seats, payments, ledger, statements and reviews on the real backend
 
 | # | File | What changed | Why |

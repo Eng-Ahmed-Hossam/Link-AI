@@ -6,6 +6,8 @@
     "node": ">=24"
   },
   "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "doctor": "node scripts/doctor.mjs",
     "dev": "node scripts/dev.mjs",
     "build": "turbo run build",
     "test": "turbo run test",
