@@ -12,6 +12,8 @@ export const API_MODE = resolveApiMode(
   process.env.EXPO_PUBLIC_API_MODE,
   process.env.EXPO_PUBLIC_USE_MOCKS,
 );
+/** core-api: live mode outside the pilot (the pilot build is `live` against the pilot server). */
+export const CORE_API = API_MODE === 'live' && !PILOT;
 
 /** The Android emulator reaches the dev machine at 10.0.2.2; a phone needs the LAN IP in the env. */
 const mockServerUrl = () =>

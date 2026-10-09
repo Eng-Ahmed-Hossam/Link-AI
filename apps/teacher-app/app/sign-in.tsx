@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
-import { api, ApiError } from '@link/api-client';
+import { api, ApiError, setAuthToken } from '@link/api-client';
 import { normalizeEgyptPhone } from '@link/i18n';
 import { Button, Callout, TextField, textStyle } from '@link/ui-native';
 import { color, space } from '@link/tokens';
@@ -83,11 +83,19 @@ function PhoneSignIn() {
     setError(null);
     try {
       const r = await api.verifyOtp(`+20${national}`, code);
-      if (!r.user.roles.includes('teacher')) {
+      setAuthToken(r.accessToken ?? null);
+      // CF-03: teachers join free and sign up themselves — a new number becomes a teacher here.
+      const roles = r.isNewUser ? (await api.addRole('teacher')).roles : r.user.roles;
+      if (!roles.includes('teacher')) {
+        setAuthToken(null);
         setError(t('teacher.signIn.notTeacher'));
         return;
       }
-      signIn({ accessToken: r.accessToken ?? '', userId: r.user.id });
+      signIn({
+        accessToken: r.accessToken ?? '',
+        refreshToken: r.refreshToken,
+        userId: r.user.id,
+      });
       router.replace('/');
     } catch (e) {
       setError(errorText(e));

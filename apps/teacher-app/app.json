@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "plugins": ["expo-router", "expo-font", "expo-audio"],
+    "plugins": ["expo-router", "expo-font", "expo-audio", "expo-secure-store"],
     "experiments": {
       "typedRoutes": true
     },
