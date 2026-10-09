@@ -223,7 +223,8 @@ describe('Edge cases (docs/08 §4, BR-ENR-05/06, BR-MNY-04/12)', () => {
   });
 
   it('EDGE-3 a bad signature: 401, nothing stored or changed', async () => {
-    const events = await count(api, 'ledger.provider_events');
+    // Only this event is checked: a late webhook from an earlier step may still be arriving.
+    const forgedRows = () => count(api, 'ledger.provider_events', `event_id = 'evt_forged'`);
     const forged = JSON.stringify({
       eventId: 'evt_forged',
       type: 'payment.succeeded',
@@ -236,7 +237,7 @@ describe('Edge cases (docs/08 §4, BR-ENR-05/06, BR-MNY-04/12)', () => {
     expect(((await r.json()) as { code: string }).code).toBe('invalid_signature');
     const none = await postWebhook(forged, '');
     expect(none.status).toBe(401);
-    expect(await count(api, 'ledger.provider_events')).toBe(events);
+    expect(await forgedRows()).toBe(0);
   });
 
   // A late payment is a Fawry reference paid after it expired (BR-PMT-07); a hosted card page
