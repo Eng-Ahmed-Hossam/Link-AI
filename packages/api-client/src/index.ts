@@ -193,8 +193,12 @@ function renewSession(): Promise<boolean> {
       JSON.stringify(config.auth === 'bearer' ? { refreshToken: config.refreshToken } : {}),
     ).catch(() => null);
     if (!res) return false;
-    if (res.status === 409) return true; // refresh_raced: another tab rotated; cookies are fresh
-    if (!res.ok) return false;
+    // A body nobody reads keeps the fetch open in the browser (the page never goes idle, and the
+    // connection stays busy): cancel it whenever the answer is decided by the status alone.
+    if (res.status === 409 || !res.ok) {
+      await res.body?.cancel().catch(() => {});
+      return res.status === 409; // refresh_raced: another tab rotated; cookies are fresh
+    }
     const t = (await res.json()) as { accessToken?: string; refreshToken?: string };
     if (config.auth === 'bearer' && t.accessToken && t.refreshToken) {
       config.token = t.accessToken;
@@ -230,21 +234,24 @@ async function request<T>(
   const url = `${config.baseUrl}${path}${qs.size ? `?${qs}` : ''}`;
   const payload = body === undefined ? undefined : JSON.stringify(body);
   let res = await send(method, url, headers, payload);
+  // The 401's body, read once (an unread body keeps the browser's fetch open).
+  let first401: ProblemDetails | null | undefined;
   // MKT-ACC-04: an access token lasts 15 minutes; renew it once, then retry the call.
   if (res.status === 401 && !path.startsWith('/v1/auth/')) {
-    const code = (
-      (await res
-        .clone()
-        .json()
-        .catch(() => null)) as ProblemDetails | null
-    )?.code;
-    if (code === 'token_expired' || config.auth === 'cookie') {
-      if (await renewSession()) res = await send(method, url, headers, payload);
+    first401 = (await res.json().catch(() => null)) as ProblemDetails | null;
+    if (first401?.code === 'token_expired' || config.auth === 'cookie') {
+      if (await renewSession()) {
+        res = await send(method, url, headers, payload);
+        first401 = undefined;
+      }
       if (res.status === 401) config.onAuthLost?.();
     }
   }
   if (!res.ok) {
-    const problem = (await res.json().catch(() => null)) as ProblemDetails | null;
+    const problem =
+      first401 !== undefined
+        ? first401
+        : ((await res.json().catch(() => null)) as ProblemDetails | null);
     throw new ApiError(
       problem ?? {
         type: 'about:blank',

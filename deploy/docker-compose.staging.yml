@@ -33,13 +33,15 @@ services:
       args:
         NEXT_PUBLIC_APP_ENV: staging
         NEXT_PUBLIC_SITE_URL: http://localhost:3000
-    ports: ['3000:3000']
+  # Staging goes through Caddy as production does (/v1 straight to core-api), on plain HTTP :3000.
   caddy:
     environment:
       LINK_DOMAIN: localhost
       ACME_EMAIL: staging@link.invalid
     ports: !override
-      - '8443:443'
+      - '3000:3000'
+    volumes: !override
+      - ./Caddyfile.staging:/etc/caddy/Caddyfile:ro
 
   teacher-web:
     image: link/teacher-web:staging

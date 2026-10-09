@@ -47,7 +47,7 @@ const free = (port) =>
 const ours = spawnSync('docker', [...compose, 'ps', '-q'], { encoding: 'utf8', env }).stdout.trim();
 if (!ours) {
   const busy = [];
-  for (const p of [3000, 4000, 8081, 8091, 8093, 8094, 8443]) if (!(await free(p))) busy.push(p);
+  for (const p of [3000, 4000, 8081, 8091, 8093, 8094]) if (!(await free(p))) busy.push(p);
   if (busy.length)
     fail(
       `Ports in use: ${busy.join(', ')}. Stop pnpm dev / pnpm demo and the dev fakes first:\n` +
@@ -134,10 +134,9 @@ const sizes = spawnSync(
 ).stdout;
 console.log(`
 Link — production images, staging mode (sample data only)
-  Web          http://localhost:3000/ar/welcome    (production build, LINK_ENV=staging)
+  Web          http://localhost:3000/ar/welcome    (production build behind Caddy, LINK_ENV=staging)
   Teacher app  http://localhost:8081
   core-api     http://localhost:4000/ready
-  Caddy        https://localhost:8443              (local certificate)
   Codes        http://localhost:8093
 Images:
 ${sizes
