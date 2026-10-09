@@ -73,6 +73,14 @@ const schema = z
     /** ai-service (local Whisper + Ollama). Unset: voice notes answer "Type the note instead". */
     AI_SERVICE_URL: z.string().url().optional(),
     AI_SERVICE_TOKEN: z.string().optional(),
+    /**
+     * One server: ai-service is another container on this server's private network (never a
+     * provider outside), so real consented audio may go to it and its callback may come from a
+     * private address — still with the shared token. Off unless set to 1.
+     */
+    AI_SERVICE_ON_THIS_SERVER: z.enum(['0', '1']).default('0'),
+    /** Where ai-service posts results (default http://127.0.0.1:CORE_API_PORT). */
+    CORE_API_INTERNAL_URL: z.string().url().optional(),
     /** Ask Link in live mode only with a local LLM (R3.4): the scripted assistant never runs here. */
     OLLAMA_URL: z.string().url().optional(),
     WHATSAPP_PROVIDER: z.enum(['fake', 'manual']).default('fake'),

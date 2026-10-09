@@ -365,7 +365,11 @@ export class Voice {
   }
 
   private callbackBase() {
-    return process.env.CORE_API_URL ?? `http://127.0.0.1:${this.c.CORE_API_PORT}`;
+    return (
+      this.c.CORE_API_INTERNAL_URL ??
+      process.env.CORE_API_URL ??
+      `http://127.0.0.1:${this.c.CORE_API_PORT}`
+    );
   }
 
   /** ai-service's answer (internal route, shared token). Items naming someone off the roster stay unmatched. */

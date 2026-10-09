@@ -146,7 +146,11 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
       overrides.ai !== undefined
         ? overrides.ai
         : c.AI_SERVICE_URL && c.AI_SERVICE_TOKEN
-          ? new AiServiceClient(c.AI_SERVICE_URL, c.AI_SERVICE_TOKEN)
+          ? new AiServiceClient(
+              c.AI_SERVICE_URL,
+              c.AI_SERVICE_TOKEN,
+              c.AI_SERVICE_ON_THIS_SERVER === '1',
+            )
           : null,
     ),
     factory(
