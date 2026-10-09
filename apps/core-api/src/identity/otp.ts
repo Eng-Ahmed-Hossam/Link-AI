@@ -19,6 +19,8 @@ export const OTP = {
   perPhone10Min: 3,
   perPhoneDay: 10,
   perIpHour: 20,
+  /** Code checks from one address (on top of 5 tries per code). */
+  verifyPerIpHour: 60,
 } as const;
 
 /** Codes typed with Arabic-Indic digits or spaces still match. */
@@ -74,10 +76,15 @@ export class OtpService {
   }
 
   /** Throws a problem unless the code is right; a right code is used up (one sign-in per code). */
-  async verify(e164: string, rawCode: string) {
+  async verify(e164: string, rawCode: string, ip = 'unknown') {
     const p = this.phones.redisKey(e164);
     const key = this.redis.key('otp', p);
     const r = this.redis.state;
+    const limit = await hit(r, this.redis.key('rl', 'otpv', 'ip', ip), 3600);
+    if (limit.count > OTP.verifyPerIpHour)
+      throw new Problem(429, 'rate_limited', 'Too many tries. Try again later.', {
+        retryAfterSeconds: limit.retryAfter,
+      });
     const stored = await r.hgetall(key);
     if (!stored.h)
       throw new Problem(422, 'otp_expired', 'This code has expired. Ask for a new one.');

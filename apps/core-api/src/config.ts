@@ -33,6 +33,11 @@ const schema = z
     ACCESS_TOKEN_TTL: z.coerce.number().int().positive().default(900),
     REFRESH_TOKEN_TTL: z.coerce.number().int().positive().default(2_592_000),
     CORS_ALLOWED_ORIGINS: z.string().default(''),
+    /**
+     * Which proxies to believe for the client address (Express "trust proxy"): loopback locally;
+     * behind Caddy on one server 'loopback, uniquelocal'. Per-address rate limits depend on it.
+     */
+    TRUST_PROXY: z.string().default('loopback'),
     SMS_PROVIDER: z.enum(['fake']).default('fake'),
     SMS_SINK_URL: z.string().url().optional(),
     SMS_SENDER_ID: z.string().default('Link'),

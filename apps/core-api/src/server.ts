@@ -20,7 +20,23 @@ export async function createApi(config: Config, log: Logger, overrides: Override
     bodyParser: false,
   });
   app.disable('x-powered-by');
-  app.set('trust proxy', 'loopback');
+  app.set(
+    'trust proxy',
+    config.TRUST_PROXY.split(',')
+      .map((x) => x.trim())
+      .filter(Boolean),
+  );
+  // docs/security-checklist.md: API answers are never framed, sniffed or cached by a browser, and
+  // carry personal data only to the caller (no shared caches). HSTS comes from the reverse proxy.
+  app.use((_req: express.Request, res: express.Response, next: express.NextFunction) => {
+    res.setHeader('x-content-type-options', 'nosniff');
+    res.setHeader('x-frame-options', 'DENY');
+    res.setHeader('referrer-policy', 'no-referrer');
+    res.setHeader('cross-origin-resource-policy', 'same-site');
+    res.setHeader('content-security-policy', "default-src 'none'; frame-ancestors 'none'");
+    res.setHeader('cache-control', 'no-store');
+    next();
+  });
   app.use(requestIdMiddleware);
   app.use(
     pinoHttp({
