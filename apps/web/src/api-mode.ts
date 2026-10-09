@@ -11,10 +11,20 @@ export const API_MODE = resolveApiMode(
   process.env.NEXT_PUBLIC_API_MODE,
   process.env.NEXT_PUBLIC_USE_MOCKS,
 );
+/**
+ * core-api (real accounts, cookies, server flags): live mode outside the pilot. The pilot build is
+ * also `live` (it talks to the pilot server), which has its own sessions and no core-api routes.
+ */
+export const CORE_API = API_MODE === 'live' && !PILOT;
+
+/**
+ * `mock` stays same-origin for the MSW worker; `live` is same-origin too (next.config proxies
+ * /v1 to core-api, so the httpOnly session cookies are first-party, 07 §1).
+ */
 export const API_BASE_URL =
-  API_MODE === 'mock'
+  API_MODE === 'mock' || API_MODE === 'live'
     ? ''
-    : (process.env.NEXT_PUBLIC_API_BASE_URL ?? (API_MODE === 'mock-server' ? MOCK_SERVER_URL : ''));
+    : (process.env.NEXT_PUBLIC_API_BASE_URL ?? MOCK_SERVER_URL);
 
 /**
  * Demo controls: dev only, APP_ENV=local plus the demo flag, never with live data and never in a

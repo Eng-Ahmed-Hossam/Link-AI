@@ -15,7 +15,7 @@ import { isStaff } from '../common';
  * shows email and password, CF-42). A number with no centre role is told so and pointed to "Add my
  * centre" (C01). Teachers use the mobile app.
  */
-export function OwnerPhoneSignIn({ landing }: { landing: string }) {
+export function OwnerPhoneSignIn({ landing }: { landing: (centreId?: string) => string }) {
   const { locale, t } = useI18n();
   const router = useRouter();
   const { signIn } = useSession();
@@ -74,8 +74,16 @@ export function OwnerPhoneSignIn({ landing }: { landing: string }) {
         setNotStaff(true);
         return;
       }
-      signIn({ accessToken: r.accessToken ?? '', userId: r.user.id, roles: r.user.roles });
-      router.replace(landing);
+      // Live: the person's own centre comes with the sign-in (07 §2 Me.centreIds).
+      const centreId = r.user.centreIds?.[0];
+      signIn({
+        accessToken: r.accessToken ?? '',
+        userId: r.user.id,
+        roles: r.user.roles,
+        centreId,
+        name: r.user.name ?? undefined,
+      });
+      router.replace(landing(centreId));
     } catch (err) {
       setError(errorText(err));
       setCode('');

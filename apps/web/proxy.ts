@@ -26,4 +26,5 @@ export function proxy(req: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = { matcher: ['/((?!_next|api|.*\\..*).*)'] };
+// `/v1/*` and `/__demo/*` belong to core-api (proxied by next.config in live mode): never localised.
+export const config = { matcher: ['/((?!_next|api|v1/|__demo/|.*\\..*).*)'] };

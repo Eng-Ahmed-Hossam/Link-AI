@@ -85,8 +85,9 @@ export function P01Welcome() {
     try {
       const r = await api.verifyOtp(`+20${national}`, value);
       let roles = r.user.roles;
-      // MKT-ACC-02 AC2: one person can hold several roles; add the chosen one if new.
-      if (!signInOnly && !roles.includes(role)) {
+      // MKT-ACC-02 AC2: one person can hold several roles; add the chosen one if new. AC3: an owner
+      // has no role until their join request (C01) becomes a centre, so it is not added here.
+      if (!signInOnly && role !== 'centre_owner' && !roles.includes(role)) {
         setAuthToken(r.accessToken ?? null);
         roles = (await api.addRole(role)).roles;
       }

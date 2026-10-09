@@ -37,8 +37,9 @@ export function CentreSignIn() {
   const followUp = useFlag('followup.owner_nav');
   const marketplace = useFlag('marketplace.enabled');
   const next = centreNext(useSearchParams().get('next'));
-  const centre = session?.centreId ?? CENTRE;
-  const landing = `/${locale}/centre/${centre}${next ?? (marketplace ? '/schedule' : followUp ? '/today' : '/staff')}`;
+  const landingFor = (centreId?: string) =>
+    `/${locale}/centre/${centreId ?? session?.centreId ?? CENTRE}${next ?? (marketplace ? '/schedule' : followUp ? '/today' : '/staff')}`;
+  const landing = landingFor();
 
   useEffect(() => {
     if (ready && isStaff(session?.roles)) router.replace(landing);
@@ -82,7 +83,7 @@ export function CentreSignIn() {
           </span>
           <h1 className="text-title text-navy">{t('owner.signIn.title')}</h1>
           <p className="text-body text-muted">{t('owner.signIn.subtitle')}</p>
-          <OwnerPhoneSignIn landing={landing} />
+          <OwnerPhoneSignIn landing={landingFor} />
           {API_MODE !== 'live' ? (
             <div className="flex flex-col gap-2 border-t border-border pt-4">
               <p className="text-caption text-muted">

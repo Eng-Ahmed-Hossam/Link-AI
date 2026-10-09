@@ -1,9 +1,11 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import { PHASE2_FLAGS } from '@link/api-client';
+import { useQuery } from '@tanstack/react-query';
+import { api, PHASE2_FLAGS } from '@link/api-client';
 import { useDemoState, useTryOn } from '@demo';
-import { PILOT } from './api-mode';
+import { CORE_API, PILOT } from './api-mode';
+import { useSession } from './session';
 
 /**
  * Feature flags. Keys match the seed (`platform.feature_flags`, docs/14 §4). Phase 2–3 items are
@@ -76,7 +78,22 @@ export function useFlags(): Record<FlagKey, boolean> {
     : {};
   // "Try Link" (the role chooser, /try) shows the whole product: marketplace + the Follow-up extra.
   const tryOn = useTryOn();
+  // Live: core-api serves the flags (global, merged with the person's centre and teacher scopes).
+  const { session } = useSession();
+  const server = useQuery({
+    queryKey: ['feature-flags', session?.userId ?? null],
+    queryFn: api.featureFlags,
+    enabled: CORE_API,
+    staleTime: 30_000,
+  });
   if (PILOT) return { ...FLAG_DEFAULTS, ...PILOT_FLAGS };
+  if (CORE_API) {
+    const known = Object.entries(server.data?.flags ?? {}).filter(([k]) => k in FLAG_DEFAULTS);
+    return {
+      ...FLAG_DEFAULTS,
+      ...(Object.fromEntries(known) as Partial<Record<FlagKey, boolean>>),
+    };
+  }
   if (tryOn) return { ...FLAG_DEFAULTS, ...TRY_FLAGS, ...phase2Overrides(raw) };
   return {
     ...FLAG_DEFAULTS,

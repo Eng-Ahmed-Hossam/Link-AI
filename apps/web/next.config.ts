@@ -8,6 +8,20 @@ const config: NextConfig = {
   transpilePackages: ['@link/ui', '@link/i18n', '@link/tokens', '@link/api-client', '@link/mocks'],
   devIndicators: false,
   agentRules: false,
+  // Live mode (docs/07 §1): the web calls core-api on its own origin, so the httpOnly session
+  // cookies are first-party and no cross-origin credentials are needed.
+  // Never in the pilot build (the pilot server serves /v1 itself), and the dev-only /__demo
+  // routes only in development, so no production bundle names them (pilot start-up check).
+  async rewrites() {
+    if (PILOT || process.env.NEXT_PUBLIC_API_MODE !== 'live') return [];
+    const coreApi = (process.env.CORE_API_URL || 'http://localhost:4000').replace(/\/$/, '');
+    return [
+      { source: '/v1/:path*', destination: `${coreApi}/v1/:path*` },
+      ...(process.env.NODE_ENV === 'production'
+        ? []
+        : [{ source: '/__demo/:path*', destination: `${coreApi}/__demo/:path*` }]),
+    ];
+  },
   turbopack: {
     // msw 3 blocks `msw/browser` under the `node` condition, which the SSR pass of a client
     // component uses. The worker only ever starts in the browser, so SSR gets a stub.

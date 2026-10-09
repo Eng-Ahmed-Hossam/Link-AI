@@ -4,12 +4,12 @@ import { useEffect, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { setApiBaseUrl, setApiLocale } from '@link/api-client';
+import { configureAuth, setApiBaseUrl, setApiLocale } from '@link/api-client';
 import { MockBadge, ToastProvider } from '@link/ui';
 import type { Locale } from '@link/i18n';
 import { createTranslator } from '@link/i18n';
 import { SessionProvider } from './session';
-import { API_BASE_URL, API_MODE } from './api-mode';
+import { API_BASE_URL, API_MODE, CORE_API } from './api-mode';
 
 // Demo-only panels load on demand: they pull the mock data in, which the website never needs.
 // The presenter's Demo controls exist only in the local demo. The condition is written out so the
@@ -26,8 +26,10 @@ const DevPanel = dynamic(() => import('@demo').then((m) => m.DevPanel), { ssr: f
 const TryBar = dynamic(() => import('@demo').then((m) => m.TryBar), { ssr: false });
 
 const USE_MSW = API_MODE === 'mock';
-// `mock-server` and `live` talk to a URL; `mock` stays same-origin for the MSW worker.
+// `mock-server` talks to a URL; `mock` and `live` stay same-origin (MSW worker / the /v1 proxy).
 setApiBaseUrl(API_BASE_URL);
+// Live: the session is in httpOnly cookies; the client adds the X-Link-Auth header (07 §1).
+if (CORE_API) configureAuth({ transport: 'cookie' });
 
 // One worker per page load: React strict mode runs effects twice in dev.
 let started: Promise<unknown> | null = null;
