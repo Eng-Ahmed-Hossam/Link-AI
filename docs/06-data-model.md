@@ -235,6 +235,8 @@ RLS: as `teachers`.
 
 RLS: `SELF` (by `user_id`). Teachers and staff read only through `market.enrolment_contacts` (a view that exposes the phone only when consent `share_phone_with_teacher` is granted). `OPS`.
 
+Also (added 2026-10-09, R2b): `home_area text` — the parent's area by **name** (as centres name theirs). Search measures distances from the browser's location when the parent shares it (sent with the search, never stored), else from the centre of the verified centres in this area, else the Maadi sample point. No coordinates of a person are stored.
+
 ### students
 | Field | Type | Notes |
 |---|---|---|
@@ -455,6 +457,8 @@ Partial unique index `(student_id, group_id) WHERE status IN ('pending_payment',
 Seat use: the sessions an enrolment covers are derived from `payment_plan`, `current_period_start/end` and `session_id` (BR-ENR-13). Seats are counted per `group_session` (BR-ENR-02, INV-05).
 Index `(group_id, status)`. RLS: `GUARDIAN`, `TEACHER`, `CENTRE`, `OPS`.
 
+Also (added 2026-10-09, R2b): `reference` (e.g. `LNK-20931`, from a sequence; MKT-ENR-06), `method`, `teacher_reviews` (the teacher's `reviewEachEnrolment` at reservation, 07 P-7), `plan_cancelled_at` (BR-PMT-05: no further renewals, and the next period is no longer kept), `status_changed_at` (the 48 h and 7-day clocks). Covered sessions are the SQL function `market.covers(enrolment, session)`; committed seats per session are `market.seats_committed(session_ids[])` (counts only, readable by anyone, as seats left are public). **INV-05 guard:** a constraint trigger on `enrolments` and `waitlist_entries` locks the group row and refuses a change that puts committed enrolments + live offers above `seat_cap` in any covered session (`seat_cap_exceeded` → 409 `seat_unavailable`). The `groups` seat-cap trigger also refuses a cap below the seats committed in a future session. A parent reads the group and the sessions of their own children's enrolments (policies `groups_guardian`, `gs_guardian`); the teacher and the centre see who enrolled, once paid (BR-ENR-07), through the view `market.enrolment_people`.
+
 ### waitlist_entries (added)
 | Field | Type | Notes |
 |---|---|---|
@@ -487,7 +491,7 @@ Order is by `created_at`. Partial unique `(group_id, student_id) WHERE status IN
 | flags | text[] | `personal_attack`, `contact_details`, `possible_fake` |
 | published_at | timestamptz | |
 
-Unique `(enrolment_id, target_type, target_id, term_id)` → BR-REV-02.
+Unique `(enrolment_id, target_type, target_id, term_id)` `NULLS NOT DISTINCT` → BR-REV-02 (a review outside any term still counts once). Also (added, R2b): `school_year_id` (the "Verified parent • <school year>" line). The centre where the enrolment is (`centre_id`, the tenant) reads all its reviews, teacher reviews included (CF-51). A trigger moves `review_stats` by each review's change, so seeded sample ratings stay.
 RLS: `PUBLIC` (`visibility='public' AND status='published'`, author shown only as "Verified parent • year"), `GUARDIAN` (own), the target (teacher → `TEACHER`; centre → `CENTRE`) for public **and** private rows, `OPS`. **No delete grant for anyone except ops "hide".**
 
 ### review_replies (added)
@@ -558,6 +562,8 @@ RLS: `OPS` (write needs `ops.finance`); centre owner and teacher read their own 
 Check: exactly one of `enrolment_id`, `rent_invoice_id`, `subscription_id` is set, and it matches `kind`. Unique `(provider, provider_ref)`.
 RLS: payer (`SELF` on `payer_user_id`), payee (`TEACHER` / `CENTRE`), `OPS`.
 
+Also (added 2026-10-09, R2b): `checkout_url`, `card_last4` (display only), `failure_reason`, `released_at` (P2 posted). `payer_user_id` is NULL only for seeded sample families without an account.
+
 ### payment_mandates (added)
 | Field | Type | Notes |
 |---|---|---|
@@ -579,6 +585,7 @@ RLS: payer (`SELF` on `payer_user_id`), payee (`TEACHER` / `CENTRE`), `OPS`.
 | payload | jsonb | Personal data removed |
 | signature_valid | boolean | |
 | received_at, processed_at | timestamptz | |
+| outcome | text | What the handler did (`confirmed`, `duplicate`, `refunded_no_seat`, …), for ops (added, R2b) |
 
 RLS: `SYSTEM`, `OPS`.
 
@@ -597,6 +604,7 @@ RLS: `SYSTEM`, `OPS`.
 | reason, requested_by, approved_by | text, uuid, uuid | `approved_by` is NULL for automatic compensation refunds |
 | provider_ref | text | |
 | idempotency_key | text UNIQUE | |
+| approved_at | timestamptz | When the approval was posted (added, R2b; BR-RNT-09 compares it with invoice dates) |
 
 ### ledger_accounts (added)
 | Field | Type | Notes |
@@ -611,7 +619,9 @@ RLS: `SYSTEM`, `OPS`.
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
-| kind | text | `payment_captured` \| `funds_released` \| `rent_deduction` \| `rent_topup` \| `rent_reversal` \| `payout_initiated` \| `payout_settled` \| `payout_failed` \| `refund` \| `chargeback` \| `settlement` \| `adjustment` |
+| kind | text | `payment_captured` \| `funds_released` \| `rent_deduction` \| `rent_topup` \| `rent_reversal` \| `payout_initiated` \| `payout_settled` \| `payout_failed` \| `refund` \| `refund_confirmed` \| `refund_failed` \| `chargeback` \| `settlement` \| `adjustment` (the provider's confirmation and failure of a refund are their own transactions, P7) |
+| teacher_id | uuid NULL | (added) The teacher whose money moved, for J07 |
+| reverses_id | uuid NULL | (added) The transaction a correction reverses (P7 "provider fails", P11) |
 | idempotency_key | text UNIQUE | One effect per money event |
 | payment_id, refund_id, rent_invoice_id, payout_id | uuid NULL | |
 | centre_id | uuid NULL | |

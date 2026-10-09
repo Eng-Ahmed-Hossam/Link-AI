@@ -206,7 +206,7 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 | POST | `/v1/enrolments/{id}/plan/cancel` | parent | Stop the next renewal | ✓ | parent → teacher | BR-PMT-05 |
 | POST | `/v1/enrolments/{id}/refund-requests` | parent | Dispute after the first session | ✓ | parent → teacher (refund) | BR-REF-03 |
 | GET | `/v1/teachers/me/enrolments?status` | teacher | New enrolments (J06) | — read | — | MKT-ENR-10 |
-| POST | `/v1/enrolments/{id}/accept` · `/decline` | teacher | Only when `reviewEachEnrolment` is on; decline → automatic refund | ✓ | parent → teacher (refund on decline) | MKT-ENR-10 |
+| POST | `/v1/enrolments/{id}/accept` · `/decline` | teacher | Only when `reviewEachEnrolment` is on; decline → automatic refund. Returns the J06 row | ✓ | parent → teacher (refund on decline) | MKT-ENR-10 |
 | POST | `/v1/groups/{id}/waitlist` | parent | Join the waitlist | ✓ | — | MKT-ENR-09 |
 | POST | `/v1/waitlist/{id}/accept` | parent | Accept a live offer: `{paymentPlan, method}` → turns the offer into a seat hold and returns the checkout (as `/checkout`) | ✓ | parent → teacher | MKT-ENR-09 |
 | DELETE | `/v1/waitlist/{id}` | parent | Leave the waitlist | ✓ | — | MKT-ENR-09 |
@@ -215,7 +215,7 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 ### Webhooks (provider → Link)
 | Method | Path | Verified by | Effect | Idem | Money |
 |---|---|---|---|---|---|
-| POST | `/v1/webhooks/payments/{provider}` | Provider signature | Dedupe → update payment → post ledger → emit `payment.*` | event ID | parent → teacher; teacher → centre (top-ups) |
+| POST | `/v1/webhooks/payments/{provider}` | Provider signature | Dedupe → update payment → post ledger → emit `payment.*`. A bad or missing signature is `401 invalid_signature`; nothing is stored. Locally the fake provider is `fake-pay` (provider value `fake`). A late event never moves a payment backwards (`succeeded` stays `succeeded`) | event ID | parent → teacher; teacher → centre (top-ups) |
 | POST | `/v1/webhooks/payouts/{provider}` | Provider signature | Payout status → P6 settled / failed | event ID | teacher; centre |
 | POST | `/v1/webhooks/ekyc/{provider}` | Provider signature | Verification result | event ID | — |
 | POST | `/v1/webhooks/messaging/{channel}` | Provider signature (messaging-gateway) | Delivery status, inbound replies (Phase 2) | event ID | — |
@@ -360,6 +360,9 @@ Centre and teacher profiles add `ratingDistribution`: published public reviews p
 { "id": "enr_…", "status": "pending_payment", "teacherReviewsEnrolments": false, "lastPaymentFailed": true, "firstSessionStarted": false, "canReview": false, "holdExpiresAt": "2026-10-03T09:27:00Z", "fawry": null, "refund": null }
 ```
 `canReview` is computed per enrolment for the pair (teacher, centre): P10 posts one `POST /v1/reviews` per rated target, each with its own text (CF-27), and `409 already_reviewed` covers a target already reviewed this term.
+
+### P-8. Parent home area and shared location (decided 2026-10-09, R2b)
+`GET /v1/me` adds `homeArea` (string \| null) for parents; `PATCH /v1/me` takes `homeArea` (an area where a verified centre is, else `422 unknown_area`; `null` clears it). `GET /v1/search/centres` and `/v1/search/teachers` take `lat`, `lng` only when the parent has tapped "Use my location" and the browser shared it (rounded to about 100 m, never stored). Without them, a signed-in parent's distances are measured from the centre of the verified centres in their home area, otherwise from the Maadi sample point.
 
 ## 2b. Proposed — from frontend Batch 5 (Phase 2, teacher app)
 

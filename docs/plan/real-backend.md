@@ -1,6 +1,6 @@
 # Real backend plan (R0)
 
-**Status:** R0 approved 2026-10-08; R1 approved 2026-10-09; R2a built (§9). R2b, R3, R4 not started. **Scope:** replace the mock server with core-api for everything the apps call today, locally (`docker compose` + `pnpm dev`), with real accounts, Postgres, per-centre isolation, server-side rules and provider adapters running against local fakes. **Not in scope:** deployment, real provider accounts, the ops console beyond review moderation, app stores, analytics.
+**Status:** R0 approved 2026-10-08; R1 approved 2026-10-09; R2a approved 2026-10-09; R2b built (§9). R3, R4 not started. **Scope:** replace the mock server with core-api for everything the apps call today, locally (`docker compose` + `pnpm dev`), with real accounts, Postgres, per-centre isolation, server-side rules and provider adapters running against local fakes. **Not in scope:** deployment, real provider accounts, the ops console beyond review moderation, app stores, analytics.
 
 Read for this plan: PRODUCT_BRIEF, docs 05, 06, 07 (§2, §2a–§2d), 08, 10, ADR-0001 to ADR-0009 (0009 for the pilot request email only), `docs/product/sample-only.md`, `docs/product/app-map.md`, the mock handlers (`packages/mocks/src/**/handlers.ts`), `packages/api-client/src/*`, migrations 0001–0003, `infra/local/`.
 
@@ -287,4 +287,16 @@ Differences from the plan:
 - Subjects: the API takes any subject ID of the right code plus a school year and stores the one subject row of that curriculum and year (`subjectForYear`), so the apps keep one subject list.
 - Distances without a location are measured from a sample point in Maadi (P02 will pass the device location).
 - Seats taken are 0 until enrolments exist (R2b); one function (`market/seats.ts`) changes then.
+
+### R2b — seats, payments, ledger, statements, reviews (built 2026-10-09)
+
+R2a follow-ups first: one pending teacher invite in the mock seed (+20 10 0000 0008, Al Nour); parent distance — the browser's location after the parent taps "Use my location" (memory only, rounded, never stored), else the home area on the parent's profile (`guardians.home_area`, a name), else the Maadi sample point.
+
+Built: migrations 0008–0011 (enrolments with the 8 states and the INV-05 guard trigger, the waitlist; payments, mandates, provider events, refunds, the ledger with the deferred balance trigger and append-only entries, rent invoices, payout accounts (masked), settlement lines, reconciliation issues; reviews, replies, reports; the parent's home area); Redis Lua holds (acquire / commit / release / extend, rebuilt from the database on a miss); the `PaymentProvider` adapter for fake-pay (hosted checkout, Fawry, saved cards, refunds, settlement report, signed webhooks); the posting rules P1, P2, P3, P4, P5, P7/P8, P10, P12; the worker's scheduled jobs; J06, J07, C07 and C04 from the data; 20 new endpoints; the demo seed's sample families (194 paid seats, posted through the same builders); the connected story to step 7 in live mode.
+
+Differences from the plan:
+- Migration numbers: 0008 enrolments, 0009 ledger, 0010 reviews, 0011 home area.
+- Payouts (`payouts`, `payout_items`, the payout provider) are not built: "Next payout" is computed only, as asked. The rent top-up checkout (`POST /v1/rent-invoices/{id}/checkout`, P4 by card) is posted by the ledger and tested (example E) but has no endpoint yet; ops approval of requested refunds waits for the ops console.
+- A card checkout cannot be paid after fake-pay closed it with the hold; a late payment is a Fawry reference paid after it expired (BR-PMT-07), and that is what the late-money tests use. The handler is the same for any late capture.
+- Decisions recorded: CF-51 (C04 shows teacher reviews of the centre's enrolments), CF-52 (a waitlist offer covers one month from the next session), CF-53 (J06 shows paid enrolments only; the mock was changed).
 

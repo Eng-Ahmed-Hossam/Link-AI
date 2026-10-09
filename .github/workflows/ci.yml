@@ -48,6 +48,7 @@ jobs:
       - name: Kysely row types match the migrated schema
         run: pnpm db:types && git diff --exit-code apps/core-api/src/db/schema.ts
       - run: pnpm test:api
+      - run: pnpm test:money
 
   # The connected story in LIVE mode (real core-api, Postgres, sign-in codes from sms-sink): every
   # push to main (decided 2026-10-09). The full live e2e suite runs on demand or nightly (e2e-live.yml).

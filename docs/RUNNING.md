@@ -9,7 +9,7 @@ Two ways to run Link locally. Both use **sample data only**: no real people, mon
 | Data | Saved in Postgres; survives restarts | Lost when the mock server stops |
 | Demo controls | Local only: the story (Reset story, Follow-up extra) and the stand-in for Link ops (Verify centre) | Yes (the banner's "Demo tools") |
 
-Status: **R2a** (platform, accounts, halls, room requests, groups, search) of [docs/plan/real-backend.md](plan/real-backend.md). The full `pnpm setup` from a clean clone arrives in R4.
+Status: **R2b** (platform, accounts, halls, room requests, groups, search, seats, payments on fake-pay, the ledger, earnings, rent income, reviews) of [docs/plan/real-backend.md](plan/real-backend.md). The full `pnpm setup` from a clean clone arrives in R4.
 
 ## First run
 
@@ -37,7 +37,7 @@ pnpm dev                      # services, migrations, demo data, core-api, web, 
 
 Ask for a code, open http://localhost:8093 (it refreshes every 5 s), type the 6 digits. A new number signs up: as a parent on P01, as a teacher in the teacher app. A centre owner joins through "Add my centre" (C01); the centre is created, pending verification, the first time that number signs in.
 
-## What is real in live mode after R1
+## What is real in live mode (R1, R2a, R2b)
 
 | Area | Live |
 |---|---|
@@ -53,10 +53,16 @@ Ask for a code, open http://localhost:8093 (it refreshes every 5 s), type the 6 
 | Groups (J05) | Real: fees, seats never above the hall, sessions generated from the slot |
 | Search and profiles (P02–P05) | Real: verified centres and active teachers only; a pending centre or an invited teacher stays hidden |
 | Local ops stand-in | `pnpm ops:verify-centre <centreId|phone>` or Demo controls → "Verify centre" (audited) |
+| Reserve and pay (P06–P08) | Real (R2b): a hold on one seat in every covered session (10 minutes; Fawry 24 hours), checkout on fake-pay's hosted page (no card field in Link), Fawry references, signed webhooks deduplicated on the event ID, the 8 enrolment states, the waitlist |
+| Money | Real (R2b): every payment, release, refund, rent deduction and settlement is one balanced ledger transaction; J07 earnings and C07 rent income are read from it; "Next payout" is computed (Thursday), no payout is sent |
+| Reviews (P10, C04) | Real (R2b): verified parents after the first session, once per target and term; the centre replies or reports, nobody deletes |
+| Seats taken | Real: sample families hold the seats the mock shows (`pnpm seed:demo`) |
 
-## Still on mock data in live mode (until R2 / R3)
+Jobs run in the worker (hold expiry, offers, 48-hour auto-confirm, sessions held, plans ended, funds release every 15 minutes, refunds, renewals 08:00, settlement 06:00, seat rebuild 03:00, rent invoices on the 1st at 02:00). To run one now: `POST http://localhost:4000/__demo/jobs/run {"name": "funds-release"}` (local only).
 
-Enrolment and payment (P06–P10), seats taken, earnings and rent income (J06, J07, C07), reviews (P10, C04) — **R2b**. Until then every group shows all its seats free. Records, voice notes, follow-ups, messages, the activity log and Ask Link — **R3**. In live mode those screens show their error state ("Something went wrong — We could not load this") because core-api does not answer them yet; use `pnpm demo` to see them. The teacher app's tabs are the same until R2.
+## Still on mock data in live mode (until R3)
+
+Records, voice notes, follow-ups, messages, the activity log and Ask Link — **R3**. In live mode those screens show their error state ("Something went wrong — We could not load this") because core-api does not answer them yet; use `pnpm demo` to see them. The teacher app's tabs are the same until R2.
 
 ## Click it yourself (R2a)
 
@@ -67,7 +73,16 @@ Enrolment and payment (P06–P10), seats taken, earnings and rent income (J06, J
 5. **Pending centre**: "Add my centre" with a new number, sign in with it at /ar/centre (pending, not in search), then Demo controls → Verify centre (or `pnpm ops:verify-centre 01…`): it appears in the teachers' Rooms.
 6. **Invited teacher**: as the owner, Staff → invite a new number as Teacher; sign in with it in the teacher app → accept → add a name and a subject on My profile → now on the public teacher page.
 
-Codes: http://localhost:8093. Reset everything: Demo controls → Reset story.
+## Click it yourself (R2b, after the six steps above)
+
+7. **Book**: as the parent, مركز النور → the new group → «احجز مكان» for Mariam → "Pay for one month only" → Card. Link has no card field: you land on fake-pay's page (http://localhost:8091) → "Simulate success" → back on Link: "Place reserved" (the webhook confirmed it; the redirect alone changes nothing). The group now has 23 seats.
+8. **Pay by card, and a failure**: book Youssef in another group, Card → "Simulate failure": the reservation stays held and offers "Try again" until the 10-minute hold runs out.
+9. **Pay by Fawry**: book Youssef in the new group → "Pay for one month only" → Fawry: a reference number and "your place is held for 24 hours". The grey button "Simulate payment at a Fawry outlet" pays it (fake-pay sends the webhook).
+10. **Earnings**: teacher app → Earnings (J07): what parents paid this month, **Link commission** on its own line (5%, rounded down), rent per hall, "Next payout" Thursday. Teacher app → My groups → New enrolments (J06): Mariam.
+11. **Rent income**: owner → Rent income (C07): Room 1 with Ms Salma, rent, **Link fee** on its own line, net.
+12. **Review**: Demo controls → "Simulate first session done", then as the parent: My children → Mariam → "Rate" → 5 stars and a sentence → Send. As the owner: Reviews (C04) → the review → Reply. There is no delete.
+
+Codes: http://localhost:8093. Payments and webhooks: http://localhost:8091/api/webhooks. Reset everything: Demo controls → Reset story.
 
 ## Troubleshooting
 
@@ -79,7 +94,8 @@ Codes: http://localhost:8093. Reset everything: Demo controls → Reset story.
 ```bash
 pnpm test:api          # core-api integration + events + RLS, on its own database (link_test)
 pnpm test:rls          # the cross-tenant suite alone
-pnpm test:e2e:live     # sign-in as each role, invites, C01 and the story (steps 1–3), clicked in the browser
+pnpm test:money        # golden examples A–I, ledger property tests, seat and concurrency tests
+pnpm test:e2e:live     # sign-in as each role, invites, C01 and the story (steps 1–7), clicked in the browser
 pnpm test:e2e:mock     # the same specs against pnpm demo
 pnpm openapi:check     # contract, OpenAPI document and client types in sync
 ```
@@ -96,5 +112,5 @@ pnpm openapi:check     # contract, OpenAPI document and client types in sync
 | 6379 / 6380 | Redis cache / Redis state |
 | 4566 | aws-local (S3, SNS, SQS) |
 | 8093 | sms-sink |
-| 8091 | fake-pay (R2) |
+| 8091 | fake-pay: hosted checkout, Fawry, refunds, webhooks (`/api/webhooks` lists what it sent) |
 | 8025 | mail-sink |

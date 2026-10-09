@@ -29,7 +29,9 @@ Accounts are created on demand. The code pattern is `<type>:<owner>`.
 
 ## 2. Posting rules
 
-Each row is one `ledger_transactions` row. Its entries always balance (INV-01). Amounts use **Example B** from [01-business-rules.md](01-business-rules.md) §13: monthly fee EGP 550, 5% commission, rent = 20% of fees, 5% rent fee.
+Each row is one `ledger_transactions` row. Its entries always balance (INV-01).
+
+**Rounding (BR-MNY-09, OD-16; restated 2026-10-09, no new rule):** every Link fee — the booking commission and the rent marketing fee — is the exact percentage of the gross, **rounded down** to a whole piaster: `floor(gross × rate / 100)`, computed in basis points so no float rounding can creep in. Rent on the "% of fees" rule is rounded down the same way: `floor(pct × fee base)` (BR-RNT-03/09). The payee keeps the fraction. Golden tests: examples A–I (§9). Amounts use **Example B** from [01-business-rules.md](01-business-rules.md) §13: monthly fee EGP 550, 5% commission, rent = 20% of fees, 5% rent fee.
 
 ### P1 · Payment captured (reservation or renewal)
 Trigger: a verified `payment.succeeded` webhook. Idempotency key: `capture:{provider}:{providerRef}`.

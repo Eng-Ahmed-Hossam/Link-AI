@@ -2,6 +2,16 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-09 — R2b: seats, payments, ledger, statements and reviews on the real backend
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| R2b-1 | `docs/06-data-model.md` | Enrolments: `reference`, `method`, `teacher_reviews`, `plan_cancelled_at`, `status_changed_at`, the INV-05 guard and `seats_committed`; payments: `checkout_url`, `card_last4`, `failure_reason`, `released_at`; `provider_events.outcome`; `refunds.approved_at`; ledger kinds `refund_confirmed`, `refund_failed`, `teacher_id`, `reverses_id`; reviews `school_year_id`, `NULLS NOT DISTINCT` term key; `guardians.home_area` | R2b schema |
+| R2b-2 | `docs/07-api.md` | Webhook: 401 `invalid_signature`, `fake-pay` locally, never backwards; accept/decline return the J06 row; P-8 parent home area and shared location | R2b, R2a follow-up |
+| R2b-3 | `docs/08-payments-ledger.md` | Rounding restated in §2 (rounded down, basis points; rent on % of fees rounded down) — no new rule | The R2b brief asked for it to be explicit |
+| R2b-4 | `docs/13-open-decisions.md` | CF-51 (C04 and teacher reviews), CF-52 (what a waitlist offer covers), CF-53 (J06 paid enrolments only) | Built as decided there |
+| R2b-5 | `docs/14-dev-environment.md`, `docs/RUNNING.md`, `docs/product/sample-only.md`, `docs/plan/real-backend.md` | fake-pay's new endpoints; `pnpm test:money` real; the R2b click list; what is real now; §9 R2b | R2b |
+
 ## 2026-10-09 — R2a: halls, room requests, groups and search on the real backend
 
 | # | File | What changed | Why |
