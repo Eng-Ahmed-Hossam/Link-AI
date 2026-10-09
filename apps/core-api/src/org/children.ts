@@ -115,7 +115,7 @@ export class Children {
     });
   }
 
-  private async view(
+  async view(
     tx: Tx,
     r: { id: string; display_name: string; curriculum_id: string; school_year_id: string },
     lang: 'ar' | 'en',

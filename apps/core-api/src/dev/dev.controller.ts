@@ -5,6 +5,7 @@ import {
   HttpCode,
   Inject,
   type OnModuleDestroy,
+  Param,
   Post,
 } from '@nestjs/common';
 import { Kysely, PostgresDialect, sql } from 'kysely';
@@ -16,6 +17,15 @@ import { pendingCentres, verifyCentre } from '../ops/verify-centre';
 import { Database } from '../platform/db';
 import { FLAG, centreFlag } from '../platform/flags';
 import { Problem } from '../platform/problem';
+import { CONFIG } from '../platform/di';
+import type { Config } from '../config';
+import { EnrolmentJobs } from '../enrolment/jobs';
+import { RentInvoices } from '../ledger/rent-invoices';
+import { Money } from '../payments/money';
+import { LOGGER, type Logger } from '../platform/logger';
+import { Redises } from '../platform/redis';
+import { addDays, cairoToday, isoWeekday } from '../platform/time';
+import { Scheduler, moneyJobs } from '../worker/jobs';
 
 /**
  * Demo controls for live mode (docs/14 §5.2). This controller is registered ONLY when
@@ -38,6 +48,7 @@ const PHASE2 = [
 ];
 
 const VerifyBody = z.object({ centreId: z.uuid() });
+const JobBody = z.object({ name: z.string().max(40) });
 const ExtraBody = z.object({ on: z.boolean() });
 
 /** The connected story's fixed parts (docs/testing/walkthrough.md; same as the mock's STORY). */
@@ -47,6 +58,7 @@ const STORY = {
   teacherId: demoId('tch-salma'),
   weekday: 6,
   start: '16:00',
+  childId: demoId('chd-mariam'),
 };
 
 const migratorUrl = () => {
@@ -59,10 +71,20 @@ const migratorUrl = () => {
 export class DevController implements OnModuleDestroy {
   private migrator?: Kysely<unknown>;
 
+  private readonly scheduler: Scheduler;
+
   constructor(
     @Inject(Database) private readonly app: Database,
     @Inject(Phones) private readonly phones: Phones,
-  ) {}
+    @Inject(CONFIG) private readonly config: Config,
+    @Inject(Redises) redis: Redises,
+    @Inject(LOGGER) log: Logger,
+    @Inject(Money) money: Money,
+    @Inject(EnrolmentJobs) jobs: EnrolmentJobs,
+    @Inject(RentInvoices) rent: RentInvoices,
+  ) {
+    this.scheduler = new Scheduler(redis, log, moneyJobs({ jobs, money, rent }));
+  }
 
   /** Flags are ops data (app_ops in production); locally the migrator writes them. */
   private db() {
@@ -174,8 +196,18 @@ export class DevController implements OnModuleDestroy {
         stage: request?.stage ?? null,
         bookingId: request?.room_booking_id ?? null,
         groupId: group?.id ?? null,
-        // Enrolments arrive in R2b.
-        enrolmentId: null,
+        // Mariam's latest enrolment in the story group (the card seat of step 4).
+        enrolmentId: group
+          ? ((
+              await tx
+                .selectFrom('market.enrolments')
+                .select('id')
+                .where('group_id', '=', group.id)
+                .where('student_id', '=', STORY.childId)
+                .orderBy('created_at', 'desc')
+                .executeTakeFirst()
+            )?.id ?? null)
+          : null,
         sessionsDone: done.n,
         followupExtra: await centreFlag(tx, FLAG.followupExtra, STORY.centreId),
       };
@@ -191,6 +223,98 @@ export class DevController implements OnModuleDestroy {
     for (const k of PHASE2) await this.setFlag(k, 'global', null, true);
     await this.setFlag(FLAG.followupExtra, 'centre', STORY.centreId, true);
     return this.story();
+  }
+
+  /**
+   * "Simulate first session done": the story group's calendar moves back so its next session took
+   * place last Saturday (the booking, the enrolments' paid periods and the payments move with it),
+   * exactly as the mock does. Session IDs stay, so seat counters stay right.
+   */
+  @Post('story/session-done')
+  @HttpCode(200)
+  async storySessionDone() {
+    const { groupId } = await this.story();
+    if (!groupId) throw new Problem(409, 'no_story_group', 'Open the story group first (step 3).');
+    const today = cairoToday();
+    let target = addDays(today, -1);
+    while (isoWeekday(target) !== STORY.weekday) target = addDays(target, -1);
+    // Moving a calendar is data surgery for the demo only: the migrator does it, as for flags.
+    await this.db()
+      .transaction()
+      .execute(async (tx) => {
+        const next = await sql<{ day: string }>`
+        SELECT market.session_day(starts_at)::text AS day FROM market.group_sessions
+        WHERE group_id = ${groupId} AND market.session_day(starts_at) >= ${today}::date
+        ORDER BY starts_at LIMIT 1`.execute(tx);
+        const day = next.rows[0]?.day;
+        if (!day) throw new Problem(409, 'no_session', 'No upcoming session to complete.');
+        const days = Math.round((Date.parse(day) - Date.parse(target)) / 86_400_000);
+        const by = sql.lit(`${days} days`);
+        // Two steps: shifting in place would meet the (group, starts_at) key on the way.
+        await sql`UPDATE market.group_sessions SET starts_at = starts_at + interval '1000 years', ends_at = ends_at + interval '1000 years' WHERE group_id = ${groupId}`.execute(
+          tx,
+        );
+        await sql`UPDATE market.group_sessions SET starts_at = starts_at - interval '1000 years' - ${by}::interval, ends_at = ends_at - interval '1000 years' - ${by}::interval WHERE group_id = ${groupId}`.execute(
+          tx,
+        );
+        await sql`UPDATE market.group_sessions SET status = 'held', status_changed_at = now() WHERE group_id = ${groupId} AND status = 'scheduled' AND ends_at <= now()`.execute(
+          tx,
+        );
+        await sql`UPDATE market.groups SET starts_on = starts_on - ${days}::int WHERE id = ${groupId}`.execute(
+          tx,
+        );
+        await sql`UPDATE market.room_bookings b SET starts_on = b.starts_on - ${days}::int FROM market.groups g WHERE g.id = ${groupId} AND b.id = g.room_booking_id`.execute(
+          tx,
+        );
+        await sql`UPDATE market.room_booking_slots s SET active_dates = daterange(lower(s.active_dates) - ${days}::int, upper(s.active_dates), '[)') FROM market.groups g WHERE g.id = ${groupId} AND s.booking_id = g.room_booking_id`.execute(
+          tx,
+        );
+        await sql`UPDATE market.teacher_applications a SET starts_on = a.starts_on - ${days}::int FROM market.groups g WHERE g.id = ${groupId} AND a.room_booking_id = g.room_booking_id`.execute(
+          tx,
+        );
+        await sql`UPDATE market.enrolments SET current_period_start = current_period_start - ${days}::int, current_period_end = current_period_end - ${days}::int WHERE group_id = ${groupId} AND current_period_start IS NOT NULL`.execute(
+          tx,
+        );
+        await sql`UPDATE ledger.payments p SET period_start = p.period_start - ${days}::int, period_end = p.period_end - ${days}::int FROM market.enrolments e WHERE e.id = p.enrolment_id AND e.group_id = ${groupId} AND p.period_start IS NOT NULL`.execute(
+          tx,
+        );
+      });
+    return this.story();
+  }
+
+  /** The parent pays a Fawry reference at an outlet (fake-pay sends the signed webhook). */
+  @Post('fawry/:enrolmentId/pay')
+  @HttpCode(200)
+  async payFawry(@Param('enrolmentId') enrolmentId: string) {
+    const p = await this.app.asSystem((tx) =>
+      tx
+        .selectFrom('ledger.payments')
+        .select('fawry_reference')
+        .where('enrolment_id', '=', z.uuid().parse(enrolmentId))
+        .where('method', '=', 'fawry')
+        .where('fawry_reference', 'is not', null)
+        .orderBy('created_at', 'desc')
+        .executeTakeFirst(),
+    );
+    if (!p?.fawry_reference)
+      throw new Problem(404, 'not_found', 'No Fawry reference for this enrolment.');
+    const r = await fetch(
+      `${this.config.FAKE_PAY_URL}/v1/fawry-references/${p.fawry_reference}/pay`,
+      { method: 'POST' },
+    );
+    return { ok: r.ok };
+  }
+
+  /** Run one scheduled job now (hold-expiry, funds-release, settlement, rent-invoices, …). */
+  @Post('jobs/run')
+  @HttpCode(200)
+  async runJob(@Body() raw: unknown) {
+    const b = JobBody.parse(raw);
+    try {
+      return { job: b.name, result: (await this.scheduler.runNow(b.name)) ?? null };
+    } catch (e) {
+      throw new Problem(422, 'unknown_job', (e as Error).message);
+    }
   }
 
   @Post('story/extra')

@@ -7,6 +7,14 @@ import type { DB } from '../src/db/schema';
 import { createLogger } from '../src/platform/logger';
 import { createApi } from '../src/server';
 import { seedDemo } from '../seeds/demo';
+import { FakePayProvider } from '../src/adapters/payments';
+import { EnrolmentJobs } from '../src/enrolment/jobs';
+import { Enrolments } from '../src/enrolment/enrolments';
+import { Seats } from '../src/enrolment/seats';
+import { RentInvoices } from '../src/ledger/rent-invoices';
+import { Money } from '../src/payments/money';
+import { Database } from '../src/platform/db';
+import { createFakePay } from '../../../infra/local/fakes/fake-pay/server.mjs';
 
 /**
  * Test harness: a fresh demo world in `link_test` (scripts/test-api.mjs points every URL there),
@@ -41,13 +49,18 @@ export async function startApi() {
   await seedDemo(process.env.DATABASE_URL_MIGRATOR!);
   const config = loadConfig();
   const sms = new CapturingSms();
+  // fake-pay in this process: the real adapter talks to it, and its signed webhooks come back here.
+  const fake = createFakePay({ port: 0, secret: config.PAYMENT_WEBHOOK_SECRET });
+  const fakeBase = `http://127.0.0.1:${await fake.listen()}`;
+  fake.setPublicUrl(fakeBase);
   const { app, close } = await createApi(
     config,
     createLogger(process.env.TEST_LOG ?? 'silent', 'test'),
-    { sms },
+    { sms, payments: new FakePayProvider(fakeBase, config.PAYMENT_WEBHOOK_SECRET) },
   );
   await app.listen(0, '127.0.0.1');
   const { port } = app.getHttpServer().address() as { port: number };
+  fake.setWebhookUrl(`http://127.0.0.1:${port}/v1/webhooks/payments/fake-pay`);
   const redis = new Redis(config.REDIS_STATE_URL);
   const migrator = new Kysely<DB>({
     dialect: new PostgresDialect({
@@ -58,6 +71,18 @@ export async function startApi() {
     base: `http://127.0.0.1:${port}`,
     sms,
     redis,
+    config,
+    fake,
+    fakeBase,
+    /** The services behind the API, for jobs and direct checks. */
+    s: {
+      db: app.get(Database),
+      seats: app.get(Seats),
+      money: app.get(Money),
+      jobs: app.get(EnrolmentJobs),
+      enrolments: app.get(Enrolments),
+      rent: app.get(RentInvoices),
+    },
     /** Superuser-like access for assertions (the table owner; RLS does not apply). */
     db: migrator,
     /** Clear the resend wait and rate limits so one test can sign in many times. */
@@ -80,6 +105,7 @@ export async function startApi() {
       redis.disconnect();
       await migrator.destroy();
       await close();
+      await fake.close();
     },
   };
 }

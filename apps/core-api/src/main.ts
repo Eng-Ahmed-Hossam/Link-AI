@@ -11,7 +11,11 @@ import { Database } from './platform/db';
 import { createLogger } from './platform/logger';
 import { Redises } from './platform/redis';
 import { createApi } from './server';
+import { EnrolmentJobs } from './enrolment/jobs';
+import { RentInvoices } from './ledger/rent-invoices';
+import { Money } from './payments/money';
 import { awsClients, Consumer, OutboxRelay } from './worker/events';
+import { moneyJobs, Scheduler } from './worker/jobs';
 import { notificationsHandler } from './worker/notifications';
 
 /**
@@ -73,7 +77,13 @@ async function worker() {
       await new Promise((r) => setTimeout(r, every));
     }
   };
+  const scheduler = new Scheduler(
+    app.get(Redises),
+    log,
+    moneyJobs({ jobs: app.get(EnrolmentJobs), money: app.get(Money), rent: app.get(RentInvoices) }),
+  );
   void loop('outbox-relay', 500, () => relay.tick());
+  void loop('scheduler', 5_000, () => scheduler.tick());
   for (const c of consumers) void loop(`consumer:${c.name}`, 100, () => c.poll());
   if (isLocal(config))
     void loop('outbox-requeue', 60_000, () =>

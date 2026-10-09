@@ -15,6 +15,7 @@ import { addDays, cairoToUtc, cairoToday } from '../src/platform/time';
 
 export { demoId } from './demo-id';
 import { demoId } from './demo-id';
+import { seedMoney } from './demo-money';
 
 /** Second owner and centre: tenant B for `pnpm test:rls`. */
 export const OWNER_B_PHONE = '+201000000007';
@@ -22,6 +23,22 @@ const RLS_CENTRE = 'cen-nile';
 
 /** Tables the seed owns, emptied in one statement (CASCADE follows the in-schema FKs). */
 const TABLES = [
+  'ledger.reconciliation_issues',
+  'ledger.provider_settlement_lines',
+  'ledger.ledger_entries',
+  'ledger.ledger_transactions',
+  'ledger.ledger_accounts',
+  'ledger.refunds',
+  'ledger.provider_events',
+  'ledger.payment_mandates',
+  'ledger.payments',
+  'ledger.rent_invoices',
+  'ledger.payout_accounts',
+  'market.review_reports',
+  'market.review_replies',
+  'market.reviews',
+  'market.waitlist_entries',
+  'market.enrolments',
   'platform.data_keys',
   'market.review_stats',
   'market.group_sessions',
@@ -335,7 +352,7 @@ export async function seedDemo(migratorUrl: string) {
       const five = Math.round((rating - 4) * count);
       return [five, count - five, 0, 0, 0];
     };
-    await put('market.review_stats', [
+    const reviewStats = [
       ...fx.centres.map((c) => ({
         target_type: 'centre',
         target_id: demoId(c.id),
@@ -352,7 +369,7 @@ export async function seedDemo(migratorUrl: string) {
         target_id: demoId(a.id),
         distribution: toDist(a.rating, a.reviewCount),
       })),
-    ]);
+    ];
 
     // ── Bookings and groups (the fixture groups, and the C06 pipeline) ─────────
     const today = cairoToday();
@@ -530,7 +547,10 @@ export async function seedDemo(migratorUrl: string) {
 
     // ── The sample parent's children (Mariam and Youssef) ────────────────────────
     const guardian = demoId('gdn-parent');
-    await put('org.guardians', [{ id: guardian, user_id: demoId(fx.parent.id) }]);
+    // The sample parent's home area: search measures from Maadi's centres unless a location is shared.
+    await put('org.guardians', [
+      { id: guardian, user_id: demoId(fx.parent.id), home_area: fx.centres[0]!.area.ar },
+    ]);
     await put(
       'org.students',
       fx.children.map((c) => ({
@@ -601,6 +621,18 @@ export async function seedDemo(migratorUrl: string) {
       // OD-58: the Follow-up paid extra is on for Al Nour in the demo (as in the mock).
       { key: 'followup.extra', scope_type: 'centre', scope_id: demoId('cen-nour'), enabled: true },
     ]);
+    // ── Paid seats, the ledger and reviews (R2b) ────────────────────────────────
+    await sql`SELECT setval('market.enrolment_reference_seq', 20900, false)`.execute(db);
+    const money = await seedMoney(db, put, {
+      sessions: sessionRows as never,
+      parentGuardian: guardian,
+      parentUser: demoId(fx.parent.id),
+      ownerOf,
+      bookingRule: { id: demoId('rule-booking-commission'), ratePct: '5.00' },
+    });
+    counts['seeded enrolments'] = money.enrolments;
+    await put('market.review_stats', reviewStats);
+
     // docs/10 §5: which keys wrote this data (checked at start-up).
     await put('platform.data_keys', [
       { purpose: 'field', key_id: cipher.keyId },

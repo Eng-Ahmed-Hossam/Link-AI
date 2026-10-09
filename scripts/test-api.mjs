@@ -1,7 +1,7 @@
 // pnpm test:api | test:rls — core-api integration tests against real Postgres and Redis.
 // They run on their own database (`link_test`) and Redis DB 1, never on your local data:
 // the database is created if missing, migrated, and every suite re-seeds it.
-//   node scripts/test-api.mjs [all|rls] [extra vitest args]
+//   node scripts/test-api.mjs [all|rls|money|<test file>] [extra vitest args]
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
@@ -77,5 +77,8 @@ const vitest = join(
   dirname(createRequire(join(coreApi, 'package.json')).resolve('vitest/package.json')),
   'vitest.mjs',
 );
-const files = suite === 'rls' ? ['test/rls'] : ['test/integration', 'test/rls'];
+// all = integration + RLS; rls; money (ledger golden/property and seat tests); or one file/folder.
+const files = { all: ['test/integration', 'test/rls'], rls: ['test/rls'], money: ['test/money'] }[
+  suite
+] ?? [suite];
 run(process.execPath, [vitest, 'run', ...files, ...rest], { cwd: coreApi, env });

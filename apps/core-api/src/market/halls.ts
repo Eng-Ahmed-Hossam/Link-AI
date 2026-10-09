@@ -25,7 +25,7 @@ import {
   ruleDto,
   ruleFromInput,
 } from './model';
-import { seatsFilled } from './seats';
+import type { Seats } from '../enrolment/seats';
 
 type SlotState = 'free' | 'taken' | 'closed';
 const DEFAULT_AUTO_APPROVE = {
@@ -145,7 +145,10 @@ function hoursLabel(hours: { weekday: number; opens: string; closes: string }[],
 
 /** Halls, slots and the centre's profile, schedule and auto-approve rules (C02, C03, C05). */
 export class Halls {
-  constructor(private readonly db: Database) {}
+  constructor(
+    private readonly db: Database,
+    private readonly seats: Seats,
+  ) {}
 
   async hallsOf(tx: Tx, centreId: string) {
     const halls = await tx
@@ -473,7 +476,7 @@ export class Halls {
           .where('b.centre_id', '=', centreId)
           .where('b.status', '<>', 'ended')
           .execute();
-        const filled = await seatsFilled(
+        const filled = await this.seats.filledNext(
           tx,
           bookings.flatMap((b) => (b.group_id ? [b.group_id] : [])),
         );

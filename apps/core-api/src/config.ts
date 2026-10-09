@@ -40,6 +40,15 @@ const schema = z
     EVENTS_TOPIC: z.string().min(1),
     QUEUE_NOTIFICATIONS: z.string().min(1),
     DLQ_NOTIFICATIONS: z.string().min(1),
+    // Payments (docs/08): the local fake provider until a real one is chosen (OD-46).
+    PAYMENT_PROVIDER: z.enum(['fake']).default('fake'),
+    PAYMENT_WEBHOOK_SECRET: z.string().min(16),
+    FAKE_PAY_URL: z.string().url().optional(),
+    /** The web app's public address: where the hosted checkout sends the parent back. */
+    NEXT_PUBLIC_SITE_URL: z.string().url().default('http://localhost:3000'),
+    /** Seat holds (BR-ENR-01, OD-09): 10 minutes for card and wallet, 24 hours for Fawry. */
+    HOLD_SECONDS: z.coerce.number().int().positive().default(600),
+    FAWRY_HOLD_SECONDS: z.coerce.number().int().positive().default(86_400),
   })
   .superRefine((c, ctx) => {
     // Local only: the key-encryption key comes from .env.local (docs/10 §5); elsewhere KMS.
@@ -59,6 +68,18 @@ const schema = z
       });
     if (c.SMS_PROVIDER === 'fake' && c.APP_ENV === 'prod')
       ctx.addIssue({ code: 'custom', path: ['SMS_PROVIDER'], message: 'fake is refused in prod' });
+    if (c.PAYMENT_PROVIDER === 'fake' && c.APP_ENV === 'prod')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['PAYMENT_PROVIDER'],
+        message: 'fake is refused in prod',
+      });
+    if (c.PAYMENT_PROVIDER === 'fake' && !c.FAKE_PAY_URL)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['FAKE_PAY_URL'],
+        message: 'required with PAYMENT_PROVIDER=fake',
+      });
   });
 
 export type Config = z.infer<typeof schema>;

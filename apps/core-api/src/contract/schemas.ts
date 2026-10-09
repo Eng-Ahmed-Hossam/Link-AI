@@ -42,6 +42,11 @@ export const Me = named(
     roles: z.array(Role),
     centreIds: z.array(z.string()).optional().describe('Centres where the user is owner or staff'),
     teacherId: z.string().nullable().optional(),
+    homeArea: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('Parent: the area search measures from when no location is shared (a name only)'),
   }),
 );
 
@@ -84,8 +89,15 @@ export const TokenPair = named(
 export const UpdateMeBody = named(
   'UpdateMeBody',
   z
-    .object({ name: z.string().trim().min(1).max(80).optional(), language: Lang.optional() })
-    .refine((b) => b.name !== undefined || b.language !== undefined, 'name or language'),
+    .object({
+      name: z.string().trim().min(1).max(80).optional(),
+      language: Lang.optional(),
+      homeArea: z.string().trim().min(1).max(60).nullable().optional(),
+    })
+    .refine(
+      (b) => b.name !== undefined || b.language !== undefined || b.homeArea !== undefined,
+      'name, language or homeArea',
+    ),
 );
 export const AddRoleBody = named(
   'AddRoleBody',

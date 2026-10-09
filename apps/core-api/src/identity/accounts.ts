@@ -17,6 +17,7 @@ export interface MeView {
   roles: AppRole[];
   centreIds: string[];
   teacherId: string | null;
+  homeArea?: string | null;
 }
 
 const slugify = (name: string) => {
@@ -189,6 +190,13 @@ export class Accounts {
       .select(['id', 'name', 'language'])
       .where('id', '=', ctx.userId)
       .executeTakeFirstOrThrow();
+    const g = ctx.guardianId
+      ? await tx
+          .selectFrom('org.guardians')
+          .select('home_area')
+          .where('id', '=', ctx.guardianId)
+          .executeTakeFirst()
+      : undefined;
     return {
       id: u.id,
       name: u.name,
@@ -196,23 +204,42 @@ export class Accounts {
       roles: APP_ROLES.filter((r) => ctx.roles.includes(r)),
       centreIds: ctx.centreIds,
       teacherId: ctx.teacherId,
+      ...(ctx.guardianId ? { homeArea: g?.home_area ?? null } : {}),
     };
   }
 
   async updateMe(
     userId: string,
-    body: { name?: string; language?: 'ar' | 'en' },
+    body: { name?: string; language?: 'ar' | 'en'; homeArea?: string | null },
     requestId?: string,
   ) {
     return this.db.asUser(userId, async (tx, ctx) => {
-      await tx
-        .updateTable('identity.users')
-        .set({
-          ...(body.name !== undefined ? { name: body.name } : {}),
-          ...(body.language ? { language: body.language } : {}),
-        })
-        .where('id', '=', userId)
-        .execute();
+      if (body.name !== undefined || body.language)
+        await tx
+          .updateTable('identity.users')
+          .set({
+            ...(body.name !== undefined ? { name: body.name } : {}),
+            ...(body.language ? { language: body.language } : {}),
+          })
+          .where('id', '=', userId)
+          .execute();
+      if (body.homeArea !== undefined) {
+        if (!ctx.guardianId) throw new Problem(403, 'forbidden', 'Only parents have a home area.');
+        // An area Link knows: one where a verified centre is.
+        if (body.homeArea !== null) {
+          const known = await tx
+            .selectFrom('market.public_centres')
+            .select('id')
+            .where('area', '=', body.homeArea)
+            .executeTakeFirst();
+          if (!known) throw new Problem(422, 'unknown_area', 'Pick an area from the list.');
+        }
+        await tx
+          .updateTable('org.guardians')
+          .set({ home_area: body.homeArea })
+          .where('id', '=', ctx.guardianId)
+          .execute();
+      }
       await writeAudit(tx, {
         actorId: userId,
         actorType: 'user',

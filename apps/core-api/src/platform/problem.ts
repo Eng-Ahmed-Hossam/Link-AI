@@ -44,8 +44,35 @@ export function problemBody(p: Problem, requestId: string | undefined) {
   };
 }
 
+/** Database guards that callers can meet, by constraint name → the stable problem code (07 §1). */
+const CONSTRAINT_PROBLEMS: Record<string, () => Problem> = {
+  seat_cap_exceeded: () =>
+    new Problem(
+      409,
+      'seat_unavailable',
+      'A session this plan covers is full. You can join the waitlist.',
+    ),
+  seat_cap_below_taken: () =>
+    new Problem(409, 'seat_cap_below_filled', 'More seats are already taken in a coming session.'),
+  enrolments_one_live: () =>
+    new Problem(409, 'already_enrolled', 'This child already has a place in this group.'),
+  waitlist_one_open: () =>
+    new Problem(409, 'already_waiting', 'This child is already on the waitlist for this group.'),
+  reviews_once: () => new Problem(409, 'already_reviewed', 'You already reviewed this term.'),
+  review_replies_review_id_key: () =>
+    new Problem(409, 'already_replied', 'This review already has a reply.'),
+};
+
+/** The constraint a PostgreSQL error names, if any. */
+export const pgConstraint = (e: unknown): string | null =>
+  e && typeof e === 'object' && 'constraint' in e && typeof e.constraint === 'string'
+    ? e.constraint
+    : null;
+
 export function toProblem(e: unknown): Problem {
   if (e instanceof Problem) return e;
+  const constraint = pgConstraint(e);
+  if (constraint && CONSTRAINT_PROBLEMS[constraint]) return CONSTRAINT_PROBLEMS[constraint]();
   if (e instanceof ZodError)
     return new Problem(422, 'validation_failed', 'Some fields are missing or not valid.', {
       errors: e.issues.map((i) => ({ field: i.path.join('.') || '(body)', code: i.code })),

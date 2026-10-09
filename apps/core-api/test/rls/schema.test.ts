@@ -62,8 +62,9 @@ afterAll(async () => {
 
 const tables = async () =>
   (
-    await sql<{ name: string; rls: boolean; centre: boolean }>`
+    await sql<{ name: string; rls: boolean; readable: boolean; centre: boolean }>`
       SELECT n.nspname || '.' || c.relname AS name, c.relrowsecurity AS rls,
+             has_table_privilege('app_user', c.oid, 'SELECT') AS readable,
              EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = c.oid AND a.attname = 'centre_id' AND NOT a.attisdropped) AS centre
       FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE c.relkind IN ('r', 'p') AND NOT c.relispartition
@@ -95,11 +96,29 @@ describe('10 §2 RLS is on everywhere it must be', () => {
   });
 });
 
+/** Rows that are public by rule (BR-REV-03: published public reviews and their replies). */
+const PUBLIC_ROWS: Record<string, string> = {
+  'market.reviews': "NOT (visibility = 'public' AND status = 'published')",
+  'market.review_replies': "status <> 'published'",
+};
+const notPublic = (table: string) => sql.raw(PUBLIC_ROWS[table] ?? 'true');
+
 describe('10 §2 centre A never sees centre B', () => {
   it('for every table with centre_id: the owner of A reads zero rows of B (and B zero of A)', async () => {
-    const tenant = (await tables()).filter((t) => t.centre && t.rls);
+    // Tables app_user cannot read at all (the ledger itself) are closed to every request.
+    const tenant = (await tables()).filter((t) => t.centre && t.rls && t.readable);
     expect(tenant.map((t) => t.name)).toEqual(
-      expect.arrayContaining(['market.rooms', 'identity.role_assignments', 'audit.audit_events']),
+      expect.arrayContaining([
+        'market.rooms',
+        'identity.role_assignments',
+        'audit.audit_events',
+        'market.enrolments',
+        'ledger.payments',
+        'market.reviews',
+      ]),
+    );
+    expect((await tables()).filter((t) => !t.readable && t.centre).map((t) => t.name)).toEqual(
+      expect.arrayContaining(['ledger.ledger_transactions']),
     );
     for (const [me, other] of [
       [A, B],
@@ -110,7 +129,9 @@ describe('10 §2 centre A never sees centre B', () => {
           const { rows } = await sql<{
             n: number;
           }>`SELECT count(*)::int AS n FROM ${sql.table(t.name)}
-                                                    WHERE centre_id = ${other.centre}`.execute(tx);
+                                                    WHERE centre_id = ${other.centre} AND ${notPublic(t.name)}`.execute(
+            tx,
+          );
           return rows[0]!.n;
         });
         expect({ table: t.name, rows: seenByOwner }).toEqual({ table: t.name, rows: 0 });
@@ -145,13 +166,15 @@ describe('10 §2 centre A never sees centre B', () => {
   });
 
   it('a request with no context (anonymous) reads no centre’s rows', async () => {
-    for (const t of (await tables()).filter((x) => x.centre && x.rls)) {
+    for (const t of (await tables()).filter((x) => x.centre && x.rls && x.readable)) {
       const n = await db.asAnonymous(async (tx) => {
         // Rows with no centre (e.g. the global commission rules) are not tenant rows.
         const { rows } = await sql<{
           n: number;
         }>`SELECT count(*)::int AS n FROM ${sql.table(t.name)}
-                                                  WHERE centre_id IS NOT NULL`.execute(tx);
+                                                  WHERE centre_id IS NOT NULL AND ${notPublic(t.name)}`.execute(
+          tx,
+        );
         return rows[0]!.n;
       });
       expect({ table: t.name, rows: n }).toEqual({ table: t.name, rows: 0 });
@@ -210,7 +233,7 @@ describe('10 §2 people: only their own rows', () => {
     const { rows } = await sql<{ column_name: string; table: string }>`
       SELECT table_schema || '.' || table_name AS table, column_name FROM information_schema.columns
       WHERE table_schema = ANY (${SCHEMAS}) AND column_name ~ '(phone|whatsapp)'
-        AND data_type NOT IN ('bytea')
+        AND data_type NOT IN ('bytea', 'boolean')
         AND column_name !~ '_last4$'`.execute(api.db);
     expect(rows).toEqual([]);
   });

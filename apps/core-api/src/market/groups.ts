@@ -11,7 +11,7 @@ import { enqueue } from '../platform/outbox';
 import { Problem, forbidden, notFound } from '../platform/problem';
 import { requestIdOf } from '../platform/request-context';
 import { type Lang, hhmm, money, ratingOf, sessionTimes, subjectForYear } from './model';
-import { seatsFilled } from './seats';
+import type { Seats } from '../enrolment/seats';
 
 const teacherOf = (ctx: RlsContext) => {
   if (!ctx.teacherId) throw forbidden('Teachers only.');
@@ -53,7 +53,10 @@ export async function refreshProfileStatus(tx: Tx, teacherId: string) {
 
 /** Teacher profile (J04), groups (J05, My groups) and centre invitations. */
 export class Groups {
-  constructor(private readonly db: Database) {}
+  constructor(
+    private readonly db: Database,
+    private readonly seats: Seats,
+  ) {}
 
   self(userId: string, lang: Lang) {
     return this.db.asUser(userId, (tx, ctx) => this.selfIn(tx, teacherOf(ctx), lang));
@@ -257,7 +260,7 @@ export class Groups {
       .where('g.status', '<>', 'closed')
       .orderBy('g.created_at')
       .execute();
-    const filled = await seatsFilled(
+    const filled = await this.seats.filledNext(
       tx,
       rows.map((r) => r.id),
     );
@@ -432,7 +435,7 @@ export class Groups {
           throw new Problem(422, 'seat_cap_above_hall', `The hall has ${g.capacity} seats.`, {
             capacity: g.capacity,
           });
-        const filled = (await seatsFilled(tx, [groupId])).get(groupId) ?? 0;
+        const filled = (await this.seats.filledNext(tx, [groupId])).get(groupId) ?? 0;
         if (p.seatCap < filled)
           throw new Problem(409, 'seat_cap_below_filled', `${filled} seats are already taken.`);
       }

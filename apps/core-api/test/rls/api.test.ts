@@ -31,6 +31,11 @@ const SWEEP: Record<
   '/v1/room-requests/{id}': { actor: 'ownerA', ids: () => ({ id: bRequestId }) },
   '/v1/groups/{id}': { actor: 'teacherA', ids: () => ({ id: demoId('grp-karim-nile') }) },
   '/v1/me/invites/{id}': { actor: 'ownerA', ids: () => ({ id: demoId('role:usr-reception') }) },
+  // R2b: another family's enrolment at centre B, a review at centre B, a waitlist entry at B.
+  '/v1/enrolments/{id}': { actor: 'ownerA', ids: () => ({ id: demoId('enr:enr-youssef-salma') }) },
+  '/v1/reviews/{id}': { actor: 'ownerA', ids: () => ({ id: bReviewId }) },
+  '/v1/waitlist/{id}': { actor: 'ownerA', ids: () => ({ id: bWaitlistId }) },
+  '/v1/webhooks/payments/{provider}': { public: 'provider to Link, verified by its signature' },
   '/v1/centres/by-slug/{slug}': { public: 'public centre profile (P04)' },
   '/v1/teachers/by-slug/{slug}': { public: 'public teacher profile (P05)' },
 };
@@ -49,9 +54,17 @@ const BODIES: Record<string, unknown> = {
   },
   inviteStaff: { phone: '01555000001', role: 'reception' },
   putAutoApprove: { enabled: false, verifiedId: true, minRating: 4.5, fitsCapacity: true },
+  checkoutEnrolment: { method: 'card' },
+  acceptWaitlistOffer: { paymentPlan: 'single_month', method: 'card' },
+  replyReview: { body: 'Thanks.' },
+  reportReview: { reason: 'Not ours.' },
+  requestRefund: { reason: 'x' },
 };
-/** GET /v1/groups/{id} is the public group card (P06); its PATCH is the teacher's. */
-const PUBLIC_OPERATIONS = new Set(['getGroup']);
+/**
+ * GET /v1/groups/{id} is the public group card (P06); its PATCH is the teacher's. Any parent may
+ * join the waitlist of a published group, so that POST is public by rule too.
+ */
+const PUBLIC_OPERATIONS = new Set(['getGroup', 'joinWaitlist']);
 
 const templateOf = (path: string) =>
   Object.keys(SWEEP)
@@ -66,6 +79,8 @@ const withIds = Object.entries(spec.paths).flatMap(([path, ops]) =>
 
 let api: Api;
 let bRequestId = '';
+let bReviewId = '';
+let bWaitlistId = '';
 const clients = {} as Record<Actor, Client>;
 beforeAll(async () => {
   api = await startApi();
@@ -87,6 +102,41 @@ beforeAll(async () => {
   });
   expect(r.status).toBe(201);
   bRequestId = r.body.id;
+  // A review and a waitlist entry of a family at centre B (sample rows, written as the owner).
+  const enr = demoId('enr:enr-youssef-salma');
+  const e = await api.db
+    .selectFrom('market.enrolments')
+    .select(['guardian_id', 'student_id', 'group_id', 'centre_id'])
+    .where('id', '=', enr)
+    .executeTakeFirstOrThrow();
+  bReviewId = demoId('rls-review-b');
+  await api.db
+    .insertInto('market.reviews')
+    .values({
+      id: bReviewId,
+      enrolment_id: enr,
+      guardian_id: e.guardian_id,
+      target_type: 'centre',
+      target_id: e.centre_id,
+      centre_id: e.centre_id,
+      school_year_id: demoId('sy-sec2'),
+      stars: 4,
+      body: 'Sample review at centre B.',
+      visibility: 'public',
+      status: 'published',
+    })
+    .execute();
+  bWaitlistId = demoId('rls-waitlist-b');
+  await api.db
+    .insertInto('market.waitlist_entries')
+    .values({
+      id: bWaitlistId,
+      group_id: e.group_id,
+      centre_id: e.centre_id,
+      student_id: e.student_id,
+      guardian_id: e.guardian_id,
+    })
+    .execute();
 });
 afterAll(() => api.close());
 

@@ -1,5 +1,6 @@
 import { Module, type DynamicModule, type Provider, type Type } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { FakePayProvider, PAYMENT_PROVIDER, type PaymentProvider } from './adapters/payments';
 import { type SmsSender, SMS_SENDER, SmsSinkSender } from './adapters/sms';
 import { type Config, isLocal } from './config';
 import { Accounts } from './identity/accounts';
@@ -22,13 +23,22 @@ import { Groups, GroupsController } from './market/groups';
 import { Halls, HallsController } from './market/halls';
 import { Requests, RequestsController } from './market/requests';
 import { Search, SearchController } from './market/search';
+import { Reviews, ReviewsController } from './market/reviews';
+import { Enrolments } from './enrolment/enrolments';
+import { EnrolmentsController } from './enrolment/enrolments.controller';
+import { EnrolmentJobs } from './enrolment/jobs';
+import { Seats } from './enrolment/seats';
+import { RentInvoices } from './ledger/rent-invoices';
+import { Reports } from './ledger/reports';
+import { Money } from './payments/money';
+
+export interface Overrides {
+  sms?: SmsSender;
+  payments?: PaymentProvider;
+}
 
 /** Shared services, built from the typed config. Used by every entrypoint (api, worker, gateway). */
-export function coreProviders(
-  c: Config,
-  log: Logger,
-  overrides: { sms?: SmsSender } = {},
-): Provider[] {
+export function coreProviders(c: Config, log: Logger, overrides: Overrides = {}): Provider[] {
   const factory = <T>(provide: unknown, inject: unknown[], useFactory: (...a: never[]) => T) =>
     ({ provide, inject, useFactory }) as Provider;
   return [
@@ -58,10 +68,40 @@ export function coreProviders(
       [Database, Reference],
       (db: Database, ref: Reference) => new Children(db, ref),
     ),
-    factory(Halls, [Database], (db: Database) => new Halls(db)),
+    factory(Seats, [Redises, Database], (r: Redises, db: Database) => new Seats(r, db)),
+    factory(
+      PAYMENT_PROVIDER,
+      [],
+      () => overrides.payments ?? new FakePayProvider(c.FAKE_PAY_URL!, c.PAYMENT_WEBHOOK_SECRET),
+    ),
+    factory(Halls, [Database, Seats], (db: Database, s: Seats) => new Halls(db, s)),
     factory(Requests, [Database], (db: Database) => new Requests(db)),
-    factory(Groups, [Database], (db: Database) => new Groups(db)),
-    factory(Search, [Database], (db: Database) => new Search(db)),
+    factory(Groups, [Database, Seats], (db: Database, s: Seats) => new Groups(db, s)),
+    factory(Search, [Database, Seats], (db: Database, s: Seats) => new Search(db, s)),
+    factory(
+      Money,
+      [Database, Seats, PAYMENT_PROVIDER],
+      (db: Database, s: Seats, p: PaymentProvider) => new Money(db, s, p, c, log),
+    ),
+    factory(
+      Enrolments,
+      [Database, Seats, Money, PAYMENT_PROVIDER, Search, Children],
+      (db: Database, s: Seats, m: Money, p: PaymentProvider, search: Search, ch: Children) =>
+        new Enrolments(db, s, m, p, search, ch, c, log),
+    ),
+    factory(
+      EnrolmentJobs,
+      [Database, Seats, Money, Enrolments, PAYMENT_PROVIDER],
+      (db: Database, s: Seats, m: Money, e: Enrolments, p: PaymentProvider) =>
+        new EnrolmentJobs(db, s, m, e, p, log),
+    ),
+    factory(RentInvoices, [Database], (db: Database) => new RentInvoices(db, log)),
+    factory(
+      Reports,
+      [Database, Seats, Halls],
+      (db: Database, s: Seats, h: Halls) => new Reports(db, s, h),
+    ),
+    factory(Reviews, [Database], (db: Database) => new Reviews(db)),
   ];
 }
 
@@ -69,7 +109,7 @@ export function coreProviders(
 export async function apiModule(
   c: Config,
   log: Logger,
-  overrides: { sms?: SmsSender } = {},
+  overrides: Overrides = {},
 ): Promise<DynamicModule> {
   const controllers: Type[] = [
     HealthController,
@@ -81,6 +121,8 @@ export async function apiModule(
     RequestsController,
     GroupsController,
     SearchController,
+    EnrolmentsController,
+    ReviewsController,
   ];
   if (isLocal(c)) controllers.push((await import('./dev/dev.controller')).DevController);
   @Module({})

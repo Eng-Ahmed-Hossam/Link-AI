@@ -4,8 +4,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import express from 'express';
 import { pinoHttp } from 'pino-http';
-import type { SmsSender } from './adapters/sms';
-import { apiModule } from './app.module';
+import { type Overrides, apiModule } from './app.module';
 import type { Config } from './config';
 import { Database } from './platform/db';
 import type { Logger } from './platform/logger';
@@ -14,7 +13,7 @@ import { Redises } from './platform/redis';
 import { requestIdMiddleware, requestIdOf } from './platform/request-context';
 
 /** The HTTP API, configured the same way for `main` and for the integration tests. */
-export async function createApi(config: Config, log: Logger, overrides: { sms?: SmsSender } = {}) {
+export async function createApi(config: Config, log: Logger, overrides: Overrides = {}) {
   const mod = await apiModule(config, log, overrides);
   const app = await NestFactory.create<NestExpressApplication>(mod, {
     logger: ['error', 'warn'],
@@ -39,7 +38,16 @@ export async function createApi(config: Config, log: Logger, overrides: { sms?: 
       autoLogging: { ignore: (req) => req.url === '/health' || req.url === '/ready' },
     }),
   );
-  app.use(express.json({ limit: '100kb' }));
+  app.use(
+    express.json({
+      limit: '100kb',
+      // Provider webhooks are verified on the exact bytes that were signed (docs/05 §7).
+      verify: (req, _res, buf) => {
+        if (req.url?.startsWith('/v1/webhooks/'))
+          (req as { rawBody?: Buffer }).rawBody = Buffer.from(buf);
+      },
+    }),
+  );
   app.use(cookieParser());
   const origins = config.CORS_ALLOWED_ORIGINS.split(',')
     .map((o) => o.trim())

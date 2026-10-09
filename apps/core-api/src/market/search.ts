@@ -2,10 +2,18 @@ import { Controller, Inject } from '@nestjs/common';
 import { sql } from 'kysely';
 import { routes } from '../contract/routes';
 import { Database, type Tx } from '../platform/db';
-import { CallerLang, Endpoint, type In, Input } from '../platform/http';
+import {
+  CallerLang,
+  Endpoint,
+  type In,
+  Input,
+  MaybeCaller,
+  type Principal,
+} from '../platform/http';
 import { notFound } from '../platform/problem';
 import { type Lang, DEFAULT_POINT, hhmm, money, ratingSummary, sessionsPerMonth } from './model';
-import { seatsLeftBySession } from './seats';
+import type { Seats } from '../enrolment/seats';
+import { publicReviews } from './reviews';
 
 type Query = {
   curriculumId?: string;
@@ -20,6 +28,8 @@ type Query = {
   q?: string;
   lat?: number;
   lng?: number;
+  /** The signed-in parent's home area (never from the query string). */
+  homeArea?: string | null;
 };
 /** MKT-DSC-02: within 5 km unless the parent widens it. */
 const DEFAULT_RADIUS_KM = 5;
@@ -31,12 +41,14 @@ const pick = (lang: Lang, en: string | null | undefined, ar: string | null | und
  * published groups. A pending centre (C01) or an invited teacher never appears here.
  */
 export class Search {
-  constructor(private readonly db: Database) {}
+  constructor(
+    private readonly db: Database,
+    private readonly seats: Seats,
+  ) {}
 
   /** Published groups matching the filters; the subject matches by code within the school year. */
   private async groups(tx: Tx, q: Query, lang: Lang) {
-    const lat = q.lat ?? DEFAULT_POINT.lat;
-    const lng = q.lng ?? DEFAULT_POINT.lng;
+    const { lat, lng } = await this.point(tx, q);
     let query = tx
       .selectFrom('market.public_groups as g')
       .innerJoin('market.public_centres as c', 'c.id', 'g.centre_id')
@@ -72,8 +84,48 @@ export class Search {
     return rows;
   }
 
+  /**
+   * Where distances are measured from (decided 2026-10-09): the location the browser shared (sent
+   * with the query, never stored), else the parent's home area — the centre of the verified
+   * centres there — else the Maadi sample point.
+   */
+  private async point(tx: Tx, q: Query) {
+    if (q.lat !== undefined && q.lng !== undefined) return { lat: q.lat, lng: q.lng };
+    if (q.homeArea) {
+      const c = await tx
+        .selectFrom('market.public_centres')
+        .select([
+          sql<number | null>`avg(ST_Y(location::geometry))`.as('lat'),
+          sql<number | null>`avg(ST_X(location::geometry))`.as('lng'),
+        ])
+        .where('area', '=', q.homeArea)
+        .executeTakeFirst();
+      if (c?.lat != null && c.lng != null) return { lat: Number(c.lat), lng: Number(c.lng) };
+    }
+    return DEFAULT_POINT;
+  }
+
+  /** A signed-in parent's home area, if any (a name only). */
+  async homeAreaOf(p: Principal | null) {
+    if (!p) return null;
+    return this.db.asUser(p.userId, async (tx, ctx) =>
+      ctx.guardianId
+        ? ((
+            await tx
+              .selectFrom('org.guardians')
+              .select('home_area')
+              .where('id', '=', ctx.guardianId)
+              .executeTakeFirst()
+          )?.home_area ?? null)
+        : null,
+    );
+  }
+
   /** Seat state per group from its next session (CF-28: a full group takes a waitlist). */
-  private async seatStates(tx: Tx, groups: { id: string; seat_cap: number | null }[]) {
+  private async seatStates(
+    tx: Tx,
+    groups: { id: string; centre_id: string; seat_cap: number | null }[],
+  ) {
     const next = groups.length
       ? await tx
           .selectFrom('market.public_group_sessions')
@@ -90,10 +142,12 @@ export class Search {
       : [];
     const first = new Map<string, string>();
     for (const s of next) if (!first.has(s.group_id!)) first.set(s.group_id!, s.id!);
-    const left = await seatsLeftBySession(
+    const left = await this.seats.left(
       tx,
       groups.flatMap((g) =>
-        first.has(g.id) ? [{ id: first.get(g.id)!, groupId: g.id, seatCap: g.seat_cap! }] : [],
+        first.has(g.id)
+          ? [{ id: first.get(g.id)!, groupId: g.id, centreId: g.centre_id, seatCap: g.seat_cap! }]
+          : [],
       ),
     );
     return new Map(
@@ -142,7 +196,7 @@ export class Search {
         : [];
       const seat = await this.seatStates(
         tx,
-        gs.map((g) => ({ id: g.id!, seat_cap: g.seat_cap })),
+        gs.map((g) => ({ id: g.id!, centre_id: g.centre_id!, seat_cap: g.seat_cap })),
       );
       const stats = await this.stats(tx, 'centre', centreIds);
       let cards = centres.map((c) => {
@@ -286,10 +340,15 @@ export class Search {
       ...new Set(rows.map((r) => r.teacher_id!)),
     ]);
     const upcoming = (gid: string) => sessions.filter((s) => s.group_id === gid).slice(0, 9);
-    const left = await seatsLeftBySession(
+    const left = await this.seats.left(
       tx,
       rows.flatMap((r) =>
-        upcoming(r.id!).map((s) => ({ id: s.id!, groupId: r.id!, seatCap: r.seat_cap! })),
+        upcoming(r.id!).map((s) => ({
+          id: s.id!,
+          groupId: r.id!,
+          centreId: r.centre_id!,
+          seatCap: r.seat_cap!,
+        })),
       ),
     );
     const out = rows.map((r) => ({
@@ -456,8 +515,7 @@ export class Search {
             subjectLabel: `${mine[0]?.subject.name ?? ''} • ${[...new Set(mine.map((g) => g.schoolYear.shortName))].join(sep)}`,
           };
         }),
-        // Public reviews arrive in R2b.
-        reviews: [],
+        reviews: await publicReviews(tx, 'centre', c.id!, lang),
         lat: Number(c.lat),
         lng: Number(c.lng),
         locationUnderReview: c.location_status === 'under_review',
@@ -505,7 +563,7 @@ export class Search {
         // Phase 2 badge; the UI hides it while the flag is off.
         recordedPct: null,
         groups,
-        reviews: [],
+        reviews: await publicReviews(tx, 'teacher', t.id!, lang),
       };
     });
   }
@@ -516,13 +574,21 @@ export class SearchController {
   constructor(@Inject(Search) private readonly search: Search) {}
 
   @Endpoint(routes.searchCentres)
-  centres(@CallerLang() lang: Lang, @Input() i: In<typeof routes.searchCentres>) {
-    return this.search.centres(i.query, lang);
+  async centres(
+    @CallerLang() lang: Lang,
+    @MaybeCaller() p: Principal | null,
+    @Input() i: In<typeof routes.searchCentres>,
+  ) {
+    return this.search.centres({ ...i.query, homeArea: await this.search.homeAreaOf(p) }, lang);
   }
 
   @Endpoint(routes.searchTeachers)
-  teachers(@CallerLang() lang: Lang, @Input() i: In<typeof routes.searchTeachers>) {
-    return this.search.teachers(i.query, lang);
+  async teachers(
+    @CallerLang() lang: Lang,
+    @MaybeCaller() p: Principal | null,
+    @Input() i: In<typeof routes.searchTeachers>,
+  ) {
+    return this.search.teachers({ ...i.query, homeArea: await this.search.homeAreaOf(p) }, lang);
   }
 
   @Endpoint(routes.centreBySlug)
