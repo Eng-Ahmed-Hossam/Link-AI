@@ -1,0 +1,26 @@
+name: docker-mirror
+description: >-
+  Fetch the Docker Hub images CI needs from mirror.gcr.io (Google's public Docker Hub cache) and
+  tag them under their Docker Hub names, so compose and image builds find them locally and CI does
+  not hit Docker Hub's anonymous pull rate limit (429 Too Many Requests). Falls back to Docker Hub
+  for an image the mirror lacks.
+inputs:
+  images:
+    description: Docker Hub images (space-separated)
+    default: >-
+      redis:7-alpine axllent/mailpit:latest pgvector/pgvector:pg16 motoserver/moto:latest
+      node:24-alpine python:3.12-slim caddy:2-alpine postgres:16-alpine
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        for img in ${{ inputs.images }}; do
+          case "$img" in */*) path="$img" ;; *) path="library/$img" ;; esac
+          if docker pull -q "mirror.gcr.io/$path" > /dev/null 2>&1; then
+            docker tag "mirror.gcr.io/$path" "$img"
+            echo "✓ $img (mirror.gcr.io)"
+          else
+            echo "⚠ $img not on mirror.gcr.io; compose will pull it from Docker Hub"
+          fi
+        done

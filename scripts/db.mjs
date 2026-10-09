@@ -83,13 +83,27 @@ switch (cmd) {
     if (process.env.APP_ENV === 'prod') fail('Refusing to seed sample data when APP_ENV=prod.');
     if (process.env.APP_ENV !== 'local')
       fail('seed:demo wipes the app tables; APP_ENV must be local.');
+    // --if-empty (pnpm run setup): keep a database that already has users; seed only a fresh one.
+    if (process.argv.includes('--if-empty')) {
+      const pg = requireCore('pg');
+      const client = new pg.Client({ connectionString: DATABASE_URL_MIGRATOR });
+      await client.connect();
+      const { rows } = await client.query('SELECT count(*)::int AS n FROM identity.users');
+      await client.end();
+      if (rows[0].n > 0) {
+        console.log(
+          `Database has data (${rows[0].n} users); kept. pnpm run setup --reset-data re-seeds it.`,
+        );
+        break;
+      }
+    }
     // tsx: the seed imports the mock fixtures (TypeScript workspace packages).
     run(
       process.execPath,
       [
         join(dirname(requireCore.resolve('tsx/package.json')), 'dist', 'cli.mjs'),
         join(coreApi, 'seeds', 'demo.ts'),
-        ...process.argv.slice(3),
+        ...process.argv.slice(3).filter((a) => a !== '--if-empty'),
       ],
       { cwd: coreApi },
     );

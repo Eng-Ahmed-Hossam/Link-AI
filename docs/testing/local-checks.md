@@ -7,8 +7,8 @@ Before you start: Docker Desktop is running (WSL2), and nothing else uses ports 
 | # | Run | Expected | Write down |
 |---|---|---|---|
 | 1 | `git pull` then `pnpm install` | `git pull` ends on `main` with no conflict; `pnpm install` ends with `Done in …` and no `ERR_PNPM_…` | — |
-| 2 | `pnpm doctor` | Every check ✔ (Node 24+, pnpm, Docker running, uv, free ports, `.env.local`); a ✖ line names what to fix. *(Arrives with the setup branch; skip if the command is missing.)* | Any ✖ line |
-| 3 | `pnpm setup` | Ends with a ✔ summary and the next command (`pnpm dev`). Running it a second time changes nothing. *(Same branch.)* | **Time** from start to the ✔ line |
+| 2 | `pnpm run doctor` | A table of ✓ / ⚠ / ✗ lines, including the three Windows rows (Docker on WSL 2, long paths, core.autocrlf), and `0 ✗` at the bottom. ⚠ for Ollama is fine. (Plain `pnpm doctor` is pnpm's own command: type `run`.) | Every ⚠ and ✗ line |
+| 3 | `pnpm run setup` | Seven numbered steps, each ending `✓ N s`, then `✓ Setup finished in N s.` and the next commands. Run it a second time: same steps, nothing re-seeded (`Database has data … kept`). | **Time** of the first run, from start to `✓ Setup finished` |
 | 4a | `cd apps/ai-service` then `uv run pytest -q` | `uv` creates `.venv` and installs the packages the first time; ends with `N passed` (no `failed`, no `error`) | The `N passed` line |
 | 4b | still in `apps/ai-service`: `uv run mypy ai_service --ignore-missing-imports` then `cd ../..` | `Success: no issues found in … source files` | — |
 | 5a | `pnpm ai:models` | One `→ name: repo` line, then `✔ name in Ns → …` for each of `large-v3-turbo`, `egy-turbo-ft`, `large-v3` (about 6 GB in all; re-running skips finished files). No `✖ … failed` | Download time |

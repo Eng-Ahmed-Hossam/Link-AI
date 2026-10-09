@@ -2,12 +2,12 @@
 
 How to run Link locally, which settings it reads, which seed data it ships with, and which outside accounts each milestone needs. The local services, migrations, seed and env files are **real** (walking skeleton, Part 1). Commands still marked *planned* in §5 arrive with the stories named there ([12-backlog-phase1.md](12-backlog-phase1.md)).
 
-**Quick start (Windows, macOS, Linux):** install Docker Desktop (WSL2 backend on Windows), Node 24+, pnpm 12 (`npm install -g --allow-scripts=pnpm pnpm@12.8.1`), Python 3.12 and uv. Then:
+**Quick start (Windows, macOS, Linux):** install Docker Desktop (WSL 2 engine on Windows), Git, Node 24+, pnpm 12 (`corepack enable`), and uv for Python 3.12 — on Windows in the order of [setup-windows.md](setup-windows.md). Then:
 
 ```bash
-pnpm install
-node scripts/env-local.mjs     # writes .env.local: local ports and fresh random secrets
-pnpm dev                       # services, migrations, demo data, core-api, web, teacher app (live mode)
+pnpm run doctor                # read-only: is this machine ready?
+pnpm run setup                 # install, .env.local, services, migrations, sample data, ai-service packages
+pnpm dev                       # core-api, web, teacher app (live mode)
 ```
 
 `pnpm dev` is the real backend on this machine ([RUNNING.md](RUNNING.md)); `pnpm demo` is still the mock-data demo. `pnpm dev:reset` drops the local volumes, migrates and seeds again (asks first).
@@ -157,10 +157,12 @@ All commands are Node scripts, so they run the same in PowerShell, cmd and bash.
 | `pnpm dev:reset` | Drop the local volumes, start §2, migrate and seed (asks first; `--yes` skips) | real |
 | `pnpm db:migrate` / `db:rollback` / `db:status` | dbmate, as `app_migrator` (ADR-0006); `db:migrate` also sets local role passwords | real |
 | `pnpm db:seed` / `pnpm seed:demo` | **Wipe** the app tables and load the demo world: the same people, phones, centres and halls as the mock fixtures (`apps/core-api/seeds/demo.ts`, deterministic IDs, phones encrypted). `APP_ENV=local` only | real |
-| `pnpm seed:demo --reset` | Without `--reset`, `seed:demo` fills only an empty database; `--reset` wipes your local data and loads the demo world again | real |
+| `pnpm seed:demo [--reset \| --if-empty]` | Loads the demo world (wiping the app tables; `APP_ENV=local` only). `--if-empty` keeps a database that already has users (what `pnpm run setup` uses) | real |
 | `pnpm ops:verify-centre <centreId|phone>` | Local stand-in for Link ops: a pending centre (C01) or a moved pin becomes verified; audited. `APP_ENV=local` only; also in the live Demo controls | real |
 | `pnpm db:types` | Regenerate the Kysely row types (`apps/core-api/src/db/schema.ts`) from the migrated schema; CI fails on a diff | real |
-| `node scripts/env-local.mjs [--force]` | Write a fresh `.env.local` (local ports, random secrets); refuses to overwrite without `--force` | real |
+| `pnpm run doctor [--json]` | Read-only machine check: a ✓ / ⚠ / ✗ table (Node 24, pnpm pin, git, Docker running, Python 3.12 + uv, Ollama, ports, `.env.local` names, container health, disk, RAM; on Windows long paths, `core.autocrlf`, WSL 2). Exit 1 on any ✗. Type `run`: `pnpm doctor` is pnpm's own command | real |
+| `pnpm run setup [--dry-run] [--skip-ai] [--reset-data]` | From a clean clone to ready: doctor, install, `.env.local`, services, migrate, sample data into an empty database, `uv sync` for ai-service. Idempotent. Windows install order and fixes: [setup-windows.md](setup-windows.md) | real |
+| `node scripts/env-local.mjs [--force]` | Write a fresh `.env.local` (local ports, random secrets, every other `.env.example` name as a commented placeholder). On an existing file it only appends the names it lacks; `--force` rewrites it (keeping `FIELD_KEY_LOCAL` and `HMAC_KEY_LOOKUP`) | real |
 | `pnpm env:check` | Fail if code reads an env name missing from `.env.example` | real |
 | `pnpm dev` | Live mode on this machine: §2 services, migrations, the demo world if the database is empty (`--reset` re-seeds), core-api (api :4000, worker, messaging-gateway :4002; restart on change), web :3000 and the teacher app :8081 with `API_MODE=live`. Codes go to sms-sink :8093. ai-service :8090 too when it is installed (`pnpm ai:models`); whatsapp-fake :8094 catches approved parent messages. The ops console is not started yet | real (R1) |
 | `pnpm voice:try [file.wav]` | One sample voice note end to end against `pnpm dev` (needs ai-service): sign-in as Ms Salma, the record due, signed upload to aws-local S3, draft extraction; prints the times and the STT / LLM model versions. Synthetic bench audio by default | real (R3) |

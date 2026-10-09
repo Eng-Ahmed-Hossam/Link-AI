@@ -42,6 +42,7 @@ jobs:
         with: { node-version: 24, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: node scripts/env-local.mjs
+      - uses: ./.github/actions/docker-mirror
       - name: Start Postgres, Redis and aws-local
         run: docker compose -f infra/local/docker-compose.yml --env-file .env.local up -d --build --wait --wait-timeout 300 postgres redis-cache redis-state aws-local
       - run: pnpm db:migrate
@@ -67,6 +68,7 @@ jobs:
         with: { node-version: 24, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: node scripts/env-local.mjs
+      - uses: ./.github/actions/docker-mirror
       - uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
