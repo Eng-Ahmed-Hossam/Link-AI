@@ -1,0 +1,15 @@
+name: docker-mirror
+description: >-
+  Pull Docker Hub images through mirror.gcr.io (Google's public Docker Hub cache), so CI does not
+  hit Docker Hub's anonymous pull rate limit (429 Too Many Requests). Keeps the runner's existing
+  daemon settings.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        f=/etc/docker/daemon.json
+        cur=$( [ -s "$f" ] && sudo cat "$f" || echo '{}' )
+        echo "$cur" | jq '. + {"registry-mirrors": ["https://mirror.gcr.io"]}' | sudo tee "$f" > /dev/null
+        sudo systemctl restart docker
+        docker info --format '{{.RegistryConfig.Mirrors}}'

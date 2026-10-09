@@ -18,6 +18,7 @@ jobs:
         with: { node-version: 24, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: node scripts/env-local.mjs
+      - uses: ./.github/actions/docker-mirror
       - run: pnpm --filter @link/web exec playwright install --with-deps chromium
       - run: node scripts/e2e-modes.mjs live
         env: { CI: '1' }
