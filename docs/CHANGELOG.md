@@ -2,6 +2,16 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-09 — S1: production readiness (ship job)
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| S1-1 | `docs/operations.md` (new) | First start on one server, restart/update/logs, back up and restore, rotate keys, troubleshooting | Ship job S1 |
+| S1-2 | `docs/security-checklist.md` (new) | 33 items, pass / partial / not yet, with evidence | Ship job S1 |
+| S1-3 | `docs/go-live-switches.md` | One server with no cloud account: Postgres queue, encrypted file store, server key, `PAYMENT_PROVIDER=none`; what is still code (three provider adapters) | Built in S1 |
+| S1-4 | `docs/14-dev-environment.md`, `docs/RUNNING.md`, `.env.example` | `pnpm prod:local`, `pnpm prod:env`, backup/restore; the new settings (`LINK_ENV`, `FIELD_KEY`, `STORAGE_PROVIDER`, `QUEUE_PROVIDER=postgres`, `TRUST_PROXY`, …) | Built in S1 |
+| S1-5 | `docs/plan/ship-progress.md` | S0 merged, S1 status, decisions and gaps | Ship job |
+
 ## 2026-10-09 — S0: setup and doctor (ship job)
 
 | # | File | What changed | Why |
