@@ -2,18 +2,18 @@
 
 One page, from a clean clone to every role signed in. **Sample data only**: no real people, money, SMS or WhatsApp; every provider is a local fake.
 
-Windows: follow [setup-windows.md](setup-windows.md) first (Docker Desktop with WSL2, Node, pnpm, uv). What to switch to make Link real later: [go-live-switches.md](go-live-switches.md). Both arrive with the setup branch (`codex/setup-golive`); until it is merged these two links are empty.
+Windows: install the tools in the order of [setup-windows.md](setup-windows.md) first (Docker Desktop with WSL 2, Git, Node 24, pnpm, uv); it also lists the 10 most likely problems. What to switch to make Link real later: [go-live-switches.md](go-live-switches.md).
 
 ## 1. Start
 
 ```bash
 git clone https://github.com/Eng-Ahmed-Hossam/Link-AI.git && cd Link-AI
-pnpm install                  # workspace packages
-node scripts/env-local.mjs    # once: writes .env.local with local ports and fresh secrets
-pnpm dev                      # local services, migrations, sample data, core-api, web, teacher app
+pnpm run doctor     # read-only: is this machine ready? (✓ / ⚠ / ✗, or --json)
+pnpm run setup      # install, .env.local, services, database, sample data, ai-service packages
+pnpm dev            # core-api, web and teacher app on the real backend
 ```
 
-> When the setup branch (`codex/setup-golive`) is merged, `pnpm setup` does the first two lines and checks your machine, and `pnpm doctor` checks it at any time. Until then they do not exist.
+Type `pnpm run doctor` and `pnpm run setup`: plain `pnpm doctor` and `pnpm setup` are pnpm's own built-in commands. `pnpm run setup` is safe to run again: it only does what is missing, and never changes a value in `.env.local` (it adds names that are new). `--dry-run` shows the steps without changing anything, `--skip-ai` leaves voice notes off (no Python needed), `--reset-data` wipes and re-seeds the sample data after you type `reset`.
 
 `pnpm dev` starts Docker services (Postgres, Redis ×2, aws-local, sms-sink, mail-sink, fake-pay, whatsapp-fake), runs migrations, seeds the sample world if the database is empty, then core-api (:4000, worker, messaging-gateway :4002), the web (:3000) and the teacher app (:8081). If ai-service is installed (`pnpm ai:models`) it starts it too, for voice notes. The first run builds images and takes a few minutes.
 
@@ -66,7 +66,7 @@ Each step starts from the one before. Screens by ID: [app map](product/app-map.m
 | To | Run |
 |---|---|
 | Start the story again (keeps the services up) | Demo controls → **Reset story** |
-| Re-seed the sample world | `pnpm dev --reset` (or `pnpm seed:demo --reset`) |
+| Re-seed the sample world | `pnpm run setup --reset-data` (or `pnpm dev --reset`) |
 | Delete every local volume and start clean | `pnpm dev:reset` (asks you to type `reset`) |
 
 ## 5. What is real and what is fake
@@ -95,7 +95,7 @@ It prints the upload time, the time from upload to draft, and the speech-to-text
 | No code in sms-sink | Wait 60 s between codes for one number; check http://localhost:8093 refreshes. |
 | Voice note says "Type the note instead" | ai-service is not running: `pnpm ai:models`, then restart `pnpm dev`. |
 | A message stays "Queued" | Demo controls → "Advance"; whatsapp-fake must reach core-api (`WHATSAPP_FAKE_WEBHOOK_URL`). |
-| Docker errors | Docker Desktop must be running (WSL2 on Windows); `pnpm doctor` names what is missing. |
+| Docker errors | Docker Desktop must be running (WSL 2 on Windows); `pnpm run doctor` names what is missing. More Windows fixes: [setup-windows.md](setup-windows.md#the-10-most-likely-problems). |
 
 ## Tests and ports
 

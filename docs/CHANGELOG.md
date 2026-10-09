@@ -2,6 +2,14 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-09 — S0: setup and doctor (ship job)
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| S0-1 | `docs/setup-windows.md` (new), `docs/RUNNING.md`, `docs/14-dev-environment.md`, `docs/testing/local-checks.md` | `pnpm run doctor` and `pnpm run setup` (pnpm's own `doctor` and `setup` take the bare names); Windows install order from the official pages and the 10 most likely problems | Ship job S0 (the setup branch never reached GitHub) |
+| S0-2 | `docs/go-live-switches.md` (new) | One row per fake: what it does, the local fake, the real adapter file and env names (checked against the code), paperwork, candidates to compare, privacy notes, the gateway-fee note | Ship job S0 |
+| S0-3 | `docs/plan/ship-progress.md` (new) | The resumable log of S0–S4 | Ship job |
+
 ## 2026-10-09 — R4: easy to run and hand over
 
 | # | File | What changed | Why |
