@@ -75,7 +75,13 @@ export interface MarketState {
   >;
   teacherEdits: Record<string, TeacherSelfPatch>;
   decisions: Record<string, 'accepted' | 'declined'>;
-  applications: (CentreApplicationBody & { id: string; at: string })[];
+  applications: (CentreApplicationBody & {
+    id: string;
+    at: string;
+    /** Set when that number signs in: the pending centre made from the request (07 §2). */
+    centreId?: string;
+    ownerId?: string;
+  })[];
   seq: number;
 }
 

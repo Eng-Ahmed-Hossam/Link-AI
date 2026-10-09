@@ -36,7 +36,7 @@ import type {
   WeeklySlot,
   NewHallBody,
 } from '@link/api-client';
-import { formatClock, formatWeekdays } from '@link/i18n';
+import { formatClock, formatWeekdays, normalizeEgyptPhone } from '@link/i18n';
 import * as fx from '../data';
 import * as db from '../db';
 import { addDays, cairoToUtc, cairoToday, isoWeekday } from '../time';
@@ -983,6 +983,28 @@ export function applyToJoin(b: CentreApplicationBody) {
   db.persist();
   return { id };
 }
+
+/**
+ * 07 §2 (decided 2026-10-08): a join request becomes a pending centre, owned by the caller, when
+ * that phone number signs in with a code. The mock keeps only the ID and the owner.
+ */
+export function convertApplications(e164: string, userId: string) {
+  let added = false;
+  for (const a of m().applications) {
+    if (a.centreId) continue;
+    const national = normalizeEgyptPhone(a.phone ?? '');
+    if (!national || `+20${national}` !== e164) continue;
+    a.centreId = `cen-app-${a.id.replace(/^app-/, '')}`;
+    a.ownerId = userId;
+    added = true;
+  }
+  if (added) db.persist();
+  return added;
+}
+export const ownedApplicationCentres = (userId: string) =>
+  m()
+    .applications.filter((a) => a.ownerId === userId && a.centreId)
+    .map((a) => a.centreId!);
 
 export const features = (centreId: string): CentreFeatures => ({
   followupExtra: m().features[centreId]?.followupExtra ?? false,

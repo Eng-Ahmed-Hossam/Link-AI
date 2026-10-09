@@ -97,6 +97,7 @@ export * from './followup';
 export * from './market';
 export * from './flags';
 export { setApiBaseUrl, apiUrl } from './config';
+export { config as apiConfig } from './config';
 import { config } from './config';
 
 export class ApiError extends Error {
@@ -133,10 +134,77 @@ export const setAuthToken = (token: string | null) => {
   config.token = token;
 };
 
+/** Live mode: how the session travels and where rotated tokens go (07 §1, MKT-ACC-04). */
+export function configureAuth(opts: {
+  transport: 'bearer' | 'cookie';
+  refreshToken?: string | null;
+  onTokens?: (t: { accessToken: string; refreshToken: string }) => void;
+  onAuthLost?: () => void;
+}) {
+  config.auth = opts.transport;
+  config.refreshToken = opts.refreshToken ?? null;
+  config.onTokens = opts.onTokens ?? null;
+  config.onAuthLost = opts.onAuthLost ?? null;
+}
+export const setRefreshToken = (token: string | null) => {
+  config.refreshToken = token;
+};
+
 export const newIdempotencyKey = () =>
   globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 type Params = Record<string, string | number | boolean | undefined | null>;
+
+const networkError = () =>
+  new ApiError({ type: 'about:blank', title: 'Network error', status: 0, code: 'network_error' });
+
+async function send(method: string, url: string, headers: Record<string, string>, body?: string) {
+  const h = { ...headers };
+  if (config.auth === 'cookie') h['x-link-auth'] = 'cookie';
+  else if (config.token) h.authorization = `Bearer ${config.token}`;
+  try {
+    return await fetch(url, {
+      method,
+      headers: h,
+      body,
+      // Same-origin cookies (the browser default): core-api's on the web, the pilot server's in the
+      // pilot. Never cross-origin credentials.
+      credentials: 'same-origin',
+    });
+  } catch {
+    throw networkError();
+  }
+}
+
+/**
+ * One refresh at a time (several calls can expire together). Resolves true when the session was
+ * renewed (or another tab already renewed it), false when the person must sign in again.
+ */
+let refreshing: Promise<boolean> | null = null;
+function renewSession(): Promise<boolean> {
+  refreshing ??= (async () => {
+    if (config.auth === 'bearer' && !config.refreshToken) return false;
+    const res = await send(
+      'POST',
+      `${config.baseUrl}/v1/auth/refresh`,
+      { 'content-type': 'application/json', 'idempotency-key': newIdempotencyKey() },
+      JSON.stringify(config.auth === 'bearer' ? { refreshToken: config.refreshToken } : {}),
+    ).catch(() => null);
+    if (!res) return false;
+    if (res.status === 409) return true; // refresh_raced: another tab rotated; cookies are fresh
+    if (!res.ok) return false;
+    const t = (await res.json()) as { accessToken?: string; refreshToken?: string };
+    if (config.auth === 'bearer' && t.accessToken && t.refreshToken) {
+      config.token = t.accessToken;
+      config.refreshToken = t.refreshToken;
+      config.onTokens?.({ accessToken: t.accessToken, refreshToken: t.refreshToken });
+    }
+    return true;
+  })().finally(() => {
+    refreshing = null;
+  });
+  return refreshing;
+}
 
 async function request<T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
@@ -155,22 +223,23 @@ async function request<T>(
     'accept-language': config.locale,
   };
   if (body !== undefined) headers['content-type'] = 'application/json';
-  if (config.token) headers.authorization = `Bearer ${config.token}`;
+  // The same key on a retry after a refresh: the server replays instead of acting twice.
   if (method !== 'GET') headers['idempotency-key'] = idempotencyKey ?? newIdempotencyKey();
-  let res: Response;
-  try {
-    res = await fetch(`${config.baseUrl}${path}${qs.size ? `?${qs}` : ''}`, {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-  } catch {
-    throw new ApiError({
-      type: 'about:blank',
-      title: 'Network error',
-      status: 0,
-      code: 'network_error',
-    });
+  const url = `${config.baseUrl}${path}${qs.size ? `?${qs}` : ''}`;
+  const payload = body === undefined ? undefined : JSON.stringify(body);
+  let res = await send(method, url, headers, payload);
+  // MKT-ACC-04: an access token lasts 15 minutes; renew it once, then retry the call.
+  if (res.status === 401 && !path.startsWith('/v1/auth/')) {
+    const code = (
+      (await res
+        .clone()
+        .json()
+        .catch(() => null)) as ProblemDetails | null
+    )?.code;
+    if (code === 'token_expired' || config.auth === 'cookie') {
+      if (await renewSession()) res = await send(method, url, headers, payload);
+      if (res.status === 401) config.onAuthLost?.();
+    }
   }
   if (!res.ok) {
     const problem = (await res.json().catch(() => null)) as ProblemDetails | null;
@@ -193,6 +262,15 @@ export const api = {
     request<OtpRequestResult>('POST', '/v1/auth/otp/request', { body: { phone: phoneE164 } }),
   verifyOtp: (phoneE164: string, code: string) =>
     request<OtpVerifyResult>('POST', '/v1/auth/otp/verify', { body: { phone: phoneE164, code } }),
+  /** MKT-ACC-04: the teacher app passes its refresh token; the web sends the cookie. */
+  refresh: (refreshToken?: string) =>
+    request<{ accessToken?: string; refreshToken?: string }>('POST', '/v1/auth/refresh', {
+      body: refreshToken ? { refreshToken } : {},
+    }),
+  logout: (refreshToken?: string) =>
+    request<void>('POST', '/v1/auth/logout', { body: refreshToken ? { refreshToken } : {} }),
+  /** E0-09: global flags, merged with the caller's centre and teacher scopes. */
+  featureFlags: () => request<{ flags: Record<string, boolean> }>('GET', '/v1/feature-flags'),
   me: () => request<Me>('GET', '/v1/me'),
   addRole: (role: Role) => request<Me>('POST', '/v1/me/roles', { body: { role } }),
   updateMe: (body: UpdateMeBody, idempotencyKey: string) =>

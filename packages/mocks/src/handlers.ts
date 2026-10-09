@@ -7,6 +7,21 @@ import { followupHandlers, demoHandlers } from './followup/handlers';
 import { ownerHandlers } from './followup/owner-handlers';
 import { marketHandlers } from './market/handlers';
 import { storyHandlers } from './story/handlers';
+import { demoState } from './followup/db';
+import { convertApplications, ownedApplicationCentres } from './market/logic';
+import { PHASE2_FLAGS } from '@link/api-client';
+
+/** Me.centreIds / teacherId (07 §2): the sample owner and Reception work at Al Nour. */
+const mockMeExtras = (userId: string) => {
+  const st = fx.staff.find((x) => x.id === userId);
+  return {
+    centreIds: [
+      ...(st && st.role !== 'teacher' ? ['cen-nour'] : []),
+      ...ownedApplicationCentres(userId),
+    ],
+    teacherId: st?.teacherId ?? null,
+  };
+};
 
 /** Mock mode accepts this code for every phone number. */
 export const MOCK_OTP = '123456';
@@ -50,6 +65,8 @@ export const handlers = [
     const existing = db.userByPhone(e164);
     const user = existing ?? db.registerUser(e164);
     db.otpReset(e164);
+    // MKT-CEN-01: a join request from this number becomes a pending centre it owns.
+    if (convertApplications(e164, user.id)) db.addRole(user.id, 'centre_owner');
     return HttpResponse.json({
       accessToken: `mock.${user.id}`,
       refreshToken: `mock-refresh.${user.id}`,
@@ -59,6 +76,7 @@ export const handlers = [
         name: user.id === fx.parent.id ? db.parentName(langOf(request)) : user.name,
         language: langOf(request),
         roles: user.roles,
+        ...mockMeExtras(user.id),
       },
     });
   }),
@@ -109,6 +127,16 @@ export const handlers = [
       return HttpResponse.json({ data: db.putConsent(userId, body) });
     }),
   ),
+  // E0-09: the global flags the demo settings stand for (core-api reads platform.feature_flags).
+  http.get('*/v1/feature-flags', () => {
+    const d = demoState();
+    return HttpResponse.json({
+      flags: {
+        'marketplace.enabled': d.marketplace !== false,
+        ...Object.fromEntries(PHASE2_FLAGS.map((k) => [k, d.phase2])),
+      },
+    });
+  }),
   http.get(
     '*/v1/me',
     authed(({ userId, lang }) => {
@@ -122,6 +150,7 @@ export const handlers = [
             : (fx.staff.find((x) => x.id === u.id)?.name[lang] ?? u.name),
         language: lang,
         roles: u.roles,
+        ...mockMeExtras(u.id),
       });
     }),
   ),
