@@ -121,7 +121,10 @@ export async function ageHold(api: Api, enrolmentId: string) {
   );
 }
 
-/** The ledger lines of a payment, by account code. */
+/**
+ * The ledger lines of a payment: transaction by transaction, debits first, then by account code
+ * (lines inside one transaction have no order of their own).
+ */
 export async function ledgerOf(api: Api, paymentId: string) {
   const { rows } = await sql<{
     kind: string;
@@ -133,7 +136,8 @@ export async function ledgerOf(api: Api, paymentId: string) {
     SELECT t.kind, a.code, e.debit_pt AS debit, e.credit_pt AS credit, t.idempotency_key AS key
     FROM ledger.ledger_entries e JOIN ledger.ledger_transactions t ON t.id = e.transaction_id
     JOIN ledger.ledger_accounts a ON a.id = e.account_id
-    WHERE t.payment_id = ${paymentId} ORDER BY t.created_at, e.id`.execute(api.db);
+    WHERE t.payment_id = ${paymentId}
+    ORDER BY t.created_at, t.id, e.debit_pt DESC, a.code`.execute(api.db);
   return rows.map((r) => ({ ...r, debit: Number(r.debit), credit: Number(r.credit) }));
 }
 

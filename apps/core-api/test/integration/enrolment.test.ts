@@ -283,7 +283,8 @@ describe('Edge cases (docs/08 §4, BR-ENR-05/06, BR-MNY-04/12)', () => {
       expect(p!.status).toBe('refunded');
       // P1, then P7 (approved: commission and pending reversed), then the provider's confirmation.
       const lines = await ledgerOf(api, p!.id);
-      expect(lines.map((l) => l.kind)).toEqual([
+      // Capture and refund approval commit together, so compare the kinds as a multiset.
+      expect(lines.map((l) => l.kind).sort()).toEqual([
         'payment_captured',
         'payment_captured',
         'payment_captured',
