@@ -1,137 +1,107 @@
 # Running Link on this machine
 
-Two ways to run Link locally. Both use **sample data only**: no real people, money, SMS or WhatsApp.
+One page, from a clean clone to every role signed in. **Sample data only**: no real people, money, SMS or WhatsApp; every provider is a local fake.
 
-| | `pnpm dev` — live | `pnpm demo` — mock |
-|---|---|---|
-| Backend | core-api (NestJS) on :4000, Postgres, Redis, aws-local | The mock server on :4010 (in-memory) |
-| Sign-in | Phone code by SMS → read it in **sms-sink** at http://localhost:8093 | Code `123456` for every number |
-| Data | Saved in Postgres; survives restarts | Lost when the mock server stops |
-| Demo controls | Local only: the story (Reset story, Follow-up extra) and the stand-in for Link ops (Verify centre) | Yes (the banner's "Demo tools") |
+Windows: follow [setup-windows.md](setup-windows.md) first (Docker Desktop with WSL2, Node, pnpm, uv). What to switch to make Link real later: [go-live-switches.md](go-live-switches.md). Both arrive with the setup branch (`codex/setup-golive`).
 
-Status: **R2b** (platform, accounts, halls, room requests, groups, search, seats, payments on fake-pay, the ledger, earnings, rent income, reviews) of [docs/plan/real-backend.md](plan/real-backend.md). The full `pnpm setup` from a clean clone arrives in R4.
-
-## First run
-
-Needs Docker Desktop (WSL2 on Windows), Node 24+, pnpm 12.
+## 1. Start
 
 ```bash
-pnpm install
-node scripts/env-local.mjs    # once: writes .env.local with local ports and fresh secrets
-pnpm dev                      # services, migrations, demo data, core-api, web, teacher app
+git clone https://github.com/Eng-Ahmed-Hossam/Link-AI.git && cd Link-AI
+pnpm setup      # checks your machine, installs, writes .env.local with fresh local secrets
+pnpm dev        # local services, migrations, sample data, core-api, web, teacher app
 ```
 
-`pnpm dev` seeds the demo world only when the database is empty, so your changes survive a restart. `pnpm dev --reset` (or `pnpm seed:demo --reset`) wipes and re-seeds it.
+> Until the setup branch is merged, `pnpm setup` is: `pnpm install` then `node scripts/env-local.mjs` (once). `pnpm doctor` (also from that branch) checks the machine at any time.
 
-> **Keys in `.env.local`.** Phones are encrypted with `FIELD_KEY_LOCAL` and looked up with `HMAC_KEY_LOOKUP`. `node scripts/env-local.mjs --force` keeps those keys. **If you change either key by hand, the data in Postgres can no longer be read** (core-api says so at start-up): run `pnpm seed:demo --reset` to start again with sample data.
+`pnpm dev` starts Docker services (Postgres, Redis ×2, aws-local, sms-sink, mail-sink, fake-pay, whatsapp-fake), runs migrations, seeds the sample world if the database is empty, then core-api (:4000, worker, messaging-gateway :4002), the web (:3000) and the teacher app (:8081). If ai-service is installed (`pnpm ai:models`) it starts it too, for voice notes. The first run builds images and takes a few minutes.
 
-## Sign in
+`pnpm demo` is the other way: the same apps on the in-memory mock server (code `123456` for every number, nothing saved). The public demo is built from it.
+
+## 2. Sign in
+
+Ask for a code, then read it in **sms-sink at http://localhost:8093** (refreshes every 5 s).
 
 | Who | Where | Number |
 |---|---|---|
-| Parent (Hassan; Mariam and Youssef) | http://localhost:3000/ar/welcome | +20 10 0000 0001 |
-| Teacher (Ms Salma) | http://localhost:8081 | +20 10 0000 0002 |
-| Owner (Tamer, Al Nour) | http://localhost:3000/ar/centre | +20 10 0000 0003 |
-| Reception (Dina, Al Nour) | http://localhost:3000/ar/centre | +20 10 0000 0004 |
-| Owner B (Nile Academy, for the cross-tenant tests) | http://localhost:3000/ar/centre | +20 10 0000 0007 |
+| Parent (Hassan; Mariam and Youssef) | http://localhost:3000/ar/welcome | 0100 000 0001 |
+| Teacher (Ms Salma) | http://localhost:8081 | 0100 000 0002 |
+| Owner (Tamer, Al Nour) | http://localhost:3000/ar/centre | 0100 000 0003 |
+| Reception (Dina, Al Nour) | http://localhost:3000/ar/centre | 0100 000 0004 |
+| Owner B (Nile Academy) | http://localhost:3000/ar/centre | 0100 000 0007 |
 
-Ask for a code, open http://localhost:8093 (it refreshes every 5 s), type the 6 digits. A new number signs up: as a parent on P01, as a teacher in the teacher app. A centre owner joins through "Add my centre" (C01); the centre is created, pending verification, the first time that number signs in.
+A new number signs up: as a parent on P01, as a teacher in the teacher app; a centre owner through "Add my centre" (C01, pending until verified). **Demo controls** (the amber button, local only) stand in for the outside world: Reset story, Simulate first session done, Follow-up extra on/off, Verify centre, and the WhatsApp provider (advance, fail, parent reply, STOP, new day).
 
-## What is real in live mode (R1, R2a, R2b, R3)
+## 3. Click it yourself (steps 1–23)
 
-| Area | Live |
-|---|---|
-| Phone sign-in (P01, A18, T14) | Real: codes by SMS to sms-sink, 5 minutes, 5 tries, 60 s before resend, rate limits |
-| Sessions | Real: 15-minute access token, 30-day refresh token rotated on use; httpOnly cookies on the web, secure storage in the teacher app (browser storage in its web build) |
-| Sign-up | Parent, teacher; owner through C01 (pending centre) |
-| Children and consents | Real (`/v1/me/children`, `/v1/me/consents`) |
-| Staff list and invites (A16) | Real; owner only; the invite SMS goes out through the outbox and the worker |
-| Feature flags, Follow-up extra per centre | Real (`platform.feature_flags`) |
-| Centre isolation | Real: RLS on every centre table; another centre's ID answers 404 |
-| Halls, open slots, schedule (C02, C03, C05) | Real: add a hall, close slots, rent rules, moved pin "under review" (CF-44) |
-| Room requests (J01–J03, C06) | Real: search halls (PostGIS distances), estimate (rate from `commission_rules`), request, the C06 columns, approval books the slot (CF-46), double booking refused by the database, auto-approve |
-| Groups (J05) | Real: fees, seats never above the hall, sessions generated from the slot |
-| Search and profiles (P02–P05) | Real: verified centres and active teachers only; a pending centre or an invited teacher stays hidden |
-| Local ops stand-in | `pnpm ops:verify-centre <centreId|phone>` or Demo controls → "Verify centre" (audited) |
-| Reserve and pay (P06–P08) | Real (R2b): a hold on one seat in every covered session (10 minutes; Fawry 24 hours), checkout on fake-pay's hosted page (no card field in Link), Fawry references, signed webhooks deduplicated on the event ID, the 8 enrolment states, the waitlist |
-| Money | Real (R2b): every payment, release, refund, rent deduction and settlement is one balanced ledger transaction; J07 earnings and C07 rent income are read from it; "Next payout" is computed (Thursday), no payout is sent |
-| Reviews (P10, C04) | Real (R2b): verified parents after the first session, once per target and term; the centre replies or reports, nobody deletes |
-| Seats taken | Real: sample families hold the seats the mock shows (`pnpm seed:demo`) |
-| Session records (T01–T06, A13) | Real (R3): attendance, scores (never above the maximum — blocked), observations; confirm is the teacher's; a confirmed record changes only by a correction with a reason; the owner can ask for one |
-| Voice notes (T03, T04) | Real (R3) when ai-service is installed (`pnpm ai:models`): signed upload to aws-local S3 (encrypted), local Whisper, a draft the teacher checks; names matched to the roster only. Without it: "Type the note instead". Audio deleted after 30 days, transcripts after 90 (worker job) |
-| Rules, flags, follow-ups (A01–A08, A14) | Real (R3): the 4 rules with versions; staff propose, the owner approves; flags only from confirmed records, with the rule, numbers and source records; cases with attempts, dismiss and reopen |
-| Parent messages (A09, P09) | Real (R3): drafted from confirmed facts only; approved with the tick by someone with `messages.approve`; locked after; sent to whatsapp-fake (http://localhost:8094); "Delivered" only when the provider says so (Demo tools ask it); STOP stops at once; "I sent it" for the manual path |
-| Activity log (A17) | Real (R3): from the append-only audit table, owner only |
-| Follow-up extra off | Real (R3): every follow-up endpoint refuses (403 `extra_not_enabled`), no voice upload, no rule runs; the marketplace keeps working |
-| Ask Link (V07) | Off unless `OLLAMA_URL` points at a local Ollama; then read-only answers, names hidden from the model. The scripted assistant is mock-only |
+Each step starts from the one before. Screens by ID: [app map](product/app-map.md).
 
-Jobs run in the worker (hold expiry, offers, 48-hour auto-confirm, sessions held, plans ended, funds release every 15 minutes, refunds, renewals 08:00, settlement 06:00, seat rebuild 03:00, rent invoices on the 1st at 02:00). To run one now: `POST http://localhost:4000/__demo/jobs/run {"name": "funds-release"}` (local only).
-
-## Still not real in live mode
-
-The ops console (verification, refunds and moderation go through `pnpm ops:*` locally), payouts (the Thursday amount is computed, nothing is sent), real SMS, WhatsApp and payment providers (local fakes only), analytics (Phase 3), `/__demo/story/jump`.
-
-## Click it yourself (R2a)
-
-1. **Teacher** (http://localhost:8081, 0100 000 0002): Rooms → «قاعة ١» at مركز النور → for a new group: Maths, Secondary 2, 20 students, EGP 550 → Saturday 4 PM → Send. J03 shows "waiting for مركز النور".
-2. **Owner** (http://localhost:3000/ar/centre, 0100 000 0003): Room requests → move the card to Phone call, Meeting, then Approve. Room schedule → Saturday: Room 1 shows «سلمى», Booked.
+1. **Teacher**: Rooms → «قاعة ١» at مركز النور → new group: Maths, Secondary 2, 20 students, EGP 550 → Saturday 4 PM → Send. J03 shows "waiting for مركز النور".
+2. **Owner**: Room requests → move the card to Phone call, Meeting, then Approve. Room schedule → Saturday: Room 1 shows «سلمى», Booked.
 3. **Teacher**: My groups → the new booking → fees 550 / 150, seats 30 → refused (Room 1 has 24) → 24 → the group opens.
-4. **Parent** (http://localhost:3000/ar/welcome, 0100 000 0001): search finds مركز النور; its page shows the new group with 24 seats.
-5. **Pending centre**: "Add my centre" with a new number, sign in with it at /ar/centre (pending, not in search), then Demo controls → Verify centre (or `pnpm ops:verify-centre 01…`): it appears in the teachers' Rooms.
-6. **Invited teacher**: as the owner, Staff → invite a new number as Teacher; sign in with it in the teacher app → accept → add a name and a subject on My profile → now on the public teacher page.
+4. **Parent**: search finds مركز النور; its page shows the new group with 24 seats.
+5. **Pending centre**: "Add my centre" with a new number, sign in with it at /ar/centre (pending, not in search) → Demo controls → Verify centre (or `pnpm ops:verify-centre 01…`): it appears in the teachers' Rooms.
+6. **Invited teacher**: owner → Staff → invite a new number as Teacher; sign in with it in the teacher app → accept → add a name and a subject on My profile → now on the public teacher page.
+7. **Book**: parent → مركز النور → the new group → «احجز مكان» for Mariam → "Pay for one month only" → Card → fake-pay's page (:8091; Link has no card field) → "Simulate success" → "Place reserved" (the webhook confirmed it, not the redirect). 23 seats left.
+8. **A failed card**: book Youssef in another group → Card → "Simulate failure": the seat stays held with "Try again" until the 10-minute hold ends.
+9. **Fawry**: book Youssef in the new group → Fawry: a reference, "held for 24 hours" → "Simulate payment at a Fawry outlet".
+10. **Earnings**: teacher → Earnings (J07): parents paid, **Link commission** (5%, rounded down) on its own line, rent per hall, "Next payout" Thursday. My groups → New enrolments (J06): Mariam.
+11. **Rent income**: owner → Rent income (C07): Room 1 with Ms Salma, rent, **Link fee**, net.
+12. **Review**: Demo controls → "Simulate first session done"; parent → My children → Mariam → Rate → 5 stars and a sentence. Owner → Reviews (C04) → Reply. There is no delete.
+13. **Held for rent**: teacher → Earnings: "Held for rent (not paid out on Thursday)" under "Next payout".
+14. **Refund by hand**: parent → My children → Mariam's place → "Ask Link to review a refund" → reason → Send. Terminal: `pnpm ops:refunds list` → `pnpm ops:refunds approve <id>` (or `deny <id> "reason"`). The booking page (P08) shows "Refund sent" or "Refund not approved".
+15. **Record a session**: teacher → Follow-up (المتابعة) → the record due → Mariam absent → scores (25 of 20 is refused) → observation → Review → Confirm. Now it changes only by "Correct", with a reason; the original is kept.
+16. **A flag**: Demo controls → "Simulate first session done" again; record the next session with Mariam absent. Owner → Today: Mariam, "2 absences in a row", assigned to Reception, with the two source records.
+17. **Message the parent**: sign in as Reception → the follow-up → Draft message (confirmed facts only, each with its source) → tick "I checked" → Approve; the text locks. It appears at http://localhost:8094. Demo controls → "Advance: Sent → Delivered" twice.
+18. **The parent sees it**: parent → My children → Updates: the approved message only.
+19. **Log the outcome**: Reception → Log outcome → Phone, Reached; or Dismiss with a reason (it can be reopened).
+20. **STOP**: Demo controls → "Parent sends STOP"; the next approved message for that parent is "not sendable — stopped", at once.
+21. **Rules**: owner → Rules → 2 absences → 3: a new version. As Reception the same change is a proposal the owner approves or rejects. Activity log shows each step.
+22. **A voice note** (needs `pnpm ai:models`): teacher → the record → hold the mic → "مريم غابت، ويوسف جاب ١٥ من ٢٠" → the draft shows Mariam absent and Youssef 15/20 for you to check; a name not on the roster stays unmatched.
+23. **Extra off**: Demo controls → Follow-up extra off: the owner's Follow-ups, the teacher's Follow-up tab and the parent's Updates disappear; the API answers 403; booking still works.
 
-## Click it yourself (R2b, after the six steps above)
+## 4. Reset the data
 
-7. **Book**: as the parent, مركز النور → the new group → «احجز مكان» for Mariam → "Pay for one month only" → Card. Link has no card field: you land on fake-pay's page (http://localhost:8091) → "Simulate success" → back on Link: "Place reserved" (the webhook confirmed it; the redirect alone changes nothing). The group now has 23 seats.
-8. **Pay by card, and a failure**: book Youssef in another group, Card → "Simulate failure": the reservation stays held and offers "Try again" until the 10-minute hold runs out.
-9. **Pay by Fawry**: book Youssef in the new group → "Pay for one month only" → Fawry: a reference number and "your place is held for 24 hours". The grey button "Simulate payment at a Fawry outlet" pays it (fake-pay sends the webhook).
-10. **Earnings**: teacher app → Earnings (J07): what parents paid this month, **Link commission** on its own line (5%, rounded down), rent per hall, "Next payout" Thursday. Teacher app → My groups → New enrolments (J06): Mariam.
-11. **Rent income**: owner → Rent income (C07): Room 1 with Ms Salma, rent, **Link fee** on its own line, net.
-12. **Review**: Demo controls → "Simulate first session done", then as the parent: My children → Mariam → "Rate" → 5 stars and a sentence → Send. As the owner: Reviews (C04) → the review → Reply. There is no delete.
+| To | Run |
+|---|---|
+| Start the story again (keeps the services up) | Demo controls → **Reset story** |
+| Re-seed the sample world | `pnpm dev --reset` (or `pnpm seed:demo --reset`) |
+| Delete every local volume and start clean | `pnpm dev:reset` (asks you to type `reset`) |
 
-## Click it yourself (R3, after step 12)
+## 5. What is real and what is fake
 
-13. **Held for rent**: teacher app → Earnings: "Held for rent (not paid out on Thursday)" on its own line, under "Next payout".
-14. **Refund by hand**: as the parent, My children → Mariam's place → "Ask Link to review a refund" → a reason → Send to Link. Then in a terminal: `pnpm ops:refunds list` → `pnpm ops:refunds approve <id>` (or `pnpm ops:refunds deny <id> "reason"`). The booking page (P08) shows "Refund sent" or "Refund not approved".
-15. **Record a session**: teacher app → Follow-up (المتابعة) → the record due → mark Mariam absent → scores (try 25 of 20: refused) → observation → Review → Confirm. The record cannot be edited now; "Correct" asks for a reason and keeps the original.
-16. **A flag**: Demo controls → "Simulate first session done" again, then record the next session with Mariam absent. Owner → Today: Mariam, "2 absences in a row", assigned to Reception, with the two source records.
-17. **Message the parent**: sign in as Reception (0100 000 0004) → the follow-up → Draft message (only confirmed facts, each with its source) → tick "I checked the facts" → Approve. The text is locked. Open http://localhost:8094: the message is there. Demo controls → "Advance: Sent → Delivered" twice → the status moves to Sent, then Delivered (only the provider's webhook moves it).
-18. **The parent sees it**: as the parent, My children → Updates: the approved message, nothing else.
-19. **Log the outcome**: Reception → the follow-up → Log outcome → Phone, Reached → it waits for confirmation; or Dismiss with a reason (it can be reopened).
-20. **STOP**: Demo controls → "Parent sends STOP". Draft and approve another message for Mariam's parent: it is not sent ("not sendable — stopped"), at once. ("I sent it" is the manual path, used when `WHATSAPP_PROVIDER=manual`.)
-21. **Rules**: owner → Rules → change "2 absences" to 3 → a new version; as Reception the same change is a proposal the owner approves or rejects. Activity log shows each step.
-22. **A voice note** (needs `pnpm ai:models`): teacher app → the record → hold the mic, say "مريم غابت، ويوسف جاب ١٥ من ٢٠" → the draft shows Mariam absent and Youssef 15/20 for you to check; a name not on the roster stays unmatched. To time one from the terminal: `pnpm voice:try` (signs in as Ms Salma, uploads a synthetic bench clip, prints upload → draft time and the models ai-service ran).
-23. **Extra off**: Demo controls → Follow-up extra off for مركز النور: the owner's Follow-ups, the teacher's Follow-up tab and the parent's Updates disappear; the API answers 403; booking a seat still works.
+**Real** (core-api, Postgres, the real rules): sign-in and sessions, accounts, children and consents, staff and invites, centre isolation, halls, room requests, groups, search, seats and holds, payments and the double-entry ledger, earnings and rent income, refunds, reviews, session records and corrections, voice notes (with ai-service), the 4 follow-up rules, flags and cases, parent messages and approval, the activity log, the Follow-up extra per centre.
 
-Codes: http://localhost:8093. Payments and webhooks: http://localhost:8091/api/webhooks. WhatsApp: http://localhost:8094. Reset everything: Demo controls → Reset story.
+**Fake** (local stand-ins): SMS → sms-sink (:8093); payments → fake-pay (:8091, moves no money); WhatsApp → whatsapp-fake (:8094); Link ops → `pnpm ops:verify-centre`, `pnpm ops:refunds` and Demo controls; payouts are computed, never sent; Ask Link is off unless a local Ollama runs (`OLLAMA_URL`). The full list and what each needs: [sample-only](product/sample-only.md); the plan: [before real users](plan/before-real-users.md).
 
-## Troubleshooting
-
-- **A web page never finishes compiling** ("Compiling /[lang]/… " for minutes, no CPU): the Next.js dev cache is broken. Stop `pnpm dev`, delete `apps/web/.next/dev`, start again.
-- **core-api logs "written with other keys"**: see the key note above.
-
-## Tests
+## 6. Time a voice note
 
 ```bash
-pnpm test:api          # core-api integration + events + RLS, on its own database (link_test)
-pnpm test:rls          # the cross-tenant suite alone
-pnpm test:money        # golden examples A–I, ledger property tests, seat and concurrency tests
-pnpm test:e2e:live     # sign-in as each role, invites, C01 and the story (all 9 steps), clicked in the browser
-pnpm test:e2e:mock     # the same specs against pnpm demo
-pnpm openapi:check     # contract, OpenAPI document and client types in sync
+pnpm ai:models      # once: local Whisper (and the extraction model) for ai-service
+pnpm dev            # starts ai-service when the models are there
+pnpm voice:try      # signs in as Ms Salma, uploads a sample clip, waits for the draft
 ```
 
-## Ports
+It prints the upload time, the time from upload to draft, and the speech-to-text and language models ai-service ran. Sample audio only (`apps/ai-service/bench/audio`); never a real recording.
 
-| Port | What |
+## 7. Common fixes
+
+| Symptom | Fix |
 |---|---|
-| 3000 | Web (parent PWA, owner and staff web) |
-| 8081 | Teacher app (Expo web) |
-| 4000 | core-api (`/health`, `/ready`, `/v1/*`) |
-| 4002 | messaging-gateway (health only until R3) |
-| 5433 or 5432 | Postgres (`POSTGRES_HOST_PORT`) |
-| 6379 / 6380 | Redis cache / Redis state |
-| 4566 | aws-local (S3, SNS, SQS) |
-| 8093 | sms-sink |
-| 8091 | fake-pay: hosted checkout, Fawry, refunds, webhooks (`/api/webhooks` lists what it sent) |
-| 8025 | mail-sink |
+| "already in use: …" when starting | Another `pnpm dev` or `pnpm demo` is running: stop it (they share ports). |
+| A web page "Compiling…" for minutes, no CPU | The Next.js cache broke: stop, delete `apps/web/.next/dev`, start again. |
+| core-api says the data was "written with other keys" | `.env.local`'s keys changed: `pnpm dev --reset`. |
+| No code in sms-sink | Wait 60 s between codes for one number; check http://localhost:8093 refreshes. |
+| Voice note says "Type the note instead" | ai-service is not running: `pnpm ai:models`, then restart `pnpm dev`. |
+| A message stays "Queued" | Demo controls → "Advance"; whatsapp-fake must reach core-api (`WHATSAPP_FAKE_WEBHOOK_URL`). |
+| Docker errors | Docker Desktop must be running (WSL2 on Windows); `pnpm doctor` names what is missing. |
+
+## Tests and ports
+
+```bash
+pnpm test:api && pnpm test:rls && pnpm test:money   # core-api (own database link_test)
+pnpm test:e2e:live                                   # the browser specs on pnpm dev (story: all 9 steps)
+pnpm test:e2e:mock                                   # the same specs on pnpm demo
+```
+
+Ports: 3000 web · 8081 teacher app · 4000 core-api · 4002 messaging-gateway · 5432 Postgres (`POSTGRES_HOST_PORT`) · 6379/6380 Redis · 4566 aws-local · 8090 ai-service · 8091 fake-pay · 8093 sms-sink · 8094 whatsapp-fake · 8025 mail-sink.

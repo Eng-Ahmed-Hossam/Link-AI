@@ -1,18 +1,18 @@
 # What is still sample-only · ما زال تجريبيًا
 
-Everything in the connected story runs on the mock server (`pnpm demo`) or in the browser (the public demo). The real backend (`pnpm dev`, [RUNNING.md](../RUNNING.md)) is being built in stages R1–R4; the rows say what it already makes real. This is what the next phase must make real before any real centre, teacher or parent uses Link. Each line names what stands in for it today.
+With `pnpm dev` ([RUNNING](../RUNNING.md)) Link runs on its real backend: sign-in, accounts, centres, halls, groups, seats, payments and the ledger, reviews, session records, voice notes, flags, follow-ups and parent messages all come from Postgres, with the real rules and per-centre isolation. What is left is what touches the outside world, or a screen nobody has built yet. Each line names what stands in for it today. The plan to close them, with owners and sizes: [before real users](../plan/before-real-users.md).
 
-| Area | Today (sample only) | Needs for real |
+| Area | Today (stand-in) | Needs for real |
 |---|---|---|
-| **Accounts and sign-in** | `pnpm demo`: codes are always `123456`, sessions are `mock.<user>` tokens. **`pnpm dev` (live): real** — phone codes by SMS to the local sms-sink, rotated sessions, roles from the database, staff invites by SMS, C01 → pending centre (R1). | A real SMS provider (OD-45) and the ops console to verify centres. |
-| **Saved data** | `pnpm demo`: in memory or browser storage. **`pnpm dev`: Postgres** with RLS per centre and the audit log for accounts, children, consents and staff (R1); marketplace data (R2) and follow-up data — records, voice notes, flags, cases, messages (R3). | Backups and production hosting. |
-| **Payments** | `pnpm demo`: a mock provider page, made-up Fawry codes, a webhook simulated after a few seconds. **`pnpm dev` (R2b): real flow on fake-pay** — hosted checkout, Fawry references, signed webhooks deduped on event ID, the double-entry ledger, automatic refunds, renewals by saved card; fake-pay moves no money. | A payment provider with hosted checkout (card, Fawry, mobile wallet), signed webhooks deduped on event id, the double-entry ledger, refunds. |
-| **Fees, rent and payouts** | `pnpm demo`: fixed 5% rates, display-only figures. **`pnpm dev` (R2b):** rates from `commission_rules`, snapshotted on each payment; rent invoices on the 1st; J07 and C07 read from the ledger; "next payout Thursday" is computed, **no payout is sent** (no payout provider, no payout accounts beyond masked sample numbers). | Rates from `commission_rules` (snapshotted on each payment), rent invoices, weekly payouts to teachers' and centres' accounts, statements. |
-| **SMS** | None (codes are fixed, invites are not sent). | An SMS provider for sign-in codes, staff invites and the Fawry fallback. |
-| **WhatsApp** | Parent updates are approved but not sent. `pnpm demo`: "Advance: Sent → Delivered" and the parent's reply are Demo controls. `pnpm dev`: approved messages go to the local whatsapp-fake (:8094), which reports delivery and replies through signed webhooks only when Demo controls ask; STOP works. | A WhatsApp Business provider: approved templates, opt-in and STOP checked on every send, delivery events. |
-| **Voice notes** | Fixture speech-to-text, or local Whisper on this laptop; audio stays on the device. | The ai-service with real speech-to-text, encrypted audio deleted after 30 days, PDPL consent. |
-| **Maps and location** | A drawn map with pins; distances from sample data; "Location under review" is cleared by a Demo control. | Geocoding and a map provider; the ops console to verify a moved pin (CF-44). |
-| **Photos** | Coloured tiles; "+ Add photo" counts up. | Uploads to object storage (signed URLs), review before publishing. |
-| **Link ops** | No ops console (locally, `pnpm ops:verify-centre` and the Demo controls stand in for centre verification): centre join requests (C01), teacher verification, review reports and refunds are only stored. | The ops console (L01–L03): verify centres and teachers, moderate reviews, refunds and disputes. |
-| **Notifications** | Stage changes, approvals and new enrolments are not notified. | In-app and SMS/WhatsApp notifications (MKT-NTF). |
-| **Contact email** | The site's contact address and `PILOT_REQUEST_TO` are not set; the request email provider key is empty. | The real address, and the email provider key in the server-side `.env.production`. |
+| **SMS** | sms-sink (:8093) catches every code and invite; nothing is sent. | An SMS sender (OD-45). |
+| **Payments** | fake-pay (:8091) plays the provider: hosted page, Fawry references, signed webhooks, refunds, a 2% sample fee. No money moves. | A merchant account with hosted checkout (card, Fawry, wallet); the real gateway fee rate. |
+| **Payouts** | "Next payout Thursday" (with "Held for rent") is computed; nothing is sent. | A payout provider and teachers' and centres' bank accounts. |
+| **Rent shortfall** | The ledger can post a teacher's rent top-up (P4), but there is no screen to pay it. | A "Pay the rent shortfall" checkout for teachers. |
+| **WhatsApp** | whatsapp-fake (:8094) receives approved messages; delivery and replies only when Demo controls ask. | WhatsApp Business: a number, approved templates, delivery events. |
+| **Voice notes** | Local Whisper through ai-service on this machine, sample audio only (`pnpm voice:try`). | Hosting ai-service, and the consent pack before any real recording (OD-60). |
+| **Ask Link** | Off unless a local model runs (Ollama). | A decision on the model and where it runs. |
+| **Link ops** | `pnpm ops:verify-centre`, `pnpm ops:refunds` and Demo controls, local only. | The ops console (L01–L03): verification, review moderation, refunds. |
+| **Parent's home area** | Stored on the profile, set only through the API; the browser location is used otherwise. | The settings screen to set it. |
+| **Maps and photos** | A drawn map with pins; coloured tiles for photos. | A map provider and geocoding; photo uploads with review. |
+| **Notifications** | None beyond sign-in codes and invites. | In-app and SMS/WhatsApp notices (MKT-NTF). |
+| **Hosting, email, domain** | Everything on this machine; the contact address and `PILOT_REQUEST_TO` are empty. | Servers, backups, a domain and a contact address. |

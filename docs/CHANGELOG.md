@@ -2,6 +2,16 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-09 — R4: easy to run and hand over
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| R4-1 | `docs/13-open-decisions.md` | CF-54 decided (approved as built); CF-55 new and decided: 403 `extra_not_enabled` for a visible centre, 404 for one the caller cannot see, the system-role flag read only for the caller's own centres | Ahmed's R3 review |
+| R4-2 | `docs/RUNNING.md` | One page from a clean clone: setup → dev, sign-in, the click list 1–23, reset, real vs fake, `pnpm voice:try`, common fixes | R4 |
+| R4-3 | `docs/product/app-map.md`, `docs/product/sample-only.md` | A "Live / Mock" column for every screen; sample-only shrunk to what is really left | R4 |
+| R4-4 | `docs/plan/before-real-users.md` (new), `docs/testing/local-checks.md` (new) | What's left before real users (paperwork, hosting, product gaps; owner and size); the checklist for Ahmed's PC | R4 |
+| R4-5 | `.github/workflows/ci.yml` | `story-live` also runs on pull requests into `main` | R4 |
+
 ## 2026-10-09 — R3: follow-up on the real backend (and the R2b money fixes)
 
 | # | File | What changed | Why |
