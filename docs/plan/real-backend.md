@@ -1,6 +1,6 @@
 # Real backend plan (R0)
 
-**Status:** plan for review — nothing built yet. **Scope:** replace the mock server with core-api for everything the apps call today, locally (`docker compose` + `pnpm dev`), with real accounts, Postgres, per-centre isolation, server-side rules and provider adapters running against local fakes. **Not in scope:** deployment, real provider accounts, the ops console beyond review moderation, app stores, analytics.
+**Status:** R0 approved 2026-10-08 (decisions in §8). R1 built — see §9. R2–R4 not started. **Scope:** replace the mock server with core-api for everything the apps call today, locally (`docker compose` + `pnpm dev`), with real accounts, Postgres, per-centre isolation, server-side rules and provider adapters running against local fakes. **Not in scope:** deployment, real provider accounts, the ops console beyond review moderation, app stores, analytics.
 
 Read for this plan: PRODUCT_BRIEF, docs 05, 06, 07 (§2, §2a–§2d), 08, 10, ADR-0001 to ADR-0009 (0009 for the pilot request email only), `docs/product/sample-only.md`, `docs/product/app-map.md`, the mock handlers (`packages/mocks/src/**/handlers.ts`), `packages/api-client/src/*`, migrations 0001–0003, `infra/local/`.
 
@@ -258,3 +258,21 @@ These are focused hours; wall-clock time is longer because each stage re-runs th
 3. **Golden tests:** worked examples **A–I** (08 §9), not only A–H — agreed?
 4. **sms-sink port:** move it to 8093 (8092 is reserved for `oidc-stub`) so it no longer clashes with ai-service on 8090?
 5. **CI:** run the live e2e (docker services on GitHub Actions) on every push from R2 on, or on demand (`workflow_dispatch`) first?
+
+---
+
+## 9. Progress
+
+### R1 — platform and accounts (built 2026-10-09)
+
+Decisions applied: D1–D11 (§2), phones as `phone_hmac` + `phone_enc` + `phone_last4`, sms-sink on 8093.
+
+Built: core-api with the `api`, `worker` and `gateway` entrypoints; contract in Zod → `openapi.json` → generated client types (`pnpm openapi:check` in CI); migrations 0004–0005; RLS context loaded per transaction; OTP, tokens (cookies on the web, Bearer in the app); parent/teacher sign-up, children, consents, C01 → pending centre, owner-only staff invites (SMS through the outbox → SNS → SQS → consumer, inbox dedupe, DLQ); idempotency; audit in the same transaction; scoped feature flags; `pnpm seed:demo`; `pnpm dev` in live mode; `pnpm test:api` / `test:rls` on `link_test`; `apps/web/e2e-modes` passing in mock and live.
+
+Differences from this plan, decided while building:
+- Migration 0006 was not needed: `platform.feature_flags` already had scopes (0002). The schema plan's numbers after 0005 shift down by one.
+- Locally the field-encryption key comes from `.env.local` (`FIELD_KEY_LOCAL`): aws-local keeps KMS keys in memory, so data encrypted with them would not survive a restart. KMS stays the design elsewhere (10 §5).
+- core-api runs with `tsx` (no build step) locally; a production build arrives with deployment.
+- `GET /v1/feature-flags` added (07) so the web reads flags from the server in live mode.
+- Ops users are not seeded with phones that sign in: ops use SSO (MKT-OPS-08), not in this phase.
+

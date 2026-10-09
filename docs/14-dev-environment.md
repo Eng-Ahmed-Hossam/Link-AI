@@ -6,12 +6,11 @@ How to run Link locally, which settings it reads, which seed data it ships with,
 
 ```bash
 pnpm install
-cp .env.example .env.local     # fill in local values (any random strings for passwords and secrets)
-pnpm dev:infra                 # build + start §2 and wait until every service is healthy
-pnpm db:migrate && pnpm db:seed
+node scripts/env-local.mjs     # writes .env.local: local ports and fresh random secrets
+pnpm dev                       # services, migrations, demo data, core-api, web, teacher app (live mode)
 ```
 
-`pnpm dev:reset` drops the local volumes and does all of the above again (asks first).
+`pnpm dev` is the real backend on this machine ([RUNNING.md](RUNNING.md)); `pnpm demo` is still the mock-data demo. `pnpm dev:reset` drops the local volumes, migrates and seeds again (asks first).
 
 > **Synthetic data only.** `dev` and `staging` never hold real personal data. Real data arrives only in production (E14-04), after OD-26 is decided. Consented real voice notes for E15 follow the same rule for vendors outside Egypt.
 
@@ -36,7 +35,7 @@ The compose file lives in `infra/local/docker-compose.yml` (project name `link`)
 
 | Service | Image / build | Port | Notes |
 |---|---|---|---|
-| `postgres` | PostgreSQL 16 + pgvector + PostGIS 3 (custom image in `infra/local/postgres/`, based on `pgvector/pgvector:pg16`) | 5432 | Database `link`. The init script creates `app_migrator` (owner) and the extensions `postgis`, `vector`, `btree_gist` ([06](06-data-model.md) §0); migration 0001 creates the schemas and the roles `app_user`, `app_worker`, `app_ops` (ADR-0006). |
+| `postgres` | PostgreSQL 16 + pgvector + PostGIS 3 (custom image in `infra/local/postgres/`, based on `pgvector/pgvector:pg16`) | 5432 | Databases `link` and `link_test` (the integration and RLS suites). The init script creates `app_migrator` (owner) and the extensions `postgis`, `vector`, `btree_gist` ([06](06-data-model.md) §0); migration 0001 creates the schemas and the roles `app_user`, `app_worker`, `app_ops` (ADR-0006). |
 | `redis-cache` | Redis 7, `maxmemory-policy allkeys-lru` | 6379 | Cache-aside reads ([05](05-architecture.md) §5) |
 | `redis-state` | Redis 7, `maxmemory-policy noeviction`, AOF on | 6380 | OTP, seat holds, idempotency, rate limits, locks |
 | `aws-local` | Moto server (custom image in `infra/local/aws/`) — **replaces LocalStack**, which now needs an account token (ADR-0006) | 4566 | S3 (voice, media, exports buckets), SNS topic + one SQS queue and DLQ per consumer group (`notifications`, `platform-demo`), KMS aliases `storage` and `fields`, Secrets Manager. In memory: recreated on every start |
@@ -156,15 +155,20 @@ All commands are Node scripts, so they run the same in PowerShell, cmd and bash.
 | `pnpm dev:infra` | `docker compose up -d --build --wait` for §2; fails fast if Docker is not running | real |
 | `pnpm dev:reset` | Drop the local volumes, start §2, migrate and seed (asks first; `--yes` skips) | real |
 | `pnpm db:migrate` / `db:rollback` / `db:status` | dbmate, as `app_migrator` (ADR-0006); `db:migrate` also sets local role passwords | real |
-| `pnpm db:seed` | Load the §4 sample data (refused when `APP_ENV=prod`) | real |
+| `pnpm db:seed` / `pnpm seed:demo` | **Wipe** the app tables and load the demo world: the same people, phones, centres and halls as the mock fixtures (`apps/core-api/seeds/demo.ts`, deterministic IDs, phones encrypted). `APP_ENV=local` only | real |
+| `pnpm db:types` | Regenerate the Kysely row types (`apps/core-api/src/db/schema.ts`) from the migrated schema; CI fails on a diff | real |
+| `node scripts/env-local.mjs [--force]` | Write a fresh `.env.local` (local ports, random secrets); refuses to overwrite without `--force` | real |
 | `pnpm env:check` | Fail if code reads an env name missing from `.env.example` | real |
-| `pnpm dev` | Run api, workers, gateway, ai-service, web, ops and the teacher app locally | *planned* (Part 2) |
+| `pnpm dev` | Live mode on this machine: §2 services, migrations, the demo world if the database is empty (`--reset` re-seeds), core-api (api :4000, worker, messaging-gateway :4002; restart on change), web :3000 and the teacher app :8081 with `API_MODE=live`. Codes go to sms-sink :8093. The ops console and ai-service are not started yet (R3) | real (R1) |
 | `pnpm lint` | ESLint + RTL check; `ruff` for ai-service | real |
 | `pnpm typecheck` | `tsc`; `mypy` for ai-service | real |
-| `pnpm test` | Unit + integration tests | real (frontend packages) |
-| `pnpm test:rls` | Cross-tenant suite: a user of centre A gets `404` for centre B on every endpoint (10 §2) | *planned* (Part 2) |
+| `pnpm test` | Unit tests (every package; core-api's without a database) | real |
+| `pnpm test:api` | core-api integration (accounts, tokens, idempotency, C01, invites), events (outbox → SNS → SQS → consumer, inbox dedupe, DLQ) and the RLS suite, on their own database `link_test` and Redis DB 1 — never your local data. `--fresh` recreates `link_test` | real |
+| `pnpm test:rls` | Cross-tenant suite only: RLS on every table (or a documented reason), no role bypasses RLS, owner A reads no row of centre B in any `centre_id` table, phones never in clear, and an API sweep generated from `openapi.json` (every path with an ID: A gets `404` for B) | real |
 | `pnpm test:money` | Ledger property tests (INV-01, INV-15) + golden tests for worked examples A–I + seat tests (08 §9) | *planned* (E8-01) |
-| `pnpm openapi:check` | OpenAPI drift check; regenerates `packages/api-client` | *planned* (Part 2) |
+| `pnpm openapi:generate` | `apps/core-api/openapi.json` from the Zod contract, then `packages/api-client/src/generated/openapi.ts` from it | real |
+| `pnpm openapi:check` | Fails when either generated file differs from the code (CI) | real |
+| `pnpm test:e2e:mock` / `pnpm test:e2e:live` | The specs in `apps/web/e2e-modes` (sign-in as each role, invites, C01) against `pnpm demo` or `pnpm dev`: the same files in both modes | real |
 | `pnpm events:check` | Event-contract (schema registry) compatibility check | *planned* (Part 2) |
 | `pnpm i18n:check` | Missing AR/EN keys fail (RTL-11) | real |
 | `pnpm ai:eval` | Write one `<id>.pred.json` per gold note with ai-service (`--mode text` or `--mode audio --models a,b [--stt-device cpu]`, `--llm qwen3:8b` or `--no-llm`, `--label`; resumable, into `evals-runs/`), then score them with `link_eval run` into `evals/reports/<date>-<mode>-<model>-<llm>.md` (+ JSON). `--gold apps/ai-service/bench/gold --audio-dir apps/ai-service/bench/audio` runs the Windows-TTS clips; `--calibrate` adds the report-only `link_eval calibrate` (`<name>.calibration.md`) | real |

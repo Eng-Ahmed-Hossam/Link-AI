@@ -11,7 +11,9 @@
     "test": "vitest run",
     "msw:init": "msw init public --no-save",
     "test:e2e": "playwright test",
-    "test:e2e:demo": "playwright test -c playwright.demo.config.ts"
+    "test:e2e:demo": "playwright test -c playwright.demo.config.ts",
+    "test:e2e:mock": "node ../../scripts/e2e-modes.mjs mock",
+    "test:e2e:live": "node ../../scripts/e2e-modes.mjs live"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

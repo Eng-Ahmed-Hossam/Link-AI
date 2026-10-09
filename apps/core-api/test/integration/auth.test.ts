@@ -55,13 +55,13 @@ describe('MKT-ACC-01 phone OTP', () => {
     await c.call('POST', '/v1/auth/otp/request', { phone: '+201000000006' });
     const right = api.sms.lastCode('+201000000006');
     const wrong = right === '000000' ? '111111' : '000000';
-    for (let left = 4; left >= 0; left--) {
+    for (let remaining = 4; remaining >= 0; remaining--) {
       const r = await c.call('POST', '/v1/auth/otp/verify', {
         phone: '+201000000006',
         code: wrong,
       });
       expect(r.status).toBe(422);
-      expect(problem(r)).toMatchObject({ code: 'otp_invalid', remainingAttempts: left });
+      expect(problem(r)).toMatchObject({ code: 'otp_invalid', remainingAttempts: remaining });
     }
     const locked = await c.call('POST', '/v1/auth/otp/verify', {
       phone: '+201000000006',

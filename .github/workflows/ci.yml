@@ -24,9 +24,30 @@ jobs:
       - run: pnpm test
       - run: pnpm run i18n:check
       - run: pnpm run env:check
+      # The OpenAPI document and the api-client types match the core-api contract.
+      - run: pnpm openapi:check
       - run: npx prettier --check .
       # The public demo build carries no presenter tools ("Demo tools", Demo controls).
       - run: pnpm check:public-demo
+
+  # core-api against real Postgres (PostGIS), Redis and aws-local: migrations up, schema types in
+  # sync, integration + events + the cross-tenant RLS suite (pnpm test:api runs both).
+  core-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/env-local.mjs
+      - name: Start Postgres, Redis and aws-local
+        run: docker compose -f infra/local/docker-compose.yml --env-file .env.local up -d --build --wait --wait-timeout 300 postgres redis-cache redis-state aws-local
+      - run: pnpm db:migrate
+      - name: Kysely row types match the migrated schema
+        run: pnpm db:types && git diff --exit-code apps/core-api/src/db/schema.ts
+      - run: pnpm test:api
 
   python:
     runs-on: ubuntu-latest

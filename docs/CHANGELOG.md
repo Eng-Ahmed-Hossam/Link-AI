@@ -2,6 +2,17 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-09 — R1: real backend, platform and accounts
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| R1-1 | `docs/plan/real-backend.md` | The R0 plan (endpoint inventory, schema plan, stack check, risks, estimates) and the R1 progress | R0, approved 2026-10-08 |
+| R1-2 | `docs/07-api.md` | Added: owner profile, feature flags (centre, teacher, parent, global `GET /v1/feature-flags`), `GET /v1/room-bookings?scope=mine`; web sessions as httpOnly cookies + `X-Link-Auth`; `Me.centreIds`/`teacherId`; C01 is public and becomes a pending centre on first sign-in; `centre_owner` only through C01. Renamed in mock and client to match: staff invites, reviews-received filters, room-search parameters | D1–D11, decided 2026-10-08 |
+| R1-3 | `docs/06-data-model.md`, `docs/10-security-privacy.md` | Account phones as `phone_hmac` + `phone_enc` + `phone_last4` (no plaintext); `auth_sessions.family_id`/`client`; `leads.details`; `school_years.short_name_*`; the RLS context loader and the SECURITY DEFINER lookups | D10, decided 2026-10-08 |
+| R1-4 | `docs/14-dev-environment.md`, `.env.example` | sms-sink on host port 8093; `pnpm dev` (live), `seed:demo`, `db:types`, `openapi:*`, `test:api`, `test:rls`, `test:e2e:mock/live`, `scripts/env-local.mjs`; new env names (`JWT_SIGNING_KEY`, `FIELD_KEY_LOCAL`, `CORE_API_PORT`, `GATEWAY_PORT`, `CORS_ALLOWED_ORIGINS`, `AWS_ENDPOINT_URL`, test-only `TEST_LOG`, `E2E_MODE`) | R1 |
+| R1-5 | `docs/RUNNING.md` (new) | How to run live mode, sign in as each role, what is real and what is still on mock | R1 report |
+| R1-6 | `docs/product/sample-only.md` | Accounts and saved data are real in live mode | R1 |
+
 ## 2026-10-08 — Step 2B: the connected story
 
 | # | File | What changed | Why |

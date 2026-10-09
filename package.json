@@ -6,7 +6,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "turbo run dev --parallel",
+    "dev": "node scripts/dev.mjs",
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint && pnpm lint:rtl",
@@ -58,7 +58,9 @@
     "openapi:check": "pnpm --filter @link/core-api openapi:check",
     "seed:demo": "node scripts/db.mjs seed",
     "test:api": "node scripts/test-api.mjs all",
-    "test:rls": "node scripts/test-api.mjs rls"
+    "test:rls": "node scripts/test-api.mjs rls",
+    "test:e2e:mock": "node scripts/e2e-modes.mjs mock",
+    "test:e2e:live": "node scripts/e2e-modes.mjs live"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,11 +1,11 @@
 # What is still sample-only · ما زال تجريبيًا
 
-Everything in the connected story runs on the mock server (`pnpm demo`) or in the browser (the public demo). This is what the next phase must make real before any real centre, teacher or parent uses Link. Each line names what stands in for it today.
+Everything in the connected story runs on the mock server (`pnpm demo`) or in the browser (the public demo). The real backend (`pnpm dev`, [RUNNING.md](../RUNNING.md)) is being built in stages R1–R4; the rows say what it already makes real. This is what the next phase must make real before any real centre, teacher or parent uses Link. Each line names what stands in for it today.
 
 | Area | Today (sample only) | Needs for real |
 |---|---|---|
-| **Accounts and sign-in** | Phone codes are always `123456`; nothing is texted. Sessions are `mock.<user>` tokens in the browser. The role chooser signs in sample users. | core-api auth: phone OTP by SMS (5 minutes, 5 tries, resend after 60 s), real sessions, roles from `role_assignments`, staff invites that arrive. |
-| **Saved data** | One shared in-memory store on the mock server (lost on restart) or the browser's storage; no tenancy. | PostgreSQL with RLS per centre, the audit log in the same transaction, backups. |
+| **Accounts and sign-in** | `pnpm demo`: codes are always `123456`, sessions are `mock.<user>` tokens. **`pnpm dev` (live): real** — phone codes by SMS to the local sms-sink, rotated sessions, roles from the database, staff invites by SMS, C01 → pending centre (R1). | A real SMS provider (OD-45) and the ops console to verify centres. |
+| **Saved data** | `pnpm demo`: in memory or browser storage. **`pnpm dev`: Postgres** with RLS per centre and the audit log for accounts, children, consents and staff (R1); marketplace data in R2, follow-up data in R3. | Backups and production hosting. |
 | **Payments** | A mock provider page ("Simulate a successful payment"), made-up Fawry codes, a webhook simulated after a few seconds. No money moves. | A payment provider with hosted checkout (card, Fawry, mobile wallet), signed webhooks deduped on event id, the double-entry ledger, refunds. |
 | **Fees, rent and payouts** | Link's 5% rent fee and 5% booking commission are fixed in the mock; rent, net and "next payout Thursday" are computed for display only. | Rates from `commission_rules` (snapshotted on each payment), rent invoices, weekly payouts to teachers' and centres' accounts, statements. |
 | **SMS** | None (codes are fixed, invites are not sent). | An SMS provider for sign-in codes, staff invites and the Fawry fallback. |
