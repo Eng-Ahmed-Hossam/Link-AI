@@ -68,7 +68,7 @@ const record = must(
     groupSessionId: due.sessionId,
   }),
   'open record',
-).record;
+);
 
 const audio = readFileSync(file);
 const durationS = Math.max(1, Math.round((statSync(file).size - 44) / 32000)); // 16 kHz mono PCM
