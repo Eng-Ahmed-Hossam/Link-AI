@@ -114,11 +114,236 @@ export interface LedgerCommissionRules {
   validity: Generated<string>;
 }
 
+export interface LedgerLedgerAccounts {
+  code: string;
+  created_at: Generated<Timestamp>;
+  currency: Generated<string>;
+  id: string;
+  owner_id: string | null;
+  owner_type: string;
+  type: string;
+}
+
+export interface LedgerLedgerEntries {
+  account_id: string;
+  created_at: Generated<Timestamp>;
+  credit_pt: Generated<Int8>;
+  debit_pt: Generated<Int8>;
+  id: string;
+  payment_id: string | null;
+  transaction_id: string;
+}
+
+export interface LedgerLedgerTransactions {
+  centre_id: string | null;
+  created_at: Generated<Timestamp>;
+  created_by: string | null;
+  description: string;
+  id: string;
+  idempotency_key: string;
+  kind: string;
+  occurred_at: Generated<Timestamp>;
+  payment_id: string | null;
+  payout_id: string | null;
+  refund_id: string | null;
+  rent_invoice_id: string | null;
+  reverses_id: string | null;
+  teacher_id: string | null;
+}
+
+export interface LedgerPaymentMandates {
+  card_brand: string | null;
+  card_exp_month: number | null;
+  card_exp_year: number | null;
+  card_last4: string | null;
+  created_at: Generated<Timestamp>;
+  enrolment_id: string;
+  guardian_id: string;
+  id: string;
+  provider: string;
+  provider_token_ref: string;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface LedgerPayments {
+  amount_pt: Int8;
+  card_last4: string | null;
+  centre_id: string | null;
+  checkout_url: string | null;
+  commission_pt: Int8 | null;
+  commission_rate_pct: Numeric | null;
+  commission_rule_id: string | null;
+  created_at: Generated<Timestamp>;
+  enrolment_id: string | null;
+  expires_at: Timestamp | null;
+  failure_reason: string | null;
+  fawry_reference: string | null;
+  id: string;
+  idempotency_key: string;
+  kind: string;
+  method: string;
+  payee_id: string | null;
+  payee_type: string;
+  payer_user_id: string | null;
+  period_end: Timestamp | null;
+  period_start: Timestamp | null;
+  provider: string;
+  provider_ref: string | null;
+  released_at: Timestamp | null;
+  rent_invoice_id: string | null;
+  settled_at: Timestamp | null;
+  status: Generated<string>;
+  subscription_id: string | null;
+  succeeded_at: Timestamp | null;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface LedgerPayoutAccounts {
+  created_at: Generated<Timestamp>;
+  details_encrypted: Buffer | null;
+  display_last4: string;
+  holder_name_encrypted: Buffer | null;
+  id: string;
+  kind: string;
+  owner_id: string;
+  owner_type: string;
+  status: Generated<string>;
+  verified_at: Timestamp | null;
+}
+
+export interface LedgerProviderEvents {
+  event_id: string;
+  id: string;
+  outcome: string | null;
+  payload: Json;
+  processed_at: Timestamp | null;
+  provider: string;
+  received_at: Generated<Timestamp>;
+  signature_valid: boolean;
+  type: string;
+}
+
+export interface LedgerProviderSettlementLines {
+  amount_pt: Int8;
+  created_at: Generated<Timestamp>;
+  fee_pt: Generated<Int8>;
+  id: string;
+  kind: string;
+  match_status: string;
+  matched_payment_id: string | null;
+  matched_payout_id: string | null;
+  matched_refund_id: string | null;
+  provider: string;
+  provider_ref: string;
+  raw: Json;
+  settlement_date: Timestamp;
+}
+
+export interface LedgerReconciliationIssues {
+  created_at: Generated<Timestamp>;
+  id: string;
+  kind: string;
+  line_id: string | null;
+  provider: string;
+  resolution: string | null;
+  resolved_at: Timestamp | null;
+  resolved_by: string | null;
+  status: Generated<string>;
+}
+
+export interface LedgerRefunds {
+  amount_pt: Int8;
+  approved_at: Timestamp | null;
+  approved_by: string | null;
+  auto_eligible: Generated<boolean>;
+  commission_reversed_pt: Generated<Int8>;
+  created_at: Generated<Timestamp>;
+  destination: Generated<string>;
+  enrolment_id: string | null;
+  id: string;
+  idempotency_key: string;
+  payment_id: string;
+  policy: string;
+  provider_ref: string | null;
+  reason: string | null;
+  requested_by: string | null;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface LedgerRentInvoices {
+  calculation: Generated<Json>;
+  centre_id: string;
+  commission_rule_id: string | null;
+  created_at: Generated<Timestamp>;
+  deducted_pt: Generated<Int8>;
+  due_on: Timestamp | null;
+  fees_base_adjustment_pt: Generated<Int8>;
+  fees_base_carried_pt: Generated<Int8>;
+  fees_base_pt: Generated<Int8>;
+  gross_amount_pt: Int8;
+  id: string;
+  issued_at: Timestamp | null;
+  link_fee_amount_pt: Int8;
+  link_fee_pct: Numeric;
+  net_to_centre_pt: Int8;
+  period: string;
+  room_booking_id: string;
+  sessions_count: Generated<number>;
+  settled_at: Timestamp | null;
+  status: Generated<string>;
+  student_sessions_count: Generated<number>;
+  teacher_id: string;
+  topup_paid_pt: Generated<Int8>;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface MarketCentresSeenByTeacher {
   area: string | null;
   id: string | null;
   name: string | null;
   verification: string | null;
+}
+
+export interface MarketEnrolmentPeople {
+  centre_id: string | null;
+  enrolment_id: string | null;
+  group_id: string | null;
+  guardian_name: string | null;
+  school_year_id: string | null;
+  student_name: string | null;
+  teacher_id: string | null;
+}
+
+export interface MarketEnrolments {
+  cancel_reason: string | null;
+  cancelled_at: Timestamp | null;
+  centre_id: string;
+  consent_event_id: string | null;
+  created_at: Generated<Timestamp>;
+  current_period_end: Timestamp | null;
+  current_period_start: Timestamp | null;
+  first_session_id: string;
+  group_id: string;
+  guardian_id: string;
+  hold_expires_at: Timestamp | null;
+  id: string;
+  idempotency_key: string | null;
+  method: string | null;
+  payment_plan: string;
+  phone_shared: Generated<boolean>;
+  plan_cancelled_at: Timestamp | null;
+  price_pt: Int8;
+  reference: Generated<string>;
+  session_id: string | null;
+  status: string;
+  status_changed_at: Generated<Timestamp>;
+  student_id: string;
+  teacher_id: string;
+  teacher_reviews: Generated<boolean>;
+  updated_at: Generated<Timestamp>;
+  waitlist_entry_id: string | null;
 }
 
 export interface MarketGroups {
@@ -229,6 +454,47 @@ export interface MarketPublicTeachers {
   years_experience: number | null;
 }
 
+export interface MarketReviewReplies {
+  author_user_id: string;
+  body: string;
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  id: string;
+  review_id: string;
+  status: Generated<string>;
+}
+
+export interface MarketReviewReports {
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  id: string;
+  reason: string;
+  reported_by: string;
+  resolution: string | null;
+  resolved_at: Timestamp | null;
+  review_id: string;
+}
+
+export interface MarketReviews {
+  body: Generated<string>;
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  enrolment_id: string;
+  flags: Generated<string[]>;
+  guardian_id: string;
+  id: string;
+  published_at: Timestamp | null;
+  school_year_id: string;
+  stars: number;
+  status: string;
+  tags: Generated<string[]>;
+  target_id: string;
+  target_type: string;
+  term_id: string | null;
+  updated_at: Generated<Timestamp>;
+  visibility: string;
+}
+
 export interface MarketReviewStats {
   distribution: Generated<number[]>;
   tag_counts: Generated<Json>;
@@ -322,6 +588,21 @@ export interface MarketTeachersSeenByCentre {
   verified: boolean | null;
 }
 
+export interface MarketWaitlistEntries {
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  enrolment_id: string | null;
+  group_id: string;
+  guardian_id: string;
+  id: string;
+  offer_expires_at: Timestamp | null;
+  offered_at: Timestamp | null;
+  offered_sessions: string[] | null;
+  status: Generated<string>;
+  student_id: string;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface OrgCentres {
   about_ar: string | null;
   about_en: string | null;
@@ -359,6 +640,7 @@ export interface OrgConsentEvents {
 
 export interface OrgGuardians {
   created_at: Generated<Timestamp>;
+  home_area: string | null;
   id: string;
   phone_encrypted: Buffer | null;
   phone_hmac: Buffer | null;
@@ -552,7 +834,20 @@ export interface DB {
   "identity.role_assignments": IdentityRoleAssignments;
   "identity.users": IdentityUsers;
   "ledger.commission_rules": LedgerCommissionRules;
+  "ledger.ledger_accounts": LedgerLedgerAccounts;
+  "ledger.ledger_entries": LedgerLedgerEntries;
+  "ledger.ledger_transactions": LedgerLedgerTransactions;
+  "ledger.payment_mandates": LedgerPaymentMandates;
+  "ledger.payments": LedgerPayments;
+  "ledger.payout_accounts": LedgerPayoutAccounts;
+  "ledger.provider_events": LedgerProviderEvents;
+  "ledger.provider_settlement_lines": LedgerProviderSettlementLines;
+  "ledger.reconciliation_issues": LedgerReconciliationIssues;
+  "ledger.refunds": LedgerRefunds;
+  "ledger.rent_invoices": LedgerRentInvoices;
   "market.centres_seen_by_teacher": MarketCentresSeenByTeacher;
+  "market.enrolment_people": MarketEnrolmentPeople;
+  "market.enrolments": MarketEnrolments;
   "market.group_sessions": MarketGroupSessions;
   "market.groups": MarketGroups;
   "market.public_centres": MarketPublicCentres;
@@ -561,7 +856,10 @@ export interface DB {
   "market.public_room_slots": MarketPublicRoomSlots;
   "market.public_rooms": MarketPublicRooms;
   "market.public_teachers": MarketPublicTeachers;
+  "market.review_replies": MarketReviewReplies;
+  "market.review_reports": MarketReviewReports;
   "market.review_stats": MarketReviewStats;
+  "market.reviews": MarketReviews;
   "market.room_booking_slots": MarketRoomBookingSlots;
   "market.room_bookings": MarketRoomBookings;
   "market.room_open_slots": MarketRoomOpenSlots;
@@ -569,6 +867,7 @@ export interface DB {
   "market.rooms_seen_by_teacher": MarketRoomsSeenByTeacher;
   "market.teacher_applications": MarketTeacherApplications;
   "market.teachers_seen_by_centre": MarketTeachersSeenByCentre;
+  "market.waitlist_entries": MarketWaitlistEntries;
   "org.centres": OrgCentres;
   "org.consent_events": OrgConsentEvents;
   "org.guardians": OrgGuardians;
