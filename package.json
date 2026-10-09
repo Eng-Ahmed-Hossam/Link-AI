@@ -7,8 +7,11 @@
   },
   "scripts": {
     "dev": "node scripts/dev.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "setup": "node scripts/setup.mjs",
     "build": "turbo run build",
-    "test": "turbo run test",
+    "test": "turbo run test && pnpm test:scripts",
+    "test:scripts": "node --test \"scripts/test/*.test.mjs\"",
     "lint": "turbo run lint && pnpm lint:rtl",
     "lint:rtl": "node scripts/check-rtl.mjs",
     "typecheck": "turbo run typecheck",
