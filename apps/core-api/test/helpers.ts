@@ -15,6 +15,28 @@ import { RentInvoices } from '../src/ledger/rent-invoices';
 import { Money } from '../src/payments/money';
 import { Database } from '../src/platform/db';
 import { createFakePay } from '../../../infra/local/fakes/fake-pay/server.mjs';
+import { createWhatsAppFake } from '../../../infra/local/fakes/whatsapp-fake/server.mjs';
+import type { VoiceAi, VoiceJob } from '../src/adapters/ai';
+import { MemoryAudioStore } from '../src/adapters/storage';
+import { WhatsAppFakeSender } from '../src/adapters/whatsapp';
+import { Cases } from '../src/followup/cases';
+import { Messages } from '../src/followup/messages';
+import { Owner } from '../src/followup/owner';
+import { Records } from '../src/followup/records';
+import { Voice } from '../src/followup/voice';
+
+/** ai-service stand-in: keeps the jobs; a test posts the result to the internal route itself. */
+export class FakeVoiceAi implements VoiceAi {
+  local = true;
+  readonly jobs: { job: VoiceJob; bytes: number; mime: string }[] = [];
+  down = false;
+  async submit(job: VoiceJob, audio: { bytes: Uint8Array; mime: string }) {
+    if (this.down) throw new Error('ai-service down');
+    this.jobs.push({ job, bytes: audio.bytes.length, mime: audio.mime });
+    return { etaSeconds: 12 };
+  }
+}
+export const AI_TOKEN = 'test-ai-service-token-0123456789';
 
 /**
  * Test harness: a fresh demo world in `link_test` (scripts/test-api.mjs points every URL there),
@@ -47,20 +69,33 @@ export async function startApi() {
       'Run these suites with pnpm test:api / test:rls (they use the link_test database).',
     );
   await seedDemo(process.env.DATABASE_URL_MIGRATOR!);
+  process.env.AI_SERVICE_TOKEN = AI_TOKEN;
   const config = loadConfig();
   const sms = new CapturingSms();
   // fake-pay in this process: the real adapter talks to it, and its signed webhooks come back here.
   const fake = createFakePay({ port: 0, secret: config.PAYMENT_WEBHOOK_SECRET });
   const fakeBase = `http://127.0.0.1:${await fake.listen()}`;
   fake.setPublicUrl(fakeBase);
+  // whatsapp-fake in this process too: statuses and replies come back as signed webhooks.
+  const wa = createWhatsAppFake({ port: 0, secret: config.WHATSAPP_WEBHOOK_SECRET });
+  const waBase = `http://127.0.0.1:${await wa.listen()}`;
+  const audio = new MemoryAudioStore();
+  const ai = new FakeVoiceAi();
   const { app, close } = await createApi(
     config,
     createLogger(process.env.TEST_LOG ?? 'silent', 'test'),
-    { sms, payments: new FakePayProvider(fakeBase, config.PAYMENT_WEBHOOK_SECRET) },
+    {
+      sms,
+      payments: new FakePayProvider(fakeBase, config.PAYMENT_WEBHOOK_SECRET),
+      audio,
+      ai,
+      whatsapp: new WhatsAppFakeSender(waBase, config.WHATSAPP_WEBHOOK_SECRET),
+    },
   );
   await app.listen(0, '127.0.0.1');
   const { port } = app.getHttpServer().address() as { port: number };
   fake.setWebhookUrl(`http://127.0.0.1:${port}/v1/webhooks/payments/fake-pay`);
+  wa.setWebhookUrl(`http://127.0.0.1:${port}/v1/webhooks/messaging/whatsapp-fake`);
   const redis = new Redis(config.REDIS_STATE_URL);
   const migrator = new Kysely<DB>({
     dialect: new PostgresDialect({
@@ -74,6 +109,10 @@ export async function startApi() {
     config,
     fake,
     fakeBase,
+    wa,
+    waBase,
+    audio,
+    ai,
     /** The services behind the API, for jobs and direct checks. */
     s: {
       db: app.get(Database),
@@ -82,6 +121,11 @@ export async function startApi() {
       jobs: app.get(EnrolmentJobs),
       enrolments: app.get(Enrolments),
       rent: app.get(RentInvoices),
+      records: app.get(Records),
+      voice: app.get(Voice),
+      cases: app.get(Cases),
+      messages: app.get(Messages),
+      owner: app.get(Owner),
     },
     /** Superuser-like access for assertions (the table owner; RLS does not apply). */
     db: migrator,
@@ -106,6 +150,7 @@ export async function startApi() {
       await migrator.destroy();
       await close();
       await fake.close();
+      await wa.close();
     },
   };
 }

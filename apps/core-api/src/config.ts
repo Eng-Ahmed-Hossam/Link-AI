@@ -49,6 +49,25 @@ const schema = z
     /** Seat holds (BR-ENR-01, OD-09): 10 minutes for card and wallet, 24 hours for Fawry. */
     HOLD_SECONDS: z.coerce.number().int().positive().default(600),
     FAWRY_HOLD_SECONDS: z.coerce.number().int().positive().default(86_400),
+    // R3 follow-up: consumer queues, voice storage, ai-service and the WhatsApp provider.
+    QUEUE_VOICE: z.string().min(1).default('link-local-voice'),
+    DLQ_VOICE: z.string().min(1).default('link-local-voice-dlq'),
+    QUEUE_MESSAGING: z.string().min(1).default('link-local-messaging'),
+    DLQ_MESSAGING: z.string().min(1).default('link-local-messaging-dlq'),
+    QUEUE_FOLLOWUP: z.string().min(1).default('link-local-followup'),
+    DLQ_FOLLOWUP: z.string().min(1).default('link-local-followup-dlq'),
+    S3_ENDPOINT: z.string().url().optional(),
+    S3_BUCKET_VOICE: z.string().min(1).default('link-local-voice'),
+    KMS_KEY_STORAGE: z.string().optional(),
+    /** ai-service (local Whisper + Ollama). Unset: voice notes answer "Type the note instead". */
+    AI_SERVICE_URL: z.string().url().optional(),
+    AI_SERVICE_TOKEN: z.string().optional(),
+    /** Ask Link in live mode only with a local LLM (R3.4): the scripted assistant never runs here. */
+    OLLAMA_URL: z.string().url().optional(),
+    WHATSAPP_PROVIDER: z.enum(['fake', 'manual']).default('fake'),
+    WHATSAPP_FAKE_URL: z.string().url().default('http://localhost:8094'),
+    WHATSAPP_WEBHOOK_SECRET: z.string().min(16).default('local-whatsapp-fake-secret'),
+    GATEWAY_PORT: z.coerce.number().int().positive().default(4002),
   })
   .superRefine((c, ctx) => {
     // Local only: the key-encryption key comes from .env.local (docs/10 §5); elsewhere KMS.
@@ -72,6 +91,12 @@ const schema = z
       ctx.addIssue({
         code: 'custom',
         path: ['PAYMENT_PROVIDER'],
+        message: 'fake is refused in prod',
+      });
+    if (c.WHATSAPP_PROVIDER === 'fake' && c.APP_ENV === 'prod')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['WHATSAPP_PROVIDER'],
         message: 'fake is refused in prod',
       });
     if (c.PAYMENT_PROVIDER === 'fake' && !c.FAKE_PAY_URL)

@@ -38,6 +38,13 @@ export async function createApi(config: Config, log: Logger, overrides: Override
       autoLogging: { ignore: (req) => req.url === '/health' || req.url === '/ready' },
     }),
   );
+  // The signed voice upload (PUT /v1/voice-notes/{id}/audio) carries raw audio bytes, ≤ 15 MB.
+  app.use(
+    express.raw({
+      type: (req) => req.method === 'PUT' && /^\/v1\/voice-notes\/[^/]+\/audio/.test(req.url ?? ''),
+      limit: '15mb',
+    }),
+  );
   app.use(
     express.json({
       limit: '100kb',

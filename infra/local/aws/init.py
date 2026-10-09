@@ -16,7 +16,7 @@ ENDPOINT = "http://localhost:4566"
 REGION = os.environ.get("AWS_REGION", "eu-central-1")
 BUCKETS = ["link-local-voice", "link-local-media", "link-local-exports"]
 TOPIC = "link-local-events"
-CONSUMERS = ["notifications", "platform-demo"]
+CONSUMERS = ["notifications", "platform-demo", "voice", "messaging", "followup"]
 
 
 def wait_for_server() -> None:

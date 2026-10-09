@@ -1,3 +1,5 @@
+import { CONFIG } from '../platform/di';
+import type { Config } from '../config';
 import { Controller, Inject, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { createTranslator } from '@link/i18n';
@@ -40,6 +42,7 @@ export class CentresController {
     @Inject(Phones) private readonly phones: Phones,
     @Inject(Accounts) private readonly accounts: Accounts,
     @Inject(Redises) private readonly redis: Redises,
+    @Inject(CONFIG) private readonly config: Config,
   ) {}
 
   /** C01 (MKT-CEN-01): stored as a lead; it becomes a centre when the number signs in. */
@@ -234,12 +237,12 @@ export class CentresController {
     });
   }
 
-  /** A teacher sees Follow-up when any centre they work in has the extra (role rows; groups in R2). */
+  /** A teacher sees Follow-up when any centre they work in (staff row or a group there) has the extra. */
   @Endpoint(routes.teacherFeatures)
   teacherFeatures(@Caller() p: Principal) {
     return this.db.asUser(p.userId, async (tx, ctx) => {
       if (!ctx.teacherId) throw forbidden('Teachers only.');
-      const centres = await tx
+      const roles = await tx
         .selectFrom('identity.role_assignments')
         .select('centre_id')
         .where('user_id', '=', p.userId)
@@ -247,23 +250,50 @@ export class CentresController {
         .where('status', '=', 'active')
         .where('centre_id', 'is not', null)
         .execute();
-      for (const c of centres)
-        if (await centreFlag(tx, FLAG.followupExtra, c.centre_id!)) return { followupExtra: true };
+      const groups = await tx
+        .selectFrom('market.groups')
+        .select('centre_id')
+        .where('teacher_id', '=', ctx.teacherId)
+        .execute();
+      const ids = new Set([...roles.map((c) => c.centre_id!), ...groups.map((g) => g.centre_id)]);
+      for (const id of ids)
+        if (await centreFlag(tx, FLAG.followupExtra, id)) return { followupExtra: true };
       return { followupExtra: false };
     });
   }
 
-  /** A parent sees the updates feed when a centre their children study at has the extra (R2: enrolments). */
+  /** A parent sees the updates feed when a centre where a child holds a paid seat has the extra. */
   @Endpoint(routes.myFeatures)
   myFeatures(@Caller() p: Principal) {
-    return this.db.asUser(p.userId, async () => ({ followupExtra: false }));
+    return this.db.asUser(p.userId, async (tx, ctx) => {
+      if (!ctx.guardianId) return { followupExtra: false };
+      const rows = await tx
+        .selectFrom('market.enrolments')
+        .select('centre_id')
+        .distinct()
+        .where('guardian_id', '=', ctx.guardianId)
+        .where('status', 'in', ['awaiting_teacher', 'confirmed', 'past_due', 'ended'])
+        .execute();
+      for (const r of rows)
+        if (await centreFlag(tx, FLAG.followupExtra, r.centre_id)) return { followupExtra: true };
+      return { followupExtra: false };
+    });
   }
 
   @Endpoint(routes.featureFlags)
   featureFlags(@MaybeCaller() p: Principal | null) {
-    if (!p) return this.db.asAnonymous(async (tx) => ({ flags: await flagsFor(tx, {}) }));
+    // R3.4: Ask Link is off in live mode unless a local LLM is configured; the scripted demo
+    // assistant only ever runs in mock mode.
+    const assistant = { 'followup.assistant': !!this.config.OLLAMA_URL };
+    if (!p)
+      return this.db.asAnonymous(async (tx) => ({
+        flags: { ...(await flagsFor(tx, {})), ...assistant },
+      }));
     return this.db.asUser(p.userId, async (tx, ctx) => ({
-      flags: await flagsFor(tx, { centreIds: ctx.centreIds, teacherId: ctx.teacherId }),
+      flags: {
+        ...(await flagsFor(tx, { centreIds: ctx.centreIds, teacherId: ctx.teacherId })),
+        ...assistant,
+      },
     }));
   }
 }

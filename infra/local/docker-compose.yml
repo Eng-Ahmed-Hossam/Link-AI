@@ -120,6 +120,27 @@ services:
       timeout: 3s
       retries: 20
 
+  # R3: the local WhatsApp provider (WhatsAppSender fake). Statuses move only on its webhooks.
+  whatsapp-fake:
+    build:
+      context: ./fakes
+      args: { FAKE: whatsapp-fake }
+    image: link/whatsapp-fake:local
+    environment:
+      WHATSAPP_WEBHOOK_SECRET: ${WHATSAPP_WEBHOOK_SECRET:-local-whatsapp-fake-secret}
+      PORT: '8094'
+      # core-api runs on the host; host.docker.internal reaches it from Docker Desktop.
+      WHATSAPP_FAKE_WEBHOOK_URL: ${WHATSAPP_FAKE_WEBHOOK_URL:-http://host.docker.internal:4000/v1/webhooks/messaging/whatsapp-fake}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '${WHATSAPP_FAKE_HOST_PORT:-8094}:8094'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8094/health']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
 volumes:
   pg-data:
   redis-state-data:

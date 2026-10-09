@@ -17,6 +17,9 @@ import { Money } from './payments/money';
 import { awsClients, Consumer, OutboxRelay } from './worker/events';
 import { moneyJobs, Scheduler } from './worker/jobs';
 import { notificationsHandler } from './worker/notifications';
+import { Messages } from './followup/messages';
+import { Voice } from './followup/voice';
+import { followupHandler, followupJobs, messagingHandler, voiceHandler } from './worker/followup';
 
 /**
  * core-api entrypoints (ADR-0001): `api` (HTTP), `worker` (outbox relay, consumers, jobs) and
@@ -47,6 +50,9 @@ async function worker() {
   const db = app.get(Database);
   const { sns, sqs } = awsClients(config);
   const relay = new OutboxRelay(config, db, sns, log);
+  // Calls outside the database (ai-service) run after the consumer's transaction, never inside it.
+  const later = (fn: () => Promise<unknown>) =>
+    void fn().catch((err: unknown) => log.error({ err }, 'after-commit work failed'));
   const consumers = [
     new Consumer(
       'notifications',
@@ -56,6 +62,9 @@ async function worker() {
       notificationsHandler(app.get<SmsSender>(SMS_SENDER), app.get(Phones)),
       log,
     ),
+    // R3: the rules on confirmed records and saved notes, and voice notes → ai-service.
+    new Consumer('followup', config.QUEUE_FOLLOWUP, db, sqs, followupHandler(), log),
+    new Consumer('voice', config.QUEUE_VOICE, db, sqs, voiceHandler(app.get(Voice), later), log),
   ];
   let stopping = false;
   const stop = async () => {
@@ -77,27 +86,72 @@ async function worker() {
       await new Promise((r) => setTimeout(r, every));
     }
   };
-  const scheduler = new Scheduler(
-    app.get(Redises),
-    log,
-    moneyJobs({ jobs: app.get(EnrolmentJobs), money: app.get(Money), rent: app.get(RentInvoices) }),
-  );
+  const scheduler = new Scheduler(app.get(Redises), log, [
+    ...moneyJobs({
+      jobs: app.get(EnrolmentJobs),
+      money: app.get(Money),
+      rent: app.get(RentInvoices),
+    }),
+    ...followupJobs({ voice: app.get(Voice), messages: app.get(Messages) }),
+  ]);
   void loop('outbox-relay', 500, () => relay.tick());
   void loop('scheduler', 5_000, () => scheduler.tick());
   for (const c of consumers) void loop(`consumer:${c.name}`, 100, () => c.poll());
   if (isLocal(config))
     void loop('outbox-requeue', 60_000, () =>
-      relay.requeueUnconsumed(consumers.map((c) => c.name)),
+      relay.requeueUnconsumed([...consumers.map((c) => c.name), 'messaging']),
     );
 }
 
 async function gateway() {
-  // R3 adds the WhatsAppSender fake, its webhooks and the send loop. Until then the process starts,
-  // answers its health check and waits, so `pnpm dev` already runs all three entrypoints.
-  const app = express();
-  app.get('/health', (_req, res) => res.json({ status: 'ok', channels: [] }));
-  const port = Number(process.env.GATEWAY_PORT ?? 4002);
-  app.listen(port, () => log.info({ port }, 'messaging-gateway listening (no channels until R3)'));
+  // The messaging-gateway (R3): approved messages → WhatsAppSender (whatsapp-fake locally). The
+  // provider's signed webhooks arrive at the API (`/v1/webhooks/messaging/{provider}`); delivery
+  // status moves only on them (BR-APR-11).
+  const app = await NestFactory.createApplicationContext(
+    { module: class GatewayModule {}, providers: coreProviders(config, log), global: true },
+    { logger: ['error', 'warn'] },
+  );
+  const db = app.get(Database);
+  const { sqs } = awsClients(config);
+  const messages = app.get(Messages);
+  const later = (fn: () => Promise<unknown>) =>
+    void fn().catch((err: unknown) => log.error({ err }, 'message not handed over'));
+  const consumer = new Consumer(
+    'messaging',
+    config.QUEUE_MESSAGING,
+    db,
+    sqs,
+    messagingHandler(messages, later),
+    log,
+  );
+  let stopping = false;
+  const http = express();
+  http.get('/health', (_req, res) =>
+    res.json({ status: 'ok', channels: [config.WHATSAPP_PROVIDER] }),
+  );
+  const server = http.listen(config.GATEWAY_PORT, () =>
+    log.info(
+      { port: config.GATEWAY_PORT, provider: config.WHATSAPP_PROVIDER },
+      'messaging-gateway listening',
+    ),
+  );
+  const stop = async () => {
+    stopping = true;
+    server.close();
+    await app.close();
+    await Promise.allSettled([db.close(), app.get(Redises).close()]);
+    process.exit(0);
+  };
+  process.on('SIGINT', stop);
+  process.on('SIGTERM', stop);
+  while (!stopping) {
+    try {
+      await consumer.poll();
+    } catch (err) {
+      log.error({ err }, 'messaging consumer failed');
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
 }
 
 const run = { api, worker, gateway }[entry];

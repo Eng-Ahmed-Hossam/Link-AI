@@ -1,6 +1,20 @@
 import { Module, type DynamicModule, type Provider, type Type } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { AiServiceClient, VOICE_AI, type VoiceAi } from './adapters/ai';
 import { FakePayProvider, PAYMENT_PROVIDER, type PaymentProvider } from './adapters/payments';
+import { AUDIO_STORE, type AudioStore, S3AudioStore } from './adapters/storage';
+import {
+  ManualSender,
+  WHATSAPP_SENDER,
+  WhatsAppFakeSender,
+  type WhatsAppSender,
+} from './adapters/whatsapp';
+import { Cases } from './followup/cases';
+import { FollowupController } from './followup/controller';
+import { Messages } from './followup/messages';
+import { Owner } from './followup/owner';
+import { Records } from './followup/records';
+import { Voice } from './followup/voice';
 import { type SmsSender, SMS_SENDER, SmsSinkSender } from './adapters/sms';
 import { type Config, isLocal } from './config';
 import { Accounts } from './identity/accounts';
@@ -35,6 +49,10 @@ import { Money } from './payments/money';
 export interface Overrides {
   sms?: SmsSender;
   payments?: PaymentProvider;
+  audio?: AudioStore;
+  /** null = no ai-service (voice notes answer "Type the note instead"). */
+  ai?: VoiceAi | null;
+  whatsapp?: WhatsAppSender;
 }
 
 /** Shared services, built from the typed config. Used by every entrypoint (api, worker, gateway). */
@@ -76,7 +94,11 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
     ),
     factory(Halls, [Database, Seats], (db: Database, s: Seats) => new Halls(db, s)),
     factory(Requests, [Database], (db: Database) => new Requests(db)),
-    factory(Groups, [Database, Seats], (db: Database, s: Seats) => new Groups(db, s)),
+    factory(
+      Groups,
+      [Database, Seats, Records],
+      (db: Database, s: Seats, r: Records) => new Groups(db, s, r),
+    ),
     factory(Search, [Database, Seats], (db: Database, s: Seats) => new Search(db, s)),
     factory(
       Money,
@@ -102,6 +124,37 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
       (db: Database, s: Seats, h: Halls) => new Reports(db, s, h),
     ),
     factory(Reviews, [Database], (db: Database) => new Reviews(db)),
+    // ── R3 follow-up (the paid extra) ───────────────────────────────────────────
+    factory(AUDIO_STORE, [], () => overrides.audio ?? new S3AudioStore(c)),
+    factory(VOICE_AI, [], () =>
+      overrides.ai !== undefined
+        ? overrides.ai
+        : c.AI_SERVICE_URL && c.AI_SERVICE_TOKEN
+          ? new AiServiceClient(c.AI_SERVICE_URL, c.AI_SERVICE_TOKEN)
+          : null,
+    ),
+    factory(
+      WHATSAPP_SENDER,
+      [],
+      () =>
+        overrides.whatsapp ??
+        (c.WHATSAPP_PROVIDER === 'manual'
+          ? new ManualSender()
+          : new WhatsAppFakeSender(c.WHATSAPP_FAKE_URL, c.WHATSAPP_WEBHOOK_SECRET)),
+    ),
+    factory(Records, [Database], (db: Database) => new Records(db)),
+    factory(
+      Voice,
+      [Database, AUDIO_STORE, VOICE_AI],
+      (db: Database, store: AudioStore, ai: VoiceAi | null) => new Voice(db, store, ai, c, log),
+    ),
+    factory(Cases, [Database], (db: Database) => new Cases(db)),
+    factory(
+      Messages,
+      [Database, WHATSAPP_SENDER, Phones],
+      (db: Database, w: WhatsAppSender, p: Phones) => new Messages(db, w, p, log),
+    ),
+    factory(Owner, [Database], (db: Database) => new Owner(db)),
   ];
 }
 
@@ -123,6 +176,7 @@ export async function apiModule(
     SearchController,
     EnrolmentsController,
     ReviewsController,
+    FollowupController,
   ];
   if (isLocal(c)) controllers.push((await import('./dev/dev.controller')).DevController);
   @Module({})

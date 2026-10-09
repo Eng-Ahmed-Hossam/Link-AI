@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { followupRoutes } from './followup-routes';
 import * as m from './market';
 import * as $ from './money';
 import * as s from './schemas';
@@ -953,6 +954,9 @@ export const routes = {
     body: $.ReportBody,
     response: m.Ok,
   }),
+
+  // ── Follow-up, the paid extra (R3, 07 §2b–§2d) ───────────────────────────────
+  ...followupRoutes,
 } satisfies Record<string, RouteDef>;
 
 export type RouteName = keyof typeof routes;
