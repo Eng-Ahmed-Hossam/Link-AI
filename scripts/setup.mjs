@@ -33,8 +33,18 @@ const plan = setupPlan(flags, {
 const started = Date.now();
 
 console.log('\nLink setup — sample data only\n');
-const checks = await runChecks(probe, { wantedPnpm: wantedPnpm(), env: localEnv() });
-// Before setup, a missing .env.local or stopped containers are expected: setup creates them.
+// .env.local first, before the checks gate anything: writing it only ever adds names, and a port
+// moved on the command line (POSTGRES_HOST_PORT=5433 pnpm run setup) must reach it on a clean clone.
+const envStep = plan.find((s) => s.id === 'env');
+if (!flags.dryRun && envStep) {
+  const r = spawnSync(envStep.cmd, envStep.args, { cwd: ROOT, stdio: 'inherit' });
+  if (r.status !== 0) process.exit(1);
+}
+const checks = await runChecks(probe, {
+  wantedPnpm: wantedPnpm(),
+  env: { ...localEnv(), ...process.env },
+});
+// Stopped containers are expected before setup: it starts them.
 console.log(formatTable(checks), '\n');
 
 if (flags.dryRun) {
@@ -49,7 +59,7 @@ if (failed(checks)) {
 }
 
 for (const [i, step] of plan.entries()) {
-  if (step.id === 'doctor') continue;
+  if (step.id === 'doctor' || step.id === 'env') continue; // both ran above
   const head = `── ${i + 1}/${plan.length} ${step.title}`;
   console.log(`\n${head}`);
   if (!step.cmd) {

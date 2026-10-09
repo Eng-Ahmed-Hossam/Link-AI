@@ -224,7 +224,7 @@ export async function checkPorts(p, env = {}) {
       'ports',
       'Ports',
       `taken by another program: ${busy.join(', ')}`,
-      'Stop that program, or move Link to a free port with the *_HOST_PORT setting named',
+      'Stop that program, or move Link to a free port: on a first setup run it with the setting named, e.g. POSTGRES_HOST_PORT=5433 pnpm run setup (PowerShell: $env:POSTGRES_HOST_PORT=5433; pnpm run setup), which writes it into .env.local with every database URL; later, change it in .env.local and in the DATABASE_URL* lines',
     );
   if (appBusy.length)
     return warn(

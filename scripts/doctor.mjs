@@ -4,7 +4,10 @@
 import { failed, formatTable, runChecks } from './lib/checks.mjs';
 import { localEnv, realProbe, wantedPnpm } from './lib/probe.mjs';
 
-const results = await runChecks(realProbe(), { wantedPnpm: wantedPnpm(), env: localEnv() });
+const results = await runChecks(realProbe(), {
+  wantedPnpm: wantedPnpm(),
+  env: { ...localEnv(), ...process.env },
+});
 if (process.argv.includes('--json')) {
   console.log(JSON.stringify({ ok: !failed(results), checks: results }, null, 2));
 } else {
