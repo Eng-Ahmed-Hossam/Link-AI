@@ -123,7 +123,8 @@ Rules:
 | Card data | Never touches Link. Hosted checkout and provider tokens only — PCI scope stays minimal (SAQ A) |
 | Secrets | Secrets manager + KMS; rotated; never in code, images or env files in git; one least-privilege IAM role per deployable (diagram 02) |
 | Object access | Signed URLs only, with short expiry. No public buckets. |
-| Devices | The teacher app encrypts its offline queue and SQLite store with a key from the device's secure storage |
+| Devices | The teacher app encrypts its offline queue and SQLite store with a key from the device's secure storage. Its session tokens live in the OS secure storage (Keychain / Keystore). **The Expo web build of the teacher app is not a production target**: it exists for development and demos only, and keeps its tokens in browser storage (decided 2026-10-09) |
+| Key IDs | Every encrypted value carries the ID (fingerprint) of the key that wrapped it, and `platform.data_keys` records which keys wrote the stored data; a mismatch is reported at start-up instead of failing as corrupt data |
 
 ## 6. Audit log
 

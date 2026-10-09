@@ -114,6 +114,167 @@ export interface LedgerCommissionRules {
   validity: Generated<string>;
 }
 
+export interface MarketCentresSeenByTeacher {
+  area: string | null;
+  id: string | null;
+  name: string | null;
+  verification: string | null;
+}
+
+export interface MarketGroups {
+  centre_id: string;
+  closed_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  curriculum_id: string;
+  end_time: string;
+  id: string;
+  monthly_fee_pt: Int8;
+  offers_monthly_recurring: Generated<boolean>;
+  room_booking_id: string;
+  school_year_id: string;
+  seat_cap: number;
+  session_fee_pt: Int8;
+  start_time: string;
+  starts_on: Timestamp;
+  status: Generated<string>;
+  subject_id: string;
+  teacher_id: string;
+  updated_at: Generated<Timestamp>;
+  weekdays: number[];
+}
+
+export interface MarketGroupSessions {
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  ends_at: Timestamp;
+  group_id: string;
+  id: string;
+  rent_invoice_id: string | null;
+  starts_at: Timestamp;
+  status: Generated<string>;
+  status_changed_at: Timestamp | null;
+  status_changed_by: string | null;
+  status_reason: string | null;
+}
+
+export interface MarketPublicCentres {
+  about_ar: string | null;
+  about_en: string | null;
+  address: string | null;
+  area: string | null;
+  governorate: string | null;
+  hours: Json | null;
+  id: string | null;
+  location: string | null;
+  location_status: string | null;
+  name: string | null;
+  photo_count: number | null;
+  slug: string | null;
+}
+
+export interface MarketPublicGroups {
+  centre_id: string | null;
+  curriculum_id: string | null;
+  end_time: string | null;
+  id: string | null;
+  monthly_fee_pt: Int8 | null;
+  offers_monthly_recurring: boolean | null;
+  room_booking_id: string | null;
+  room_id: string | null;
+  room_name: string | null;
+  school_year_id: string | null;
+  seat_cap: number | null;
+  session_fee_pt: Int8 | null;
+  start_time: string | null;
+  starts_on: Timestamp | null;
+  subject_id: string | null;
+  teacher_id: string | null;
+  weekdays: number[] | null;
+}
+
+export interface MarketPublicGroupSessions {
+  ends_at: Timestamp | null;
+  group_id: string | null;
+  id: string | null;
+  starts_at: Timestamp | null;
+  status: string | null;
+}
+
+export interface MarketPublicRooms {
+  capacity: number | null;
+  centre_id: string | null;
+  facilities: string[] | null;
+  id: string | null;
+  name: string | null;
+  photo: number | null;
+  rent_rule: Json | null;
+}
+
+export interface MarketPublicRoomSlots {
+  end_time: string | null;
+  room_id: string | null;
+  start_time: string | null;
+  taken: boolean | null;
+  weekday: number | null;
+}
+
+export interface MarketPublicTeachers {
+  bio_ar: string | null;
+  bio_en: string | null;
+  display_name: string | null;
+  id: string | null;
+  open_to_slots: boolean | null;
+  slug: string | null;
+  verified: boolean | null;
+  years_experience: number | null;
+}
+
+export interface MarketReviewStats {
+  distribution: Generated<number[]>;
+  tag_counts: Generated<Json>;
+  target_id: string;
+  target_type: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface MarketRoomBookings {
+  application_id: string | null;
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  end_reason: string | null;
+  ended_by: string | null;
+  ends_on: Timestamp | null;
+  id: string;
+  rent_rule: Json;
+  room_id: string;
+  starts_on: Timestamp;
+  status: Generated<string>;
+  teacher_id: string;
+  updated_at: Generated<Timestamp>;
+  weekly_slots: Json;
+}
+
+export interface MarketRoomBookingSlots {
+  active_dates: string;
+  booking_id: string;
+  centre_id: string;
+  minutes: string;
+  room_id: string;
+  weekday: number;
+}
+
+export interface MarketRoomOpenSlots {
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  end_time: string;
+  id: string;
+  listed: Generated<boolean>;
+  minutes: Generated<string>;
+  room_id: string;
+  start_time: string;
+  weekday: number;
+}
+
 export interface MarketRooms {
   archived_at: Timestamp | null;
   capacity: number;
@@ -123,8 +284,42 @@ export interface MarketRooms {
   id: string;
   listed: Generated<boolean>;
   name: string;
+  photo: Generated<number>;
   rent_rule: Json;
   updated_at: Generated<Timestamp>;
+}
+
+export interface MarketRoomsSeenByTeacher {
+  capacity: number | null;
+  centre_id: string | null;
+  id: string | null;
+  name: string | null;
+  rent_rule: Json | null;
+}
+
+export interface MarketTeacherApplications {
+  auto_approved: Generated<boolean>;
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  decline_reason: string | null;
+  expected_students: number;
+  id: string;
+  requested_slots: Json;
+  room_booking_id: string | null;
+  room_id: string;
+  scheduled_contact_at: Timestamp | null;
+  stage: Generated<string>;
+  starts_on: Timestamp;
+  subject_id: string;
+  teacher_id: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface MarketTeachersSeenByCentre {
+  created_at: Timestamp | null;
+  display_name: string | null;
+  id: string | null;
+  verified: boolean | null;
 }
 
 export interface OrgCentres {
@@ -218,6 +413,7 @@ export interface OrgTeachers {
   id: string;
   open_to_slots: Generated<boolean>;
   photo_key: string | null;
+  profile_status: Generated<string>;
   settings: Generated<Json>;
   slug: string;
   updated_at: Generated<Timestamp>;
@@ -245,6 +441,12 @@ export interface OrgVerificationChecks {
   subject_id: string;
   subject_type: string;
   updated_at: Generated<Timestamp>;
+}
+
+export interface PlatformDataKeys {
+  created_at: Generated<Timestamp>;
+  key_id: string;
+  purpose: string;
 }
 
 export interface PlatformFeatureFlags {
@@ -350,7 +552,23 @@ export interface DB {
   "identity.role_assignments": IdentityRoleAssignments;
   "identity.users": IdentityUsers;
   "ledger.commission_rules": LedgerCommissionRules;
+  "market.centres_seen_by_teacher": MarketCentresSeenByTeacher;
+  "market.group_sessions": MarketGroupSessions;
+  "market.groups": MarketGroups;
+  "market.public_centres": MarketPublicCentres;
+  "market.public_group_sessions": MarketPublicGroupSessions;
+  "market.public_groups": MarketPublicGroups;
+  "market.public_room_slots": MarketPublicRoomSlots;
+  "market.public_rooms": MarketPublicRooms;
+  "market.public_teachers": MarketPublicTeachers;
+  "market.review_stats": MarketReviewStats;
+  "market.room_booking_slots": MarketRoomBookingSlots;
+  "market.room_bookings": MarketRoomBookings;
+  "market.room_open_slots": MarketRoomOpenSlots;
   "market.rooms": MarketRooms;
+  "market.rooms_seen_by_teacher": MarketRoomsSeenByTeacher;
+  "market.teacher_applications": MarketTeacherApplications;
+  "market.teachers_seen_by_centre": MarketTeachersSeenByCentre;
   "org.centres": OrgCentres;
   "org.consent_events": OrgConsentEvents;
   "org.guardians": OrgGuardians;
@@ -360,6 +578,7 @@ export interface DB {
   "org.teacher_subjects": OrgTeacherSubjects;
   "org.teachers": OrgTeachers;
   "org.verification_checks": OrgVerificationChecks;
+  "platform.data_keys": PlatformDataKeys;
   "platform.feature_flags": PlatformFeatureFlags;
   "platform.idempotency_keys": PlatformIdempotencyKeys;
   "platform.inbox_events": PlatformInboxEvents;

@@ -214,6 +214,7 @@ RLS: `PUBLIC` (verified, through `market.public_centres` view), `CENTRE` (owner 
 | settings | jsonb | `reviewEachEnrolment` (default false, OD-08) |
 
 RLS: `PUBLIC` (verified, through a view), `TEACHER` read/write, `CENTRE` read for teachers with an application or booking at the centre, `OPS`.
+| profile_status | text | **(added 2026-10-09)** `invited` (made by a centre's invite) \| `incomplete` \| `active`. Parents see only `active`: an accepted invite, a name and at least one subject |
 
 ### teacher_subjects
 | Field | Type | Notes |
@@ -330,6 +331,8 @@ Unique `(subject_type, subject_id, check_code)`. RLS: `OPS`. The owner or teache
 ```
 RLS: `PUBLIC` (listed halls of verified centres, through a view), `CENTRE` (owner writes), `OPS`.
 
+`photo` (added): a sample photo tile (0–3) until hall photos are uploaded.
+
 ### room_open_slots (added)
 | Field | Type | Notes |
 |---|---|---|
@@ -408,6 +411,7 @@ One row per weekly slot of a booking, used to block double-booking.
 | starts_on | date | |
 | closed_at | timestamptz | |
 
+Also (added): `weekdays smallint[]`, `start_time`, `end_time`, copied from the booking's slot, so a group's sessions are generated from them.
 Indexes: `(centre_id, status)`, `(teacher_id)`, `(curriculum_id, school_year_id, subject_id) WHERE status = 'published'`. RLS: `PUBLIC` (published), `TEACHER` (write), `CENTRE` (read), `OPS`.
 
 ### group_sessions (added)
@@ -493,9 +497,16 @@ id, review_id → reviews (UNIQUE), author_user_id, body, status (`published` \|
 id, review_id → reviews, reported_by, reason, resolved_at, resolution. RLS: target, `OPS`.
 
 ### review_stats (added, derived)
+`(target_type, target_id)` → `distribution int[5]` (published public reviews by stars 5…1) and `tag_counts jsonb`. Public read.
+
 target_type, target_id (PK), rating_avg `numeric(3,2)`, review_count, tag_counts jsonb. Rebuilt by the reviews module. RLS: `PUBLIC`.
 
 ---
+
+### Public read views (added 2026-10-09)
+Parents and teachers read other tenants' public data only through views that show public rows and columns: `market.public_centres` (verified centres; a pending C01 centre is hidden), `public_teachers` (`profile_status = 'active'`), `public_rooms` and `public_room_slots` (listed halls of verified centres; a slot is taken while a live booking overlaps it), `public_groups` and `public_group_sessions` (published groups of verified centres and active teachers). Caller-filtered views give each side its own relations: `teachers_seen_by_centre`, `centres_seen_by_teacher`, `rooms_seen_by_teacher`.
+
+CF-44 is enforced by a trigger: any change of `org.centres.location` sets `location_status = 'under_review'`; Link ops set it back to `verified`.
 
 ## 5. `ledger` — never cached
 
@@ -909,6 +920,9 @@ RLS: `TEACHER` (own groups), `CENTRE` (owner and staff), `GUARDIAN` only through
 ---
 
 ## 10. `audit` and `platform`
+
+### platform.data_keys (added 2026-10-09)
+`purpose` (`field` | `lookup`) → `key_id`: the fingerprint of the key that wrote the stored data (never the key). Encrypted values also carry their key ID. A mismatch at start-up is reported (locally: `pnpm seed:demo --reset`). RLS: `SYSTEM`.
 
 ### audit.audit_events
 | Field | Type | Notes |
