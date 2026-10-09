@@ -2,17 +2,18 @@
 
 One page, from a clean clone to every role signed in. **Sample data only**: no real people, money, SMS or WhatsApp; every provider is a local fake.
 
-Windows: follow [setup-windows.md](setup-windows.md) first (Docker Desktop with WSL2, Node, pnpm, uv). What to switch to make Link real later: [go-live-switches.md](go-live-switches.md). Both arrive with the setup branch (`codex/setup-golive`).
+Windows: follow [setup-windows.md](setup-windows.md) first (Docker Desktop with WSL2, Node, pnpm, uv). What to switch to make Link real later: [go-live-switches.md](go-live-switches.md). Both arrive with the setup branch (`codex/setup-golive`); until it is merged these two links are empty.
 
 ## 1. Start
 
 ```bash
 git clone https://github.com/Eng-Ahmed-Hossam/Link-AI.git && cd Link-AI
-pnpm setup      # checks your machine, installs, writes .env.local with fresh local secrets
-pnpm dev        # local services, migrations, sample data, core-api, web, teacher app
+pnpm install                  # workspace packages
+node scripts/env-local.mjs    # once: writes .env.local with local ports and fresh secrets
+pnpm dev                      # local services, migrations, sample data, core-api, web, teacher app
 ```
 
-> Until the setup branch is merged, `pnpm setup` is: `pnpm install` then `node scripts/env-local.mjs` (once). `pnpm doctor` (also from that branch) checks the machine at any time.
+> When the setup branch (`codex/setup-golive`) is merged, `pnpm setup` does the first two lines and checks your machine, and `pnpm doctor` checks it at any time. Until then they do not exist.
 
 `pnpm dev` starts Docker services (Postgres, Redis ×2, aws-local, sms-sink, mail-sink, fake-pay, whatsapp-fake), runs migrations, seeds the sample world if the database is empty, then core-api (:4000, worker, messaging-gateway :4002), the web (:3000) and the teacher app (:8081). If ai-service is installed (`pnpm ai:models`) it starts it too, for voice notes. The first run builds images and takes a few minutes.
 

@@ -8,7 +8,7 @@ Before you start: Docker Desktop is running (WSL2), and nothing else uses ports 
 |---|---|---|---|
 | 1 | `git pull` then `pnpm install` | `git pull` ends on `main` with no conflict; `pnpm install` ends with `Done in …` and no `ERR_PNPM_…` | — |
 | 2 | `pnpm doctor` | Every check ✔ (Node 24+, pnpm, Docker running, uv, free ports, `.env.local`); a ✖ line names what to fix. *(Arrives with the setup branch; skip if the command is missing.)* | Any ✖ line |
-| 3 | `pnpm setup` | Ends with a ✔ summary and the next command (`pnpm dev`). Running it a second time changes nothing. *(Same branch.)* | **Time** from start to the ✔ line |
+| 3 | `pnpm setup` | Ends with a ✔ summary and the next command (`pnpm dev`). Running it a second time changes nothing. *(Same branch. Until it is merged, run `node scripts/env-local.mjs` instead: it prints `✔ Wrote .env.local (… values, …)`.)* | **Time** from start to the ✔ line |
 | 4a | `cd apps/ai-service` then `uv run pytest -q` | `uv` creates `.venv` and installs the packages the first time; ends with `N passed` (no `failed`, no `error`) | The `N passed` line |
 | 4b | still in `apps/ai-service`: `uv run mypy ai_service --ignore-missing-imports` then `cd ../..` | `Success: no issues found in … source files` | — |
 | 5a | `pnpm ai:models` | One `→ name: repo` line, then `✔ name in Ns → …` for each of `large-v3-turbo`, `egy-turbo-ft`, `large-v3` (about 6 GB in all; re-running skips finished files). No `✖ … failed` | Download time |
