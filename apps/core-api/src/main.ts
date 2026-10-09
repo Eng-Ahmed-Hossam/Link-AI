@@ -14,7 +14,15 @@ import { createApi } from './server';
 import { EnrolmentJobs } from './enrolment/jobs';
 import { RentInvoices } from './ledger/rent-invoices';
 import { Money } from './payments/money';
-import { awsClients, Consumer, OutboxRelay } from './worker/events';
+import {
+  awsClients,
+  Consumer,
+  type Handler,
+  OutboxRelay,
+  PgConsumer,
+  PgRelay,
+  type QueueConsumer,
+} from './worker/events';
 import { moneyJobs, Scheduler } from './worker/jobs';
 import { notificationsHandler } from './worker/notifications';
 import { Messages } from './followup/messages';
@@ -48,23 +56,22 @@ async function worker() {
     { logger: ['error', 'warn'] },
   );
   const db = app.get(Database);
-  const { sns, sqs } = awsClients(config);
-  const relay = new OutboxRelay(config, db, sns, log);
+  const pg = config.QUEUE_PROVIDER === 'postgres';
+  const { sns } = awsClients(config);
+  const relay = pg ? new PgRelay(db) : new OutboxRelay(config, db, sns, log);
   // Calls outside the database (ai-service) run after the consumer's transaction, never inside it.
   const later = (fn: () => Promise<unknown>) =>
     void fn().catch((err: unknown) => log.error({ err }, 'after-commit work failed'));
   const consumers = [
-    new Consumer(
+    consumer(
       'notifications',
       config.QUEUE_NOTIFICATIONS,
       db,
-      sqs,
       notificationsHandler(app.get<SmsSender>(SMS_SENDER), app.get(Phones)),
-      log,
     ),
     // R3: the rules on confirmed records and saved notes, and voice notes → ai-service.
-    new Consumer('followup', config.QUEUE_FOLLOWUP, db, sqs, followupHandler(), log),
-    new Consumer('voice', config.QUEUE_VOICE, db, sqs, voiceHandler(app.get(Voice), later), log),
+    consumer('followup', config.QUEUE_FOLLOWUP, db, followupHandler()),
+    consumer('voice', config.QUEUE_VOICE, db, voiceHandler(app.get(Voice), later)),
   ];
   let stopping = false;
   const stop = async () => {
@@ -97,10 +104,16 @@ async function worker() {
   void loop('outbox-relay', 500, () => relay.tick());
   void loop('scheduler', 5_000, () => scheduler.tick());
   for (const c of consumers) void loop(`consumer:${c.name}`, 100, () => c.poll());
-  if (isLocal(config))
+  if (isLocal(config) && relay instanceof OutboxRelay)
     void loop('outbox-requeue', 60_000, () =>
       relay.requeueUnconsumed([...consumers.map((c) => c.name), 'messaging']),
     );
+}
+
+/** A consumer group on the configured queue (SQS, or the outbox itself with QUEUE_PROVIDER=postgres). */
+function consumer(name: string, queueName: string, db: Database, handle: Handler): QueueConsumer {
+  if (config.QUEUE_PROVIDER === 'postgres') return new PgConsumer(name, db, handle, log);
+  return new Consumer(name, queueName, db, awsClients(config).sqs, handle, log);
 }
 
 async function gateway() {
@@ -112,17 +125,14 @@ async function gateway() {
     { logger: ['error', 'warn'] },
   );
   const db = app.get(Database);
-  const { sqs } = awsClients(config);
   const messages = app.get(Messages);
   const later = (fn: () => Promise<unknown>) =>
     void fn().catch((err: unknown) => log.error({ err }, 'message not handed over'));
-  const consumer = new Consumer(
+  const messaging = consumer(
     'messaging',
     config.QUEUE_MESSAGING,
     db,
-    sqs,
     messagingHandler(messages, later),
-    log,
   );
   let stopping = false;
   const http = express();
@@ -146,7 +156,7 @@ async function gateway() {
   process.on('SIGTERM', stop);
   while (!stopping) {
     try {
-      await consumer.poll();
+      await messaging.poll();
     } catch (err) {
       log.error({ err }, 'messaging consumer failed');
       await new Promise((r) => setTimeout(r, 2000));

@@ -23,6 +23,8 @@ const schema = z
     REDIS_STATE_URL: z.string().url(),
     HMAC_KEY_LOOKUP: z.string().min(32),
     FIELD_KEY_LOCAL: base64Key(32).optional(),
+    /** One-server deployments: the key-encryption key as a server secret (never in git). */
+    FIELD_KEY: base64Key(32).optional(),
     KMS_KEY_FIELDS: z.string().optional(),
     JWT_ISSUER: z.string().min(1),
     JWT_AUDIENCE: z.string().min(1),
@@ -34,12 +36,13 @@ const schema = z
     SMS_PROVIDER: z.enum(['fake']).default('fake'),
     SMS_SINK_URL: z.string().url().optional(),
     SMS_SENDER_ID: z.string().default('Link'),
-    QUEUE_PROVIDER: z.enum(['sqs']).default('sqs'),
+    /** sqs: SNS + SQS (aws-local locally); postgres: the outbox is the queue (one server). */
+    QUEUE_PROVIDER: z.enum(['sqs', 'postgres']).default('sqs'),
     AWS_ENDPOINT_URL: z.string().url().optional(),
     S3_REGION: z.string().default('eu-central-1'),
-    EVENTS_TOPIC: z.string().min(1),
-    QUEUE_NOTIFICATIONS: z.string().min(1),
-    DLQ_NOTIFICATIONS: z.string().min(1),
+    EVENTS_TOPIC: z.string().min(1).default('link-events'),
+    QUEUE_NOTIFICATIONS: z.string().min(1).default('link-notifications'),
+    DLQ_NOTIFICATIONS: z.string().min(1).default('link-notifications-dlq'),
     // Payments (docs/08): the local fake provider until a real one is chosen (OD-46).
     PAYMENT_PROVIDER: z.enum(['fake']).default('fake'),
     PAYMENT_WEBHOOK_SECRET: z.string().min(16),
@@ -56,9 +59,16 @@ const schema = z
     DLQ_MESSAGING: z.string().min(1).default('link-local-messaging-dlq'),
     QUEUE_FOLLOWUP: z.string().min(1).default('link-local-followup'),
     DLQ_FOLLOWUP: z.string().min(1).default('link-local-followup-dlq'),
+    /** s3: any S3-compatible store; file: an encrypted folder on the server (one server). */
+    STORAGE_PROVIDER: z.enum(['s3', 'file']).default('s3'),
     S3_ENDPOINT: z.string().url().optional(),
     S3_BUCKET_VOICE: z.string().min(1).default('link-local-voice'),
+    /** Server-side encryption the store applies: kms (AWS, aws-local), aes256, or none (R2 etc.). */
+    S3_SSE: z.enum(['kms', 'aes256', 'none']).default('kms'),
     KMS_KEY_STORAGE: z.string().optional(),
+    FILE_STORAGE_DIR: z.string().default('/var/lib/link/files'),
+    /** STORAGE_PROVIDER=file: the key that encrypts every stored file (AES-256-GCM). */
+    STORAGE_KEY: base64Key(32).optional(),
     /** ai-service (local Whisper + Ollama). Unset: voice notes answer "Type the note instead". */
     AI_SERVICE_URL: z.string().url().optional(),
     AI_SERVICE_TOKEN: z.string().optional(),
@@ -79,6 +89,19 @@ const schema = z
       });
     if (c.APP_ENV !== 'local' && c.FIELD_KEY_LOCAL)
       ctx.addIssue({ code: 'custom', path: ['FIELD_KEY_LOCAL'], message: 'local only' });
+    if (c.APP_ENV !== 'local' && !c.FIELD_KEY)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['FIELD_KEY'],
+        message:
+          'required outside APP_ENV=local (32 random bytes, base64; keep it with the backups)',
+      });
+    if (c.STORAGE_PROVIDER === 'file' && !c.STORAGE_KEY)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['STORAGE_KEY'],
+        message: 'required with STORAGE_PROVIDER=file',
+      });
     if (c.SMS_PROVIDER === 'fake' && !c.SMS_SINK_URL)
       ctx.addIssue({
         code: 'custom',

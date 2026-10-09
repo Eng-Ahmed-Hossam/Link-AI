@@ -2,7 +2,7 @@ import { Module, type DynamicModule, type Provider, type Type } from '@nestjs/co
 import { Reflector } from '@nestjs/core';
 import { AiServiceClient, VOICE_AI, type VoiceAi } from './adapters/ai';
 import { FakePayProvider, PAYMENT_PROVIDER, type PaymentProvider } from './adapters/payments';
-import { AUDIO_STORE, type AudioStore, S3AudioStore } from './adapters/storage';
+import { AUDIO_STORE, type AudioStore, FileAudioStore, S3AudioStore } from './adapters/storage';
 import {
   ManualSender,
   WHATSAPP_SENDER,
@@ -66,11 +66,10 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
     factory(Database, [], () => new Database(c.DATABASE_URL, c.DATABASE_URL_WORKER)),
     factory(Redises, [], () => new Redises(c.REDIS_STATE_URL, c.REDIS_CACHE_URL, c.APP_ENV)),
     factory(FieldCipher, [], () => {
-      if (!c.FIELD_KEY_LOCAL)
-        throw new Error(
-          'Field encryption with KMS arrives with deployment; set FIELD_KEY_LOCAL locally.',
-        );
-      return new FieldCipher(new LocalKeyWrapper(c.FIELD_KEY_LOCAL));
+      // Locally the key comes from .env.local; on a server it is the FIELD_KEY secret (docs/10 §5).
+      const key = c.FIELD_KEY_LOCAL ?? c.FIELD_KEY;
+      if (!key) throw new Error('Set FIELD_KEY_LOCAL (local) or FIELD_KEY (a server).');
+      return new FieldCipher(new LocalKeyWrapper(key));
     }),
     factory(Phones, [FieldCipher], (cipher: FieldCipher) => new Phones(c.HMAC_KEY_LOOKUP, cipher)),
     factory(SMS_SENDER, [], () => overrides.sms ?? new SmsSinkSender(c.SMS_SINK_URL!)),
@@ -126,7 +125,13 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
     ),
     factory(Reviews, [Database], (db: Database) => new Reviews(db)),
     // ── R3 follow-up (the paid extra) ───────────────────────────────────────────
-    factory(AUDIO_STORE, [], () => overrides.audio ?? new S3AudioStore(c)),
+    factory(
+      AUDIO_STORE,
+      [],
+      () =>
+        overrides.audio ??
+        (c.STORAGE_PROVIDER === 'file' ? new FileAudioStore(c) : new S3AudioStore(c)),
+    ),
     factory(VOICE_AI, [], () =>
       overrides.ai !== undefined
         ? overrides.ai
