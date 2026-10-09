@@ -18,6 +18,8 @@ export const BUNDLE_MARKERS = [
   // The local demo's "Demo tools" link in the demo banner (Step 2B).
   'data-demo-tools',
   'Demo tools',
+  // The local stand-in for Link ops in the Demo controls (R2a).
+  'Verify centre',
 ];
 
 function* walk(dir: string): Generator<string> {

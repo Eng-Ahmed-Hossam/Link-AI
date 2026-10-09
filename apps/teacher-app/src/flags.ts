@@ -1,8 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
-import { marketApi, pilotApi } from '@link/api-client';
+import { api, marketApi, pilotApi } from '@link/api-client';
 import { teacherTryOn, useDemoState } from '@/demo';
-import { DEMO_CONTROLS, PILOT } from './api-mode';
+import { CORE_API, DEMO_CONTROLS, PILOT } from './api-mode';
 import { useSession } from './session';
+
+/** core-api (live mode): the flags for the signed-in teacher (E0-09). `undefined` while loading. */
+function useServerFlags(): Record<string, boolean> | undefined {
+  const { session } = useSession();
+  const q = useQuery({
+    queryKey: ['feature-flags', session?.userId],
+    queryFn: api.featureFlags,
+    enabled: CORE_API && !!session,
+    staleTime: 30_000,
+  });
+  return q.data?.flags;
+}
 
 /**
  * Phase 2 (follow-up) is off by default and renders nothing when off (plan §1.5). Until core-api
@@ -11,7 +23,9 @@ import { useSession } from './session';
  */
 export function usePhase2(): boolean | undefined {
   const demo = useDemoState();
+  const server = useServerFlags();
   if (PILOT) return true; // the concierge pilot is the follow-up loop
+  if (CORE_API) return server ? server['followup.records'] === true : undefined;
   if (teacherTryOn()) return true; // "Try Link" shows the whole product (OD-58)
   if (!DEMO_CONTROLS) return false;
   return demo ? demo.demo.phase2 : undefined;
@@ -20,7 +34,9 @@ export function usePhase2(): boolean | undefined {
 /** Phase 1 marketplace (Rooms, Earnings, fees and seats). On unless the demo switch turns it off. */
 export function useMarketplace(): boolean | undefined {
   const demo = useDemoState();
+  const server = useServerFlags();
   if (PILOT) return false;
+  if (CORE_API) return server ? server['marketplace.enabled'] !== false : undefined;
   if (teacherTryOn()) return true;
   if (!DEMO_CONTROLS) return true;
   return demo ? demo.demo.marketplace !== false : undefined;

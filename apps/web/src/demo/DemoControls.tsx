@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { demoApi } from '@link/api-client/demo';
 import { Button, Sheet } from '@link/ui';
-import { DEMO_CONTROLS } from '../api-mode';
+import { CORE_API, DEMO_CONTROLS } from '../api-mode';
 import { refreshDemoState, useDemoState } from './demo-state';
 
 /**
@@ -23,6 +23,13 @@ export function DemoControls({ showButton = true }: { showButton?: boolean }) {
   const story = useQuery({
     queryKey: ['demo-story'],
     queryFn: demoApi.story,
+    enabled: open,
+    refetchInterval: open ? 3000 : false,
+  });
+  // Live mode: the local stand-in for Link ops (pending centres, moved pins).
+  const pending = useQuery({
+    queryKey: ['demo-pending-centres'],
+    queryFn: demoApi.pendingCentres,
     enabled: open,
     refetchInterval: open ? 3000 : false,
   });
@@ -53,7 +60,8 @@ export function DemoControls({ showButton = true }: { showButton?: boolean }) {
 
   return (
     <>
-      {showButton ? (
+      {/* Live mode has no /dev index: the button shows on every page (local only). */}
+      {showButton || CORE_API ? (
         <button
           type="button"
           onClick={() => {
@@ -97,38 +105,42 @@ export function DemoControls({ showButton = true }: { showButton?: boolean }) {
               >
                 Reset story
               </Button>
-              <label className="flex flex-col gap-1 text-caption text-muted">
-                Jump to step
-                <select
-                  value={step}
-                  onChange={(e) => setStep(Number(e.target.value))}
-                  data-testid="story-step"
-                  className="min-h-11 rounded-12 border border-border bg-white px-3 text-body text-navy"
-                >
-                  {Array.from({ length: 9 }, (_, i) => (
-                    <option key={i + 1} value={i + 1}>
-                      {i + 1}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <Button
-                variant="secondary"
-                data-testid="story-jump"
-                onClick={() => run(`Jump to step ${step}`, () => demoApi.storyJump(step))}
-              >
-                Jump to step {step}
-              </Button>
-              <Button
-                variant="secondary"
-                data-testid="story-session-done"
-                disabled={!story.data?.groupId}
-                onClick={() => run('Session done', demoApi.storySessionDone)}
-              >
-                {story.data?.sessionsDone
-                  ? 'Simulate next session done'
-                  : 'Simulate first session done'}
-              </Button>
+              {CORE_API ? null : (
+                <>
+                  <label className="flex flex-col gap-1 text-caption text-muted">
+                    Jump to step
+                    <select
+                      value={step}
+                      onChange={(e) => setStep(Number(e.target.value))}
+                      data-testid="story-step"
+                      className="min-h-11 rounded-12 border border-border bg-white px-3 text-body text-navy"
+                    >
+                      {Array.from({ length: 9 }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                          {i + 1}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <Button
+                    variant="secondary"
+                    data-testid="story-jump"
+                    onClick={() => run(`Jump to step ${step}`, () => demoApi.storyJump(step))}
+                  >
+                    Jump to step {step}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    data-testid="story-session-done"
+                    disabled={!story.data?.groupId}
+                    onClick={() => run('Session done', demoApi.storySessionDone)}
+                  >
+                    {story.data?.sessionsDone
+                      ? 'Simulate next session done'
+                      : 'Simulate first session done'}
+                  </Button>
+                </>
+              )}
               <Button
                 variant="secondary"
                 aria-pressed={!!story.data?.followupExtra}
@@ -141,93 +153,139 @@ export function DemoControls({ showButton = true }: { showButton?: boolean }) {
               </Button>
             </div>
           </section>
-          <p className="text-caption text-muted">
-            Scenario demo-followup · {s?.records.confirmed ?? '–'} confirmed records ·{' '}
-            {s?.signals.length ?? '–'} flag(s) · {s?.cases.length ?? '–'} case(s)
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" danger onClick={() => run('Reset', demoApi.reset)}>
-              Reset scenario
-            </Button>
-            <Button
-              variant="secondary"
-              aria-pressed={!!s?.demo.phase2}
-              onClick={() => run('Phase 2', () => demoApi.settings({ phase2: !s?.demo.phase2 }))}
+          {CORE_API ? (
+            <section
+              aria-labelledby="ops-title"
+              className="flex flex-col gap-2 rounded-16 bg-soft p-3"
+              data-testid="ops-stand-in"
             >
-              Phase 2 flag: {s?.demo.phase2 ? 'on' : 'off'}
-            </Button>
-            <Button
-              variant="secondary"
-              aria-pressed={s?.demo.marketplace !== false}
-              data-testid="demo-marketplace"
-              onClick={() =>
-                run('Marketplace', () =>
-                  demoApi.settings({ marketplace: s?.demo.marketplace === false }),
-                )
-              }
-            >
-              Marketplace flag: {s?.demo.marketplace === false ? 'off' : 'on'}
-            </Button>
-            <Button
-              variant="secondary"
-              aria-pressed={!!s?.demo.realStt}
-              data-testid="demo-real-stt"
-              onClick={() =>
-                run('Speech-to-text', () => demoApi.settings({ realStt: !s?.demo.realStt }))
-              }
-            >
-              Speech-to-text: {s?.demo.realStt ? 'local Whisper (real)' : 'fixture'}
-            </Button>
-            <Button
-              variant="secondary"
-              data-testid="demo-new-day"
-              onClick={() => run('New day', demoApi.newDay)}
-            >
-              Simulate a new day
-            </Button>
-            <Button
-              variant="secondary"
-              aria-pressed={!!s?.demo.offline}
-              onClick={() => run('Offline', () => demoApi.settings({ offline: !s?.demo.offline }))}
-            >
-              Offline: {s?.demo.offline ? 'on' : 'off'}
-            </Button>
-          </div>
-          <fieldset className="flex flex-col gap-2">
-            <legend className="text-label">WhatsApp provider (mock)</legend>
-            <p className="text-caption text-muted">
-              Latest message:{' '}
-              {latest
-                ? `${latest.student} — ${latest.status}${latest.channel ? ` (${latest.channel})` : ''}`
-                : 'none yet'}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="secondary"
-                onClick={() => run('Provider', () => demoApi.provider('advance'))}
-              >
-                Advance: Sent → Delivered
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => run('Provider', () => demoApi.provider('fail'))}
-              >
-                Fail delivery
-              </Button>
-            </div>
-          </fieldset>
-          <fieldset className="flex flex-col gap-2">
-            <legend className="text-label">Parent's phone (mock)</legend>
-            <Button variant="secondary" onClick={() => run('Reply', () => demoApi.reply())}>
-              <span>
-                Deliver reply “
-                <bdi lang="ar" dir="rtl">
-                  عندها درس تاني الأربع
-                </bdi>
-                ”
-              </span>
-            </Button>
-          </fieldset>
+              <h3 id="ops-title" className="text-label text-navy">
+                Link ops (local stand-in for the ops console)
+              </h3>
+              {pending.data?.length ? (
+                <ul className="flex flex-col gap-2">
+                  {pending.data.map((c) => (
+                    <li key={c.id} className="flex flex-wrap items-center justify-between gap-2">
+                      <span>
+                        {c.name} ·{' '}
+                        {c.pendingVerification
+                          ? 'waiting for verification'
+                          : 'moved pin under review'}
+                      </span>
+                      <Button
+                        variant="secondary"
+                        data-testid={`verify-centre-${c.id}`}
+                        onClick={() => run('Verify centre', () => demoApi.verifyCentre(c.id))}
+                      >
+                        Verify centre
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-caption text-muted">Nothing waiting for Link ops.</p>
+              )}
+              <p className="text-caption text-muted">
+                Same as <code>pnpm ops:verify-centre &lt;centreId|phone&gt;</code>; writes an audit
+                row.
+              </p>
+            </section>
+          ) : null}
+          {CORE_API ? null : (
+            <>
+              <p className="text-caption text-muted">
+                Scenario demo-followup · {s?.records.confirmed ?? '–'} confirmed records ·{' '}
+                {s?.signals.length ?? '–'} flag(s) · {s?.cases.length ?? '–'} case(s)
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="secondary" danger onClick={() => run('Reset', demoApi.reset)}>
+                  Reset scenario
+                </Button>
+                <Button
+                  variant="secondary"
+                  aria-pressed={!!s?.demo.phase2}
+                  onClick={() =>
+                    run('Phase 2', () => demoApi.settings({ phase2: !s?.demo.phase2 }))
+                  }
+                >
+                  Phase 2 flag: {s?.demo.phase2 ? 'on' : 'off'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  aria-pressed={s?.demo.marketplace !== false}
+                  data-testid="demo-marketplace"
+                  onClick={() =>
+                    run('Marketplace', () =>
+                      demoApi.settings({ marketplace: s?.demo.marketplace === false }),
+                    )
+                  }
+                >
+                  Marketplace flag: {s?.demo.marketplace === false ? 'off' : 'on'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  aria-pressed={!!s?.demo.realStt}
+                  data-testid="demo-real-stt"
+                  onClick={() =>
+                    run('Speech-to-text', () => demoApi.settings({ realStt: !s?.demo.realStt }))
+                  }
+                >
+                  Speech-to-text: {s?.demo.realStt ? 'local Whisper (real)' : 'fixture'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  data-testid="demo-new-day"
+                  onClick={() => run('New day', demoApi.newDay)}
+                >
+                  Simulate a new day
+                </Button>
+                <Button
+                  variant="secondary"
+                  aria-pressed={!!s?.demo.offline}
+                  onClick={() =>
+                    run('Offline', () => demoApi.settings({ offline: !s?.demo.offline }))
+                  }
+                >
+                  Offline: {s?.demo.offline ? 'on' : 'off'}
+                </Button>
+              </div>
+              <fieldset className="flex flex-col gap-2">
+                <legend className="text-label">WhatsApp provider (mock)</legend>
+                <p className="text-caption text-muted">
+                  Latest message:{' '}
+                  {latest
+                    ? `${latest.student} — ${latest.status}${latest.channel ? ` (${latest.channel})` : ''}`
+                    : 'none yet'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => run('Provider', () => demoApi.provider('advance'))}
+                  >
+                    Advance: Sent → Delivered
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => run('Provider', () => demoApi.provider('fail'))}
+                  >
+                    Fail delivery
+                  </Button>
+                </div>
+              </fieldset>
+              <fieldset className="flex flex-col gap-2">
+                <legend className="text-label">Parent's phone (mock)</legend>
+                <Button variant="secondary" onClick={() => run('Reply', () => demoApi.reply())}>
+                  <span>
+                    Deliver reply “
+                    <bdi lang="ar" dir="rtl">
+                      عندها درس تاني الأربع
+                    </bdi>
+                    ”
+                  </span>
+                </Button>
+              </fieldset>
+            </>
+          )}
           {note ? (
             <p role="status" className="text-caption">
               {note}

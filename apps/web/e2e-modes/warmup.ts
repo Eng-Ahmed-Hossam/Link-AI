@@ -1,22 +1,37 @@
-// Both stacks start the web and the teacher app after their API is up; wait for (and compile)
-// the pages the specs open first, so the first test does not race the dev servers.
-const PAGES = [
-  'http://localhost:3000/en/welcome',
-  'http://localhost:3000/en/centre',
-  'http://localhost:8081/sign-in',
+// Both stacks start the web and the teacher app after their API is up. Open the entry pages in a
+// real browser once, so Next compiles them and Metro builds the teacher bundle before any test
+// starts (a cold CI machine takes a minute or more for each).
+import { chromium } from '@playwright/test';
+
+const PAGES: [string, string][] = [
+  ['http://localhost:3000/ar/welcome', 'input[type=tel]'],
+  ['http://localhost:3000/ar/centre', 'input[type=tel]'],
+  ['http://localhost:8081/sign-in', '[data-testid="t14-phone"]'],
 ];
 
-export default async function warmup() {
-  for (const url of PAGES) {
-    const until = Date.now() + 300_000;
-    for (;;) {
-      try {
-        if ((await fetch(url)).ok) break;
-      } catch {
-        /* not up yet */
-      }
-      if (Date.now() > until) throw new Error(`Timed out waiting for ${url}`);
-      await new Promise((r) => setTimeout(r, 1000));
+async function reachable(url: string, until: number) {
+  for (;;) {
+    try {
+      if ((await fetch(url)).ok) return;
+    } catch {
+      /* not up yet */
     }
+    if (Date.now() > until) throw new Error(`Timed out waiting for ${url}`);
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+}
+
+export default async function warmup() {
+  // Each page gets its own budget: a cold Next page can take minutes on a slow machine.
+  for (const [url] of PAGES) await reachable(url, Date.now() + 600_000);
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    for (const [url, selector] of PAGES) {
+      await page.goto(url, { timeout: 300_000 });
+      await page.locator(selector).first().waitFor({ timeout: 300_000 });
+    }
+  } finally {
+    await browser.close();
   }
 }

@@ -17,6 +17,7 @@ export const PRESENTER_MARKERS = [
   'Reset scenario',
   'Advance: Sent',
   'Jump to step',
+  'Verify centre',
 ];
 
 if (!process.argv.includes('--skip-build')) {

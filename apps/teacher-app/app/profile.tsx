@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ApiError, marketApi, type TeacherSelf, type Verification } from '@link/api-client';
+import { ApiError, api, marketApi, type TeacherSelf, type Verification } from '@link/api-client';
 import { formatWeekday } from '@link/i18n';
 import { Avatar, Button, Callout, Card, textStyle } from '@link/ui-native';
 import { color, radius, space } from '@link/tokens';
@@ -39,6 +39,15 @@ function ProfileForm({ d }: { d: TeacherSelf }) {
   const [review, setReview] = useState(d.reviewEachEnrolment);
   const [about, setAbout] = useState(d.about);
   const [avail, setAvail] = useState(d.availability);
+  // Decided 2026-10-09: parents see a teacher only with a name and a subject (profile `active`).
+  const incomplete = d.profileStatus !== 'active';
+  const [name, setName] = useState(d.name);
+  const [subjectIds, setSubjectIds] = useState<string[]>([]);
+  const subjects = useQuery({
+    queryKey: ['ref', 'subjects', locale],
+    queryFn: () => api.subjects(),
+    enabled: incomplete,
+  });
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => setSaved(false), [open, review, about, avail]);
@@ -46,6 +55,12 @@ function ProfileForm({ d }: { d: TeacherSelf }) {
     mutationFn: () =>
       track(
         marketApi.updateTeacherSelf({
+          ...(incomplete
+            ? {
+                ...(name.trim() ? { displayName: name.trim() } : {}),
+                ...(subjectIds.length ? { subjectIds } : {}),
+              }
+            : {}),
           openToSlots: open,
           reviewEachEnrolment: review,
           about,
@@ -74,6 +89,49 @@ function ProfileForm({ d }: { d: TeacherSelf }) {
 
   return (
     <>
+      {incomplete ? (
+        <Card testID="complete-profile">
+          <Text accessibilityRole="header" style={textStyle(locale, 'heading')}>
+            {t('teacher.profile.completeTitle')}
+          </Text>
+          <Text style={[textStyle(locale, 'body'), { color: color.muted }]}>
+            {t('teacher.profile.completeBody')}
+          </Text>
+          <Text nativeID="name-label" style={textStyle(locale, 'label')}>
+            {t('teacher.profile.name')}
+          </Text>
+          <TextInput
+            accessibilityLabelledBy="name-label"
+            accessibilityLabel={t('teacher.profile.name')}
+            value={name}
+            onChangeText={setName}
+            maxLength={80}
+            style={[textStyle(locale, 'body'), styles.input, { minHeight: 44 }]}
+            testID="profile-name"
+          />
+          <Text style={textStyle(locale, 'label')}>{t('teacher.profile.subjectsLabel')}</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[8] }}>
+            {(subjects.data ?? []).map((s) => {
+              const on = subjectIds.includes(s.id);
+              return (
+                <Pressable
+                  key={s.id}
+                  onPress={() =>
+                    setSubjectIds((xs) => (on ? xs.filter((x) => x !== s.id) : [...xs, s.id]))
+                  }
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: on }}
+                  aria-checked={on}
+                  style={[styles.cell, { paddingHorizontal: space[12] }, on ? styles.cellOn : null]}
+                  testID={`profile-subject-${s.code}`}
+                >
+                  <Text style={textStyle(locale, 'label')}>{s.name}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Card>
+      ) : null}
       <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[12] }}>
           <Avatar locale={locale} name={d.name} tone="blue" size={64} />

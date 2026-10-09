@@ -2,7 +2,10 @@
 
 import { useSyncExternalStore } from 'react';
 import { demoApi, type DemoSnapshot } from '@link/api-client/demo';
-import { DEMO_CONTROLS } from '../api-mode';
+import { CORE_API, DEMO_CONTROLS } from '../api-mode';
+
+/** The mock server's whole demo state; core-api (live) has no such snapshot. */
+const POLL = DEMO_CONTROLS && !CORE_API;
 
 /**
  * Polls the mock backend's demo state while Demo controls are on, so every app (parent PWA, owner
@@ -28,7 +31,7 @@ export const refreshDemoState = poll;
 
 function subscribe(l: () => void) {
   listeners.add(l);
-  if (DEMO_CONTROLS && !timer) {
+  if (POLL && !timer) {
     void poll();
     timer = setInterval(poll, 2000);
   }
@@ -44,7 +47,7 @@ function subscribe(l: () => void) {
 export function useDemoState(): DemoSnapshot | null {
   return useSyncExternalStore(
     subscribe,
-    () => (DEMO_CONTROLS ? snapshot : null),
+    () => (POLL ? snapshot : null),
     () => null,
   );
 }

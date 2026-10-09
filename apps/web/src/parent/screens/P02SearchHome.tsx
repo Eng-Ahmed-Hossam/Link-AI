@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   useCurricula,
+  useDefaultSubjectId,
   useMe,
   useSearchCentres,
   useSearchTeachers,
@@ -42,7 +43,9 @@ export function P02SearchHome() {
   const { child, children, setChildId, signedIn } = useSelectedChild();
   const me = useMe({ enabled: signedIn });
   const subjects = useSubjects();
-  const [subjectId, setSubjectId] = useState('sub-math');
+  const defaultSubjectId = useDefaultSubjectId();
+  const [picked, setSubjectId] = useState<string | null>(null);
+  const subjectId = picked ?? defaultSubjectId ?? '';
   const [q, setQ] = useState('');
   const [childOpen, setChildOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);

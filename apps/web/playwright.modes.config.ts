@@ -27,7 +27,8 @@ export default defineConfig({
         command: 'node ../../scripts/dev.mjs',
         url: 'http://localhost:4000/ready',
         reuseExistingServer: true,
-        timeout: 300_000,
+        // A cold machine builds the local service images first (CI).
+        timeout: 900_000,
       }
     : {
         command: 'node ../../scripts/demo.mjs',

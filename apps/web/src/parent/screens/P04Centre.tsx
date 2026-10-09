@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   useCentre,
+  useDefaultSubjectId,
   type CentreProfile,
   type GroupSummary,
   type PublicReview,
@@ -122,7 +123,8 @@ export function P04Centre({ slug }: { slug: string }) {
   const sp = useSearchParams();
   const { child } = useSelectedChild();
   const schoolYearId = sp.get('schoolYearId') ?? child?.schoolYear.id;
-  const subjectId = sp.get('subjectId') ?? 'sub-math';
+  const defaultSubjectId = useDefaultSubjectId();
+  const subjectId = sp.get('subjectId') ?? defaultSubjectId;
   const q = useCentre(slug, { schoolYearId, subjectId });
   const [tab, setTab] = useState('overview');
 

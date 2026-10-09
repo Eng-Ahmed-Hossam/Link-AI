@@ -83,7 +83,7 @@ export function useFlags(): Record<FlagKey, boolean> {
   const server = useQuery({
     queryKey: ['feature-flags', session?.userId ?? null],
     queryFn: api.featureFlags,
-    enabled: CORE_API,
+    enabled: CORE_API && !!session,
     staleTime: 30_000,
   });
   if (PILOT) return { ...FLAG_DEFAULTS, ...PILOT_FLAGS };

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
-import { api, ApiError, setAuthToken } from '@link/api-client';
+import { api, ApiError, setAuthToken, type Invite } from '@link/api-client';
 import { normalizeEgyptPhone } from '@link/i18n';
 import { Button, Callout, TextField, textStyle } from '@link/ui-native';
 import { color, space } from '@link/tokens';
@@ -35,6 +35,11 @@ function PhoneSignIn() {
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A centre's invitation waiting for this teacher's accept (decided 2026-10-09).
+  const [invite, setInvite] = useState<{
+    invite: Invite;
+    tokens: { accessToken: string; refreshToken?: string; userId: string };
+  } | null>(null);
   const national = normalizeEgyptPhone(phone);
   // `/sign-in?sample=1` (the web dev index's one-click sign-in): straight in as the sample teacher.
   const { sample } = useLocalSearchParams<{ sample?: string }>();
@@ -87,6 +92,18 @@ function PhoneSignIn() {
       // CF-03: teachers join free and sign up themselves — a new number becomes a teacher here.
       const roles = r.isNewUser ? (await api.addRole('teacher')).roles : r.user.roles;
       if (!roles.includes('teacher')) {
+        const pending = (await api.myInvites()).find((x) => x.role === 'teacher');
+        if (pending) {
+          setInvite({
+            invite: pending,
+            tokens: {
+              accessToken: r.accessToken ?? '',
+              refreshToken: r.refreshToken,
+              userId: r.user.id,
+            },
+          });
+          return;
+        }
         setAuthToken(null);
         setError(t('teacher.signIn.notTeacher'));
         return;
@@ -104,6 +121,38 @@ function PhoneSignIn() {
       setBusy(false);
     }
   }
+
+  async function accept() {
+    if (!invite) return;
+    setBusy(true);
+    try {
+      await api.acceptInvite(invite.invite.id);
+      signIn(invite.tokens);
+      // The profile is hidden from parents until it has a name and a subject: J04 asks for them.
+      router.replace('/profile');
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (invite)
+    return (
+      <Screen title={t('teacher.invite.title')} testID="screen-invite">
+        <Text style={textStyle(locale, 'body')}>
+          {t('teacher.invite.body', { centre: invite.invite.centre.name })}
+        </Text>
+        {error ? <Callout locale={locale} tone="error" role="alert" body={error} /> : null}
+        <Button
+          locale={locale}
+          label={t('teacher.invite.accept')}
+          onPress={() => void accept()}
+          disabled={busy}
+          testID="accept-invite"
+        />
+      </Screen>
+    );
 
   return (
     <Screen

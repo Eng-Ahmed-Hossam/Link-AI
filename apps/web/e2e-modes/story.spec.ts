@@ -1,11 +1,18 @@
-// Step 2B · the connected story, end to end across roles on the shared mock server, by clicking:
-// teacher (Expo web, 390) → owner (1440) → parent (390) → Reception (1440) and back. One spec, so
-// every step starts from what the one before left. Saves a numbered Arabic screenshot sequence in
+// Step 2B · the connected story, end to end across roles, by clicking: teacher (Expo web, 390) →
+// owner (1440) → parent (390) → Reception (1440) and back. One spec, so every step starts from what
+// the one before left. It runs in BOTH API modes (E2E_MODE=mock | live): the mock server, or the
+// real core-api with real sign-in (codes from sms-sink). Live mode runs the steps core-api serves so
+// far (LIVE_STORY_STEPS, R2a: 1–3). In mock mode it saves the numbered Arabic screenshots in
 // docs/frontend/walkthroughs/connected-story/ (docs/testing/walkthrough.md follows the same steps).
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test, type Browser, type Page } from '@playwright/test';
-import { MOCK, TEACHER_APP, axe, ready } from './helpers';
+import { axe } from '../e2e-demo/helpers';
+import { API, MODE, PEOPLE, TEACHER_APP, codeFor, fixtureId as id, ready } from './helpers';
+
+/** Live mode runs the story up to this step (R2a: 3; R2b: 7; R3: 9). Mock mode runs all nine. */
+const LIVE_STORY_STEPS = Number(process.env.LIVE_STORY_STEPS ?? 3);
+const runs = (step: number) => MODE === 'mock' || step <= LIVE_STORY_STEPS;
 
 // A stuck click fails within half a minute, not at the end of the story's long timeout.
 test.use({ actionTimeout: 30_000 });
@@ -22,8 +29,9 @@ const OUT = join(
 );
 mkdirSync(OUT, { recursive: true });
 let n = 0;
-/** Numbered Arabic screenshots, in story order. */
+/** Numbered Arabic screenshots, in story order (mock mode: the walkthrough's sample data). */
 async function snap(page: Page, name: string, full = true) {
+  if (MODE === 'live') return;
   await page.evaluate(() => document.fonts.ready).catch(() => {});
   await page.waitForTimeout(400);
   await page.screenshot({
@@ -31,25 +39,56 @@ async function snap(page: Page, name: string, full = true) {
     fullPage: full,
   });
 }
-const story = async () => (await fetch(`${MOCK}/__demo/story`)).json();
+const story = async () => (await fetch(`${API}/__demo/story`)).json();
 const outside = (path: string, body: unknown = {}) =>
-  fetch(`${MOCK}${path}`, { method: 'POST', body: JSON.stringify(body) });
+  fetch(`${API}${path}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 const seatsLeft = async (groupId: string) => {
   const g = await (
-    await fetch(`${MOCK}/v1/groups/${groupId}`, {
-      headers: { authorization: 'Bearer mock.usr-parent' },
+    await fetch(`${API}/v1/groups/${groupId}`, {
+      headers: MODE === 'mock' ? { authorization: 'Bearer mock.usr-parent' } : {},
     })
   ).json();
   return g.upcomingSessions[0].seatsLeft as number;
 };
 
-/** A browser window for one role, entered through the role chooser like a visitor. */
+/**
+ * A browser window for one role. Mock: through the role chooser like a visitor. Live: the real
+ * phone sign-in of each app (T14, A18, P01), with the code from sms-sink.
+ */
 async function enter(browser: Browser, role: 'owner' | 'parent' | 'teacher') {
   const desktop = role === 'owner';
   const ctx = await browser.newContext({
     viewport: desktop ? { width: 1440, height: 1000 } : { width: 390, height: 844 },
   });
   const page = await ctx.newPage();
+  if (MODE === 'live') {
+    const since = Date.now();
+    if (role === 'teacher') {
+      await page.goto(`${TEACHER_APP}/sign-in`);
+      await page.getByTestId('t14-phone').fill(PEOPLE.teacher);
+      await page.getByTestId('t14-send').click();
+      await page.getByTestId('t14-code').fill(await codeFor(PEOPLE.teacher, since));
+      await page.getByTestId('t14-verify').click();
+      await expect(page.getByTestId('screen-t09')).toBeVisible({ timeout: 60_000 });
+      return page;
+    }
+    await page.goto(role === 'owner' ? '/ar/centre' : '/ar/welcome');
+    await ready(page);
+    const national = role === 'owner' ? PEOPLE.owner : PEOPLE.parent;
+    await page.locator('input[type=tel]').fill(national);
+    await (
+      role === 'owner'
+        ? page.getByTestId('owner-send-code')
+        : page.locator('form button[type=submit]')
+    ).click();
+    await page.locator('input[autocomplete=one-time-code]').fill(await codeFor(national, since));
+    await page.waitForURL(role === 'owner' ? /\/schedule$/ : /\/search$/, { timeout: 60_000 });
+    return page;
+  }
   await page.goto('/ar/try');
   await page.getByTestId(`role-${role}`).click();
   if (role === 'teacher')
@@ -80,11 +119,11 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
     await teacher.getByRole('tab', { name: 'القاعات' }).click();
     await expect(tid('screen-j01')).toBeVisible();
     await snap(teacher, 'teacher-J01-rooms', false);
-    await tid('room-hall-nour-1').click();
+    await tid(`room-${id('hall-nour-1')}`).click();
     await expect(tid('screen-j02')).toBeVisible();
     await tid('for-new').click();
-    await tid('subject-sub-math').click();
-    await tid('year-sy-sec2').click();
+    await tid(`subject-${id('sub-math')}`).click();
+    await tid(`year-${id('sy-sec2')}`).click();
     await tid('new-expected').fill('20');
     await tid('new-fee').fill('550');
     await tid('time-16:00').click();
@@ -125,7 +164,7 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
     await owner.getByTestId('day-6').click();
     await expect(
       owner
-        .getByTestId('hall-row-hall-nour-1')
+        .getByTestId(`hall-row-${id('hall-nour-1')}`)
         .getByTestId('cell-booked')
         .filter({ hasText: 'سلمى' }),
     ).toBeVisible();
@@ -151,6 +190,7 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
   });
 
   const { groupId } = await story();
+  if (!runs(4)) return;
   const parent = await enter(browser, 'parent');
   await test.step('4 · Parent (P02 → P06 → P07 → P08): a seat by card, then the Fawry variant', async () => {
     expect(await seatsLeft(groupId)).toBe(24);
@@ -199,6 +239,7 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
     await snap(parent, 'parent-P08-fawry');
   });
 
+  if (!runs(5)) return;
   await test.step('5 · Teacher (J06, J07): the new enrolment; earnings with Link commission on its own line', async () => {
     await teacher.goto(`${TEACHER_APP}/groups`);
     await tid('open-enrolments').click();
@@ -210,6 +251,7 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
     await snap(teacher, 'teacher-J07-earnings', false);
   });
 
+  if (!runs(6)) return;
   await test.step('6 · Owner (C07): rent income, Link fee on its own line, net from the data', async () => {
     await nav.getByRole('link', { name: 'دخل الإيجار' }).click();
     await expect(owner.getByRole('columnheader', { name: /رسوم لينك/ })).toBeVisible();
@@ -219,6 +261,7 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
     await snap(owner, 'owner-C07-rent-income');
   });
 
+  if (!runs(7)) return;
   await test.step('7 · Parent (P10) after the first session; Owner (C04) replies', async () => {
     // Demo control: the first session has taken place (the story group's calendar moves a week).
     expect((await outside('/__demo/story/session-done')).ok).toBe(true);
@@ -249,6 +292,7 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
     await snap(owner, 'owner-C04-reply');
   });
 
+  if (!runs(8)) return;
   const reception = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await test.step('8 · Follow-up: two absences → a flag → Reception → the parent sees the update', async () => {
     // The teacher records the first session by typing, with Mariam absent.
@@ -280,7 +324,7 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
     await reception.goto('/ar/centre');
     await reception.getByRole('button', { name: /استقبال/ }).click();
     await reception.waitForURL(/\/centre\/cen-nour\//);
-    const c = (await (await fetch(`${MOCK}/__demo/state/en`)).json()).cases.find(
+    const c = (await (await fetch(`${API}/__demo/state/en`)).json()).cases.find(
       (x: { student: string; status: string }) =>
         x.student === 'Mariam Hassan' && x.status !== 'resolved',
     );
@@ -308,6 +352,7 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
     await snap(reception, 'reception-A10-outcome');
   });
 
+  if (!runs(9)) return;
   await test.step('9 · Follow-up extra off: gone for owner, teacher and parent; the marketplace works', async () => {
     expect((await outside('/__demo/story/extra', { on: false })).ok).toBe(true);
     await owner.reload();
