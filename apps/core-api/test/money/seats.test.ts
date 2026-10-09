@@ -171,6 +171,66 @@ describe('Seats per session (BR-ENR-02, BR-ENR-13, INV-05)', () => {
     expect(code(r)).toBe('seat_unavailable');
     await sql`UPDATE market.groups SET seat_cap = 30 WHERE id = ${NOUR_GROUP}`.execute(api.db);
   });
+
+  it('CF-52 / BR-ENR-10: an offer open 24 h passes to the next parent; the accepted seat starts at the next session', async () => {
+    await leaveSeats(1);
+    const holder = await parent();
+    const s = await sessions();
+    const h = await hold(holder.c, {
+      studentId: holder.childId,
+      firstSessionId: s[0]!.id,
+      plan: 'per_session',
+    });
+    expect(h.status).toBe(201);
+    const first = await parent();
+    const second = await parent();
+    const join = async (p: Awaited<ReturnType<typeof parent>>) =>
+      (
+        await p.c.call<{ id: string }>('POST', `/v1/groups/${NOUR_GROUP}/waitlist`, {
+          studentId: p.childId,
+        })
+      ).body.id;
+    const a = await join(first);
+    const b = await join(second);
+    const entry = async (id: string) =>
+      (
+        await sql<{
+          status: string;
+          offered_at: Date | null;
+          offer_expires_at: Date | null;
+          offered_sessions: string[] | null;
+        }>`SELECT status, offered_at, offer_expires_at, offered_sessions FROM market.waitlist_entries WHERE id = ${id}`.execute(
+          api.db,
+        )
+      ).rows[0]!;
+    await holder.c.call('POST', `/v1/enrolments/${h.body.id}/cancel`, {});
+    // The first parent in line gets the seat, open for 24 hours, from the group's next session.
+    const offered = await entry(a);
+    expect(offered.status).toBe('offered');
+    expect(offered.offer_expires_at!.getTime() - offered.offered_at!.getTime()).toBe(86_400_000);
+    expect(offered.offered_sessions![0]).toBe(s[0]!.id);
+    expect((await entry(b)).status).toBe('waiting');
+    // 24 hours pass without an answer: the offer ends and passes to the next parent.
+    expect(await api.s.jobs.expireOffers(new Date(Date.now() + 86_400_000 + 1000))).toBe(1);
+    expect((await entry(a)).status).toBe('expired');
+    expect((await entry(b)).status).toBe('offered');
+    const late = await first.c.call('POST', `/v1/waitlist/${a}/accept`, {
+      paymentPlan: 'single_month',
+      method: 'card',
+    });
+    expect(code(late)).toBe('offer_expired');
+    // The second parent accepts: the seat starts from the next session, not a past one.
+    const acc = await second.c.call<{ kind: string }>('POST', `/v1/waitlist/${b}/accept`, {
+      paymentPlan: 'single_month',
+      method: 'card',
+    });
+    expect(acc.status).toBe(200);
+    const { rows } = await sql<{
+      first_session_id: string;
+    }>`SELECT first_session_id FROM market.enrolments WHERE id = ${b}`.execute(api.db);
+    expect(rows[0]!.first_session_id).toBe(s[0]!.id);
+    await sql`UPDATE market.groups SET seat_cap = 30 WHERE id = ${NOUR_GROUP}`.execute(api.db);
+  });
 });
 
 describe('Concurrency (plan §6, R2b report)', () => {

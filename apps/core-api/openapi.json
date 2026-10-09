@@ -6704,6 +6704,10 @@
               "amount": {
                 "$ref": "#/components/schemas/Money"
               },
+              "heldForRent": {
+                "description": "Rent held back for the next rent invoice (CF-54): not paid out on this Thursday",
+                "$ref": "#/components/schemas/Money"
+              },
               "account": {
                 "type": "string"
               }
@@ -6711,6 +6715,7 @@
             "required": [
               "on",
               "amount",
+              "heldForRent",
               "account"
             ]
           },

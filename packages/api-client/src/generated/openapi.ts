@@ -1318,6 +1318,8 @@ export interface components {
             nextPayout: {
                 account: string;
                 amount: components["schemas"]["Money"];
+                /** @description Rent held back for the next rent invoice (CF-54): not paid out on this Thursday */
+                heldForRent: components["schemas"]["Money"];
                 on: string;
             };
             parentsPaid: components["schemas"]["Money"];

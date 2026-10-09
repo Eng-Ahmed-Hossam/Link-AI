@@ -85,6 +85,19 @@ Trigger: the reconciliation job matches a settlement line. Key: `settle:{provide
 | `link_expense:provider_fees` | F | |
 | `provider_clearing:{provider}` | | amount |
 
+**Worked example — the gateway fee (Example B, 2.5% gateway fee, default OD-15).** The parent pays 55,000 and nothing more; the provider keeps its fee when it settles to Link's bank. P1 then P5 with `F` = 1,375 (2.5% of 55,000, as the provider reports it on the settlement line):
+
+| Step | Account | Debit | Credit |
+|---|---|---|---|
+| P1 captured | `provider_clearing:paymob` | 55,000 | |
+| | `link_revenue:booking_commission` | | 2,750 |
+| | `teacher_pending:{teacher}` | | 52,250 |
+| P5 settled | `bank:link` | 53,625 | |
+| | `link_expense:provider_fees` | 1,375 | |
+| | `provider_clearing:paymob` | | 55,000 |
+
+Clearing is back to 0; the bank received 53,625. The teacher's 52,250 is unchanged; Link earns 2,750 and pays 1,375, so it nets **1,375 — 2.5 of its 5 points** (half the commission). Golden test: `Gateway fee — Example B at a 2.5% gateway fee (P1 + P5, OD-15)`. (Locally fake-pay charges 2%: Link nets 3 of its 5 points.)
+
 ### P6 · Payout initiated → settled / failed
 Key: `payout:{payeeType}:{payeeId}:{periodStart}`. `N` is the net payout.
 
@@ -99,7 +112,7 @@ Key: `payout:{payeeType}:{payeeId}:{periodStart}`. `N` is the net payout.
 
 ### P7 · Refund before release (BR-REF-02)
 Example D: payment 38,000, commission 1,900, pending 36,100. Key: `refund:{refundId}`.
-Trigger: Link ops approve the refund (diagram 06, OD-42). Compensation refunds (BR-ENR-06, BR-ENR-11) post without approval.
+Trigger: Link ops approve the refund (diagram 06, OD-42). Compensation refunds (BR-ENR-06, BR-ENR-11) post without approval. Until the ops console exists, `pnpm ops:refunds list | approve <id> | deny <id> "<reason>"` stands in for it locally (`APP_ENV=local` only): approve posts these lines and sends the refund; deny posts nothing (a request posts nothing until approved). Both are audited.
 
 | Step | Account | Debit | Credit |
 |---|---|---|---|
@@ -156,8 +169,8 @@ If `centre_available` would go negative (the centre was already paid out), the p
 |---|---|
 | **Pending** (teacher) | balance(`teacher_pending`) |
 | **Available** (teacher / centre) | balance(`*_available`) |
-| **Rent reserve** (teacher) | Estimated rent built up in the current period for every live booking: the rent rule applied to the sessions held so far and the fees collected so far (OD-12) |
-| **Next payout** | `max(0, available − rent reserve − funds whose source payment is not yet settled)` |
+| **Held for rent** (teacher; was "rent reserve") | The rent the teacher will owe at the next rent invoice (CF-54): for every live booking, each month not invoiced yet up to the month of the next payout, the rent rule applied to all its sessions still planned (held so far and still scheduled; `cancelled` and `not_held` never count) and the fees collected so far. Shown on J07 as its own line. |
+| **Next payout** | `max(0, available − held for rent − funds whose source payment is not yet settled)` |
 
 Both earnings statements (J07) and rent income (C07) are reports over the ledger plus `payments` and `rent_invoices`. They show Link's fee as its own line (BR-FEE-07).
 

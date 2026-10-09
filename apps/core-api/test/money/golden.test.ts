@@ -10,6 +10,7 @@ import {
   p2Release,
   p3RentDeduction,
   p4RentTopup,
+  p5Settlement,
   p7RefundApproved,
   p7RefundConfirmed,
   p12RentReversal,
@@ -116,6 +117,39 @@ describe('Example B — one student, EGP 550, 5% commission, rent 20% of fees', 
       (await bal(ACCOUNT.bookingCommission)) - before + (await bal(ACCOUNT.rentFee)) - rentBefore;
     expect([t, c, link]).toEqual([41_250, 10_450, 3_300]);
     expect(t + c + link).toBe(55_000);
+  });
+});
+
+describe('Gateway fee — Example B at a 2.5% gateway fee (P1 + P5, OD-15)', () => {
+  it('parent pays 550.00; teacher keeps 522.50; the gateway takes 13.75 from Link’s 27.50 → Link nets 13.75 (2.5 of the 5 points)', async () => {
+    const { teacher } = payees();
+    const provider = `gw${uuidv7().slice(-8)}`; // its own clearing account, starting at zero
+    const commission = fee(55_000, '5.00');
+    // The provider reports its fee on the settlement line; 2.5% of 550.00 is 13.75 exactly.
+    const gatewayFee = fee(55_000, '2.50');
+    expect([commission, gatewayFee]).toEqual([2_750, 1_375]);
+    const bank = await bal(ACCOUNT.bank);
+    const expense = await bal(ACCOUNT.providerFees);
+    const revenue = await bal(ACCOUNT.bookingCommission);
+    await postAll(
+      {
+        kind: 'payment_captured',
+        lines: p1Capture({ provider, teacherId: teacher, amount: 55_000, commission }),
+      },
+      {
+        kind: 'settlement',
+        lines: p5Settlement({ provider, amount: 55_000, providerFee: gatewayFee }),
+      },
+    );
+    // Clearing → bank: the provider settled 550.00 less its fee; clearing is empty again.
+    expect(await bal(ACCOUNT.providerClearing(provider))).toBe(0);
+    expect((await bal(ACCOUNT.bank)) - bank).toBe(53_625);
+    // The fee is Link's expense; the parent paid no extra and the teacher's share is unchanged.
+    const linkFee = (await bal(ACCOUNT.providerFees)) - expense;
+    const linkRevenue = (await bal(ACCOUNT.bookingCommission)) - revenue;
+    expect([linkRevenue, linkFee]).toEqual([2_750, 1_375]);
+    expect(await bal(ACCOUNT.teacherPending(teacher))).toBe(52_250);
+    expect(linkRevenue - linkFee).toBe(1_375); // 2.5% of the fee: half of Link's 5% is left
   });
 });
 
