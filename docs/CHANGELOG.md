@@ -2,6 +2,24 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-10 — S4: provider choice (ship job)
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| S4-1 | `docs/plan/provider-choice.md` (new) | Payments (Paymob first, Kashier second, Fawry for cash codes), SMS (Egyptian aggregator plus a global fallback), WhatsApp (Meta Cloud API direct): needs, candidates, prices to verify with sources, the processing fee against the 5% commission, questions to send each provider | Ship job S4; OD-04, OD-15, OD-45 |
+| S4-2 | `docs/legal/README.md` (question 6), `docs/plan/before-real-users.md` | The CBE PSP rules (June 2025) and money held before the weekly payout; link to the provider comparison | Ship job S4 |
+
+## 2026-10-10 — S3: payouts, rent shortfall, home area, bookings flag, Android preview (ship job)
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| S3-1 | `docs/07-api.md` | Teacher and centre money rows built (payout account, payouts, rent due, rent checkout) and the ops payout desk (batches, run, export, settle / fail / retry, payout accounts); `GET /v1/areas` | Built in S3 |
+| S3-2 | `docs/operations.md` | "Payouts every Thursday": the batch, the account checks, the CSV, sent / bounced / retry | Built in S3 |
+| S3-3 | `docs/go-live-switches.md`, `docs/security-checklist.md` | Payouts built (manual provider); `bookings.enabled` with `PAYMENT_PROVIDER=none`; checklist 36–37 | Built in S3 |
+| S3-4 | `docs/teacher-app-android.md` (new), `apps/teacher-app/eas.json` | Android preview `.apk`: with Expo's build service or locally (prebuild + Gradle); `preview` (live) and `preview-demo` (sample data on the phone) | Ship job S3 |
+| S3-5 | `docs/plan/arabic-review-ship.csv` (new), `pnpm i18n:export-review-ship` | The S2–S3 strings whose Arabic is still proposed, for one review sitting; `pnpm i18n:apply-review` takes the file back | Ship job S3 ("approved Arabic strings" waits on the reviewer) |
+| S3-6 | `docs/RUNNING.md`, `docs/product/sample-only.md`, `docs/plan/before-real-users.md` | Payouts and home area in the click list and the plan | Built in S3 |
+
 ## 2026-10-10 — S2: ops console, consent pack, user rights (ship job)
 
 | # | File | What changed | Why |

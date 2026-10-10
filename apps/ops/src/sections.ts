@@ -4,6 +4,7 @@ export const SECTIONS = {
   teachers: 'ops.verify',
   reviews: 'ops.moderate',
   refunds: 'ops.finance',
+  payouts: 'ops.finance',
   'data-requests': 'ops.verify',
 } as const;
 export type Section = keyof typeof SECTIONS;

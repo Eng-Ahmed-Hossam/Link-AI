@@ -3,7 +3,8 @@ import type { RentInvoices } from '../ledger/rent-invoices';
 import type { Money } from '../payments/money';
 import type { Logger } from '../platform/logger';
 import type { Redises } from '../platform/redis';
-import { cairoClock, cairoToday } from '../platform/time';
+import { cairoClock, cairoToday, isoWeekday } from '../platform/time';
+import type { Payouts } from '../ledger/payouts';
 
 /**
  * Scheduled jobs (docs/05 §4, docs/08 §4–§8). Each job takes a Redis lock (`SET NX PX`), so only
@@ -16,12 +17,20 @@ export interface Job {
   everyMs?: number;
   /** … or once a day at this Cairo time (`HH:MM`) … */
   dailyAt?: string;
-  /** … or on this day of the month at `dailyAt`. */
+  /** … or on this day of the month at `dailyAt` … */
   monthDay?: number;
+  /** … or on this ISO weekday (4 = Thursday) at `dailyAt`. */
+  weekDay?: number;
   run: () => Promise<unknown>;
 }
 
-export function moneyJobs(d: { jobs: EnrolmentJobs; money: Money; rent: RentInvoices }): Job[] {
+export function moneyJobs(d: {
+  jobs: EnrolmentJobs;
+  money: Money;
+  rent: RentInvoices;
+  /** Off a developer machine only: locally ops press "Run now" (the sample earnings stay put). */
+  payouts?: Payouts;
+}): Job[] {
   return [
     { name: 'hold-expiry', everyMs: 15_000, run: () => d.jobs.expireHolds() },
     { name: 'waitlist-offer-expiry', everyMs: 60_000, run: () => d.jobs.expireOffers() },
@@ -35,6 +44,10 @@ export function moneyJobs(d: { jobs: EnrolmentJobs; money: Money; rent: RentInvo
     { name: 'settlement', dailyAt: '06:00', run: () => d.money.settle() },
     { name: 'seat-rebuild', dailyAt: '03:00', run: () => d.jobs.rebuildSeats() },
     { name: 'rent-invoices', dailyAt: '02:00', monthDay: 1, run: () => d.rent.issue() },
+    // S3 (08 §8, OD-04): the weekly payout batch, Thursday 09:00 Cairo, after the 06:00 settlement.
+    ...(d.payouts
+      ? [{ name: 'payouts', dailyAt: '09:00', weekDay: 4, run: () => d.payouts!.runWeek() }]
+      : []),
   ];
 }
 
@@ -59,6 +72,7 @@ export class Scheduler {
     if (j.everyMs) return true; // the lock's expiry spaces the runs
     const today = cairoToday(now);
     if (j.monthDay && Number(today.slice(8, 10)) !== j.monthDay) return false;
+    if (j.weekDay && isoWeekday(today) !== j.weekDay) return false;
     if (cairoClock(now) < j.dailyAt!) return false;
     return (await this.redis.state.get(this.redis.key('job', 'last', j.name))) !== today;
   }

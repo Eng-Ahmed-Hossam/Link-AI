@@ -99,7 +99,11 @@ export const handlers = [
   http.patch(
     '*/v1/me',
     authed(async ({ request, userId, lang }) => {
-      const body = (await request.json()) as { name?: string; language?: string };
+      const body = (await request.json()) as {
+        name?: string;
+        language?: string;
+        homeArea?: string | null;
+      };
       if (body.name !== undefined && (typeof body.name !== 'string' || body.name.length > 80))
         return problem(422, 'validation_failed', 'Enter a name of up to 80 characters.');
       if (body.language !== undefined && body.language !== 'ar' && body.language !== 'en')
@@ -111,6 +115,7 @@ export const handlers = [
         name: u.name,
         language: body.language ?? lang,
         roles: u.roles,
+        ...(u.homeArea !== undefined ? { homeArea: u.homeArea } : {}),
       });
     }),
   ),
@@ -162,6 +167,17 @@ export const handlers = [
         : problem(409, 'already_open', 'You already have an open request of this kind.');
     }),
   ),
+  // S3: the home areas a parent can pick (areas with a verified centre).
+  http.get('*/v1/areas', ({ request }) => {
+    const lang = langOf(request);
+    const seen = new Set<string>();
+    return HttpResponse.json(
+      fx.centres
+        .filter((c) => c.verified)
+        .map((c) => ({ name: c.area[lang], governorate: c.governorate[lang] }))
+        .filter((a) => !seen.has(a.name) && seen.add(a.name)),
+    );
+  }),
   // E0-09: the global flags the demo settings stand for (core-api reads platform.feature_flags).
   http.get('*/v1/feature-flags', () => {
     const d = demoState();
@@ -186,6 +202,7 @@ export const handlers = [
         language: lang,
         roles: u.roles,
         ...mockMeExtras(u.id),
+        ...(u.homeArea !== undefined ? { homeArea: u.homeArea } : {}),
       });
     }),
   ),

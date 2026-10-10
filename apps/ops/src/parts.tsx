@@ -51,6 +51,9 @@ export function problemText(e: unknown, t: T) {
       reason_required: 'ops.errors.reasonRequired',
       validation_failed: 'ops.errors.reasonRequired',
       nothing_to_refund: 'ops.errors.nothingToRefund',
+      account_not_verified: 'ops.errors.accountNotVerified',
+      insufficient_balance: 'ops.errors.insufficientBalance',
+      not_failed: 'ops.errors.alreadyDecided',
       ops_permission_required: 'ops.gate.notOps',
       ops_ip_not_allowed: 'ops.gate.ipNotAllowed',
     };

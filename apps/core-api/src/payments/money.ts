@@ -14,6 +14,8 @@ import {
   fee,
   p1Capture,
   p2Release,
+  p4RentTopup,
+  rentFeeShare,
   p5Settlement,
   p7RefundApproved,
   p7RefundConfirmed,
@@ -323,6 +325,7 @@ export class Money {
       id: string;
       kind: string;
       enrolment_id: string | null;
+      rent_invoice_id: string | null;
       amount_pt: string;
       centre_id: string | null;
       payee_id: string | null;
@@ -330,6 +333,7 @@ export class Money {
     ev: Extract<ProviderEvent, { kind: 'payment.succeeded' }>,
     effects: Effects,
   ): Promise<string> {
+    if (p.kind === 'rent_topup') return this.topupCaptured(sys, p, ev);
     const amount = Number(p.amount_pt);
     const e = await loadEnrolment(sys, p.enrolment_id!, true);
     if (!e) return this.issue(sys, 'orphan_payment', ev.providerRef);
@@ -393,6 +397,230 @@ export class Money {
       return 'confirmed';
     }
     return this.lateMoney(sys, e, p.id, effects);
+  }
+
+  // ── Rent shortfall (BR-RNT-05/06, OD-12, P4; ship job S3) ───────────────────────
+  /**
+   * The rent invoices a teacher still owes something on: the month's rent was more than their
+   * balance on the 1st, and the rest is due within 5 days (OD-12).
+   */
+  async rentDue(userId: string, lang: 'ar' | 'en') {
+    void lang;
+    const teacherId = await this.db.asUser(userId, async (_tx, ctx) => {
+      if (!ctx.teacherId) throw new Problem(403, 'forbidden', 'Teachers only.');
+      return ctx.teacherId;
+    });
+    return this.db.asSystem(async (sys) => {
+      const { rows } = await sql<{
+        id: string;
+        centre: string;
+        hall: string;
+        month: string;
+        gross_amount_pt: string;
+        deducted_pt: string;
+        topup_paid_pt: string;
+        due_on: string | null;
+        status: string;
+      }>`
+        SELECT i.id, c.name AS centre, r.name AS hall, to_char(lower(i.period), 'YYYY-MM') AS month,
+          i.gross_amount_pt, i.deducted_pt, i.topup_paid_pt, i.due_on::text, i.status
+        FROM ledger.rent_invoices i
+        JOIN org.centres c ON c.id = i.centre_id
+        JOIN market.room_bookings b ON b.id = i.room_booking_id
+        JOIN market.rooms r ON r.id = b.room_id
+        WHERE i.teacher_id = ${teacherId} AND i.status IN ('issued', 'partially_paid', 'overdue')
+        ORDER BY lower(i.period), c.name`.execute(sys);
+      const egp = (pt: number) => ({ amountPt: pt, currency: 'EGP' as const });
+      return rows.map((r) => {
+        const gross = Number(r.gross_amount_pt);
+        const paid = Number(r.deducted_pt) + Number(r.topup_paid_pt);
+        return {
+          id: r.id,
+          centre: r.centre,
+          hall: r.hall,
+          month: r.month,
+          rent: egp(gross),
+          paid: egp(paid),
+          due: egp(gross - paid),
+          dueOn: r.due_on,
+          overdue: !!r.due_on && r.due_on < cairoToday(),
+        };
+      });
+    });
+  }
+
+  /**
+   * Pay the rest of a rent invoice through Link (P4 on success): the provider's hosted page, or a
+   * Fawry reference. The amount is what is still owed; no booking commission on rent (P4).
+   */
+  async rentTopupCheckout(
+    userId: string,
+    invoiceId: string,
+    method: Method,
+    idemKey: string,
+    lang: 'ar' | 'en',
+  ): Promise<
+    | { kind: 'redirect'; checkoutUrl: string }
+    | { kind: 'fawry'; fawryReference: string; expiresAt: string }
+  > {
+    const teacherId = await this.db.asUser(userId, async (tx, ctx) => {
+      const inv = await tx
+        .selectFrom('ledger.rent_invoices')
+        .select(['id', 'teacher_id'])
+        .where('id', '=', invoiceId)
+        .executeTakeFirst();
+      if (!inv || inv.teacher_id !== ctx.teacherId) throw notFound('rent invoice');
+      return inv.teacher_id;
+    });
+    const paymentId = uuidv7();
+    const amount = await this.db.asSystem(async (sys) => {
+      const inv = await sys
+        .selectFrom('ledger.rent_invoices')
+        .select(['id', 'centre_id', 'gross_amount_pt', 'deducted_pt', 'topup_paid_pt', 'status'])
+        .where('id', '=', invoiceId)
+        .forUpdate()
+        .executeTakeFirstOrThrow();
+      const owed =
+        Number(inv.gross_amount_pt) - Number(inv.deducted_pt) - Number(inv.topup_paid_pt);
+      if (owed <= 0 || !['issued', 'partially_paid', 'overdue'].includes(inv.status))
+        throw new Problem(409, 'nothing_due', 'This rent is already paid.');
+      await sys
+        .insertInto('ledger.payments')
+        .values({
+          id: paymentId,
+          kind: 'rent_topup',
+          rent_invoice_id: inv.id,
+          payer_user_id: userId,
+          payee_type: 'centre',
+          payee_id: inv.centre_id,
+          centre_id: inv.centre_id,
+          amount_pt: String(owed),
+          method,
+          provider: this.provider.name,
+          idempotency_key: `rent-topup:${inv.id}:${idemKey}`,
+        })
+        .execute();
+      return owed;
+    });
+    void teacherId;
+    if (method === 'fawry') {
+      const ref = await this.provider.createFawryReference({
+        orderRef: paymentId,
+        amountPt: amount,
+        expiresAt: new Date(Date.now() + this.config.FAWRY_HOLD_SECONDS * 1000),
+      });
+      await this.db.asSystem((sys) =>
+        sys
+          .updateTable('ledger.payments')
+          .set({
+            status: 'pending',
+            provider_ref: ref.reference,
+            fawry_reference: ref.reference,
+            expires_at: ref.expiresAt,
+          })
+          .where('id', '=', paymentId)
+          .execute(),
+      );
+      return {
+        kind: 'fawry',
+        fawryReference: ref.reference,
+        expiresAt: ref.expiresAt.toISOString(),
+      };
+    }
+    const site = this.config.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
+    const c = await this.provider.createCheckout({
+      orderRef: paymentId,
+      amountPt: amount,
+      method,
+      returnUrl: `${site}/${lang}/payment-done`,
+      saveCard: false,
+    });
+    await this.db.asSystem((sys) =>
+      sys
+        .updateTable('ledger.payments')
+        .set({ status: 'pending', provider_ref: c.providerRef, checkout_url: c.url })
+        .where('id', '=', paymentId)
+        .execute(),
+    );
+    return { kind: 'redirect', checkoutUrl: c.url };
+  }
+
+  /** P4: a rent top-up was paid. The centre is credited; Link takes the rest of its fee share. */
+  private async topupCaptured(
+    sys: Tx,
+    p: { id: string; rent_invoice_id: string | null; amount_pt: string },
+    ev: Extract<ProviderEvent, { kind: 'payment.succeeded' }>,
+  ): Promise<string> {
+    const inv = p.rent_invoice_id
+      ? await sys
+          .selectFrom('ledger.rent_invoices')
+          .selectAll()
+          .where('id', '=', p.rent_invoice_id)
+          .forUpdate()
+          .executeTakeFirst()
+      : undefined;
+    if (!inv) return this.issue(sys, 'orphan_payment', ev.providerRef);
+    const amount = Number(p.amount_pt);
+    const gross = Number(inv.gross_amount_pt);
+    const owed = gross - Number(inv.deducted_pt) - Number(inv.topup_paid_pt);
+    // Paid twice (two checkouts both completed): ops refund the second one (MKT-OPS-05).
+    if (amount > owed) return this.issue(sys, 'amount_mismatch', ev.providerRef);
+    const taken = await sql<{ n: string }>`
+      SELECT coalesce(sum(le.credit_pt - le.debit_pt), 0) AS n
+      FROM ledger.ledger_transactions t JOIN ledger.ledger_entries le ON le.transaction_id = t.id
+      JOIN ledger.ledger_accounts a ON a.id = le.account_id
+      WHERE t.rent_invoice_id = ${inv.id} AND a.code = ${ACCOUNT.rentFee}`.execute(sys);
+    const feeShare = rentFeeShare({
+      gross,
+      fee: Number(inv.link_fee_amount_pt),
+      part: amount,
+      feeAlreadyTaken: Number(taken.rows[0]!.n),
+      last: amount === owed,
+    });
+    await sys
+      .updateTable('ledger.payments')
+      .set({
+        status: 'succeeded',
+        succeeded_at: new Date(),
+        card_last4: ev.cardLast4,
+        method: ev.method,
+        provider_ref: ev.providerRef,
+      })
+      .where('id', '=', p.id)
+      .execute();
+    await post(sys, {
+      kind: 'rent_topup',
+      key: `capture:${this.provider.name}:${ev.providerRef}`,
+      description: 'Rent shortfall paid by the teacher',
+      lines: p4RentTopup({
+        provider: this.provider.name,
+        centreId: inv.centre_id,
+        amount,
+        feeShare,
+      }),
+      paymentId: p.id,
+      rentInvoiceId: inv.id,
+      centreId: inv.centre_id,
+      teacherId: inv.teacher_id,
+    });
+    const paidUp = amount === owed;
+    await sys
+      .updateTable('ledger.rent_invoices')
+      .set({
+        topup_paid_pt: String(Number(inv.topup_paid_pt) + amount),
+        status: paidUp ? 'paid' : 'partially_paid',
+        settled_at: paidUp ? new Date() : null,
+      })
+      .where('id', '=', inv.id)
+      .execute();
+    await enqueue(sys, {
+      type: 'rent_invoice.topped_up',
+      aggregateType: 'rent_invoice',
+      aggregateId: inv.id,
+      centreId: inv.centre_id,
+      data: { rentInvoiceId: inv.id, paymentId: p.id, amountPt: amount, paid: paidUp },
+    });
+    return paidUp ? 'rent_paid' : 'rent_partly_paid';
   }
 
   /** Paid while the seat is held: confirmed, or waiting for the teacher (BR-ENR-04, OD-08). */

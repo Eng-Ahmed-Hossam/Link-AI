@@ -10,6 +10,7 @@ import { longDay, num } from '@/format';
 import { egp, ruleText } from '@/market/text';
 import { QueryView } from '@/ui/QueryView';
 import { Screen } from '@/ui/Screen';
+import { PayoutAccountCard, PayoutHistoryCard, RentDueCard } from '@/market/MoneyCards';
 
 const PALETTE = [color.blue, color.amber, color.navy, color.green];
 
@@ -64,6 +65,8 @@ export default function Earnings() {
                   })}
                 </Text>
               </Card>
+
+              <RentDueCard />
 
               <Card>
                 <Text accessibilityRole="header" style={textStyle(locale, 'heading')}>
@@ -158,6 +161,9 @@ export default function Earnings() {
                   </View>
                 ))}
               </Card>
+
+              <PayoutAccountCard />
+              <PayoutHistoryCard />
 
               {d.methods.length ? (
                 <Card>

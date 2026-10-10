@@ -8,6 +8,7 @@ import { useOpsMe } from './OpsGate';
 import { SECTIONS, type Section } from './sections';
 import { CentresScreen } from './screens/Centres';
 import { DataRequestsScreen } from './screens/DataRequests';
+import { PayoutsScreen } from './screens/Payouts';
 import { RefundsScreen } from './screens/Refunds';
 import { ReviewsScreen } from './screens/Reviews';
 import { TeachersScreen } from './screens/Teachers';
@@ -17,6 +18,7 @@ const SCREENS = {
   teachers: TeachersScreen,
   reviews: ReviewsScreen,
   refunds: RefundsScreen,
+  payouts: PayoutsScreen,
   'data-requests': DataRequestsScreen,
 };
 

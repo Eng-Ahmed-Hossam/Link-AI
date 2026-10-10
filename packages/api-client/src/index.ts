@@ -68,6 +68,17 @@ import type {
   StaffPermission,
 } from './followup';
 import type {
+  OpsPayout,
+  OpsPayoutAccount,
+  PayoutAccount,
+  PayoutAccountBody,
+  PayoutBatch,
+  PayoutExport,
+  PayoutRow,
+  PayoutRun,
+  RentDue,
+} from './payouts';
+import type {
   AuditRow,
   CentreApplications,
   CentreStage,
@@ -116,6 +127,7 @@ export * from './followup';
 export * from './market';
 export * from './flags';
 export * from './ops';
+export * from './payouts';
 export { setApiBaseUrl, apiUrl } from './config';
 export { config as apiConfig } from './config';
 import { config } from './config';
@@ -315,6 +327,8 @@ export const api = {
   // Reference data
   curricula: () =>
     request<(CurriculumRef & { schoolYears: SchoolYearRef[] })[]>('GET', '/v1/curricula'),
+  /** S3: the home areas a parent can pick (areas with a verified centre). */
+  areas: () => request<{ name: string; governorate: string | null }[]>('GET', '/v1/areas'),
   subjects: (curriculumId?: string, schoolYearId?: string) =>
     request<SubjectRef[]>('GET', '/v1/subjects', { params: { curriculumId, schoolYearId } }),
   // Discovery (MKT-DSC)
@@ -644,6 +658,26 @@ export const marketApi = {
   declineEnrolment: (id: string) =>
     request<TeacherEnrolment>('POST', `/v1/enrolments/${id}/decline`, { body: {} }),
   earnings: () => request<Earnings>('GET', '/v1/teachers/me/earnings'),
+  // S3: payout account, payouts and rent the teacher still owes (OD-12).
+  myPayoutAccount: () => request<PayoutAccount>('GET', '/v1/me/payout-account'),
+  putMyPayoutAccount: (body: PayoutAccountBody, idempotencyKey: string) =>
+    request<PayoutAccount>('PUT', '/v1/me/payout-account', { body, idempotencyKey }),
+  myPayouts: () => request<PayoutRow[]>('GET', '/v1/me/payouts'),
+  rentDue: () => request<RentDue[]>('GET', '/v1/teachers/me/rent-due'),
+  payRent: (invoiceId: string, method: PaymentMethod, idempotencyKey: string) =>
+    request<CheckoutResult>('POST', `/v1/rent-invoices/${invoiceId}/checkout`, {
+      body: { method },
+      idempotencyKey,
+    }),
+  centrePayoutAccount: (centreId: string) =>
+    request<PayoutAccount>('GET', `/v1/centres/${centreId}/payout-account`),
+  putCentrePayoutAccount: (centreId: string, body: PayoutAccountBody, idempotencyKey: string) =>
+    request<PayoutAccount>('PUT', `/v1/centres/${centreId}/payout-account`, {
+      body,
+      idempotencyKey,
+    }),
+  centrePayouts: (centreId: string) =>
+    request<PayoutRow[]>('GET', `/v1/centres/${centreId}/payouts`),
   /** The teacher's centre(s) with the follow-up extra (Follow-up tab). */
   teacherFeatures: () => request<CentreFeatures>('GET', '/v1/teachers/me/features'),
   /** A parent: whether any of their children's centres has the extra (P09 updates feed). */
@@ -774,6 +808,28 @@ export const opsApi = {
     request<DataExport>('GET', `/v1/ops/data-requests/${id}/export`),
   completeDataRequest: (id: string, result: 'completed' | 'rejected', outcome: string) =>
     request<Ok>('POST', `/v1/ops/data-requests/${id}/complete`, { body: { result, outcome } }),
+  // S3 payouts (ops.finance, MKT-OPS-11)
+  payoutBatches: () => request<PayoutBatch[]>('GET', '/v1/ops/payout-batches'),
+  runPayouts: (idempotencyKey: string) =>
+    request<PayoutRun>('POST', '/v1/ops/payout-batches/run', { body: {}, idempotencyKey }),
+  exportPayoutBatch: (id: string) =>
+    request<PayoutExport>('POST', `/v1/ops/payout-batches/${id}/export`, { body: {} }),
+  payouts: (status?: 'initiated' | 'settled' | 'failed' | 'all') =>
+    request<OpsPayout[]>('GET', '/v1/ops/payouts', { params: { status } }),
+  settlePayout: (id: string, reference: string | undefined, idempotencyKey: string) =>
+    request<Ok>('POST', `/v1/ops/payouts/${id}/settle`, {
+      body: reference ? { reference } : {},
+      idempotencyKey,
+    }),
+  failPayout: (id: string, reason: string, idempotencyKey: string) =>
+    request<Ok>('POST', `/v1/ops/payouts/${id}/fail`, { body: { reason }, idempotencyKey }),
+  retryPayout: (id: string, idempotencyKey: string) =>
+    request<Ok>('POST', `/v1/ops/payouts/${id}/retry`, { body: {}, idempotencyKey }),
+  payoutAccountsToVerify: () => request<OpsPayoutAccount[]>('GET', '/v1/ops/payout-accounts'),
+  decidePayoutAccount: (id: string, decision: 'verify' | 'reject', reason?: string) =>
+    request<Ok>('POST', `/v1/ops/payout-accounts/${id}/${decision}`, {
+      body: reason ? { reason } : {},
+    }),
   // The person's own requests (PDPL), from any app.
   myDataRequests: () => request<DataRequest[]>('GET', '/v1/me/data-requests'),
   createDataRequest: (kind: DataRequestKind, details: string, idempotencyKey: string) =>

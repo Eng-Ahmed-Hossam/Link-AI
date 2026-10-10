@@ -32,6 +32,15 @@ Link staff verify centres and teachers, moderate reviews, decide refunds and ans
 
 Every view and decision in the console is in the audit log (`audit.audit_events`), with the ops user's ID. Locally the same commands are `pnpm ops:access list|grant|revoke`.
 
+## Payouts every Thursday
+
+Link holds teachers' and centres' money and pays it out weekly (BR-OUT-01). Until a payout API is chosen, ops finance pay by hand:
+
+1. **Thursday 09:00 (Cairo)** the worker makes the week's batch: one payout per teacher and centre with money to pay, a verified profile and a **verified payout account** (BR-OUT-03). The money leaves their available balance (P6). Ops can also press **Make this week's batch** in the console (safe to press twice).
+2. Ops console → **Payouts** → first check any **payout accounts** waiting (holder name matches the teacher or centre; a small test transfer if in doubt) → Verify or Reject.
+3. **Download CSV** on the batch: reference, payee, account holder, IBAN or wallet number, amount. Make each transfer in the bank's bulk upload or InstaPay. The download is in the audit log; delete the file once the transfers are done.
+4. For each payout: **Mark sent** (type the bank or InstaPay reference), or **Mark bounced** with what the bank said — the money goes back to the payee's balance and their account shows "fix needed" in the app. When they add a new account and you verify it, **Retry this payout** (the same payout; never a second one for the week, BR-OUT-05).
+
 ## Restart, update, logs
 
 | To | Run |

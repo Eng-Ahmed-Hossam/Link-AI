@@ -64,3 +64,7 @@ pilot-deletion-receipt-*
 *.gguf
 *.safetensors
 *.onnx
+
+# Expo prebuild output (docs/teacher-app-android.md): generated, never committed
+apps/teacher-app/android/
+apps/teacher-app/ios/

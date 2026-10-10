@@ -51,6 +51,22 @@ export class Reference {
     });
   }
 
+  /** Areas where a verified centre is (the names as stored; PATCH /v1/me accepts exactly these). */
+  areas() {
+    return this.db.asAnonymous(async (tx) =>
+      (
+        await tx
+          .selectFrom('market.public_centres')
+          .select(['area', 'governorate'])
+          .where('area', 'is not', null)
+          .distinct()
+          .orderBy('governorate')
+          .orderBy('area')
+          .execute()
+      ).map((r) => ({ name: r.area!, governorate: r.governorate })),
+    );
+  }
+
   /**
    * Subjects. With a curriculum and year, that year's rows. Without, one row per subject code (the
    * first by curriculum and year order) — the list the apps show before a year is picked.
@@ -102,6 +118,11 @@ export class ReferenceController {
   @Endpoint(routes.curricula)
   curricula(@CallerLang() lang: Lang) {
     return this.ref.curricula(lang);
+  }
+
+  @Endpoint(routes.areas)
+  areas() {
+    return this.ref.areas();
   }
 
   @Endpoint(routes.subjects)

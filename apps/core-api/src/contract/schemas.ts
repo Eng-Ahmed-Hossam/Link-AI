@@ -165,6 +165,12 @@ export const CurriculumWithYears = named(
   CurriculumRef.extend({ schoolYears: z.array(SchoolYearRef) }),
 );
 export const CurriculumList = z.array(CurriculumWithYears);
+/** Areas where a verified centre is: what a parent can pick as their home area (S3). */
+export const AreaRef = named(
+  'AreaRef',
+  z.object({ name: z.string(), governorate: z.string().nullable() }),
+);
+export const AreaList = z.array(AreaRef);
 export const SubjectList = z.array(SubjectRef);
 export const SubjectsQuery = z.object({
   curriculumId: z.string().optional(),

@@ -48,6 +48,21 @@ test('OD-37: finance lands on refunds; a centre owner is refused', async ({ page
   await expect(page.getByRole('heading', { name: 'Refunds', level: 1 })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Centre requests' })).toHaveCount(0);
 
+  // MKT-OPS-11: this week's batch, then its CSV for the bank or InstaPay.
+  await page.getByRole('link', { name: 'Payouts' }).click();
+  await page.getByTestId('run-payouts').click();
+  await expect(
+    page.getByRole('status').filter({ hasText: /payouts? added|Nothing new/ }),
+  ).toBeVisible();
+  const batch = page.getByTestId('payout-batch').first();
+  await expect(batch).toBeVisible();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    batch.getByTestId('export-batch').click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/^link-payouts-\d{4}-\d{2}-\d{2}\.csv$/);
+  await expect(page.getByTestId('payout-item').first()).toBeVisible();
+
   await page.context().clearCookies();
   await signIn(page, OWNER);
   await expect(page.getByText('This number is not a Link ops account.')).toBeVisible();

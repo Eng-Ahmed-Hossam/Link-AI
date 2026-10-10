@@ -3,6 +3,7 @@ import { followupRoutes } from './followup-routes';
 import * as m from './market';
 import * as $ from './money';
 import { opsRoutes } from './ops';
+import { payoutRoutes } from './payouts';
 import * as s from './schemas';
 
 /**
@@ -213,6 +214,16 @@ export const routes = {
     rules: ['MKT-DSC-01'],
     auth: 'public',
     response: s.CurriculumList,
+  }),
+  areas: def({
+    name: 'listAreas',
+    method: 'get',
+    path: '/v1/areas',
+    summary: 'Areas with a verified centre: the home areas a parent can pick (S3)',
+    tag: 'reference',
+    rules: ['MKT-DSC-01'],
+    auth: 'public',
+    response: s.AreaList,
   }),
   subjects: def({
     name: 'listSubjects',
@@ -696,6 +707,7 @@ export const routes = {
     response: $.Enrolment,
     status: 201,
     errors: [
+      { status: 503, code: 'payments_off' },
       { status: 409, code: 'seat_unavailable' },
       { status: 409, code: 'already_enrolled' },
       { status: 422, code: 'plan_not_offered' },
@@ -715,6 +727,7 @@ export const routes = {
     body: $.CheckoutBody,
     response: $.CheckoutResult,
     errors: [
+      { status: 503, code: 'payments_off' },
       { status: 409, code: 'hold_expired' },
       { status: 422, code: 'method_not_allowed' },
       { status: 502, code: 'provider_unavailable' },
@@ -850,7 +863,10 @@ export const routes = {
     params: m.IdParams,
     body: $.WaitlistAcceptBody,
     response: $.CheckoutResult,
-    errors: [{ status: 409, code: 'offer_expired' }],
+    errors: [
+      { status: 503, code: 'payments_off' },
+      { status: 409, code: 'offer_expired' },
+    ],
   }),
   leaveWaitlist: def({
     name: 'leaveWaitlist',
@@ -966,6 +982,9 @@ export const routes = {
 
   // ── Ops console and data-subject requests (S2, 07 "Ops") ─────────────────────
   ...opsRoutes,
+
+  // ── Payouts (S3, 07 money tables, MKT-OPS-11) ─────────────────────────────────
+  ...payoutRoutes,
 } satisfies Record<string, RouteDef>;
 
 export type RouteName = keyof typeof routes;

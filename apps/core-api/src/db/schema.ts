@@ -316,6 +316,37 @@ export interface LedgerPayoutAccounts {
   verified_at: Timestamp | null;
 }
 
+export interface LedgerPayoutBatches {
+  created_at: Generated<Timestamp>;
+  created_by: string | null;
+  exported_at: Timestamp | null;
+  id: string;
+  provider: string;
+  run_on: Timestamp;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface LedgerPayouts {
+  amount_pt: Int8;
+  attempts: Generated<number>;
+  batch_id: string;
+  created_at: Generated<Timestamp>;
+  failed_at: Timestamp | null;
+  failure_reason: string | null;
+  id: string;
+  idempotency_key: string;
+  payee_id: string;
+  payee_type: string;
+  payout_account_id: string;
+  period_start: Timestamp;
+  provider: string;
+  provider_ref: string | null;
+  settled_at: Timestamp | null;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface LedgerProviderEvents {
   event_id: string;
   id: string;
@@ -1196,6 +1227,8 @@ export interface DB {
   "ledger.payment_mandates": LedgerPaymentMandates;
   "ledger.payments": LedgerPayments;
   "ledger.payout_accounts": LedgerPayoutAccounts;
+  "ledger.payout_batches": LedgerPayoutBatches;
+  "ledger.payouts": LedgerPayouts;
   "ledger.provider_events": LedgerProviderEvents;
   "ledger.provider_settlement_lines": LedgerProviderSettlementLines;
   "ledger.reconciliation_issues": LedgerReconciliationIssues;

@@ -183,6 +183,8 @@ export function P07ReservePay({ id }: { id: string }) {
         setConflict({ startsAt: String(s?.startsAt ?? '') });
       } else if (err instanceof ApiError && err.code === 'hold_expired') {
         enrolment.refetch();
+      } else if (err instanceof ApiError && err.code === 'payments_off') {
+        setError(t('parent.reserve.bookingsSoon'));
       } else {
         setError(
           err instanceof ApiError && err.isNetwork

@@ -332,6 +332,7 @@ Runs **daily** at 06:00 Cairo for the previous day, per provider, and once more 
 | Steps | Check that reconciliation finished → compute amounts → create `payouts` (one per payee per week) → P6 initiated → call `PayoutProvider.createPayout` with the same key → webhook → P6 settled or failed → notify the payee |
 | Failure | Money returns to available; the payee is asked to fix their account (BR-OUT-06) |
 | Statement | Each payout links its `payout_items`. J07 and C07 show the next transfer date and the masked account. |
+| **Built (S3)** | Provider `manual` until a payout API is chosen: `ledger.payouts` (one per payee per week) and `ledger.payout_batches`; P6 keys `payout:{payoutId}:{attempt}:{initiated\|settled\|failed}` (a retry is a new attempt of the same payout); ops finance export the batch as a CSV, transfer by hand, and mark each payout sent or bounced ([operations](operations.md#payouts-every-thursday)). The P6 transactions carry `payout_id`, so a statement reads them directly; `payout_items` is not needed yet. |
 
 ## 9. Testing money
 

@@ -6,7 +6,7 @@ With `pnpm dev` ([RUNNING](../RUNNING.md)) Link runs on its real backend: sign-i
 |---|---|---|
 | **SMS** | sms-sink (:8093) catches every code and invite; nothing is sent. | An SMS sender (OD-45). |
 | **Payments** | fake-pay (:8091) plays the provider: hosted page, Fawry references, signed webhooks, refunds, a 2% sample fee. No money moves. | A merchant account with hosted checkout (card, Fawry, wallet); the real gateway fee rate. |
-| **Payouts** | "Next payout Thursday" (with "Held for rent") is computed; nothing is sent. | A payout provider and teachers' and centres' bank accounts. |
+| **Payouts** | Built (S3): payout accounts, the Thursday batch, the CSV and sent / bounced in the ops console. Locally the batch is made by pressing "Make this week's batch"; sample accounts have no real numbers. | Real payout accounts (added by teachers and owners, checked by ops finance) and someone who makes the transfers every Thursday. |
 | **Rent shortfall** | The ledger can post a teacher's rent top-up (P4), but there is no screen to pay it. | A "Pay the rent shortfall" checkout for teachers. |
 | **WhatsApp** | whatsapp-fake (:8094) receives approved messages; delivery and replies only when Demo controls ask. | WhatsApp Business: a number, approved templates, delivery events. |
 | **Voice notes** | Local Whisper through ai-service on this machine, sample audio only (`pnpm voice:try`). | Hosting ai-service, and the consent pack before any real recording (OD-60). |

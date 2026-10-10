@@ -44,6 +44,41 @@ function staffOf(
       ownerOnly ? 'Centre owners only.' : 'Centre staff only.',
     );
 }
+type PayoutAccountBody = { kind: 'bank' | 'wallet'; number: string; holderName: string };
+type MockPayoutAccount = {
+  kind: 'bank' | 'wallet';
+  last4: string;
+  holderName: string | null;
+  status: 'pending_verification' | 'verified' | 'failed';
+  addedAt: string;
+};
+const payoutAccounts = new Map<string, MockPayoutAccount>();
+/** The sample world's payees have a verified account, as in the seed. */
+const payoutAccountOf = (owner: string): MockPayoutAccount =>
+  payoutAccounts.get(owner) ?? {
+    kind: 'wallet',
+    last4: '4400',
+    holderName: null,
+    status: 'verified',
+    addedAt: '2026-09-01T10:00:00.000Z',
+  };
+function putPayoutAccount(owner: string, b: PayoutAccountBody) {
+  const digits = (b?.number ?? '').replace(/\D/g, '');
+  if (b?.kind === 'bank' && !/^EG\d{27}$/i.test((b.number ?? '').replace(/\s|-/g, '')))
+    return problem(422, 'invalid_iban', 'Enter the full IBAN (EG and 27 digits).');
+  if (b?.kind === 'wallet' && digits.length < 10)
+    return problem(422, 'invalid_wallet', 'Enter the wallet’s Egyptian mobile number.');
+  const a: MockPayoutAccount = {
+    kind: b.kind,
+    last4: digits.slice(-4),
+    holderName: b.holderName?.trim() || null,
+    status: 'pending_verification',
+    addedAt: new Date().toISOString(),
+  };
+  payoutAccounts.set(owner, a);
+  return HttpResponse.json({ account: a });
+}
+
 function teacherOf(userId: string): string {
   const id = who(userId)?.teacherId;
   if (!id) throw new MockProblem(403, 'forbidden', 'Teachers only.');
@@ -323,6 +358,40 @@ export const marketHandlers = [
       await delay(150);
       return HttpResponse.json(mk.earnings(teacherOf(userId), lang));
     }),
+  ),
+  // S3 money: payout accounts (re-verified by Link ops in live mode), payouts and rent still owed.
+  // The mock keeps changed accounts in memory; payouts are sent only on the real backend.
+  http.get(
+    '*/v1/me/payout-account',
+    authed(({ userId }) => HttpResponse.json({ account: payoutAccountOf(teacherOf(userId)) })),
+  ),
+  http.put(
+    '*/v1/me/payout-account',
+    authed(async ({ request, userId }) =>
+      putPayoutAccount(teacherOf(userId), (await request.json()) as PayoutAccountBody),
+    ),
+  ),
+  http.get(
+    '*/v1/me/payouts',
+    authed(() => HttpResponse.json([])),
+  ),
+  http.get(
+    '*/v1/teachers/me/rent-due',
+    authed(() => HttpResponse.json([])),
+  ),
+  http.get(
+    '*/v1/centres/:id/payout-account',
+    authed(({ params }) => HttpResponse.json({ account: payoutAccountOf(params.id!) })),
+  ),
+  http.put(
+    '*/v1/centres/:id/payout-account',
+    authed(async ({ request, params }) =>
+      putPayoutAccount(params.id!, (await request.json()) as PayoutAccountBody),
+    ),
+  ),
+  http.get(
+    '*/v1/centres/:id/payouts',
+    authed(() => HttpResponse.json([])),
   ),
   // Demo controls (dev only): switch a centre's paid extra.
   // CF-44: Link ops verify a moved pin (the ops console is later).

@@ -8,6 +8,7 @@ import { useI18n } from '../../i18n-client';
 import { QueryState } from '../../parent/QueryState';
 import { OwnerPageHeader, dayMonth, longDay, num, useCentre, useIsOwner } from '../common';
 import { egp, ruleText } from './shared';
+import { PayoutCard } from './PayoutCard';
 
 /**
  * C07 · Rent income (MKT-LED-08): what each teacher owes for the rooms they used this month, how
@@ -213,6 +214,7 @@ export function RentIncome() {
                       {t('centre.rent.afterFee', { pct: d.feePercent })}
                     </p>
                   </Card>
+                  <PayoutCard centreId={centreId} />
                   {d.rows.some((r) => r.paidVia === 'due') ? (
                     <Card className="flex flex-col gap-2">
                       <h2 className="text-label text-navy">{t('centre.rent.outstanding')}</h2>

@@ -426,3 +426,25 @@ describe('E0-09 feature flags (OD-58)', () => {
     });
   });
 });
+
+describe('S3 home area (MKT-DSC-01)', () => {
+  it('lists the areas with a verified centre; a parent picks one, clears it; others are refused', async () => {
+    const areas = (await new Client(api).call<{ name: string }[]>('GET', '/v1/areas')).body;
+    expect(areas.length).toBeGreaterThan(0);
+    const parent = new Client(api);
+    await parent.signIn(PHONES.parent);
+    const area = areas[areas.length - 1]!.name;
+    const r = await parent.call<{ homeArea: string | null }>('PATCH', '/v1/me', { homeArea: area });
+    expect(r.status).toBe(200);
+    expect(r.body.homeArea).toBe(area);
+    const bad = await parent.call('PATCH', '/v1/me', { homeArea: 'Atlantis' });
+    expect([bad.status, (bad.body as { code?: string }).code]).toEqual([422, 'unknown_area']);
+    const cleared = await parent.call<{ homeArea: string | null }>('PATCH', '/v1/me', {
+      homeArea: null,
+    });
+    expect(cleared.body.homeArea).toBeNull();
+    const teacher = new Client(api);
+    await teacher.signIn(PHONES.teacher);
+    expect((await teacher.call('PATCH', '/v1/me', { homeArea: area })).status).toBe(403);
+  });
+});

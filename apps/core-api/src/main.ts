@@ -15,6 +15,7 @@ import { createApi } from './server';
 import { grantOpsAccess, listOpsAccess, revokeOpsAccess } from './ops/grant';
 import { EnrolmentJobs } from './enrolment/jobs';
 import { RentInvoices } from './ledger/rent-invoices';
+import { Payouts } from './ledger/payouts';
 import { Money } from './payments/money';
 import {
   awsClients,
@@ -112,6 +113,7 @@ async function worker() {
       jobs: app.get(EnrolmentJobs),
       money: app.get(Money),
       rent: app.get(RentInvoices),
+      payouts: isLocal(config) ? undefined : app.get(Payouts),
     }),
     ...followupJobs({ voice: app.get(Voice), messages: app.get(Messages) }),
   ]);

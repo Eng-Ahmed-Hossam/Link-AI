@@ -1,0 +1,388 @@
+import { z } from 'zod';
+import { IdParams, Money, Ok } from './market';
+import { CheckoutBody, CheckoutResult } from './money';
+import type { RouteDef } from './routes';
+
+/**
+ * Payouts being sent (ship job S3; 07 "teacher money" and "centre money" tables, MKT-OPS-11).
+ * The payee keeps one payout account (re-verified by ops finance whenever it changes) and sees
+ * their payout history; ops finance run the weekly batch, export it for the bank or InstaPay,
+ * and mark each payout settled or failed.
+ */
+const named = <T extends z.ZodType>(id: string, s: T) => s.meta({ id });
+const def = <T extends RouteDef>(r: T) => r;
+const iso = z.string().describe('ISO 8601');
+const OPS = [
+  { status: 403, code: 'ops_ip_not_allowed' },
+  { status: 403, code: 'ops_permission_required' },
+];
+
+export const PayoutAccount = named(
+  'PayoutAccount',
+  z.object({
+    account: z
+      .object({
+        kind: z.enum(['bank', 'wallet']),
+        last4: z.string(),
+        holderName: z.string().nullable(),
+        status: z.enum(['pending_verification', 'verified', 'failed']),
+        addedAt: iso,
+      })
+      .nullable(),
+  }),
+);
+export const PayoutAccountBody = named(
+  'PayoutAccountBody',
+  z.object({
+    kind: z.enum(['bank', 'wallet']),
+    number: z.string().trim().min(8).max(40).describe('IBAN (EG + 27 digits) or wallet number'),
+    holderName: z.string().trim().min(2).max(80),
+  }),
+);
+export const PayoutRow = named(
+  'PayoutRow',
+  z.object({
+    id: z.string(),
+    on: z.string().describe('The week’s Thursday (YYYY-MM-DD)'),
+    amount: Money,
+    status: z.enum(['initiated', 'settled', 'failed']),
+    account: z.string(),
+    kind: z.enum(['bank', 'wallet']),
+    settledAt: iso.nullable(),
+    failureReason: z.string().nullable(),
+  }),
+);
+export const PayoutBatch = named(
+  'PayoutBatch',
+  z.object({
+    id: z.string(),
+    runOn: z.string(),
+    status: z.enum(['open', 'exported', 'closed']),
+    exportedAt: iso.nullable(),
+    payouts: z.number().int(),
+    initiated: z.number().int(),
+    settled: z.number().int(),
+    failed: z.number().int(),
+    total: Money,
+  }),
+);
+export const OpsPayout = named(
+  'OpsPayout',
+  z.object({
+    id: z.string(),
+    payeeType: z.enum(['teacher', 'centre']),
+    payeeName: z.string(),
+    week: z.string(),
+    amount: Money,
+    status: z.enum(['initiated', 'settled', 'failed']),
+    attempts: z.number().int(),
+    account: z.string(),
+    kind: z.enum(['bank', 'wallet']),
+    reference: z.string().nullable(),
+    failureReason: z.string().nullable(),
+    settledAt: iso.nullable(),
+    failedAt: iso.nullable(),
+  }),
+);
+export const OpsPayoutAccount = named(
+  'OpsPayoutAccount',
+  z.object({
+    id: z.string(),
+    payeeType: z.enum(['teacher', 'centre']),
+    payeeName: z.string(),
+    kind: z.enum(['bank', 'wallet']),
+    last4: z.string(),
+    holderName: z.string().nullable(),
+    addedAt: iso,
+  }),
+);
+export const PayoutRun = named(
+  'PayoutRun',
+  z.object({
+    batchId: z.string(),
+    week: z.string(),
+    count: z.number().int(),
+    totalPt: z.number().int(),
+  }),
+);
+export const PayoutExport = named(
+  'PayoutExport',
+  z.object({ filename: z.string(), csv: z.string(), payouts: z.number().int() }),
+);
+
+export const RentDue = named(
+  'RentDue',
+  z.object({
+    id: z.string(),
+    centre: z.string(),
+    hall: z.string(),
+    month: z.string().describe('YYYY-MM'),
+    rent: Money,
+    paid: Money,
+    due: Money,
+    dueOn: z.string().nullable(),
+    overdue: z.boolean(),
+  }),
+);
+
+const ACCOUNT_ERRORS = [
+  { status: 422, code: 'invalid_iban' },
+  { status: 422, code: 'invalid_wallet' },
+];
+
+export const payoutRoutes = {
+  // ── Teacher (07 "teacher money") ───────────────────────────────────────────────
+  myPayoutAccount: def({
+    name: 'getMyPayoutAccount',
+    method: 'get',
+    path: '/v1/me/payout-account',
+    summary: 'The teacher’s payout account (masked)',
+    tag: 'payouts',
+    rules: ['MKT-TCH-03', 'BR-OUT-03'],
+    auth: 'user',
+    money: true,
+    response: PayoutAccount,
+  }),
+  putMyPayoutAccount: def({
+    name: 'putMyPayoutAccount',
+    method: 'put',
+    path: '/v1/me/payout-account',
+    summary: 'Replace the teacher’s payout account (Link re-verifies it before any payout)',
+    tag: 'payouts',
+    rules: ['MKT-TCH-03', 'BR-OUT-03'],
+    auth: 'user',
+    idempotent: true,
+    money: true,
+    body: PayoutAccountBody,
+    response: PayoutAccount,
+    errors: ACCOUNT_ERRORS,
+  }),
+  myPayouts: def({
+    name: 'listMyPayouts',
+    method: 'get',
+    path: '/v1/me/payouts',
+    summary: 'The teacher’s payout history',
+    tag: 'payouts',
+    rules: ['MKT-LED-05', 'BR-OUT-01'],
+    auth: 'user',
+    money: true,
+    response: z.array(PayoutRow),
+  }),
+  rentDue: def({
+    name: 'listRentDue',
+    method: 'get',
+    path: '/v1/teachers/me/rent-due',
+    summary: 'Rent the teacher still owes: the month’s rent was more than their balance (OD-12)',
+    tag: 'payouts',
+    rules: ['BR-RNT-05', 'OD-12'],
+    auth: 'user',
+    money: true,
+    response: z.array(RentDue),
+  }),
+  rentTopupCheckout: def({
+    name: 'payRentShortfall',
+    method: 'post',
+    path: '/v1/rent-invoices/{id}/checkout',
+    summary: 'Pay the rest of a month’s rent through Link (P4 on success; no commission)',
+    tag: 'payouts',
+    rules: ['BR-RNT-05', 'BR-RNT-06', 'OD-12'],
+    auth: 'user',
+    idempotent: true,
+    money: true,
+    params: IdParams,
+    body: CheckoutBody,
+    response: CheckoutResult,
+    errors: [
+      { status: 409, code: 'nothing_due' },
+      { status: 503, code: 'payments_off' },
+    ],
+  }),
+  // ── Centre owner (07 "centre money") ───────────────────────────────────────────
+  centrePayoutAccount: def({
+    name: 'getCentrePayoutAccount',
+    method: 'get',
+    path: '/v1/centres/{id}/payout-account',
+    summary: 'The centre’s payout account (masked; owner only)',
+    tag: 'payouts',
+    rules: ['MKT-CEN-05', 'BR-OUT-03'],
+    auth: 'user',
+    money: true,
+    params: IdParams,
+    response: PayoutAccount,
+  }),
+  putCentrePayoutAccount: def({
+    name: 'putCentrePayoutAccount',
+    method: 'put',
+    path: '/v1/centres/{id}/payout-account',
+    summary: 'Replace the centre’s payout account (owner only; re-verified)',
+    tag: 'payouts',
+    rules: ['MKT-CEN-05', 'BR-OUT-03'],
+    auth: 'user',
+    idempotent: true,
+    money: true,
+    params: IdParams,
+    body: PayoutAccountBody,
+    response: PayoutAccount,
+    errors: ACCOUNT_ERRORS,
+  }),
+  centrePayouts: def({
+    name: 'listCentrePayouts',
+    method: 'get',
+    path: '/v1/centres/{id}/payouts',
+    summary: 'The centre’s payout history (owner only)',
+    tag: 'payouts',
+    rules: ['MKT-LED-08', 'BR-OUT-01'],
+    auth: 'user',
+    money: true,
+    params: IdParams,
+    response: z.array(PayoutRow),
+  }),
+  // ── Ops finance (MKT-OPS-11) ───────────────────────────────────────────────────
+  opsPayoutBatches: def({
+    name: 'listPayoutBatches',
+    method: 'get',
+    path: '/v1/ops/payout-batches',
+    summary: 'Weekly payout batches with their totals',
+    tag: 'ops',
+    rules: ['MKT-OPS-11', 'BR-OUT-01'],
+    auth: 'user',
+    ops: 'ops.finance',
+    response: z.array(PayoutBatch),
+    errors: OPS,
+  }),
+  opsRunPayouts: def({
+    name: 'runPayoutBatch',
+    method: 'post',
+    path: '/v1/ops/payout-batches/run',
+    summary: 'Make this week’s batch now (the worker does it every Thursday; safe to run twice)',
+    tag: 'ops',
+    rules: ['MKT-OPS-11', 'BR-OUT-05'],
+    auth: 'user',
+    ops: 'ops.finance',
+    idempotent: true,
+    money: true,
+    response: PayoutRun,
+    errors: OPS,
+  }),
+  opsExportBatch: def({
+    name: 'exportPayoutBatch',
+    method: 'post',
+    path: '/v1/ops/payout-batches/{id}/export',
+    summary: 'The batch as a CSV for the bank or InstaPay (full account numbers; audited)',
+    tag: 'ops',
+    rules: ['MKT-OPS-11'],
+    auth: 'user',
+    ops: 'ops.finance',
+    money: true,
+    params: IdParams,
+    response: PayoutExport,
+    errors: OPS,
+  }),
+  opsPayouts: def({
+    name: 'listOpsPayouts',
+    method: 'get',
+    path: '/v1/ops/payouts',
+    summary: 'Payouts by status, with the payee and the failure reason',
+    tag: 'ops',
+    rules: ['MKT-OPS-11'],
+    auth: 'user',
+    ops: 'ops.finance',
+    query: z.object({ status: z.enum(['initiated', 'settled', 'failed', 'all']).optional() }),
+    response: z.array(OpsPayout),
+    errors: OPS,
+  }),
+  settlePayout: def({
+    name: 'settlePayout',
+    method: 'post',
+    path: '/v1/ops/payouts/{id}/settle',
+    summary: 'The transfer went through (P6 settled)',
+    tag: 'ops',
+    rules: ['MKT-OPS-11', 'BR-OUT-01'],
+    auth: 'user',
+    ops: 'ops.finance',
+    idempotent: true,
+    money: true,
+    params: IdParams,
+    body: z.object({ reference: z.string().trim().max(80).optional() }),
+    response: Ok,
+    errors: [...OPS, { status: 409, code: 'already_decided' }],
+  }),
+  failPayout: def({
+    name: 'failPayout',
+    method: 'post',
+    path: '/v1/ops/payouts/{id}/fail',
+    summary:
+      'The transfer bounced (P6 failed: the money is available again; the payee fixes the account)',
+    tag: 'ops',
+    rules: ['MKT-OPS-11', 'BR-OUT-06'],
+    auth: 'user',
+    ops: 'ops.finance',
+    idempotent: true,
+    money: true,
+    params: IdParams,
+    body: z.object({ reason: z.string().trim().min(1).max(300) }),
+    response: Ok,
+    errors: [...OPS, { status: 409, code: 'already_decided' }],
+  }),
+  retryPayout: def({
+    name: 'retryPayout',
+    method: 'post',
+    path: '/v1/ops/payouts/{id}/retry',
+    summary: 'Retry a failed payout (same payout and key, a new attempt; BR-OUT-05)',
+    tag: 'ops',
+    rules: ['MKT-OPS-11', 'BR-OUT-05'],
+    auth: 'user',
+    ops: 'ops.finance',
+    idempotent: true,
+    money: true,
+    params: IdParams,
+    response: Ok,
+    errors: [
+      ...OPS,
+      { status: 409, code: 'not_failed' },
+      { status: 409, code: 'account_not_verified' },
+      { status: 409, code: 'insufficient_balance' },
+    ],
+  }),
+  opsPayoutAccounts: def({
+    name: 'listPayoutAccountsToVerify',
+    method: 'get',
+    path: '/v1/ops/payout-accounts',
+    summary: 'New or changed payout accounts waiting for a check',
+    tag: 'ops',
+    rules: ['BR-OUT-03'],
+    auth: 'user',
+    ops: 'ops.finance',
+    response: z.array(OpsPayoutAccount),
+    errors: OPS,
+  }),
+  verifyPayoutAccount: def({
+    name: 'verifyPayoutAccount',
+    method: 'post',
+    path: '/v1/ops/payout-accounts/{id}/verify',
+    summary: 'The account is the payee’s (holder name checked)',
+    tag: 'ops',
+    rules: ['BR-OUT-03'],
+    auth: 'user',
+    ops: 'ops.finance',
+    idempotent: true,
+    params: IdParams,
+    response: Ok,
+    errors: [...OPS, { status: 409, code: 'already_decided' }],
+  }),
+  rejectPayoutAccount: def({
+    name: 'rejectPayoutAccount',
+    method: 'post',
+    path: '/v1/ops/payout-accounts/{id}/reject',
+    summary: 'The account cannot be used (the payee is asked to fix it)',
+    tag: 'ops',
+    rules: ['BR-OUT-03', 'BR-OUT-06'],
+    auth: 'user',
+    ops: 'ops.finance',
+    idempotent: true,
+    params: IdParams,
+    body: z.object({ reason: z.string().trim().min(1).max(300) }),
+    response: Ok,
+    errors: [...OPS, { status: 409, code: 'already_decided' }],
+  }),
+} satisfies Record<string, RouteDef>;

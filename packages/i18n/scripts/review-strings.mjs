@@ -7,6 +7,10 @@
 //                                                docs/pilot/strings-to-review.csv). Also writes the
 //                                                one-sitting review pack docs/pilot/arabic-review.md
 //                                                (these strings + the guides + the gold scripts).
+//   node review-strings.mjs export-ship [out.csv] — the screens the ship job added (S2–S3: ops
+//                                                console, payouts and rent, My data, home area,
+//                                                bookings) whose Arabic is still proposed
+//                                                (default: docs/plan/arabic-review-ship.csv).
 //   node review-strings.mjs apply <file.csv>    — writes each non-empty reviewed_arabic into ar.json,
 //                                                takes the key off the "proposed" list, and refuses
 //                                                any change that breaks ICU syntax or placeholders.
@@ -298,6 +302,43 @@ if (cmd === 'export') {
       `✔ review pack → docs/pilot/arabic-review.md (${keys.length} strings, 3 guides, ${srows.length} scripts)`,
     );
   }
+} else if (cmd === 'export-ship') {
+  // Ship job S2–S3 screens, by surface; only keys whose Arabic is still on the proposed list.
+  const SHIP = [
+    ['ops.signIn.', 'Ops console: sign in'],
+    ['ops.gate.', 'Ops console: access'],
+    ['ops.nav.', 'Ops console: navigation'],
+    ['ops.centres.', 'Ops console: L01 centre requests'],
+    ['ops.leads.', 'Ops console: L01 website leads'],
+    ['ops.checks.', 'Ops console: verification checks'],
+    ['ops.teachers.', 'Ops console: teacher checks'],
+    ['ops.reviews.', 'Ops console: L02 reviews'],
+    ['ops.refunds.', 'Ops console: L03 refunds'],
+    ['ops.payouts.', 'Ops console: payouts'],
+    ['ops.dataRequests.', 'Ops console: data requests'],
+    ['ops.', 'Ops console: shared'],
+    ['teacher.money.', 'Teacher app: Earnings (rent, payout account, payouts)'],
+    ['parent.account.', 'Parent app: Account (home area, My data)'],
+    ['parent.reserve.bookingsSoon', 'Parent app: booking opens soon'],
+    ['site.paymentDone.', 'Website: payment received'],
+  ];
+  const proposed = new Set(read('proposed.ar.json'));
+  const rows = [];
+  for (const k of Object.keys(en)) {
+    const surface = SHIP.find(([p]) => k.startsWith(p));
+    if (surface && proposed.has(k)) rows.push([k, surface[1]]);
+  }
+  rows.sort((a, b) => a[1].localeCompare(b[1]) || a[0].localeCompare(b[0]));
+  const csv = [
+    'key,english,current_arabic,screen,how_often,reviewed_arabic',
+    ...rows.map(([k, screen]) => [k, en[k], ar[k], screen, '', ''].map(cell).join(',')),
+  ].join('\n');
+  const out = resolve(
+    process.env.INIT_CWD ?? process.cwd(),
+    file ?? join(ROOT, 'docs', 'plan', 'arabic-review-ship.csv'),
+  );
+  writeFileSync(out, '\ufeff' + csv + '\n');
+  console.log(`✔ ${rows.length} ship-job strings → ${relative(process.cwd(), out)}`);
 } else if (cmd === 'apply' && file) {
   const rows = parseCsv(readFileSync(resolve(process.env.INIT_CWD ?? process.cwd(), file), 'utf8'));
   const head = rows[0].map((h) => h.trim());
@@ -351,6 +392,8 @@ if (cmd === 'export') {
   write('proposed.ar.json', proposed);
   console.log(`✔ ${changed} Arabic strings updated; reviewed keys taken off the proposed list.`);
 } else {
-  console.error('Usage: review-strings.mjs export [out.csv] | apply <reviewed.csv>');
+  console.error(
+    'Usage: review-strings.mjs export [out.csv] | export-ship [out.csv] | apply <reviewed.csv>',
+  );
   process.exit(1);
 }

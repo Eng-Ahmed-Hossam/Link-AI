@@ -50,6 +50,15 @@ export class Enrolments {
   ) {}
 
   // ── Create: the hold (MKT-ENR-02) ───────────────────────────────────────────────
+  /**
+   * S3 `bookingsEnabled`: with no payment provider (PAYMENT_PROVIDER=none) nothing is held, so a
+   * parent never ends up with a seat held for a checkout that cannot open.
+   */
+  private bookingsOn() {
+    if (this.config.PAYMENT_PROVIDER === 'none')
+      throw new Problem(503, 'payments_off', 'Booking through Link opens soon.');
+  }
+
   async create(
     userId: string,
     body: {
@@ -64,6 +73,7 @@ export class Enrolments {
     requestId?: string,
     reuseHoldId?: string,
   ) {
+    this.bookingsOn();
     const id = reuseHoldId ?? uuidv7();
     const plan = await this.db.asUser(userId, async (tx, ctx) => {
       if (!ctx.guardianId) throw forbidden('Only parents reserve seats.');
@@ -893,6 +903,7 @@ export class Enrolments {
     idemKey: string,
     lang: Lang,
   ) {
+    this.bookingsOn();
     const w = await this.db.asUser(userId, async (tx) => {
       const w = await tx
         .selectFrom('market.waitlist_entries')
