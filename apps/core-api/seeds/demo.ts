@@ -20,6 +20,12 @@ import { seedFollowup } from './demo-followup';
 
 /** Second owner and centre: tenant B for `pnpm test:rls`. */
 export const OWNER_B_PHONE = '+201000000007';
+/**
+ * Link ops (S2, OD-37): an agent (verify + moderate) and a finance user. They sign in to the ops
+ * console with a phone code like everyone (CF-60); sample people, local sms-sink only.
+ */
+export const OPS_AGENT_PHONE = '+201000000051';
+export const OPS_FINANCE_PHONE = '+201000000052';
 const RLS_CENTRE = 'cen-nile';
 
 /** Tables the seed owns, emptied in one statement (CASCADE follows the in-schema FKs). */
@@ -87,6 +93,8 @@ const TABLES = [
   'identity.devices',
   'identity.auth_sessions',
   'identity.role_assignments',
+  'identity.data_requests',
+  'org.ops_notes',
   'identity.users',
   'ref.subjects',
   'ref.academic_terms',
@@ -207,6 +215,18 @@ export async function seedDemo(migratorUrl: string) {
         language: 'ar',
       })),
       { id: ownerB, ...phone(OWNER_B_PHONE), name: 'مالك تجريبي (ب)', language: 'ar' },
+      {
+        id: demoId('usr-ops-agent'),
+        ...phone(OPS_AGENT_PHONE),
+        name: 'نهى (عمليات لينك)',
+        language: 'ar',
+      },
+      {
+        id: demoId('usr-ops-finance'),
+        ...phone(OPS_FINANCE_PHONE),
+        name: 'كريم (مالية لينك)',
+        language: 'ar',
+      },
       // Teachers in the search results without a sample account of their own.
       ...fx.teachers
         .filter((t) => !fx.staff.some((u) => u.teacherId === t.id))
@@ -577,6 +597,25 @@ export async function seedDemo(migratorUrl: string) {
       ...mfx.applicants.map((a) =>
         role(`teacher-${a.id}`, demoId(`usr-${a.id}`), 'teacher', { teacher_id: demoId(a.id) }),
       ),
+      // OD-37 bundles, granted as their permissions: "agent" and "finance".
+      role('ops-agent', demoId('usr-ops-agent'), 'link_ops', {
+        permissions: ['ops.verify', 'ops.moderate'],
+      }),
+      role('ops-finance', demoId('usr-ops-finance'), 'link_ops', {
+        permissions: ['ops.finance'],
+      }),
+    ]);
+    // A landing-page lead waiting for ops (L01 "New"): a sample centre, no phone kept here.
+    await put('org.leads', [
+      {
+        id: demoId('lead-sample'),
+        kind: 'centre',
+        name: 'أ. منى (تجريبي)',
+        centre_name: 'مركز الأمل (تجريبي)',
+        area: 'مدينة نصر',
+        teacher_count: 6,
+        contact_consent_version: 'draft-2026-10',
+      },
     ]);
 
     // ── The sample parent's children (Mariam and Youssef) ────────────────────────

@@ -1,7 +1,7 @@
 import { Kysely, PostgresDialect, sql, type Transaction } from 'kysely';
 import pg from 'pg';
 import type { DB } from '../db/schema';
-import { unauthenticated } from './problem';
+import { Problem, forbidden, unauthenticated } from './problem';
 
 export type Tx = Transaction<DB>;
 
@@ -35,38 +35,40 @@ export const can = (c: RlsContext, centreId: string, permission: string) =>
 export class Database {
   readonly user: Kysely<DB>;
   readonly system: Kysely<DB>;
+  /** `app_ops` for the ops console (MKT-OPS-08); null when DATABASE_URL_OPS is not set. */
+  readonly ops: Kysely<DB> | null;
 
-  constructor(userUrl: string, systemUrl: string) {
+  constructor(userUrl: string, systemUrl: string, opsUrl?: string) {
     const pool = (url: string, max: number) =>
       new PostgresDialect({ pool: new pg.Pool({ connectionString: url, max }) });
     this.user = new Kysely<DB>({ dialect: pool(userUrl, 20) });
     this.system = new Kysely<DB>({ dialect: pool(systemUrl, 10) });
+    this.ops = opsUrl ? new Kysely<DB>({ dialect: pool(opsUrl, 4) }) : null;
   }
 
   /** Run `fn` in one transaction as the signed-in user, with the RLS context set (SET LOCAL). */
   asUser<T>(userId: string, fn: (tx: Tx, ctx: RlsContext) => Promise<T>): Promise<T> {
     return this.user.transaction().execute(async (tx) => {
       await sql`SELECT set_config('app.user_id', ${userId}, true)`.execute(tx);
-      const { rows } = await sql<{
-        roles: string[];
-        centre_ids: string[];
-        owner_centre_ids: string[];
-        teacher_id: string | null;
-        guardian_id: string | null;
-        permissions: Record<string, string[]>;
-      }>`SELECT * FROM identity.load_context()`.execute(tx);
-      const row = rows[0];
-      // No row: the account was deleted or suspended since the token was issued.
-      if (!row) throw unauthenticated();
-      const ctx: RlsContext = {
-        userId,
-        roles: row.roles,
-        centreIds: row.centre_ids,
-        ownerCentreIds: row.owner_centre_ids,
-        teacherId: row.teacher_id,
-        guardianId: row.guardian_id,
-        permissions: row.permissions,
-      };
+      const ctx = await loadContext(tx, userId);
+      await setContext(tx, ctx);
+      return fn(tx, ctx);
+    });
+  }
+
+  /**
+   * Run `fn` as an ops user (role `app_ops`, MKT-OPS-08): the RLS context of a `link_ops` user,
+   * whose policies (platform.ctx_is_ops()) open the rows ops work on. The caller checks the
+   * permission first; a user without an active `link_ops` role gets 403 here too.
+   */
+  asOps<T>(userId: string, fn: (tx: Tx, ctx: RlsContext) => Promise<T>): Promise<T> {
+    const ops = this.ops;
+    if (!ops)
+      throw new Problem(503, 'ops_off', 'The ops console is not set up (DATABASE_URL_OPS).');
+    return ops.transaction().execute(async (tx) => {
+      await sql`SELECT set_config('app.user_id', ${userId}, true)`.execute(tx);
+      const ctx = await loadContext(tx, userId);
+      if (!ctx.roles.includes('link_ops')) throw forbidden('This needs a Link ops account.');
       await setContext(tx, ctx);
       return fn(tx, ctx);
     });
@@ -88,8 +90,32 @@ export class Database {
   }
 
   async close() {
-    await Promise.all([this.user.destroy(), this.system.destroy()]);
+    await Promise.all([this.user.destroy(), this.system.destroy(), this.ops?.destroy()]);
   }
+}
+
+/** The caller's roles, centres and permissions (`identity.load_context()`), in this transaction. */
+async function loadContext(tx: Tx, userId: string): Promise<RlsContext> {
+  const { rows } = await sql<{
+    roles: string[];
+    centre_ids: string[];
+    owner_centre_ids: string[];
+    teacher_id: string | null;
+    guardian_id: string | null;
+    permissions: Record<string, string[]>;
+  }>`SELECT * FROM identity.load_context()`.execute(tx);
+  const row = rows[0];
+  // No row: the account was deleted or suspended since the token was issued.
+  if (!row) throw unauthenticated();
+  return {
+    userId,
+    roles: row.roles,
+    centreIds: row.centre_ids,
+    ownerCentreIds: row.owner_centre_ids,
+    teacherId: row.teacher_id,
+    guardianId: row.guardian_id,
+    permissions: row.permissions,
+  };
 }
 
 /** SET LOCAL the context the policies read (platform.ctx_* in migration 0001). */

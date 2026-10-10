@@ -97,6 +97,7 @@ function operation(r: RouteDef): Json {
     summary: r.summary,
     tags: [r.tag],
     'x-rules': r.rules,
+    ...(r.ops ? { 'x-ops-permission': r.ops } : {}),
     ...(r.auth === 'user' ? { security: [{ bearer: [] }, { cookie: [] }] } : { security: [] }),
     ...(parameters(r).length ? { parameters: parameters(r) } : {}),
     ...(r.body

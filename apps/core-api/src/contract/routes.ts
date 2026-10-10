@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { followupRoutes } from './followup-routes';
 import * as m from './market';
 import * as $ from './money';
+import { opsRoutes } from './ops';
 import * as s from './schemas';
 
 /**
@@ -20,6 +21,11 @@ export interface RouteDef {
   rules: string[];
   /** `public` = no token; `user` = signed in (any role; handlers check the rest). */
   auth: 'public' | 'user';
+  /**
+   * Ops console routes (`/v1/ops/*`): the permission the caller's `link_ops` role must hold
+   * (OD-37), or `any`. The guard checks OPS_IP_ALLOWLIST, the role and this permission.
+   */
+  ops?: 'ops.verify' | 'ops.moderate' | 'ops.finance' | 'any';
   /** 07 "Idem ✓": an Idempotency-Key is required and the first response is replayed. */
   idempotent?: boolean;
   /** Money endpoints also keep a durable copy in platform.idempotency_keys (07 §1). */
@@ -957,6 +963,9 @@ export const routes = {
 
   // ── Follow-up, the paid extra (R3, 07 §2b–§2d) ───────────────────────────────
   ...followupRoutes,
+
+  // ── Ops console and data-subject requests (S2, 07 "Ops") ─────────────────────
+  ...opsRoutes,
 } satisfies Record<string, RouteDef>;
 
 export type RouteName = keyof typeof routes;

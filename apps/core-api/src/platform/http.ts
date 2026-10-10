@@ -26,6 +26,13 @@ import { Tokens } from '../identity/tokens';
 import { Database, isStaffOf } from './db';
 import { Problem, forbidden, notFound, unauthenticated } from './problem';
 import { Redises } from './redis';
+import { linkEnv } from './guard';
+import {
+  type OpsPermission,
+  opsIpAllowed,
+  opsPermissionsOf,
+  requireOpsPermission,
+} from '../ops/access';
 
 /** Who is calling (set by the AuthGuard). The rest of the RLS context is loaded per transaction. */
 export interface Principal {
@@ -39,7 +46,11 @@ export const ACCESS_COOKIE = 'link_at';
 export const REFRESH_COOKIE = 'link_rt';
 export const COOKIE_HEADER = 'x-link-auth';
 
-type Req = Request & { principal?: Principal; route_def?: RouteDef };
+type Req = Request & {
+  principal?: Principal;
+  route_def?: RouteDef;
+  opsPermissions?: OpsPermission[];
+};
 
 export const langOf = (req: Request): 'ar' | 'en' =>
   req.header('accept-language')?.toLowerCase().startsWith('en') ? 'en' : 'ar';
@@ -66,6 +77,7 @@ export class AuthGuard implements CanActivate {
     @Inject(Reflector) private readonly reflector: Reflector,
     @Inject(Tokens) private readonly tokens: Tokens,
     @Inject(Database) private readonly db: Database,
+    @Inject(CONFIG) private readonly c: Config,
   ) {}
 
   async canActivate(ctx: ExecutionContext) {
@@ -111,9 +123,28 @@ export class AuthGuard implements CanActivate {
       );
       if (!ok) throw notFound('centre');
     }
+    // Ops routes (MKT-OPS-08): the address first (nothing is read for a refused caller), then the
+    // `link_ops` role and the route's permission (OD-37).
+    if (def.ops && req.principal) {
+      if (!opsIpAllowed(req.ip, this.c.OPS_IP_ALLOWLIST, linkEnv()))
+        throw new Problem(
+          403,
+          'ops_ip_not_allowed',
+          'The ops console is not open from this network (OPS_IP_ALLOWLIST).',
+        );
+      const have = await opsPermissionsOf(this.db, req.principal.userId);
+      requireOpsPermission(have, def.ops);
+      req.opsPermissions = have;
+    }
     return true;
   }
 }
+
+/** The caller's ops permissions, set by the AuthGuard on `/v1/ops/*` routes. */
+export const OpsPermissions = createParamDecorator(
+  (_: unknown, ctx: ExecutionContext): OpsPermission[] =>
+    ctx.switchToHttp().getRequest<Req>().opsPermissions ?? [],
+);
 
 /** Parsed and validated `{params, query, body}` for the current route (422 on failure). */
 export const Input = createParamDecorator((_: unknown, ctx: ExecutionContext) => {
