@@ -23,7 +23,7 @@ The concierge pilot has its own, separate pack in [docs/pilot](../pilot/README.m
 3. **PDPL licence and registration** with the Personal Data Protection Centre, and whether Link needs a data protection officer from day one.
 4. **Cross-border transfer** (OD-26): hosting region, the payment provider, SMS and WhatsApp (Meta) providers.
 5. **Retention**: the periods in privacy.md §6 (voice 30 days; financial records as tax and commercial law require; the drafts say 5 years — confirm).
-6. **Payments**: Link collects the teacher's fee and pays it out weekly. Does that need a payment-facilitator arrangement with the provider or a Central Bank of Egypt permission? (Ask the provider too, OD-04.)
+6. **Payments**: Link collects the teacher's fee and pays it out weekly. Does that need a payment-facilitator arrangement with the provider or a Central Bank of Egypt permission (the CBE's PSP rules, in force since June 2025)? Does the money held between payment and the weekly payout need a separate account or a guarantee? (Ask the provider too, OD-04; sources in docs/plan/provider-choice.md.)
 7. **Reviews**: liability for parents' reviews; the moderation rules in terms.md §8.
 8. **Response time** for data requests: the drafts promise 30 days (the console counts it). Confirm the legal limit.
 

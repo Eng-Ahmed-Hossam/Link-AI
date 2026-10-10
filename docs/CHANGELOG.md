@@ -2,6 +2,13 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-10 — S4: provider choice (ship job)
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| S4-1 | `docs/plan/provider-choice.md` (new) | Payments (Paymob first, Kashier second, Fawry for cash codes), SMS (Egyptian aggregator plus a global fallback), WhatsApp (Meta Cloud API direct): needs, candidates, prices to verify with sources, the processing fee against the 5% commission, questions to send each provider | Ship job S4; OD-04, OD-15, OD-45 |
+| S4-2 | `docs/legal/README.md` (question 6), `docs/plan/before-real-users.md` | The CBE PSP rules (June 2025) and money held before the weekly payout; link to the provider comparison | Ship job S4 |
+
 ## 2026-10-10 — S3: payouts, rent shortfall, home area, bookings flag, Android preview (ship job)
 
 | # | File | What changed | Why |

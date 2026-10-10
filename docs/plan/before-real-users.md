@@ -9,7 +9,7 @@ These take longer to arrive than the code takes to write; start them first.
 | Item | What it is | Owner | Size | Decision |
 |---|---|---|---|---|
 | Company | The legal entity that signs with providers and holds the merchant account; also needed for PDPL registration (Law 151/2020). | Ahmed | L | — |
-| Merchant account | A payment provider (Paymob, Kashier or Fawry) with hosted checkout for card, Fawry and wallet, plus payouts to bank accounts. Ask for the sandbox first. **Gateway fee**: Link pays it from its 5% commission; at a 2.5% fee Link keeps 2.5 of its 5 points (docs/08 P5) — **rate to verify with the real provider**. | Ahmed | L | OD-04, OD-15 |
+| Merchant account | A payment provider (Paymob, Kashier or Fawry) with hosted checkout for card, Fawry and wallet, plus payouts to bank accounts. Ask for the sandbox first. **Gateway fee**: Link pays it from its 5% commission; at a 2.5% fee Link keeps 2.5 of its 5 points (docs/08 P5) — **rate to verify with the real provider**; the comparison and the questions to send are in [provider-choice](provider-choice.md). | Ahmed | L | OD-04, OD-15 |
 | WhatsApp Business | A business number, Meta verification, and the message templates for parent updates approved by Meta. | Ahmed | M | — |
 | SMS sender | An Egyptian SMS aggregator account with a registered sender name for sign-in codes and invites; a second one as fallback. | Ahmed | M | OD-45 |
 | Domain | The web address for the site, the parent app and the owner web, plus its DNS. | Ahmed | S | — |

@@ -15,8 +15,8 @@ The running log of the "ready to ship" job (Ahmed's brief of 2026-10-09). **A ne
 | S0 | `pnpm run doctor`, `pnpm run setup`, setup-windows, go-live-switches, RUNNING/local-checks | **done** | #3 | `17d2216` |
 | S1 | Production images, prod compose (one VPS + Caddy), production guard, security pass, backups, monitoring, `pnpm prod:local` | **done** | #4 | `31febef` |
 | S2 | Ops console (`apps/ops`), consent pack drafts, legal drafts, user rights | **done** | #5 | `f0d0a9e` |
-| S3 | Payout batches, rent shortfall, home-area screen, `bookingsEnabled`, Android preview build docs, approved Arabic strings | built, PR open (Arabic: review file ready, waits on the reviewer) | — | — |
-| S4 | `docs/plan/provider-choice.md` (payments, SMS, WhatsApp) → stop and report | — | — | — |
+| S3 | Payout batches, rent shortfall, home-area screen, `bookingsEnabled`, Android preview build docs, approved Arabic strings | built, PR #6 (Arabic: review file ready, waits on the reviewer) | #6 | — |
+| S4 | `docs/plan/provider-choice.md` (payments, SMS, WhatsApp) → stop and report | **written**, in PR #6 (docs only); reported to Ahmed | #6 | — |
 
 **Last green commit on `main`:** `f0d0a9e` (S2 merge; CI green including `images` and `story-live`).
 
@@ -65,7 +65,9 @@ The running log of the "ready to ship" job (Ahmed's brief of 2026-10-09). **A ne
 2. **Consent pack and legal texts (OD-60):** the drafts in `docs/legal/` need a lawyer; its README lists 8 questions for them.
 3. **Arabic review:** a native reviewer fills `reviewed_arabic` in `docs/pilot/strings-to-review.csv` (pilot screens) and `docs/plan/arabic-review-ship.csv` (S2–S3 screens); then `pnpm i18n:apply-review` on each.
 4. **Expo account** (free) for the Android preview build — or build locally with Android Studio (docs/teacher-app-android.md).
+5. **Providers (S4):** pick from [provider-choice.md](provider-choice.md) (recommended: Paymob, then Kashier; an Egyptian SMS aggregator plus a global fallback; Meta Cloud API) and send each the questions there. All need the company papers first.
+6. **Processing fee vs the 5% commission (OD-02, OD-15):** at 2.85% + EGP 3 (an older published rate, to verify) Link earns nothing on payments under about EGP 140. Ask providers for the flat fee; decide whether the commission or OD-15 changes.
 
 ## Next step
 
-S3: full suites, open the PR, wait for CI, merge. Then S4: `docs/plan/provider-choice.md` (payments, SMS, WhatsApp) and stop with the report.
+Merge PR #6 when CI is green (S3 code + S4 doc). The job then waits on Ahmed: the open questions above. After the provider choice, the first code is the real `SmsSender` (production cannot start without it), then the `PaymentProvider` adapter against the chosen sandbox.
