@@ -50,7 +50,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const e164 = toE164(i.body.phone);
-    await this.otp.verify(e164, i.body.code);
+    await this.otp.verify(e164, i.body.code, req.ip ?? 'unknown');
     const lang = langOf(req);
     const { userId, isNewUser } = await this.accounts.signIn(e164, lang, requestIdOf(req));
     const client: Client = usesCookies(req) ? 'web' : 'app';

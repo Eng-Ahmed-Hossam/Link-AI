@@ -1,0 +1,22 @@
+# Docker build context for deploy/ images (built from the repo root). Keep it small and secret-free.
+.git
+**/node_modules
+**/.next
+**/.next-*
+**/dist
+**/.turbo
+**/.venv
+**/.models
+**/__pycache__
+**/test-results
+**/playwright-report
+.env
+.env.*
+!.env.example
+**/.data
+docs
+evals/gold
+deploy/backups
+*.png
+!apps/web/public/**/*.png
+!apps/web/app/**/*.png

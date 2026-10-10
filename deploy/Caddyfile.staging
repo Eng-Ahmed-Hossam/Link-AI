@@ -1,0 +1,25 @@
+# pnpm prod:local only (LINK_ENV=staging): the same routing as deploy/Caddyfile, on plain HTTP at
+# localhost:3000 so the e2e specs use the URLs they use with pnpm dev. /__demo is allowed here
+# (demo routes are on in staging); /v1/internal stays private as in production.
+{
+	auto_https off
+}
+
+:3000 {
+	encode zstd gzip
+	request_body {
+		max_size 16MB
+	}
+	handle /v1/internal/* {
+		respond 404
+	}
+	handle /v1/* {
+		reverse_proxy api:4000
+	}
+	handle /__demo* {
+		reverse_proxy api:4000
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}

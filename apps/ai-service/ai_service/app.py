@@ -12,6 +12,7 @@ ai-service writes nothing itself: results go back to the pilot / mock server thr
 from __future__ import annotations
 
 import json
+import os
 import queue
 import threading
 import time
@@ -288,14 +289,43 @@ def create_app(cfg: Config | None = None, gw: Gateway | None = None) -> FastAPI:
     return app
 
 
+def startup_problems(cfg: Config, env: dict[str, str]) -> list[str]:
+    """What stops ai-service from starting (ship job S1). It listens on this machine only, unless
+    it runs as a container on one server's private network (AI_ALLOW_PRIVATE_NETWORK=1, never
+    published to the internet, with a long shared token). With LINK_ENV=production no fake
+    provider and no demo-only setting may be on."""
+    p: list[str] = []
+    if cfg.host not in ("127.0.0.1", "localhost"):
+        if env.get("AI_ALLOW_PRIVATE_NETWORK") != "1":
+            p.append(
+                "ai-service listens on this machine only (AI_SERVICE_HOST=127.0.0.1); a container "
+                "on one server's private network sets AI_ALLOW_PRIVATE_NETWORK=1."
+            )
+        elif len(cfg.token) < 24:
+            p.append("AI_SERVICE_TOKEN must be at least 24 characters off this machine.")
+    if env.get("LINK_ENV") == "production":
+        if cfg.routing.stt_provider.startswith("fake") or cfg.routing.llm_provider.startswith(
+            "fake"
+        ):
+            p.append(
+                "MODEL_ROUTING_CONFIG: a fake STT or LLM provider is not allowed in production."
+            )
+        if cfg.score_prefill:
+            p.append("AI_SCORE_PREFILL=1 is demo-only: voice scores must stay in the check band.")
+    return p
+
+
 def main() -> None:
     import uvicorn
 
     cfg = load_config()
     if not cfg.token:
         raise SystemExit("Set AI_SERVICE_TOKEN (shared with the pilot or mock server).")
-    if cfg.host not in ("127.0.0.1", "localhost"):
-        raise SystemExit("ai-service listens on this machine only (AI_SERVICE_HOST=127.0.0.1).")
+    problems = startup_problems(cfg, dict(os.environ))
+    if problems:
+        raise SystemExit(
+            "\n".join(["ai-service refuses to start:", *(f"  ✗ {p}" for p in problems)])
+        )
     uvicorn.run(create_app(cfg), host=cfg.host, port=cfg.port, log_level="warning")
 
 

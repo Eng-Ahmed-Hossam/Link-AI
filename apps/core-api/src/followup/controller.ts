@@ -1,8 +1,11 @@
 import { Controller, Inject, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { isPrivateAddress } from '../adapters/ai';
 import { WHATSAPP_SENDER, type WhatsAppSender } from '../adapters/whatsapp';
+import type { Config } from '../config';
 import { routes } from '../contract/routes';
 import { MessagingWebhookBody } from '../contract/followup';
+import { CONFIG } from '../platform/di';
 import { Caller, Endpoint, type In, Input, type Principal } from '../platform/http';
 import { Problem, notFound } from '../platform/problem';
 import { requestIdOf } from '../platform/request-context';
@@ -26,6 +29,7 @@ export class FollowupController {
     @Inject(Owner) private readonly owner: Owner,
     @Inject(WHATSAPP_SENDER) private readonly sender: WhatsAppSender,
     @Inject(Assistant) private readonly assistant: Assistant,
+    @Inject(CONFIG) private readonly config: Config,
   ) {}
 
   // ── Ask Link (off unless a local LLM is configured) ──────────────────────────
@@ -186,11 +190,17 @@ export class FollowupController {
   discard(@Caller() p: Principal, @Input() i: In<typeof routes.discardItem>) {
     return this.voice.discardItem(p.userId, i.params.id, i.body.itemId, p.lang);
   }
-  /** ai-service → core-api: loopback only, with the shared token; anything else is 404. */
+  /**
+   * ai-service → core-api: loopback only (or this server's private network with
+   * AI_SERVICE_ON_THIS_SERVER=1; the reverse proxy never forwards /v1/internal), with the shared
+   * token; anything else is 404.
+   */
   @Endpoint(routes.voiceResult)
   async voiceResult(@Input() i: In<typeof routes.voiceResult>, @Req() req: Request) {
     const ip = req.socket.remoteAddress ?? '';
-    if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(ip)) throw notFound('route');
+    const loopback = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(ip);
+    const sameServer = this.config.AI_SERVICE_ON_THIS_SERVER === '1' && isPrivateAddress(ip);
+    if (!loopback && !sameServer) throw notFound('route');
     await this.voice.result(i.params.id, i.body, req.header('x-link-internal-token') ?? null);
   }
 

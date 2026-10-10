@@ -933,6 +933,16 @@ export interface PlatformOutboxEvents {
   version: Generated<number>;
 }
 
+export interface PlatformQueueFailures {
+  attempts: Generated<number>;
+  consumer: string;
+  dead_at: Timestamp | null;
+  event_id: string;
+  last_error: string | null;
+  next_attempt_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface RecordsAssessmentItems {
   assessment_id: string;
   centre_id: string;
@@ -1208,6 +1218,7 @@ export interface DB {
   "platform.idempotency_keys": PlatformIdempotencyKeys;
   "platform.inbox_events": PlatformInboxEvents;
   "platform.outbox_events": PlatformOutboxEvents;
+  "platform.queue_failures": PlatformQueueFailures;
   "records.assessment_items": RecordsAssessmentItems;
   "records.assessments": RecordsAssessments;
   "records.correction_requests": RecordsCorrectionRequests;

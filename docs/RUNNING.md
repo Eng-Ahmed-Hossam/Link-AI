@@ -17,6 +17,8 @@ Type `pnpm run doctor` and `pnpm run setup`: plain `pnpm doctor` and `pnpm setup
 
 `pnpm dev` starts Docker services (Postgres, Redis ×2, aws-local, sms-sink, mail-sink, fake-pay, whatsapp-fake), runs migrations, seeds the sample world if the database is empty, then core-api (:4000, worker, messaging-gateway :4002), the web (:3000) and the teacher app (:8081). If ai-service is installed (`pnpm ai:models`) it starts it too, for voice notes. The first run builds images and takes a few minutes.
 
+`pnpm prod:local --story` runs the **production** images on this machine (sample data, local fakes, `LINK_ENV=staging`) and the nine-step story against them; stop it with `pnpm prod:local --down` before `pnpm dev`. For a real server see [operations.md](operations.md).
+
 `pnpm demo` is the other way: the same apps on the in-memory mock server (code `123456` for every number, nothing saved). The public demo is built from it.
 
 ## 2. Sign in

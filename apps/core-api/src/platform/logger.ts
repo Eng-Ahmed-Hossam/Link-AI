@@ -1,4 +1,5 @@
 import pino from 'pino';
+import { errorReporter } from './errors';
 
 /**
  * JSON logs (docs/10 §7: no personal data in logs). Redaction happens here, at the source: tokens,
@@ -22,10 +23,26 @@ export const REDACT_PATHS = [
 ];
 
 export function createLogger(level: string, service: string) {
+  // Error-level lines also go to error tracking when SENTRY_DSN is set (no-op otherwise).
+  const report = errorReporter(service);
   return pino({
     level,
     base: { service },
     redact: { paths: REDACT_PATHS, censor: '[redacted]' },
+    ...(report
+      ? {
+          hooks: {
+            logMethod(args: unknown[], method: (...a: unknown[]) => void, lvl: number) {
+              if (lvl >= 50) {
+                const [a, b] = args;
+                if (typeof a === 'string') report({}, a);
+                else report((a ?? {}) as Record<string, unknown>, typeof b === 'string' ? b : '');
+              }
+              method.apply(this, args);
+            },
+          },
+        }
+      : {}),
     timestamp: pino.stdTimeFunctions.isoTime,
     formatters: { level: (label) => ({ level: label }) },
   });

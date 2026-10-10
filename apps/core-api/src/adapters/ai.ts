@@ -25,6 +25,17 @@ export interface VoiceAi {
 export const VOICE_AI = Symbol('VOICE_AI');
 
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
+/** A private-network peer (RFC 1918, Docker's ranges, IPv6 ULA) — still token-checked. */
+export const isPrivateAddress = (ip: string) => {
+  const v4 = ip.replace(/^::ffff:/, '');
+  return (
+    /^(127\.|10\.|192\.168\.)/.test(v4) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(v4) ||
+    ip === '::1' ||
+    /^f[cd][0-9a-f]{2}:/i.test(ip)
+  );
+};
+
 export const isLoopback = (url: string) => {
   try {
     return LOOPBACK.has(new URL(url).hostname);
@@ -38,8 +49,10 @@ export class AiServiceClient implements VoiceAi {
   constructor(
     private readonly url: string,
     private readonly token: string,
+    onThisServer = false,
   ) {
-    this.local = isLoopback(url);
+    // Loopback, or a container on this server's private network (AI_SERVICE_ON_THIS_SERVER=1).
+    this.local = isLoopback(url) || onThisServer;
   }
 
   async submit(job: VoiceJob, audio: { bytes: Uint8Array; mime: string }) {

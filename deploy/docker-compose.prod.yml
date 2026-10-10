@@ -1,0 +1,201 @@
+# Link on one server (ship job S1). Sample data never goes here. Usage (docs/operations.md):
+#   cp deploy/.env.production.example deploy/.env.production   # fill it in (names only in git)
+#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production up -d --build --wait
+# Caddy terminates HTTPS for LINK_DOMAIN (certificates from Let's Encrypt, automatic). Nothing
+# else is published: Postgres, Redis, core-api and ai-service stay on the private network.
+# Optional: ai-service (voice notes) with --profile ai.
+name: link
+
+x-core-api: &core-api
+  image: ${LINK_IMAGE_PREFIX:-link}/core-api:${LINK_VERSION:-local}
+  build:
+    context: ..
+    dockerfile: apps/core-api/Dockerfile
+  env_file:
+    - ${LINK_ENV_FILE:-.env.production}
+  environment:
+    LINK_ENV: ${LINK_ENV:-production}
+    DATABASE_URL: postgres://app_user:${APP_USER_PASSWORD}@postgres:5432/link
+    DATABASE_URL_WORKER: postgres://app_worker:${APP_WORKER_PASSWORD}@postgres:5432/link
+    DATABASE_URL_OPS: postgres://app_ops:${APP_OPS_PASSWORD}@postgres:5432/link
+    REDIS_STATE_URL: redis://redis-state:6379/0
+    REDIS_CACHE_URL: redis://redis-cache:6379/0
+    QUEUE_PROVIDER: postgres
+    STORAGE_PROVIDER: ${STORAGE_PROVIDER:-file}
+    FILE_STORAGE_DIR: /var/lib/link/files
+    TRUST_PROXY: loopback, uniquelocal
+    CORE_API_INTERNAL_URL: http://api:4000
+    AI_SERVICE_URL: ${AI_SERVICE_URL:-}
+    AI_SERVICE_ON_THIS_SERVER: '1'
+  volumes:
+    - files:/var/lib/link/files
+  restart: unless-stopped
+  depends_on:
+    migrate: { condition: service_completed_successfully }
+    redis-state: { condition: service_healthy }
+    redis-cache: { condition: service_healthy }
+
+services:
+  postgres:
+    image: ${LINK_IMAGE_PREFIX:-link}/postgres:16-postgis-pgvector
+    build: ../infra/local/postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env.production}
+      APP_MIGRATOR_PASSWORD: ${APP_MIGRATOR_PASSWORD:?set APP_MIGRATOR_PASSWORD}
+      CREATE_TEST_DB: '0'
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d link']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+    restart: unless-stopped
+
+  redis-state:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
+    volumes:
+      - redis-state:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis-cache:
+    image: redis:7-alpine
+    command:
+      ['redis-server', '--maxmemory', '256mb', '--maxmemory-policy', 'allkeys-lru', '--save', '']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # One-off: migrations, then the app roles' LOGIN passwords. Runs before every start; idempotent.
+  migrate:
+    <<: *core-api
+    entrypoint: ['node', 'dist/migrate.mjs']
+    command: []
+    environment:
+      DATABASE_URL_MIGRATOR: postgres://app_migrator:${APP_MIGRATOR_PASSWORD}@postgres:5432/link
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD:?set APP_USER_PASSWORD}
+      APP_WORKER_PASSWORD: ${APP_WORKER_PASSWORD:?set APP_WORKER_PASSWORD}
+      APP_OPS_PASSWORD: ${APP_OPS_PASSWORD:?set APP_OPS_PASSWORD}
+    volumes: []
+    restart: 'no'
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    <<: *core-api
+    command: ['api']
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:4000/ready']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  worker:
+    <<: *core-api
+    command: ['worker']
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:4003/health']
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+
+  gateway:
+    <<: *core-api
+    command: ['gateway']
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:4002/health']
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+
+  ai:
+    profiles: ['ai']
+    image: ${LINK_IMAGE_PREFIX:-link}/ai-service:${LINK_VERSION:-local}
+    build:
+      context: ..
+      dockerfile: apps/ai-service/Dockerfile
+    environment:
+      LINK_ENV: ${LINK_ENV:-production}
+      AI_SERVICE_HOST: 0.0.0.0
+      AI_ALLOW_PRIVATE_NETWORK: '1'
+      AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:?set AI_SERVICE_TOKEN (24+ characters)}
+      AI_MODELS_DIR: /models
+      OLLAMA_URL: ${OLLAMA_URL:-}
+    volumes:
+      - models:/models
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health')",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+    restart: unless-stopped
+
+  web:
+    image: ${LINK_IMAGE_PREFIX:-link}/web:${LINK_VERSION:-local}
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_APP_ENV: ${WEB_APP_ENV:-production}
+        NEXT_PUBLIC_SITE_URL: https://${LINK_DOMAIN:?set LINK_DOMAIN}
+        CORE_API_URL: http://api:4000
+        NEXT_PUBLIC_CONTACT_EMAIL: ${NEXT_PUBLIC_CONTACT_EMAIL:-}
+        NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY:-}
+    environment:
+      EMAIL_API_KEY: ${EMAIL_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      PILOT_REQUEST_TO: ${PILOT_REQUEST_TO:-}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/api/health']
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+    restart: unless-stopped
+    depends_on:
+      api: { condition: service_healthy }
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      LINK_DOMAIN: ${LINK_DOMAIN:?set LINK_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL (Let's Encrypt contact)}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+    depends_on:
+      web: { condition: service_healthy }
+
+volumes:
+  pg-data:
+  redis-state:
+  files:
+  models:
+  caddy-data:
+  caddy-config:

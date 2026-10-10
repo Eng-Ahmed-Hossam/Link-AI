@@ -62,7 +62,7 @@ export interface SettlementLine {
 }
 
 export interface PaymentProvider {
-  readonly name: 'fake';
+  readonly name: 'fake' | 'none';
   createCheckout(o: CheckoutOrder): Promise<{ providerRef: string; url: string }>;
   createFawryReference(o: {
     orderRef: string;
@@ -228,5 +228,44 @@ export class FakePayProvider implements PaymentProvider {
   async fetchSettlementReport(date: string) {
     const r = await this.call<{ lines: SettlementLine[] }>('GET', `/v1/settlements?date=${date}`);
     return r.lines;
+  }
+}
+
+/**
+ * PAYMENT_PROVIDER=none: no payment provider yet (a Follow-up-only pilot, ship job S3's
+ * `bookingsEnabled` off). Every money call answers 503 `payments_off`; nothing is charged, and no
+ * webhook is ever accepted. Reading earnings and the ledger still works.
+ */
+export class NoPaymentProvider implements PaymentProvider {
+  readonly name = 'none' as const;
+  private off(): never {
+    throw new Problem(503, 'payments_off', 'Payments are not switched on yet.');
+  }
+  createCheckout(): Promise<{ providerRef: string; url: string }> {
+    this.off();
+  }
+  createFawryReference(): Promise<{ reference: string; expiresAt: Date }> {
+    this.off();
+  }
+  chargeMandate(): never {
+    this.off();
+  }
+  revokeMandate(): Promise<void> {
+    return Promise.resolve();
+  }
+  refund(): Promise<{ refundRef: string }> {
+    this.off();
+  }
+  expire(): Promise<void> {
+    return Promise.resolve();
+  }
+  verifyWebhook() {
+    return false;
+  }
+  parseWebhook(): ProviderEvent {
+    this.off();
+  }
+  fetchSettlementReport(): Promise<SettlementLine[]> {
+    return Promise.resolve([]);
   }
 }

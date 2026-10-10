@@ -1,0 +1,86 @@
+# Staging on one machine (pnpm prod:local): the production images and compose, with LINK_ENV=staging
+# — the only mode where the local fakes run next to production builds — the sample demo world,
+# demo routes for the story, and the ports the e2e specs use (web 3000, core-api 4000, teacher
+# app 8081, sms-sink 8093, fake-pay 8091, whatsapp-fake 8094). Never on a server with real users.
+#   docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.staging.yml \
+#     --env-file deploy/.env.staging up -d --build --wait
+x-staging: &staging
+  LINK_ENV: staging
+  APP_ENV: staging
+  DEMO_ROUTES: '1'
+  PAYMENT_PROVIDER: fake
+  FAKE_PAY_URL: http://fake-pay:8091
+  SMS_PROVIDER: fake
+  SMS_SINK_URL: http://sms-sink:8090
+  WHATSAPP_PROVIDER: fake
+  WHATSAPP_FAKE_URL: http://whatsapp-fake:8094
+  DATABASE_URL_MIGRATOR: postgres://app_migrator:${APP_MIGRATOR_PASSWORD}@postgres:5432/link
+  NEXT_PUBLIC_SITE_URL: http://localhost:3000
+  CORS_ALLOWED_ORIGINS: http://localhost:8081
+  JWT_ISSUER: http://localhost:4000
+
+services:
+  api:
+    environment: *staging
+    ports: ['4000:4000']
+  worker:
+    environment: *staging
+  gateway:
+    environment: *staging
+  web:
+    image: link/web:staging
+    build:
+      args:
+        NEXT_PUBLIC_APP_ENV: staging
+        NEXT_PUBLIC_SITE_URL: http://localhost:3000
+  # Staging goes through Caddy as production does (/v1 straight to core-api), on plain HTTP :3000.
+  caddy:
+    environment:
+      LINK_DOMAIN: localhost
+      ACME_EMAIL: staging@link.invalid
+    ports: !override
+      - '3000:3000'
+    volumes: !override
+      - ./Caddyfile.staging:/etc/caddy/Caddyfile:ro
+
+  teacher-web:
+    image: link/teacher-web:staging
+    build:
+      context: ..
+      dockerfile: apps/teacher-app/Dockerfile.web
+      args:
+        EXPO_PUBLIC_API_BASE_URL: http://localhost:4000
+    ports: ['8081:8081']
+    restart: unless-stopped
+
+  sms-sink:
+    image: link/sms-sink:local
+    build: { context: ../infra/local/fakes, args: { FAKE: sms-sink } }
+    ports: ['8093:8090']
+    healthcheck: &fake-health
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8090/health']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  fake-pay:
+    image: link/fake-pay:local
+    build: { context: ../infra/local/fakes, args: { FAKE: fake-pay } }
+    environment:
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET}
+      FAKE_PAY_PUBLIC_URL: http://localhost:8091
+      FAKE_PAY_WEBHOOK_URL: http://api:4000/v1/webhooks/payments/fake-pay
+    ports: ['8091:8091']
+    healthcheck:
+      <<: *fake-health
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8091/health']
+  whatsapp-fake:
+    image: link/whatsapp-fake:local
+    build: { context: ../infra/local/fakes, args: { FAKE: whatsapp-fake } }
+    environment:
+      PORT: '8094'
+      WHATSAPP_WEBHOOK_SECRET: ${WHATSAPP_WEBHOOK_SECRET}
+      WHATSAPP_FAKE_WEBHOOK_URL: http://api:4000/v1/webhooks/messaging/whatsapp-fake
+    ports: ['8094:8094']
+    healthcheck:
+      <<: *fake-health
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8094/health']

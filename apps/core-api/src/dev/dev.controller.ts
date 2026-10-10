@@ -34,7 +34,7 @@ import * as fx from '@link/mocks/fixtures';
 
 /**
  * Demo controls for live mode (docs/14 §5.2). This controller is registered ONLY when
- * APP_ENV=local (see app.module.ts), so these paths do not exist anywhere else. Sample data only.
+ * APP_ENV=local, or staging with DEMO_ROUTES=1 (src/platform/guard.ts) — never production. Sample data only.
  */
 const FeaturesBody = z.object({ centreId: z.uuid(), followupExtra: z.boolean() });
 const SettingsBody = z.object({
