@@ -11,6 +11,7 @@ import type {
   CentreProfile,
   Child,
   ConsentState,
+  DataRequest,
   CurriculumRef,
   Enrolment,
   EnrolmentStatus,
@@ -126,6 +127,8 @@ interface State {
   market?: MarketState;
   /** Consent events per user, newest last (BR-DAT-03). Optional: older saved states have none. */
   consents?: Record<string, ConsentState[]>;
+  /** PDPL data requests per user, newest first (MKT-OPS-09). Optional like consents. */
+  dataRequests?: Record<string, DataRequest[]>;
   seq: number;
 }
 
@@ -756,6 +759,32 @@ export function putConsent(
   });
   save();
   return consentsOf(userId);
+}
+
+/** PDPL data requests (MKT-OPS-09): one open request of each kind; ops complete them (live). */
+export function dataRequestsOf(userId: string): DataRequest[] {
+  return load().dataRequests?.[userId] ?? [];
+}
+export function createDataRequest(
+  userId: string,
+  kind: DataRequest['kind'],
+  details: string,
+): DataRequest | null {
+  const s = load();
+  const mine = ((s.dataRequests ??= {})[userId] ??= []);
+  if (mine.some((r) => r.kind === kind && r.status === 'open')) return null;
+  const r: DataRequest = {
+    id: `dr-${++s.seq}`,
+    kind,
+    details,
+    status: 'open',
+    outcome: null,
+    createdAt: new Date().toISOString(),
+    completedAt: null,
+  };
+  mine.unshift(r);
+  save();
+  return r;
 }
 
 export function persist() {

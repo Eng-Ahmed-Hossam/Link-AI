@@ -23,3 +23,17 @@
 		reverse_proxy web:3000
 	}
 }
+
+# The ops console on :3001, routed like ops.<LINK_DOMAIN> in production.
+:3001 {
+	encode zstd gzip
+	handle /v1/internal/* {
+		respond 404
+	}
+	handle /v1/* {
+		reverse_proxy api:4000
+	}
+	handle {
+		reverse_proxy ops:3001
+	}
+}

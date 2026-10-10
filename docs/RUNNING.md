@@ -10,7 +10,7 @@ Windows: install the tools in the order of [setup-windows.md](setup-windows.md) 
 git clone https://github.com/Eng-Ahmed-Hossam/Link-AI.git && cd Link-AI
 pnpm run doctor     # read-only: is this machine ready? (✓ / ⚠ / ✗, or --json)
 pnpm run setup      # install, .env.local, services, database, sample data, ai-service packages
-pnpm dev            # core-api, web and teacher app on the real backend
+pnpm dev            # core-api, web, teacher app and ops console on the real backend
 ```
 
 Type `pnpm run doctor` and `pnpm run setup`: plain `pnpm doctor` and `pnpm setup` are pnpm's own built-in commands. `pnpm run setup` is safe to run again: it only does what is missing, and never changes a value in `.env.local` (it adds names that are new). `--dry-run` shows the steps without changing anything, `--skip-ai` leaves voice notes off (no Python needed), `--reset-data` wipes and re-seeds the sample data after you type `reset`.
@@ -32,6 +32,8 @@ Ask for a code, then read it in **sms-sink at http://localhost:8093** (refreshes
 | Owner (Tamer, Al Nour) | http://localhost:3000/ar/centre | 0100 000 0003 |
 | Reception (Dina, Al Nour) | http://localhost:3000/ar/centre | 0100 000 0004 |
 | Owner B (Nile Academy) | http://localhost:3000/ar/centre | 0100 000 0007 |
+| Link ops: agent (centres, teachers, reviews, data requests) | http://localhost:3001/ar/sign-in | 0100 000 0051 |
+| Link ops: finance (refunds) | http://localhost:3001/ar/sign-in | 0100 000 0052 |
 
 A new number signs up: as a parent on P01, as a teacher in the teacher app; a centre owner through "Add my centre" (C01, pending until verified). **Demo controls** (the amber button, local only) stand in for the outside world: Reset story, Simulate first session done, Follow-up extra on/off, Verify centre, and the WhatsApp provider (advance, fail, parent reply, STOP, new day).
 
@@ -43,7 +45,7 @@ Each step starts from the one before. Screens by ID: [app map](product/app-map.m
 2. **Owner**: Room requests → move the card to Phone call, Meeting, then Approve. Room schedule → Saturday: Room 1 shows «سلمى», Booked.
 3. **Teacher**: My groups → the new booking → fees 550 / 150, seats 30 → refused (Room 1 has 24) → 24 → the group opens.
 4. **Parent**: search finds مركز النور; its page shows the new group with 24 seats.
-5. **Pending centre**: "Add my centre" with a new number, sign in with it at /ar/centre (pending, not in search) → Demo controls → Verify centre (or `pnpm ops:verify-centre 01…`): it appears in the teachers' Rooms.
+5. **Pending centre**: "Add my centre" with a new number, sign in with it at /ar/centre (pending, not in search) → **ops console** as the agent (0100 000 0051): Centre requests → the new centre → Call scheduled → tick the five checks → Approve and publish (Demo controls → Verify centre and `pnpm ops:verify-centre 01…` still work locally): it appears in the teachers' Rooms.
 6. **Invited teacher**: owner → Staff → invite a new number as Teacher; sign in with it in the teacher app → accept → add a name and a subject on My profile → now on the public teacher page.
 7. **Book**: parent → مركز النور → the new group → «احجز مكان» for Mariam → "Pay for one month only" → Card → fake-pay's page (:8091; Link has no card field) → "Simulate success" → "Place reserved" (the webhook confirmed it, not the redirect). 23 seats left.
 8. **A failed card**: book Youssef in another group → Card → "Simulate failure": the seat stays held with "Try again" until the 10-minute hold ends.
@@ -52,7 +54,7 @@ Each step starts from the one before. Screens by ID: [app map](product/app-map.m
 11. **Rent income**: owner → Rent income (C07): Room 1 with Ms Salma, rent, **Link fee**, net.
 12. **Review**: Demo controls → "Simulate first session done"; parent → My children → Mariam → Rate → 5 stars and a sentence. Owner → Reviews (C04) → Reply. There is no delete.
 13. **Held for rent**: teacher → Earnings: "Held for rent (not paid out on Thursday)" under "Next payout".
-14. **Refund by hand**: parent → My children → Mariam's place → "Ask Link to review a refund" → reason → Send. Terminal: `pnpm ops:refunds list` → `pnpm ops:refunds approve <id>` (or `deny <id> "reason"`). The booking page (P08) shows "Refund sent" or "Refund not approved".
+14. **Refund by Link ops**: parent → My children → Mariam's place → "Ask Link to review a refund" → reason → Send. **Ops console** as finance (0100 000 0052): Refunds → Approve refund (or Deny with a reason). The booking page (P08) shows "Refund sent" or "Refund not approved". (`pnpm ops:refunds` still works locally.)
 15. **Record a session**: teacher → Follow-up (المتابعة) → the record due → Mariam absent → scores (25 of 20 is refused) → observation → Review → Confirm. Now it changes only by "Correct", with a reason; the original is kept.
 16. **A flag**: Demo controls → "Simulate first session done" again; record the next session with Mariam absent. Owner → Today: Mariam, "2 absences in a row", assigned to Reception, with the two source records.
 17. **Message the parent**: sign in as Reception → the follow-up → Draft message (confirmed facts only, each with its source) → tick "I checked" → Approve; the text locks. It appears at http://localhost:8094. Demo controls → "Advance: Sent → Delivered" twice.
@@ -75,7 +77,7 @@ Each step starts from the one before. Screens by ID: [app map](product/app-map.m
 
 **Real** (core-api, Postgres, the real rules): sign-in and sessions, accounts, children and consents, staff and invites, centre isolation, halls, room requests, groups, search, seats and holds, payments and the double-entry ledger, earnings and rent income, refunds, reviews, session records and corrections, voice notes (with ai-service), the 4 follow-up rules, flags and cases, parent messages and approval, the activity log, the Follow-up extra per centre.
 
-**Fake** (local stand-ins): SMS → sms-sink (:8093); payments → fake-pay (:8091, moves no money); WhatsApp → whatsapp-fake (:8094); Link ops → `pnpm ops:verify-centre`, `pnpm ops:refunds` and Demo controls; payouts are computed, never sent; Ask Link is off unless a local Ollama runs (`OLLAMA_URL`). The full list and what each needs: [sample-only](product/sample-only.md); the plan: [before real users](plan/before-real-users.md).
+**Fake** (local stand-ins): SMS → sms-sink (:8093); payments → fake-pay (:8091, moves no money); WhatsApp → whatsapp-fake (:8094); Link ops → the ops console runs for real (http://localhost:3001), and the local shortcuts `pnpm ops:verify-centre`, `pnpm ops:refunds` and Demo controls stay; payouts are computed, never sent; Ask Link is off unless a local Ollama runs (`OLLAMA_URL`). The full list and what each needs: [sample-only](product/sample-only.md); the plan: [before real users](plan/before-real-users.md).
 
 ## 6. Time a voice note
 

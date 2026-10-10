@@ -52,6 +52,9 @@ import { Seats } from './enrolment/seats';
 import { RentInvoices } from './ledger/rent-invoices';
 import { Reports } from './ledger/reports';
 import { Money } from './payments/money';
+import { DataRequests } from './identity/data-requests';
+import { OpsConsole } from './ops/console';
+import { OpsController } from './ops/ops.controller';
 
 export interface Overrides {
   sms?: SmsSender;
@@ -69,7 +72,11 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
   return [
     { provide: CONFIG, useValue: c },
     { provide: LOGGER, useValue: log },
-    factory(Database, [], () => new Database(c.DATABASE_URL, c.DATABASE_URL_WORKER)),
+    factory(
+      Database,
+      [],
+      () => new Database(c.DATABASE_URL, c.DATABASE_URL_WORKER, c.DATABASE_URL_OPS),
+    ),
     factory(Redises, [], () => new Redises(c.REDIS_STATE_URL, c.REDIS_CACHE_URL, c.APP_ENV)),
     factory(FieldCipher, [], () => {
       // Locally the key comes from .env.local; on a server it is the FIELD_KEY secret (docs/10 §5).
@@ -175,6 +182,13 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
       (db: Database, w: WhatsAppSender, p: Phones) => new Messages(db, w, p, log),
     ),
     factory(Owner, [Database], (db: Database) => new Owner(db)),
+    // ── S2 ops console and data-subject requests ───────────────────────────────
+    factory(
+      OpsConsole,
+      [Database, Money, Phones],
+      (db: Database, m: Money, p: Phones) => new OpsConsole(db, m, p),
+    ),
+    factory(DataRequests, [Database], (db: Database) => new DataRequests(db)),
     factory(Assistant, [Cases, Messages], (cs: Cases, m: Messages) => new Assistant(cs, m, c, log)),
   ];
 }
@@ -198,6 +212,7 @@ export async function apiModule(
     EnrolmentsController,
     ReviewsController,
     FollowupController,
+    OpsController,
   ];
   if (demoRoutesAllowed(c)) controllers.push((await import('./dev/dev.controller')).DevController);
   @Module({})

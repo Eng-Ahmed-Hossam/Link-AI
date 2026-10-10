@@ -141,6 +141,27 @@ export const handlers = [
       return HttpResponse.json({ data: db.putConsent(userId, body) });
     }),
   ),
+  // PDPL data requests (MKT-OPS-09): the person asks; Link ops complete them (live only).
+  http.get(
+    '*/v1/me/data-requests',
+    authed(({ userId }) => HttpResponse.json(db.dataRequestsOf(userId))),
+  ),
+  http.post(
+    '*/v1/me/data-requests',
+    authed(async ({ request, userId }) => {
+      const body = (await request.json().catch(() => ({}))) as { kind?: string; details?: string };
+      if (!['access', 'correction', 'deletion'].includes(body.kind ?? ''))
+        return problem(422, 'validation_failed', 'kind is access, correction or deletion.');
+      const r = db.createDataRequest(
+        userId,
+        body.kind as 'access' | 'correction' | 'deletion',
+        (body.details ?? '').trim().slice(0, 2000),
+      );
+      return r
+        ? HttpResponse.json(r, { status: 201 })
+        : problem(409, 'already_open', 'You already have an open request of this kind.');
+    }),
+  ),
   // E0-09: the global flags the demo settings stand for (core-api reads platform.feature_flags).
   http.get('*/v1/feature-flags', () => {
     const d = demoState();

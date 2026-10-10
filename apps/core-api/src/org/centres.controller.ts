@@ -23,13 +23,12 @@ import { enqueue } from '../platform/outbox';
 import { Problem, forbidden, notFound } from '../platform/problem';
 import { requestIdOf } from '../platform/request-context';
 import { hit, Redises } from '../platform/redis';
+import { consentVersion } from '../identity/consent-pack';
 
 const STAFF_PERMISSIONS = ['bookings.manage', 'reviews.reply'] as const;
 type StaffPermission = (typeof STAFF_PERMISSIONS)[number];
 /** C01 join requests: starting values (07 §1 rate limits), like the other public endpoints. */
 export const C01_LIMITS = { perIpHour: 10, perPhoneDay: 3 };
-/** Version label of the C01 "Link may contact me" text (stored on the lead). */
-const C01_CONSENT_VERSION = 'c01-draft-2026-10';
 
 /**
  * Centres: the C01 join request, staff (A16, MKT-ACC-06) and paid-extra flags (OD-58).
@@ -79,7 +78,7 @@ export class CentresController {
           area: b.area,
           whatsapp_encrypted: this.phones.columns(e164).phone_enc,
           whatsapp_hmac: this.phones.hmac(e164),
-          contact_consent_version: C01_CONSENT_VERSION,
+          contact_consent_version: consentVersion('contact'),
           details: JSON.stringify({
             governorate: b.governorate,
             address: b.address,

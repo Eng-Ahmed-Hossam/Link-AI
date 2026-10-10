@@ -2,7 +2,7 @@
 //   1. local services (Postgres, Redis ×2, aws-local, sms-sink, mail-sink, fake-pay, whatsapp-fake)
 //   2. migrations, and the demo world when the database is empty (`--reset` re-seeds it)
 //   3. core-api: api :4000, worker, messaging-gateway :4002 (restart on change)
-//   4. web :3000 and the teacher app :8081, both with API_MODE=live
+//   4. web :3000 and the teacher app :8081, both with API_MODE=live; the ops console :3001
 //   5. ai-service :8090 (local Whisper + the extraction), if installed (pnpm ai:models done)
 // Sign-in codes go to sms-sink: http://localhost:8093 . `pnpm demo` is still the mock-data demo.
 import { spawnSync } from 'node:child_process';
@@ -24,6 +24,7 @@ const taken = await busy([
   ['core-api', `${API}/health`],
   ['web', 'http://localhost:3000'],
   ['teacher app', 'http://localhost:8081'],
+  ['ops console', 'http://localhost:3001'],
   ['mock server', 'http://localhost:4010/__demo/state'],
 ]);
 if (taken.length)
@@ -93,6 +94,8 @@ start('web', ['--filter', '@link/web', 'dev'], {
   NEXT_PUBLIC_DEMO_CONTROLS: '1',
   CORE_API_URL: API,
 });
+// The ops console (S2): live only, same-origin /v1 through its own rewrite.
+start('ops', ['--filter', '@link/ops', 'dev'], { CORE_API_URL: API });
 start(
   'app',
   ['--filter', '@link/teacher-app', 'exec', 'expo', 'start', '--web', '--port', '8081'],
@@ -113,6 +116,7 @@ Link — live mode on this machine (sample data only; ${redact(probe.stdout.trim
   Owner        http://localhost:3000/ar/centre       +20 10 0000 0003 (Tamer, Al Nour)
   Reception    http://localhost:3000/ar/centre       +20 10 0000 0004 (Dina)
   Teacher app  http://localhost:8081                 +20 10 0000 0002 (Ms Salma)
+  Ops console  http://localhost:3001/ar/sign-in      +20 10 0000 0051 (agent) · 0052 (finance)
   Codes        ${SMS}                 every SMS lands here; nothing is sent
   core-api     ${API}/ready · ${API}/v1/curricula
   WhatsApp     http://localhost:${process.env.WHATSAPP_FAKE_HOST_PORT || 8094}                 approved parent messages land here; nothing is sent

@@ -43,7 +43,7 @@ The compose file lives in `infra/local/docker-compose.yml` (project name `link`)
 | `mail-sink` | Mailpit | 8025 (UI), 1025 (SMTP) | Captures email |
 | `whatsapp-fake` | Fake provider behind the `WhatsAppSender` adapter (`infra/local/fakes/whatsapp-fake`), R3 | 8094 | Approved parent messages land here (browse `http://localhost:8094`); nothing is delivered. A status moves only when Demo tools or a test ask it to (`POST /v1/messages/{id}/status`, `POST /v1/inbound` for a reply or STOP); it then sends a signed webhook (`x-whatsapp-fake-signature: sha256=<HMAC>` with `WHATSAPP_WEBHOOK_SECRET`) to `WHATSAPP_FAKE_WEBHOOK_URL` — the only way Link changes a message's delivery status (BR-APR-11). `POST /v1/test-controls/redeliver {eventId}` repeats an event. State in memory. Provider value `fake`, refused when `APP_ENV=prod` |
 | `fake-pay` | Fake provider behind the `PaymentProvider` and `PayoutProvider` adapters (`infra/local/fakes/fake-pay`) | 8091 | **Now (R2b):** hosted-checkout page for card and wallet (no card fields; it simulates success or failure, and can save the card for the monthly plan), Fawry references (pay at an "outlet" with `POST /v1/fawry-references/{ref}/pay`, even after expiry: a late payment), saved-card charges for renewals, refunds, expiry of an unpaid checkout or reference, `GET /v1/settlements?date=` (2% sample fee), and signed webhooks (`x-fake-pay-signature: sha256=<HMAC>` with `PAYMENT_WEBHOOK_SECRET`) to `FAKE_PAY_WEBHOOK_URL`. Test controls: `POST /v1/test-controls {nextMandateCharge, nextRefund: "fail"}`, `POST /v1/test-controls/redeliver {eventId}`. State is in memory. **Later:** payouts. Provider value `fake`, never allowed in prod ([06](06-data-model.md) `payments.provider`) |
-| `oidc-stub` | Local OpenID Connect provider (mock IdP) — **not built yet** (E1-06) | 8092 | Ops console SSO for local and test runs (`OPS_OIDC_ISSUER` points here). Pre-loaded with the ops seed users (§4). Never used outside `local`/`dev`. Until then the ops console uses a stub sign-in page |
+| `oidc-stub` | Local OpenID Connect provider (mock IdP) — **not built** (E1-06) | 8092 | Not needed since S2: ops sign in with a phone code like everyone (CF-56). Kept here in case SSO comes back |
 
 The real provider sandboxes (§5) are used from `staging` and in contract tests.
 
@@ -79,7 +79,8 @@ Names and purpose only. **Never commit values.** `.env.example` lists every name
 | `EVENTS_TOPIC`, `QUEUE_<CONSUMER>`, `DLQ_<CONSUMER>` | Event topic, one queue and one DLQ per consumer group |
 | `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_SIGNING_KEY_ID` | Token issuing; the key itself stays in the secrets manager |
 | `ACCESS_TOKEN_TTL`, `REFRESH_TOKEN_TTL` | 15 min / 30 days (MKT-ACC-04) |
-| `OPS_OIDC_ISSUER`, `OPS_OIDC_CLIENT_ID`, `OPS_IP_ALLOWLIST` | Ops console SSO and allow-list (locally the issuer is `oidc-stub`) |
+| `OPS_IP_ALLOWLIST` | Who may reach `/v1/ops`: addresses or CIDR ranges, comma-separated, or `any`. Empty = open locally and in staging, **closed in production** (MKT-OPS-08, CF-56) |
+| `CONSENT_VERSIONS` | The approved consent-pack labels, `kind=label,…` (OD-60, docs/legal). Empty = the draft labels; production refuses drafts |
 | `PAYMENT_PROVIDER`, `PAYMENT_API_KEY`, `PAYMENT_WEBHOOK_SECRET` | `paymob` \| `fawry` \| `kashier` \| `fake` (OD-04). `fake` is refused when `APP_ENV=prod` |
 | `PAYOUT_PROVIDER`, `PAYOUT_API_KEY`, `PAYOUT_WEBHOOK_SECRET` | Payout rails |
 | `SMS_PROVIDER`, `SMS_API_KEY`, `SMS_SENDER_ID` | OTP and fallback SMS (OD-45) |
@@ -140,7 +141,7 @@ Names and purpose only. **Never commit values.** `.env.example` lists every name
 | Commission rules | Global defaults: `rent_fee` 5%, `booking_commission` 5% | Defaults (OD-01, OD-02) |
 | Feature flags | Phase 2–3 features off; landing-page Phase 2 sections hidden (OD-48) | — |
 | Users | One user per app role — parent, teacher, centre owner, staff — with fake phone numbers whose OTPs land in `sms-sink`. Also a second centre owner (centre B) for the cross-tenant tests | `sample` |
-| Ops users | Two `link_ops` users, one with the "agent" bundle and one with the "finance" bundle (OD-37). They sign in to the ops console through the local **`oidc-stub`** (SSO), never with phone OTP (MKT-OPS-08) | `sample` |
+| Ops users | Two `link_ops` users: Noha, the "agent" bundle (`ops.verify` + `ops.moderate`), +20 10 0000 0051; Karim, the "finance" bundle (`ops.finance`), +20 10 0000 0052 (OD-37). They sign in to the ops console (http://localhost:3001) with a phone code, read in sms-sink (CF-56). Plus one sample landing-page lead for L01 | `sample` |
 
 The seed never contains a real person's data.
 

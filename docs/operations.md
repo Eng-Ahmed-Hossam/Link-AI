@@ -11,19 +11,33 @@ docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.producti
 ## First start
 
 1. A server with Docker (Ubuntu 24.04 LTS or similar): 4 vCPU, 8 GB RAM and 60 GB disk without voice notes; add 8 GB RAM (or a GPU) for ai-service.
-2. Point the domain's DNS `A` record at the server. Open ports 80 and 443 only.
+2. Point the domain's DNS `A` records at the server: `link.example.com` and `ops.link.example.com` (the ops console). Open ports 80 and 443 only.
 3. On the server: `git clone https://github.com/Eng-Ahmed-Hossam/Link-AI.git /srv/link && cd /srv/link`.
 4. `pnpm prod:env --domain link.example.com` (or copy `deploy/.env.production.example` by hand), then fill in `ACME_EMAIL`, `NEXT_PUBLIC_CONTACT_EMAIL` and the provider settings. **Copy `FIELD_KEY`, `HMAC_KEY_LOOKUP`, `STORAGE_KEY` and `BACKUP_PASSPHRASE` somewhere safe away from the server**: without them, neither the database nor the backups can be read.
 5. `dc up -d --build --wait`. Add `--profile ai` for voice notes, then download the speech models once: `dc --profile ai run --rm ai python scripts/download_models.py`.
 6. Check it: `dc ps` (every service `healthy`), `curl -s https://link.example.com/v1/curricula`. If core-api refuses to start, its log names every wrong setting (`dc logs api`).
 7. Nightly backups: `crontab -e` → `15 2 * * * cd /srv/link && deploy/backup.sh >> /var/log/link-backup.log 2>&1`.
+8. The first ops users (see [Ops console](#ops-console) below).
+
+## Ops console
+
+Link staff verify centres and teachers, moderate reviews, decide refunds and answer data requests at **`https://ops.<LINK_DOMAIN>`** (apps/ops). Nobody gets in from the web unless the server grants it:
+
+| To | Run |
+|---|---|
+| Let the office reach it | set `OPS_IP_ALLOWLIST` in `deploy/.env.production` to the office's public address(es) or ranges (`203.0.113.9, 198.51.100.0/24`), then `dc up -d api`. **Empty = closed in production.** `any` opens it everywhere (not advised). |
+| Give someone access | `dc exec api node dist/main.mjs ops-access grant 01XXXXXXXXX agent "Name"` — bundles (OD-37): `agent` (verify centres and teachers, moderate reviews, data requests), `finance` (refunds), or `agent+finance`. They sign in with a phone code (CF-56). |
+| See who has access | `dc exec api node dist/main.mjs ops-access list` |
+| Remove access | `dc exec api node dist/main.mjs ops-access revoke 01XXXXXXXXX` (their sessions end at once) |
+
+Every view and decision in the console is in the audit log (`audit.audit_events`), with the ops user's ID. Locally the same commands are `pnpm ops:access list|grant|revoke`.
 
 ## Restart, update, logs
 
 | To | Run |
 |---|---|
 | See what runs and its health | `dc ps` |
-| Restart one service | `dc restart api` (or `worker`, `gateway`, `web`, `ai`, `caddy`) |
+| Restart one service | `dc restart api` (or `worker`, `gateway`, `web`, `ops`, `ai`, `caddy`) |
 | Update to a new version | `git pull && dc up -d --build --wait` (migrations run first, in `migrate`; the services wait for it) |
 | Logs (JSON, no personal data) | `dc logs -f --tail 200 api` · all of them: `dc logs -f --tail 50` |
 | One service's health | `dc exec api wget -qO- http://127.0.0.1:4000/ready` · worker `:4003/health` · gateway `:4002/health` |

@@ -2,6 +2,16 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-10 — S2: ops console, consent pack, user rights (ship job)
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| S2-1 | `docs/07-api.md` | Ops section: the access checks (`OPS_IP_ALLOWLIST`, `link_ops`, permission), the routes built in S2 marked, new routes (`/v1/ops/me`, centre stage, notes, lead status, data-request export), `GET /v1/me/data-requests` | Built in S2 |
+| S2-2 | `docs/13-open-decisions.md` | CF-56 (ops sign in by phone code, not SSO; the brief wins until Ahmed decides) and CF-57 (consent labels are a setting; production refuses drafts) | S2 brief vs MKT-OPS-08 / 10 §7; OD-60 |
+| S2-3 | `docs/legal/` (new) | Drafts for the lawyer: terms, privacy notice (PDPL), refund policy, centre and teacher terms, the in-product consent texts (ar/en), the data-request procedure; questions for the lawyer | Ship job S2 |
+| S2-4 | `docs/operations.md`, `docs/go-live-switches.md`, `docs/security-checklist.md` | Ops console on `ops.<domain>`, `ops-access` server command, `OPS_IP_ALLOWLIST`, `CONSENT_VERSIONS`; checklist items 30 (pass), 34, 35 | Built in S2 |
+| S2-5 | `docs/RUNNING.md`, `docs/14-dev-environment.md`, `docs/product/sample-only.md`, `docs/dev/repo-map.md`, `docs/plan/before-real-users.md` | Sample ops users (0051 agent, 0052 finance), the console in the click list (steps 5 and 14), `oidc-stub` no longer needed | Built in S2 |
+
 ## 2026-10-09 — S1: production readiness (ship job)
 
 | # | File | What changed | Why |

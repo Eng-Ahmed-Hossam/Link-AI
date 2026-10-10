@@ -68,6 +68,23 @@ import type {
   StaffPermission,
 } from './followup';
 import type {
+  AuditRow,
+  CentreApplications,
+  CentreStage,
+  DataExport,
+  DataRequest,
+  DataRequestKind,
+  OpsDataRequest,
+  OpsMe,
+  OpsNote,
+  OpsNoteSubject,
+  OpsRefund,
+  OpsTeacher,
+  ReviewQueueItem,
+  VerificationCheckCode,
+  VerificationCheckStatus,
+} from './ops';
+import type {
   AutoApproveRules,
   CentreApplicationBody,
   CentreFeatures,
@@ -98,6 +115,7 @@ export * from './types';
 export * from './followup';
 export * from './market';
 export * from './flags';
+export * from './ops';
 export { setApiBaseUrl, apiUrl } from './config';
 export { config as apiConfig } from './config';
 import { config } from './config';
@@ -701,6 +719,69 @@ export const useCreateReview = () =>
   useMutation<ReviewCreated, ApiError, { body: CreateReviewBody; key: string }>({
     mutationFn: ({ body, key }) => api.createReview(body, key),
   });
+
+/**
+ * The ops console (S2, `/v1/ops/*`; MKT-OPS-01..04, -08, -09) and the person's own data requests.
+ * Live only: ops never runs on mock data.
+ */
+type Ok = { ok: true };
+export const opsApi = {
+  me: () => request<OpsMe>('GET', '/v1/ops/me'),
+  centreApplications: (stage?: CentreStage) =>
+    request<CentreApplications>('GET', '/v1/ops/centre-applications', { params: { stage } }),
+  putCheck: (
+    subjectType: 'centre' | 'teacher',
+    subjectId: string,
+    code: VerificationCheckCode,
+    body: { status: VerificationCheckStatus; notes?: string },
+  ) =>
+    request<Ok>('PUT', `/v1/ops/verifications/${subjectType}/${subjectId}/checks/${code}`, {
+      body,
+    }),
+  setCentreStage: (id: string, stage: 'new' | 'call_scheduled' | 'visit_booked') =>
+    request<Ok>('POST', `/v1/ops/centres/${id}/stage`, { body: { stage } }),
+  approveCentre: (id: string) => request<Ok>('POST', `/v1/ops/centres/${id}/approve`, { body: {} }),
+  rejectCentre: (id: string, reason: string) =>
+    request<Ok>('POST', `/v1/ops/centres/${id}/reject`, { body: { reason } }),
+  revokeCentre: (id: string, reason: string) =>
+    request<Ok>('POST', `/v1/ops/centres/${id}/revoke`, { body: { reason } }),
+  addNote: (subjectType: OpsNoteSubject, subjectId: string, body: string) =>
+    request<OpsNote>('POST', '/v1/ops/notes', { body: { subjectType, subjectId, body } }),
+  leadStatus: (id: string, status: 'contacted' | 'discarded') =>
+    request<Ok>('POST', `/v1/ops/leads/${id}/status`, { body: { status } }),
+  teachers: (verification?: 'pending' | 'verified' | 'rejected' | 'revoked' | 'all') =>
+    request<OpsTeacher[]>('GET', '/v1/ops/teachers', { params: { verification } }),
+  decideTeacher: (id: string, action: 'verify' | 'reject' | 'revoke', reason?: string) =>
+    request<Ok>('POST', `/v1/ops/teachers/${id}/${action}`, {
+      body: reason ? { reason } : {},
+    }),
+  reviewQueue: () => request<ReviewQueueItem[]>('GET', '/v1/ops/reviews/queue'),
+  decideReview: (id: string, decision: 'publish' | 'hide' | 'request_edit', note?: string) =>
+    request<Ok>('POST', `/v1/ops/reviews/${id}/decision`, {
+      body: note ? { decision, note } : { decision },
+    }),
+  refunds: (status?: OpsRefund['status'] | 'all') =>
+    request<OpsRefund[]>('GET', '/v1/ops/refunds', { params: { status } }),
+  approveRefund: (id: string, idempotencyKey: string) =>
+    request<Ok>('POST', `/v1/ops/refunds/${id}/approve`, { body: {}, idempotencyKey }),
+  rejectRefund: (id: string, reason: string, idempotencyKey: string) =>
+    request<Ok>('POST', `/v1/ops/refunds/${id}/reject`, { body: { reason }, idempotencyKey }),
+  audit: (objectType: string, objectRef: string) =>
+    request<AuditRow[]>('GET', '/v1/ops/audit', { params: { objectType, objectRef } }),
+  dataRequests: (status?: 'open' | 'completed' | 'rejected' | 'all') =>
+    request<OpsDataRequest[]>('GET', '/v1/ops/data-requests', { params: { status } }),
+  exportDataRequest: (id: string) =>
+    request<DataExport>('GET', `/v1/ops/data-requests/${id}/export`),
+  completeDataRequest: (id: string, result: 'completed' | 'rejected', outcome: string) =>
+    request<Ok>('POST', `/v1/ops/data-requests/${id}/complete`, { body: { result, outcome } }),
+  // The person's own requests (PDPL), from any app.
+  myDataRequests: () => request<DataRequest[]>('GET', '/v1/me/data-requests'),
+  createDataRequest: (kind: DataRequestKind, details: string, idempotencyKey: string) =>
+    request<DataRequest>('POST', '/v1/me/data-requests', {
+      body: { kind, details },
+      idempotencyKey,
+    }),
+};
 
 // Every query and mutation fails with ApiError (07 §1 problem details, or a network error).
 declare module '@tanstack/react-query' {

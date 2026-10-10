@@ -2,6 +2,7 @@ import { sql } from 'kysely';
 import { demoId } from '../../seeds/demo-id';
 import type { Config } from '../config';
 import type { Database } from './db';
+import { draftConsentTexts } from '../identity/consent-pack';
 
 /**
  * The production guard (ship job S1). `LINK_ENV` says what kind of deployment this is:
@@ -65,6 +66,12 @@ export function productionProblems(c: Config, env: NodeJS.ProcessEnv = process.e
   if (c.QUEUE_PROVIDER === 'sqs' && c.AWS_ENDPOINT_URL && LOCAL_URL.test(c.AWS_ENDPOINT_URL))
     p.push(
       'QUEUE_PROVIDER=sqs with aws-local: use QUEUE_PROVIDER=postgres on one server, or real SQS.',
+    );
+  // OD-60: no real data until the lawyer-reviewed consent pack is approved and its labels set.
+  const drafts = draftConsentTexts(env);
+  if (drafts.length)
+    p.push(
+      `CONSENT_VERSIONS: ${drafts.join(', ')} still use a draft text (OD-60); set the approved labels.`,
     );
   if (/localhost|127\.0\.0\.1/.test(c.CORS_ALLOWED_ORIGINS))
     p.push(`CORS_ALLOWED_ORIGINS includes localhost: list only the real web origins.`);

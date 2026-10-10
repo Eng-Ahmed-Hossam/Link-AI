@@ -10,8 +10,8 @@ What lives where today (2026-10-07). The target architecture is in [docs/05](../
 | `apps/teacher-app` | Expo (React Native) teacher app: Today, session records, voice notes, groups, records history; `/try` for the website demo | Expo web on :8081 in the demo; static web export in the pilot (`dist-pilot`) |
 | `apps/pilot` | The **concierge pilot** server for one centre (ADR-0008): PIN sign-in, JSON store + append-only log, backups, start-up check, preflight, practice centre | `pnpm pilot:*` (runbook: [docs/pilot/runbook.md](../pilot/runbook.md)) |
 | `apps/ai-service` | Python FastAPI: local speech-to-text (Whisper), name matching, extraction with rules + local LLM (Ollama), leak check (ADR-0007) | Started by `pnpm demo` / `pnpm pilot:start` when voice is on; 127.0.0.1 only |
-| `apps/core-api` | The future backend: SQL migrations and seeds only so far (ADR-0006) | — |
-| `apps/ops` | The future ops console: placeholder | — |
+| `apps/core-api` | The backend (NestJS): api, worker, messaging-gateway; migrations, seeds, the ledger, the ops API | `pnpm dev`; production images (`deploy/`) |
+| `apps/ops` | The **ops console** (S2): Link staff sign in by phone code (`link_ops` role, OD-37 bundles) and work the queues — L01 centres and leads, teacher checks, L02 reviews, L03 refunds, PDPL data requests — on core-api's `/v1/ops/*` | `pnpm dev` (:3001, live only); its own image at `ops.<domain>` on a server |
 
 ## Packages
 

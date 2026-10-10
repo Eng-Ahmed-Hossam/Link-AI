@@ -69,6 +69,7 @@ const env = {
   ...process.env,
   DATABASE_URL: toTestDb(process.env.DATABASE_URL),
   DATABASE_URL_WORKER: toTestDb(process.env.DATABASE_URL_WORKER),
+  ...(process.env.DATABASE_URL_OPS && { DATABASE_URL_OPS: toTestDb(process.env.DATABASE_URL_OPS) }),
   DATABASE_URL_MIGRATOR: toTestDb(DATABASE_URL_MIGRATOR),
   REDIS_STATE_URL: toRedisDb1(process.env.REDIS_STATE_URL),
   REDIS_CACHE_URL: toRedisDb1(process.env.REDIS_CACHE_URL),

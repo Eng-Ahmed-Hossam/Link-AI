@@ -27,7 +27,7 @@ These take longer to arrive than the code takes to write; start them first.
 | File storage, encryption keys, queues | S3-compatible storage with encryption, a key service, a queue with dead-letter queues | The same cloud |
 | ai-service (Whisper and the extraction) | A server with a strong CPU or a GPU, in a region allowed for student data | A server, never Vercel (OD-26) |
 | Teacher app | App store builds (Expo); the web build is for demos only | Apple and Google stores |
-| Ops console | A web app behind single sign-on and an IP allow-list | A server, with core-api |
+| Ops console | A web app at `ops.<domain>` behind the IP allow-list (built, S2) | The same server, with core-api (`deploy/docker-compose.prod.yml`) |
 
 Not on Vercel: anything that runs jobs, keeps files, holds money state or runs speech-to-text.
 
@@ -38,7 +38,8 @@ Not on Vercel: anything that runs jobs, keeps files, holds money state or runs s
 | Parent's home area | The settings screen to set the home area (the API and the column exist; distances use it already). | agent | S |
 | Teachers paying a rent shortfall | When a month's fees don't cover the rent, the teacher pays the rest: a checkout endpoint and a button on Earnings. The ledger postings (P4) are built and tested. | agent | M |
 | Payouts being sent | The payout provider adapter, teachers' and centres' bank accounts, the Thursday payout job, payout statements, and reconciliation of what the bank shows. Today the amount is only computed. | agent (needs the merchant account) | L |
-| Ops console | Verify centres and teachers, moderate reviews, approve or deny refunds (L01–L03), replacing `pnpm ops:verify-centre` and `pnpm ops:refunds`; single sign-on and the IP allow-list. | agent | L |
-| Consent pack in the product | Show the approved texts, record their versions, and ask again when a text changes. | agent (after Ahmed's texts) | S |
+| ~~Ops console~~ | **Built (S2):** L01 centres, teacher checks, L02 reviews, L03 refunds, data requests, on its own host with the IP allow-list; access granted by a server command ([operations](../operations.md#ops-console)). Still to come with their features: disputes, reconciliation, commission rules, reference data, ledger adjustments, payout monitoring (MKT-OPS-05…07, -10, -11). SSO with MFA only if Ahmed wants it (CF-56). | agent | — |
+| Consent pack in the product | **Drafts written (S2, [docs/legal](../legal/README.md)); labels are a setting (`CONSENT_VERSIONS`) and production refuses drafts.** Left: put the approved texts into the apps, record `terms`/`privacy` at sign-up, and ask again when a label changes. | agent (after Ahmed's texts) | S |
+| ~~Data-subject rights~~ | **Built (S2):** Account → My data (copy, correction, deletion); ops answer in the console, with an audited JSON export. Teacher app and owner web: by email until their screens get the same card. | agent | — |
 
 Also before launch, smaller: real maps and geocoding (OD-46), photo uploads with review, notifications (MKT-NTF), and the paid-extras price (OD-05).

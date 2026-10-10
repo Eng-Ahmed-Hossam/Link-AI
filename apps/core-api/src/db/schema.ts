@@ -151,6 +151,19 @@ export interface IdentityAuthSessions {
   user_id: string;
 }
 
+export interface IdentityDataRequests {
+  completed_at: Timestamp | null;
+  completed_by: string | null;
+  created_at: Generated<Timestamp>;
+  details: Generated<string>;
+  id: string;
+  kind: string;
+  outcome: string | null;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+}
+
 export interface IdentityDevices {
   app: string;
   created_at: Generated<Timestamp>;
@@ -774,6 +787,7 @@ export interface OrgCentres {
   location: string | null;
   location_status: Generated<string>;
   name: string;
+  ops_stage: Generated<string>;
   owner_id: string;
   photos: Generated<Json>;
   settings: Generated<Json>;
@@ -822,6 +836,15 @@ export interface OrgLeads {
   updated_at: Generated<Timestamp>;
   whatsapp_encrypted: Buffer | null;
   whatsapp_hmac: Buffer | null;
+}
+
+export interface OrgOpsNotes {
+  author_id: string;
+  body: string;
+  created_at: Generated<Timestamp>;
+  id: string;
+  subject_id: string;
+  subject_type: string;
 }
 
 export interface OrgStudentGuardians {
@@ -1162,6 +1185,7 @@ export interface DB {
   "followup.rules": FollowupRules;
   "followup.signals": FollowupSignals;
   "identity.auth_sessions": IdentityAuthSessions;
+  "identity.data_requests": IdentityDataRequests;
   "identity.devices": IdentityDevices;
   "identity.role_assignments": IdentityRoleAssignments;
   "identity.users": IdentityUsers;
@@ -1208,6 +1232,7 @@ export interface DB {
   "org.consent_events": OrgConsentEvents;
   "org.guardians": OrgGuardians;
   "org.leads": OrgLeads;
+  "org.ops_notes": OrgOpsNotes;
   "org.student_guardians": OrgStudentGuardians;
   "org.students": OrgStudents;
   "org.teacher_subjects": OrgTeacherSubjects;

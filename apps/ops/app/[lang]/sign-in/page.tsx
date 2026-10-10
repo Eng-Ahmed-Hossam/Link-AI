@@ -1,12 +1,9 @@
-import Link from 'next/link';
-import { Card, StatusBadge } from '@link/ui';
+import { Card } from '@link/ui';
 import { getT, parseLocale } from '@/i18n';
 import { LangSwitch } from '@/LangSwitch';
+import { OpsSignIn } from '@/OpsSignIn';
 
-/**
- * Local SSO stub. Ops sign in through the company IdP, never with a phone code (MKT-OPS-08).
- * Locally the IdP is `oidc-stub` (docs/14 §2); this page just continues into the console.
- */
+/** Ops sign-in (MKT-OPS-08): a phone code, then the `link_ops` role and the network are checked. */
 export default async function OpsSignInPage({ params }: { params: Promise<{ lang: string }> }) {
   const locale = parseLocale((await params).lang);
   const t = getT(locale);
@@ -17,13 +14,8 @@ export default async function OpsSignInPage({ params }: { params: Promise<{ lang
       </div>
       <Card padding="lg" className="flex flex-col gap-4">
         <h1 className="text-title">{t('ops.signIn.title')}</h1>
-        <StatusBadge tone="neutral">{t('ops.signIn.stub')}</StatusBadge>
-        <Link
-          href={`/${locale}/centres`}
-          className="inline-flex min-h-11 items-center justify-center rounded-12 bg-blue px-5 text-label text-navy shadow-glow"
-        >
-          {t('ops.signIn.sso')}
-        </Link>
+        <p className="text-body text-muted">{t('ops.signIn.lead')}</p>
+        <OpsSignIn locale={locale} />
       </Card>
     </main>
   );

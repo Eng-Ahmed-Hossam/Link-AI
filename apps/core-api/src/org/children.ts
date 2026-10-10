@@ -5,12 +5,7 @@ import { uuidv7 } from '../platform/ids';
 import { Problem, forbidden } from '../platform/problem';
 import { Reference } from '../ref/reference';
 
-/**
- * Text version of the child-data consent shown when a child is added. A placeholder label until
- * the consent pack is approved (no real data before that, docs/13); the version is stored on every
- * event, so the approved text gets its own label.
- */
-export const CHILD_CONSENT_VERSION = 'draft-2026-10';
+import { consentVersion } from '../identity/consent-pack';
 
 type Kind =
   | 'terms'
@@ -77,7 +72,7 @@ export class Children {
         .values({
           student_id: id,
           guardian_id: ctx.guardianId,
-          consent_version: CHILD_CONSENT_VERSION,
+          consent_version: consentVersion('child_data_processing'),
           consent_at: now,
         })
         .execute();
@@ -90,7 +85,7 @@ export class Children {
           student_id: id,
           kind: 'child_data_processing',
           granted: true,
-          version: CHILD_CONSENT_VERSION,
+          version: consentVersion('child_data_processing'),
           source: 'add_child',
         })
         .execute();

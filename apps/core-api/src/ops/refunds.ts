@@ -7,13 +7,17 @@ import { Problem } from '../platform/problem';
 import type { Money } from '../payments/money';
 
 /**
- * LOCAL stand-in for Link ops deciding parent refund requests (OD-42, diagram 06; the ops console
- * comes later). Used by `pnpm ops:refunds`, which refuses to run unless APP_ENV=local, and never
- * part of the public demo or the pilot builds. Approving posts the reversing entries (P7 before
+ * Link ops deciding parent refund requests (OD-42, BR-REF-07, diagram 06). Used by the ops console
+ * (L03, `POST /v1/ops/refunds/{id}/approve|reject`, an `ops.finance` user) and by the local tool
+ * `pnpm ops:refunds` (APP_ENV=local only). Approving posts the reversing entries (P7 before
  * release, P8 after) and asks the provider to send the money; denying posts nothing, because a
  * request posts nothing until it is approved. Both write an audit row in the same transaction.
  */
-const HOW = 'Local ops tool: pnpm ops:refunds (stands in for the ops console)';
+const LOCAL_TOOL = 'Local ops tool: pnpm ops:refunds';
+
+/** Who decides: an ops user in the console, or the local tool (no user). */
+export type Decider = { userId: string } | null;
+const howOf = (by: Decider) => (by ? 'Ops console (L03)' : LOCAL_TOOL);
 
 export async function refundRequests(db: Database) {
   return db.asSystem(async (sys) => {
@@ -62,7 +66,12 @@ async function requested(db: Database, id: string) {
 }
 
 /** Approve: P7/P8 posted as one balanced transaction, then the provider is asked to send it. */
-export async function approveRefundRequest(db: Database, money: Money, id: string) {
+export async function approveRefundRequest(
+  db: Database,
+  money: Money,
+  id: string,
+  by: Decider = null,
+) {
   const r = await requested(db, id);
   const refundId = await db.asSystem(async (sys) => {
     // Lock the row, so a second approval in parallel waits and then finds it decided.
@@ -78,8 +87,8 @@ export async function approveRefundRequest(db: Database, money: Money, id: strin
       sys,
       r.payment_id,
       r.policy as Parameters<Money['approveRefund']>[2],
-      null,
-      HOW,
+      by?.userId ?? null,
+      howOf(by),
       false,
       r.id,
     );
@@ -90,7 +99,12 @@ export async function approveRefundRequest(db: Database, money: Money, id: strin
 }
 
 /** Deny: the request becomes `rejected`; the parent sees "Refund not approved" on P08. */
-export async function denyRefundRequest(db: Database, id: string, reason: string) {
+export async function denyRefundRequest(
+  db: Database,
+  id: string,
+  reason: string,
+  by: Decider = null,
+) {
   const why = reason?.trim();
   if (!why) throw new Problem(422, 'reason_required', 'Say why the refund is denied.');
   const r = await requested(db, id);
@@ -109,15 +123,15 @@ export async function denyRefundRequest(db: Database, id: string, reason: string
       .where('id', '=', r.payment_id)
       .executeTakeFirstOrThrow();
     await writeAudit(sys, {
-      actorId: null,
-      actorType: 'system',
+      actorId: by?.userId ?? null,
+      actorType: by ? 'user' : 'system',
       centreId: p.centre_id,
       action: 'refund.rejected',
       objectType: 'refund',
       objectRef: r.id,
       before: { status: 'requested' },
       after: { status: 'rejected' },
-      reason: `${HOW}: ${why.slice(0, 500)}`,
+      reason: `${howOf(by)}: ${why.slice(0, 500)}`,
     });
     await enqueue(sys, {
       type: 'refund.rejected',

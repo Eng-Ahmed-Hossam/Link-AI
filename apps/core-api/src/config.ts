@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { parseConsentVersions } from './identity/consent-pack';
 
 /**
  * Typed configuration (docs/14 §3). Read once at start-up; a missing or malformed value stops the
@@ -19,6 +20,24 @@ const schema = z
     CORE_API_PORT: z.coerce.number().int().positive().default(4000),
     DATABASE_URL: z.string().url(),
     DATABASE_URL_WORKER: z.string().url(),
+    /** The ops console's connection (app_ops, MKT-OPS-08). Unset: /v1/ops answers 503 ops_off. */
+    DATABASE_URL_OPS: z.string().url().optional(),
+    /**
+     * Who may reach /v1/ops (MKT-OPS-08 AC1): comma-separated addresses or CIDR ranges, or `any`.
+     * Empty means `any` on a developer machine and staging, and NOBODY in production.
+     */
+    OPS_IP_ALLOWLIST: z.string().default(''),
+    /** OD-60: the approved consent-pack labels, `kind=label,…` (identity/consent-pack.ts). */
+    CONSENT_VERSIONS: z
+      .string()
+      .default('')
+      .superRefine((v, ctx) => {
+        try {
+          parseConsentVersions(v);
+        } catch (e) {
+          ctx.addIssue({ code: 'custom', message: (e as Error).message });
+        }
+      }),
     REDIS_CACHE_URL: z.string().url(),
     REDIS_STATE_URL: z.string().url(),
     HMAC_KEY_LOOKUP: z.string().min(32),

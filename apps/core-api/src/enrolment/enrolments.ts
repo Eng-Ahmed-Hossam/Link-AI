@@ -26,6 +26,7 @@ import {
   sessionsBetween,
 } from './coverage';
 import type { Seats } from './seats';
+import { consentVersion } from '../identity/consent-pack';
 
 type Lang = 'ar' | 'en';
 const money = (amountPt: number) => ({ amountPt, currency: 'EGP' as const });
@@ -199,7 +200,7 @@ export class Enrolments {
               student_id: plan.row.student_id,
               kind: 'share_phone_with_teacher',
               granted: true,
-              version: 'draft-2026-10',
+              version: consentVersion('share_phone_with_teacher'),
               source: 'checkout',
               context: JSON.stringify({ groupId: plan.row.group_id }),
             })

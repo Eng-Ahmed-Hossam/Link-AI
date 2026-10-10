@@ -24,6 +24,7 @@ import { Messages } from '../src/followup/messages';
 import { Owner } from '../src/followup/owner';
 import { Records } from '../src/followup/records';
 import { Voice } from '../src/followup/voice';
+import { Phones } from '../src/identity/phone';
 
 /** ai-service stand-in: keeps the jobs; a test posts the result to the internal route itself. */
 export class FakeVoiceAi implements VoiceAi {
@@ -126,6 +127,7 @@ export async function startApi() {
       cases: app.get(Cases),
       messages: app.get(Messages),
       owner: app.get(Owner),
+      phones: app.get(Phones),
     },
     /** Superuser-like access for assertions (the table owner; RLS does not apply). */
     db: migrator,
