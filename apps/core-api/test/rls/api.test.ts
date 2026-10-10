@@ -23,9 +23,7 @@ type Actor = 'ownerA' | 'teacherA';
  */
 const SWEEP: Record<
   string,
-  | { actor: Actor; ids: () => Record<string, string> }
-  | { public: string }
-  | { opsOnly: string }
+  { actor: Actor; ids: () => Record<string, string> } | { public: string } | { opsOnly: string }
 > = {
   '/v1/centres/{id}': { actor: 'ownerA', ids: () => ({ id: demoId('cen-nile') }) },
   '/v1/rooms/{id}': { actor: 'ownerA', ids: () => ({ id: demoId('hall-nile-b') }) },
