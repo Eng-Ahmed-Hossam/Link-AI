@@ -2070,5 +2070,13 @@
   "parent.account.data.status.open": "Received",
   "parent.account.data.status.completed": "Done",
   "parent.account.data.status.rejected": "Not done",
-  "ops.dataRequests.export": "Download the data (JSON)"
+  "ops.dataRequests.export": "Download the data (JSON)",
+  "parent.reserve.bookingsSoonTitle": "Booking on Link opens soon",
+  "parent.reserve.bookingsSoon": "You can see the groups and their times now. Paying and reserving a place through Link starts soon.",
+  "parent.account.homeArea.title": "Home area",
+  "parent.account.homeArea.lead": "Search shows distances from here when you do not share your location.",
+  "parent.account.homeArea.label": "Area",
+  "parent.account.homeArea.none": "Not set",
+  "parent.account.homeArea.save": "Save area",
+  "parent.account.homeArea.saved": "Saved."
 }

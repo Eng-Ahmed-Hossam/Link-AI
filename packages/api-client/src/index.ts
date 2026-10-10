@@ -315,6 +315,8 @@ export const api = {
   // Reference data
   curricula: () =>
     request<(CurriculumRef & { schoolYears: SchoolYearRef[] })[]>('GET', '/v1/curricula'),
+  /** S3: the home areas a parent can pick (areas with a verified centre). */
+  areas: () => request<{ name: string; governorate: string | null }[]>('GET', '/v1/areas'),
   subjects: (curriculumId?: string, schoolYearId?: string) =>
     request<SubjectRef[]>('GET', '/v1/subjects', { params: { curriculumId, schoolYearId } }),
   // Discovery (MKT-DSC)

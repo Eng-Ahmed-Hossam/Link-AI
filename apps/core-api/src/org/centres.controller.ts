@@ -291,7 +291,12 @@ export class CentresController {
   featureFlags(@MaybeCaller() p: Principal | null) {
     // R3.4: Ask Link is off in live mode unless a local LLM is configured; the scripted demo
     // assistant only ever runs in mock mode.
-    const assistant = { 'followup.assistant': !!this.config.OLLAMA_URL };
+    // S3 `bookingsEnabled`: no payment provider yet (PAYMENT_PROVIDER=none, a Follow-up-only
+    // start) → the apps show "bookings open soon" instead of a checkout that answers 503.
+    const assistant = {
+      'followup.assistant': !!this.config.OLLAMA_URL,
+      'bookings.enabled': this.config.PAYMENT_PROVIDER !== 'none',
+    };
     if (!p)
       return this.db.asAnonymous(async (tx) => ({
         flags: { ...(await flagsFor(tx, {})), ...assistant },

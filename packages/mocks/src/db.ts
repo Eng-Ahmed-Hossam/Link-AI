@@ -108,7 +108,10 @@ interface State {
     status: 'pending' | 'accepted';
   }[];
   /** Known accounts (phone → user). The sample parent is pre-registered. */
-  users: Record<string, { id: string; name: string | null; roles: string[] }>;
+  users: Record<
+    string,
+    { id: string; name: string | null; roles: string[]; homeArea?: string | null }
+  >;
   extraChildren: {
     id: string;
     ownerId: string;
@@ -732,9 +735,10 @@ export function otpReset(phone: string) {
   save();
 }
 /** PATCH /v1/me (07 §2a P-1). The mock keeps the name; the language follows Accept-Language. */
-export function updateUser(userId: string, body: { name?: string }) {
+export function updateUser(userId: string, body: { name?: string; homeArea?: string | null }) {
   const u = userById(userId);
   if (u && body.name !== undefined) u.name = body.name.trim() || null;
+  if (u && body.homeArea !== undefined) u.homeArea = body.homeArea;
   save();
   return u;
 }

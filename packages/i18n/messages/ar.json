@@ -2070,5 +2070,13 @@
   "parent.account.data.status.open": "وصل",
   "parent.account.data.status.completed": "اتنفّذ",
   "parent.account.data.status.rejected": "ماتنفّذش",
-  "ops.dataRequests.export": "نزّل البيانات (JSON)"
+  "ops.dataRequests.export": "نزّل البيانات (JSON)",
+  "parent.reserve.bookingsSoonTitle": "الحجز على لينك هيفتح قريب",
+  "parent.reserve.bookingsSoon": "تقدر تشوف المجموعات ومواعيدها دلوقتي. الدفع وحجز المكان عن طريق لينك هيبدأ قريب.",
+  "parent.account.homeArea.title": "منطقة السكن",
+  "parent.account.homeArea.lead": "البحث بيحسب المسافات من هنا لما ماتشاركش موقعك.",
+  "parent.account.homeArea.label": "المنطقة",
+  "parent.account.homeArea.none": "مش محددة",
+  "parent.account.homeArea.save": "احفظ المنطقة",
+  "parent.account.homeArea.saved": "اتحفظت."
 }

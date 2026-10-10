@@ -55,6 +55,8 @@ import { Money } from './payments/money';
 import { DataRequests } from './identity/data-requests';
 import { OpsConsole } from './ops/console';
 import { OpsController } from './ops/ops.controller';
+import { Payouts } from './ledger/payouts';
+import { PayoutsController } from './ledger/payouts.controller';
 
 export interface Overrides {
   sms?: SmsSender;
@@ -189,6 +191,12 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
       (db: Database, m: Money, p: Phones) => new OpsConsole(db, m, p),
     ),
     factory(DataRequests, [Database], (db: Database) => new DataRequests(db)),
+    // ── S3 payouts ──────────────────────────────────────────────────────────────
+    factory(
+      Payouts,
+      [Database, FieldCipher, Reports],
+      (db: Database, f: FieldCipher, r: Reports) => new Payouts(db, f, r),
+    ),
     factory(Assistant, [Cases, Messages], (cs: Cases, m: Messages) => new Assistant(cs, m, c, log)),
   ];
 }
@@ -213,6 +221,7 @@ export async function apiModule(
     ReviewsController,
     FollowupController,
     OpsController,
+    PayoutsController,
   ];
   if (demoRoutesAllowed(c)) controllers.push((await import('./dev/dev.controller')).DevController);
   @Module({})

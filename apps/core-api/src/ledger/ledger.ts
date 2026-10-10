@@ -89,6 +89,7 @@ export interface Posting {
   paymentId?: string | null;
   refundId?: string | null;
   rentInvoiceId?: string | null;
+  payoutId?: string | null;
   centreId?: string | null;
   teacherId?: string | null;
   reversesId?: string | null;
@@ -156,6 +157,7 @@ export async function post(tx: Tx, p: Posting): Promise<{ id: string; created: b
       payment_id: p.paymentId ?? null,
       refund_id: p.refundId ?? null,
       rent_invoice_id: p.rentInvoiceId ?? null,
+      payout_id: p.payoutId ?? null,
       centre_id: p.centreId ?? null,
       teacher_id: p.teacherId ?? null,
       reverses_id: p.reversesId ?? null,

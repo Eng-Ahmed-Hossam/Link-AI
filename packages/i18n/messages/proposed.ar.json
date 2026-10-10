@@ -2067,5 +2067,13 @@
   "parent.account.data.status.open",
   "parent.account.data.status.completed",
   "parent.account.data.status.rejected",
-  "ops.dataRequests.export"
+  "ops.dataRequests.export",
+  "parent.reserve.bookingsSoonTitle",
+  "parent.reserve.bookingsSoon",
+  "parent.account.homeArea.title",
+  "parent.account.homeArea.lead",
+  "parent.account.homeArea.label",
+  "parent.account.homeArea.none",
+  "parent.account.homeArea.save",
+  "parent.account.homeArea.saved"
 ]

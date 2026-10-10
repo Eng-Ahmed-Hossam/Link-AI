@@ -15,6 +15,8 @@ import { useSession } from './session';
 export const FLAG_DEFAULTS = {
   /** Phase 1 marketplace surfaces (owner nav marketplace items). On by default; the MVP pilot turns it off (CF-29). */
   'marketplace.enabled': true,
+  /** S3: parents can reserve and pay (off when the server has no payment provider yet). */
+  'bookings.enabled': true,
   /** Ask Link (V03/V07). Its answers are fixtures until the AI service exists, so the pilot hides it. */
   'followup.assistant': true,
   'followup.owner_nav': false,

@@ -7,9 +7,10 @@ import { useI18n } from '../../i18n-client';
 import { useSession } from '../../session';
 import { LangSwitch } from '../../LangSwitch';
 import { DataRights } from '../DataRights';
+import { HomeArea } from '../HomeArea';
 
 /**
- * Account tab (11 §3). Phase 1: language (MKT-ACC-03), "My data" (PDPL, MKT-OPS-09) and sign out
+ * Account tab (11 §3). Phase 1: language (MKT-ACC-03), home area (S3), "My data" (PDPL, MKT-OPS-09) and sign out
  * (MKT-ACC-04). No Figma frame.
  */
 export function Account() {
@@ -24,6 +25,7 @@ export function Account() {
         <h2 className="text-label text-navy">{t('common.languageSwitch.label')}</h2>
         <LangSwitch locale={locale} />
       </Card>
+      {session ? <HomeArea /> : null}
       {session ? <DataRights /> : null}
       {session ? (
         <Button

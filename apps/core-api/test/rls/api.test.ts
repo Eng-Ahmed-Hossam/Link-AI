@@ -4,6 +4,7 @@
 // (a listed hall, a published group, a public profile) is listed with that reason instead.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { demoId } from '../../seeds/demo';
 import { type Api, Client, PHONES, startApi } from '../helpers';
@@ -53,6 +54,8 @@ const SWEEP: Record<
   '/v1/webhooks/messaging/{provider}': { public: 'provider to Link, verified by its signature' },
   '/v1/centres/by-slug/{slug}': { public: 'public centre profile (P04)' },
   '/v1/teachers/by-slug/{slug}': { public: 'public teacher profile (P05)' },
+  // S3: a rent invoice of another teacher (Mr Karim at Nile Academy), asked by Ms Salma.
+  '/v1/rent-invoices/{id}': { actor: 'teacherA', ids: () => ({ id: bInvoiceId }) },
   // S2: ops work across centres by design (MKT-OPS-08); anyone without link_ops gets 403 below.
   '/v1/ops/': { opsOnly: 'Link ops see every centre; the role and permission are checked' },
 };
@@ -72,6 +75,7 @@ const BODIES: Record<string, unknown> = {
   inviteStaff: { phone: '01555000001', role: 'reception' },
   putAutoApprove: { enabled: false, verifiedId: true, minRating: 4.5, fitsCapacity: true },
   checkoutEnrolment: { method: 'card' },
+  payRentShortfall: { method: 'card' },
   acceptWaitlistOffer: { paymentPlan: 'single_month', method: 'card' },
   replyReview: { body: 'Thanks.' },
   reportReview: { reason: 'Not ours.' },
@@ -109,6 +113,7 @@ let api: Api;
 let bRequestId = '';
 let bReviewId = '';
 let bWaitlistId = '';
+let bInvoiceId = '';
 /** Follow-up rows of centre B (Nile Academy), written as the table owner for the sweep. */
 let b: Awaited<ReturnType<typeof followupRowsOfB>>;
 const clients = {} as Record<Actor, Client>;
@@ -168,6 +173,19 @@ beforeAll(async () => {
     })
     .execute();
   b = await followupRowsOfB(api);
+  // A rent invoice of Mr Karim's booking at Nile Academy (sample row, written as the owner).
+  const kb = await api.db
+    .selectFrom('market.groups')
+    .select(['room_booking_id', 'centre_id', 'teacher_id'])
+    .where('id', '=', demoId('grp-karim-nile'))
+    .executeTakeFirstOrThrow();
+  bInvoiceId = demoId('rls-rent-invoice-b');
+  await sql`INSERT INTO ledger.rent_invoices (id, room_booking_id, centre_id, teacher_id, period,
+      gross_amount_pt, link_fee_pct, link_fee_amount_pt, net_to_centre_pt, status, due_on)
+    VALUES (${bInvoiceId}, ${kb.room_booking_id}, ${kb.centre_id}, ${kb.teacher_id},
+      daterange('2026-01-01', '2026-02-01', '[)'), 1000, 5, 50, 950, 'issued', '2026-02-05')`.execute(
+    api.db,
+  );
 });
 afterAll(() => api.close());
 

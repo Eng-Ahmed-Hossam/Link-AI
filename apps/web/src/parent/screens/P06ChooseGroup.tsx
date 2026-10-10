@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import * as RadioGroup from '@radix-ui/react-radio-group';
 import { api, ApiError, useTeacher, type GroupSummary } from '@link/api-client';
 import { formatDate, formatNumber } from '@link/i18n';
+import { useFlag } from '../../flags';
 import { Avatar, Button, Callout, PageTitle, RadioCards, Rating, StatusBadge, cn } from '@link/ui';
 import { useI18n } from '../../i18n-client';
 import { QueryState } from '../QueryState';
@@ -15,6 +16,7 @@ import { createDraft } from '../reserve-draft';
 
 /** P06 · Choose a group & start date (MKT-ENR-01, MKT-ENR-09). Step 1 of 2. */
 export function P06ChooseGroup({ slug }: { slug: string }) {
+  const bookings = useFlag('bookings.enabled');
   const { locale, t } = useI18n();
   const router = useRouter();
   const sp = useSearchParams();
@@ -201,7 +203,11 @@ export function P06ChooseGroup({ slug }: { slug: string }) {
             </p>
           ) : null}
 
-          {group && full ? (
+          {!bookings ? (
+            <Callout tone="info" role="status" title={t('parent.reserve.bookingsSoonTitle')}>
+              {t('parent.reserve.bookingsSoon')}
+            </Callout>
+          ) : group && full ? (
             !waitlist ? (
               <Button block disabled={busy || !child} onClick={joinWaitlist}>
                 {busy ? t('common.loading') : t('parent.waitlist.join')}
