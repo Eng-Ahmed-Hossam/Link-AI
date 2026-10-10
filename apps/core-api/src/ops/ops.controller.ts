@@ -188,6 +188,15 @@ export class OpsController {
     return this.ops.dataRequests(p.userId, i.query.status);
   }
 
+  @Endpoint(routes.exportDataRequest)
+  exportDataRequest(
+    @Caller() p: Principal,
+    @Input() i: In<typeof routes.exportDataRequest>,
+    @Req() req: Request,
+  ) {
+    return this.ops.exportDataRequest(p.userId, i.params.id, requestIdOf(req));
+  }
+
   @Endpoint(routes.completeDataRequest)
   completeDataRequest(
     @Caller() p: Principal,

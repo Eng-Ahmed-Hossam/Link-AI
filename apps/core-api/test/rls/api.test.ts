@@ -23,7 +23,9 @@ type Actor = 'ownerA' | 'teacherA';
  */
 const SWEEP: Record<
   string,
-  { actor: Actor; ids: () => Record<string, string> } | { public: string }
+  | { actor: Actor; ids: () => Record<string, string> }
+  | { public: string }
+  | { opsOnly: string }
 > = {
   '/v1/centres/{id}': { actor: 'ownerA', ids: () => ({ id: demoId('cen-nile') }) },
   '/v1/rooms/{id}': { actor: 'ownerA', ids: () => ({ id: demoId('hall-nile-b') }) },
@@ -53,6 +55,8 @@ const SWEEP: Record<
   '/v1/webhooks/messaging/{provider}': { public: 'provider to Link, verified by its signature' },
   '/v1/centres/by-slug/{slug}': { public: 'public centre profile (P04)' },
   '/v1/teachers/by-slug/{slug}': { public: 'public teacher profile (P05)' },
+  // S2: ops work across centres by design (MKT-OPS-08); anyone without link_ops gets 403 below.
+  '/v1/ops/': { opsOnly: 'Link ops see every centre; the role and permission are checked' },
 };
 /** Valid bodies, so the answer is about the resource, not the body's shape. */
 const BODIES: Record<string, unknown> = {
@@ -180,7 +184,7 @@ describe('10 §2 cross-tenant API sweep (generated from openapi.json)', () => {
 
   for (const x of withIds) {
     const rule = SWEEP[templateOf(x.path) ?? ''];
-    if (!rule || 'public' in rule || PUBLIC_OPERATIONS.has(x.op)) continue;
+    if (!rule || 'public' in rule || 'opsOnly' in rule || PUBLIC_OPERATIONS.has(x.op)) continue;
     it(`${x.method} ${x.path} (${x.op}): another tenant gets 404`, async () => {
       const ids = rule.ids();
       const url = x.path.replace(/\{(\w+)\}/g, (_, k: string) => ids[k] ?? 'missing');
@@ -193,6 +197,17 @@ describe('10 §2 cross-tenant API sweep (generated from openapi.json)', () => {
       });
     });
   }
+
+  // MKT-OPS-08: every ops operation with an ID refuses a centre owner (403, before the body).
+  for (const x of withIds.filter((y) => y.path.startsWith('/v1/ops/')))
+    it(`${x.method} ${x.path} (${x.op}): not ops → 403 ops_permission_required`, async () => {
+      const url = x.path.replace(/\{(\w+)\}/g, () => demoId('cen-nile'));
+      const r = await clients.ownerA.call(x.method, url, x.method === 'GET' ? undefined : {});
+      expect({ status: r.status, code: (r.body as { code?: string })?.code }).toEqual({
+        status: 403,
+        code: 'ops_permission_required',
+      });
+    });
 
   it('and the owner of A still reaches A (the sweep is not refusing everything)', async () => {
     const r = await clients.ownerA.call('GET', `/v1/centres/${demoId('cen-nour')}/staff`);

@@ -11,7 +11,7 @@ With `pnpm dev` ([RUNNING](../RUNNING.md)) Link runs on its real backend: sign-i
 | **WhatsApp** | whatsapp-fake (:8094) receives approved messages; delivery and replies only when Demo controls ask. | WhatsApp Business: a number, approved templates, delivery events. |
 | **Voice notes** | Local Whisper through ai-service on this machine, sample audio only (`pnpm voice:try`). | Hosting ai-service, and the consent pack before any real recording (OD-60). |
 | **Ask Link** | Off unless a local model runs (Ollama). | A decision on the model and where it runs. |
-| **Link ops** | `pnpm ops:verify-centre`, `pnpm ops:refunds` and Demo controls, local only. | The ops console (L01–L03): verification, review moderation, refunds. |
+| **Link ops** | The ops console runs on the real API (S2): verification, review moderation, refunds, data requests; sample ops users sign in with a code from sms-sink. | Real ops staff accounts (a `link_ops` role with a bundle, granted by an admin), the office address in `OPS_IP_ALLOWLIST`, DNS for `ops.<domain>`. |
 | **Parent's home area** | Stored on the profile, set only through the API; the browser location is used otherwise. | The settings screen to set it. |
 | **Maps and photos** | A drawn map with pins; coloured tiles for photos. | A map provider and geocoding; photo uploads with review. |
 | **Notifications** | None beyond sign-in codes and invites. | In-app and SMS/WhatsApp notices (MKT-NTF). |

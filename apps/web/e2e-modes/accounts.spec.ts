@@ -140,3 +140,23 @@ test('T14: the sample teacher signs in on the teacher app', async ({ page }) => 
     expect(((await r.json()) as { roles: string[] }).roles).toEqual(['teacher']);
   }
 });
+
+test('MKT-OPS-09: a parent asks Link for a copy of their data from Account → My data', async ({
+  page,
+}) => {
+  await page.goto('/en/welcome');
+  await ready(page);
+  await page.locator('input[type=tel]').fill(PEOPLE.parent);
+  const since = Date.now();
+  await page.locator('form button[type=submit]').click();
+  await page.locator('input[autocomplete=one-time-code]').fill(await codeFor(PEOPLE.parent, since));
+  await page.waitForURL(/\/en\/search/);
+  await page.goto('/en/account');
+  const card = page.getByTestId('data-rights');
+  await expect(card).toBeVisible();
+  await card.getByTestId('data-request-access').click();
+  await card.getByTestId('data-request-send').click();
+  await expect(card.getByText('Received')).toBeVisible();
+  // One open request of each kind: the button is off until Link answers.
+  await expect(card.getByTestId('data-request-access')).toBeDisabled();
+});

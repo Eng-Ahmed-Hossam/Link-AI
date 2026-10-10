@@ -2050,5 +2050,22 @@
   "ops.dataRequests.whatWasDone",
   "ops.dataRequests.reject",
   "ops.leads.status.converted",
-  "ops.leads.status.discarded"
+  "ops.leads.status.discarded",
+  "parent.account.data.title",
+  "parent.account.data.lead",
+  "parent.account.data.ask.access",
+  "parent.account.data.ask.correction",
+  "parent.account.data.ask.deletion",
+  "parent.account.data.kind.access",
+  "parent.account.data.kind.correction",
+  "parent.account.data.kind.deletion",
+  "parent.account.data.deletionNote",
+  "parent.account.data.details",
+  "parent.account.data.send",
+  "parent.account.data.alreadyOpen",
+  "parent.account.data.yours",
+  "parent.account.data.status.open",
+  "parent.account.data.status.completed",
+  "parent.account.data.status.rejected",
+  "ops.dataRequests.export"
 ]

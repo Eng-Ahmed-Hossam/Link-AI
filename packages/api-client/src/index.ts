@@ -71,6 +71,7 @@ import type {
   AuditRow,
   CentreApplications,
   CentreStage,
+  DataExport,
   DataRequest,
   DataRequestKind,
   OpsDataRequest,
@@ -769,6 +770,8 @@ export const opsApi = {
     request<AuditRow[]>('GET', '/v1/ops/audit', { params: { objectType, objectRef } }),
   dataRequests: (status?: 'open' | 'completed' | 'rejected' | 'all') =>
     request<OpsDataRequest[]>('GET', '/v1/ops/data-requests', { params: { status } }),
+  exportDataRequest: (id: string) =>
+    request<DataExport>('GET', `/v1/ops/data-requests/${id}/export`),
   completeDataRequest: (id: string, result: 'completed' | 'rejected', outcome: string) =>
     request<Ok>('POST', `/v1/ops/data-requests/${id}/complete`, { body: { result, outcome } }),
   // The person's own requests (PDPL), from any app.

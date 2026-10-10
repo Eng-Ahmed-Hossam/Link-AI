@@ -183,7 +183,11 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
     ),
     factory(Owner, [Database], (db: Database) => new Owner(db)),
     // ── S2 ops console and data-subject requests ───────────────────────────────
-    factory(OpsConsole, [Database, Money], (db: Database, m: Money) => new OpsConsole(db, m)),
+    factory(
+      OpsConsole,
+      [Database, Money, Phones],
+      (db: Database, m: Money, p: Phones) => new OpsConsole(db, m, p),
+    ),
     factory(DataRequests, [Database], (db: Database) => new DataRequests(db)),
     factory(Assistant, [Cases, Messages], (cs: Cases, m: Messages) => new Assistant(cs, m, c, log)),
   ];

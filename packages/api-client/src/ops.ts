@@ -22,4 +22,5 @@ export type AuditRow = S['AuditRow'];
 export type DataRequestKind = S['DataRequestKind'];
 export type DataRequest = S['DataRequest'];
 export type OpsDataRequest = S['OpsDataRequest'];
+export type DataExport = S['DataExport'];
 export type OpsNoteSubject = 'centre' | 'teacher' | 'lead' | 'refund' | 'review' | 'data_request';

@@ -198,6 +198,16 @@ export const OpsDataRequest = named(
   }),
 );
 
+export const DataExport = named(
+  'DataExport',
+  z.object({
+    generatedAt: iso,
+    dataRequestId: z.string(),
+    person: z.record(z.string(), z.unknown()),
+    sections: z.record(z.string(), z.array(z.record(z.string(), z.unknown()))),
+  }),
+);
+
 const Reason = z.object({ reason: z.string().trim().min(1).max(500) });
 const OptionalReason = z.object({ reason: z.string().trim().max(500).optional() });
 const ops = 'user' as const;
@@ -513,6 +523,19 @@ export const opsRoutes = {
     query: z.object({ status: z.enum(['open', 'completed', 'rejected', 'all']).optional() }),
     response: z.array(OpsDataRequest),
     errors: OPS,
+  }),
+  exportDataRequest: def({
+    name: 'exportDataRequest',
+    method: 'get',
+    path: '/v1/ops/data-requests/{id}/export',
+    summary: 'An access request: the person’s own data as JSON (audited; sent to them securely)',
+    tag: 'ops',
+    rules: ['MKT-OPS-09'],
+    auth: ops,
+    ops: 'ops.verify',
+    params: Id,
+    response: DataExport,
+    errors: [...OPS, { status: 409, code: 'not_access_request' }],
   }),
   completeDataRequest: def({
     name: 'completeDataRequest',

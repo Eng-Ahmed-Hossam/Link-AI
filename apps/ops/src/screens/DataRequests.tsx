@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { opsApi, type OpsDataRequest } from '@link/api-client';
 import { createTranslator, type Locale, type MessageKey } from '@link/i18n';
-import { Callout, Card, Segmented, StatusBadge } from '@link/ui';
+import { Button, Callout, Card, Segmented, StatusBadge } from '@link/ui';
 import {
   ActionError,
   DueBadge,
@@ -19,6 +19,19 @@ import {
 import { useLoad } from '../useLoad';
 
 type Filter = 'open' | 'all';
+
+/** Save the person's data as a JSON file (the download is in the audit log). */
+async function download(id: string) {
+  const data = await opsApi.exportDataRequest(id);
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
+  );
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `link-data-${id}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 /** Data-subject requests (MKT-OPS-09, PDPL Law 151/2020; 10 §3). */
 export function DataRequestsScreen({ locale }: { locale: Locale }) {
@@ -100,6 +113,16 @@ function RequestCard({
       ) : null}
       {d.status === 'open' ? (
         <div className="flex flex-wrap items-start gap-2">
+          {d.kind === 'access' ? (
+            <Button
+              variant="secondary"
+              disabled={a.busy}
+              onClick={() => a.run(() => download(d.id))}
+              data-testid="data-request-export"
+            >
+              {t('ops.dataRequests.export')}
+            </Button>
+          ) : null}
           <ReasonAction
             t={t}
             label={t('ops.dataRequests.complete')}

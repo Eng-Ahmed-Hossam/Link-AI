@@ -118,7 +118,8 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 | POST | `/v1/me/invites/{id}/accept` | the invited person | Accept. A teacher invite needs this accept; a staff invite starts at the first sign-in. An invited teacher's profile stays hidden from parents until accepted and complete (name and a subject) | ✓ | MKT-ACC-06 |
 | GET | `/v1/me/features` | parent | Paid extras on for any centre where the parent's children study: `{followupExtra}` (added 2026-10-08; P09 updates feed) | — read | OD-58 |
 | PUT | `/v1/me/consents` | any | Grant or withdraw a consent | ✓ | BR-DAT-03 |
-| POST | `/v1/me/data-requests` | any | PDPL access / correction / deletion request | ✓ | MKT-OPS-09 |
+| POST | `/v1/me/data-requests` | any | PDPL access / correction / deletion request (one open per kind: 409 `already_open`) | ✓ | MKT-OPS-09 |
+| GET | `/v1/me/data-requests` | any | My data requests and their status (Account → My data) | — | MKT-OPS-09 |
 
 ### Reference data
 | Method | Path | Who | Purpose | Idem |
@@ -260,26 +261,33 @@ One owner can own several centres; each centre has its own payout account, balan
 | POST | `/v1/reviews/{id}/report` | target | Report | ✓ | MKT-REV-03 |
 
 ### Ops (`/v1/ops/*`, ops console only; role `link_ops` + permission)
+Every route checks, in order: the caller's address against `OPS_IP_ALLOWLIST` (403 `ops_ip_not_allowed`; empty = closed in production), an active `link_ops` role and the route's permission (403 `ops_permission_required`). Ops sign in with a phone code like everyone (CF-56). Built in S2: the rows marked **S2**; the rest come with their features.
+
 | Method | Path | Permission | Purpose | Idem | Money | Req |
 |---|---|---|---|---|---|---|
-| GET | `/v1/ops/centre-applications?stage` | ops.verify | L01 pipeline (includes new leads) | — read | — | MKT-OPS-01 |
-| PUT | `/v1/ops/verifications/{subjectType}/{subjectId}/checks/{checkCode}` | ops.verify | Record a check | ✓ | — | MKT-OPS-01, MKT-OPS-02 |
-| POST | `/v1/ops/centres/{id}/approve` · `/reject` · `/revoke` | ops.verify | Decide | ✓ | — | MKT-OPS-01 |
-| GET | `/v1/ops/teachers?verification=pending` | ops.verify | Queue | — read | — | MKT-OPS-02 |
-| POST | `/v1/ops/teachers/{id}/verify` · `/reject` · `/revoke` | ops.verify | Decide | ✓ | — | MKT-OPS-02 |
-| GET | `/v1/ops/reviews/queue` | ops.moderate | L02 queue | — read | — | MKT-OPS-03 |
-| POST | `/v1/ops/reviews/{id}/decision` | ops.moderate | `publish` \| `hide` \| `request_edit` | ✓ | — | MKT-OPS-03 |
-| GET | `/v1/ops/refunds?status` · `/v1/ops/disputes?status` | ops.finance | L03 queue | — read | parent → teacher | MKT-OPS-04 |
-| POST | `/v1/ops/refunds/{id}/approve` · `/reject` | ops.finance | Decide | ✓ | parent → teacher | MKT-OPS-04 |
+| GET | `/v1/ops/me` | any ops | The ops user and the permissions their bundles grant (**S2**) | — read | — | MKT-OPS-08 |
+| POST | `/v1/ops/centres/{id}/stage` | ops.verify | Move a join request: `new` \| `call_scheduled` \| `visit_booked` (**S2**) | ✓ | — | MKT-OPS-01 |
+| POST | `/v1/ops/notes` | any ops | Internal note on a centre, teacher, lead, refund, review or data request (**S2**) | ✓ | — | MKT-OPS-01 |
+| POST | `/v1/ops/leads/{id}/status` | ops.verify | A landing-page lead: `contacted` \| `discarded` (**S2**) | ✓ | — | MKT-OPS-01, MKT-WEB-01 |
+| GET | `/v1/ops/data-requests/{id}/export` | ops.verify | An access request: the person's own data as JSON, audited (**S2**) | — read | — | MKT-OPS-09 |
+| GET | `/v1/ops/centre-applications?stage` | ops.verify | L01 pipeline (includes new leads) (**S2**) | — read | — | MKT-OPS-01 |
+| PUT | `/v1/ops/verifications/{subjectType}/{subjectId}/checks/{checkCode}` | ops.verify | Record a check (**S2**) | ✓ | — | MKT-OPS-01, MKT-OPS-02 |
+| POST | `/v1/ops/centres/{id}/approve` · `/reject` · `/revoke` | ops.verify | Decide (**S2**) | ✓ | — | MKT-OPS-01 |
+| GET | `/v1/ops/teachers?verification=pending` | ops.verify | Queue (**S2**) | — read | — | MKT-OPS-02 |
+| POST | `/v1/ops/teachers/{id}/verify` · `/reject` · `/revoke` | ops.verify | Decide (**S2**) | ✓ | — | MKT-OPS-02 |
+| GET | `/v1/ops/reviews/queue` | ops.moderate | L02 queue (**S2**) | — read | — | MKT-OPS-03 |
+| POST | `/v1/ops/reviews/{id}/decision` | ops.moderate | `publish` \| `hide` \| `request_edit` (**S2**) | ✓ | — | MKT-OPS-03 |
+| GET | `/v1/ops/refunds?status` · `/v1/ops/disputes?status` | ops.finance | L03 queue (refunds: **S2**) | — read | parent → teacher | MKT-OPS-04 |
+| POST | `/v1/ops/refunds/{id}/approve` · `/reject` | ops.finance | Decide (**S2**) | ✓ | parent → teacher | MKT-OPS-04 |
 | POST | `/v1/ops/disputes/{id}/resolve` | ops.finance | Resolve with an outcome | ✓ | parent → teacher | MKT-OPS-04 |
 | GET | `/v1/ops/reconciliation/issues?status` | ops.finance | Mismatches, orphans | — read | Link | MKT-OPS-05 |
 | POST | `/v1/ops/reconciliation/issues/{id}/resolve` | ops.finance | Match, refund or close | ✓ | Link | MKT-OPS-05 |
 | GET | `/v1/ops/commission-rules` | ops.finance | List rules | — read | Link | MKT-OPS-06 |
 | POST | `/v1/ops/commission-rules` | ops.finance | Add a rule (overlaps rejected) | ✓ | Link | MKT-OPS-06 |
 | PUT | `/v1/ops/reference/{curricula\|school-years\|subjects\|academic-terms}/{id}` | ops.verify | Edit reference data | ✓ | — | MKT-OPS-07 |
-| GET | `/v1/ops/audit?objectType&objectRef` | any ops | Audit lookup | — read | — | MKT-OPS-08 |
-| GET | `/v1/ops/data-requests?status` | ops.verify | PDPL requests queue | — read | — | MKT-OPS-09 |
-| POST | `/v1/ops/data-requests/{id}/complete` | ops.verify | Mark done, with what was exported, corrected or anonymised | ✓ | — | MKT-OPS-09 |
+| GET | `/v1/ops/audit?objectType&objectRef` | any ops | Audit lookup (**S2**) | — read | — | MKT-OPS-08 |
+| GET | `/v1/ops/data-requests?status` | ops.verify | PDPL requests queue (**S2**) | — read | — | MKT-OPS-09 |
+| POST | `/v1/ops/data-requests/{id}/complete` | ops.verify | Mark done, with what was exported, corrected or anonymised (**S2**) | ✓ | — | MKT-OPS-09 |
 | POST | `/v1/ops/ledger/adjustments` | ops.finance | Post a balanced adjustment (P11); `reason` required | ✓ | teacher, centre or Link (the accounts posted) | MKT-OPS-10 |
 | GET | `/v1/ops/payouts?status` | ops.finance | Payout runs and failures | — read | teacher; centre | MKT-OPS-11 |
 | POST | `/v1/ops/payouts/{id}/retry` | ops.finance | Retry a failed payout (same payout, new attempt) | ✓ | teacher or centre (the payee) | MKT-OPS-11 |

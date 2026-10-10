@@ -6,19 +6,19 @@ The running log of the "ready to ship" job (Ahmed's brief of 2026-10-09). **A ne
 
 **Rules.** One PR into `main` per stage; wait for CI (including `story-live`); merge it yourself; continue. Stop only for an irreversible decision that could go either way, or anything needing money, an account or a legal choice — write it under "Open questions" and carry on with what doesn't depend on it. Sample data only; mock mode, the public-demo check and the pilot check keep passing; the gold set stays locked; no secrets in commits; docs win over the mock; no paid services or sign-ups. While working run only the related tests; the full suites once per stage before the PR.
 
-**Branch.** `claude/serene-gauss-ey7d2z` (reset onto `main` after each merge).
+**Branch.** S0–S1: `claude/serene-gauss-ey7d2z`. From S2 (session of 2026-10-10): `claude/link-implementation-finish-shqdku`, reset onto `main` after each merge.
 
 ## Status
 
 | Stage | What | State | PR | Merged commit |
 |---|---|---|---|---|
 | S0 | `pnpm run doctor`, `pnpm run setup`, setup-windows, go-live-switches, RUNNING/local-checks | **done** | #3 | `17d2216` |
-| S1 | Production images, prod compose (one VPS + Caddy), production guard, security pass, backups, monitoring, `pnpm prod:local` | built, PR open | — | — |
-| S2 | Ops console (`apps/ops`), consent pack drafts, legal drafts, user rights | — | — | — |
+| S1 | Production images, prod compose (one VPS + Caddy), production guard, security pass, backups, monitoring, `pnpm prod:local` | **done** | #4 | `31febef` |
+| S2 | Ops console (`apps/ops`), consent pack drafts, legal drafts, user rights | built, PR open | — | — |
 | S3 | Payout batches, rent shortfall, home-area screen, `bookingsEnabled`, Android preview build docs, approved Arabic strings | — | — | — |
 | S4 | `docs/plan/provider-choice.md` (payments, SMS, WhatsApp) → stop and report | — | — | — |
 
-**Last green commit on `main`:** `17d2216` (S0 merge, CI green in about 4 min).
+**Last green commit on `main`:** `31febef` (S1 merge).
 
 ## Decisions taken on the way (reversible)
 
@@ -34,6 +34,13 @@ The running log of the "ready to ship" job (Ahmed's brief of 2026-10-09). **A ne
 - **S1: `LINK_ENV`** (`development` \| `staging` \| `production`): staging is the only mode where fakes, demo routes and the sample world run with production builds (`pnpm prod:local`). Production refuses each and names the setting.
 - **S1: core-api ships as an esbuild bundle** with its own dbmate-compatible migration runner (`src/migrate.ts`), so the image needs no dbmate binary or dev dependencies.
 
+- **S2: ops sign in with a phone code** (the brief), not SSO with MFA (MKT-OPS-08 AC1, 10 §7) — recorded as CF-56. Every `/v1/ops/*` call checks `OPS_IP_ALLOWLIST` first (empty = closed in production, open locally), then an active `link_ops` role and the route's permission (OD-37). The console lives on its own host (`ops.<domain>`); Caddy sends its `/v1` straight to core-api so the allow-list sees the real address.
+- **S2: ops work runs as `app_ops`** (`DATABASE_URL_OPS`, RLS `ctx_is_ops()`), audit row and event in the same transaction; refund decisions reuse the money paths (SYSTEM) with the ops user as the decider. Migration 0017 adds the L01 stage, ops notes, data requests and the app_ops grants.
+- **S2: ops access is granted by a server command** (`node dist/main.mjs ops-access grant <phone> agent|finance|agent+finance`; `pnpm ops:access` locally), never from the web. Sample ops users: 0051 (agent), 0052 (finance).
+- **S2: consent labels are a setting** (`CONSENT_VERSIONS`, `identity/consent-pack.ts`); production refuses draft labels (OD-60, CF-57). Drafts for the lawyer: `docs/legal/`.
+- **S2: user rights** — Account → My data in the parent app (copy, correction, deletion; one open per kind); ops answer in the console with an audited JSON export. Teacher app and owner web: by email for now (one card each later).
+- **S2 scope of the console:** L01, teacher checks, L02, L03 refunds, data requests, audit lookup. Disputes, reconciliation, commission rules, reference data, ledger adjustments and payout monitoring (MKT-OPS-05…07, -10, -11) come with their features (payouts in S3).
+
 ## Known gaps found (to close in later stages)
 
 - ~~No AWS on one VPS~~ — closed in S1 (see decisions).
@@ -41,12 +48,15 @@ The running log of the "ready to ship" job (Ahmed's brief of 2026-10-09). **A ne
 - `pnpm audit`: 2 high in Expo/Metro build tools only (no fix published; in no server image) — [security-checklist.md](../security-checklist.md) #26.
 - CSP allows inline scripts (Next's boot script); nonces are a later hardening (#11).
 - **No real provider adapters** (SMS, payments, WhatsApp): by design until Ahmed picks providers after S4. Going live then needs one adapter class per provider — the only code left, and small (one interface each).
-- docs/10 §7 says the ops console uses SSO with MFA and an IP allow-list; the brief for S2 says phone OTP for ops staff. S2 follows the brief (OTP + `link_ops` role) and keeps an IP allow-list setting; recorded as a CF in docs/13 in S2.
+- ~~docs/10 §7 SSO vs the brief's phone OTP for ops~~ — built per the brief, CF-56 (S2).
+- Re-consent when a text's label changes, and recording `terms`/`privacy` at sign-up: after Ahmed approves the texts (before-real-users §3).
+- In this cloud session Docker Hub rate-limits pulls and Debian's apt mirrors are blocked: local images were pulled through mirror.gcr.io, and the local Postgres image was assembled from `postgis/postgis:16-3.5` plus pgvector's files (not committed; CI builds the real Dockerfile).
 
 ## Open questions for Ahmed
 
-_None yet._
+1. **Ops sign-in (CF-56):** phone code + office IP allow-list is built. Do you want SSO with MFA (Google Workspace or similar) instead? It would replace only the sign-in page.
+2. **Consent pack and legal texts (OD-60):** the drafts in `docs/legal/` need a lawyer; its README lists 8 questions for them.
 
 ## Next step
 
-S1: run the full suites, open the PR, wait for CI (including `images` and `story-live`), merge. Then S2 from the top of its list (ops console first).
+S2: full suites green locally (lint, typecheck, unit, `test:api`, `test:rls`, `test:money`, live story + ops + accounts, mock accounts, public-demo check, pilot e2e); open the PR, wait for CI (including `images` and `story-live`), merge. Then S3 from the top of its list (payout batches first).

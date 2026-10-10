@@ -12,6 +12,7 @@ import { formatProblems, linkEnv, productionProblems, sampleWorldProblems } from
 import { createLogger } from './platform/logger';
 import { Redises } from './platform/redis';
 import { createApi } from './server';
+import { grantOpsAccess, listOpsAccess, revokeOpsAccess } from './ops/grant';
 import { EnrolmentJobs } from './enrolment/jobs';
 import { RentInvoices } from './ledger/rent-invoices';
 import { Money } from './payments/money';
@@ -202,9 +203,46 @@ async function guard() {
   }
 }
 
-const run = { api, worker, gateway }[entry];
+/** `ops-access list | grant <phone> <bundle> ["Name"] | revoke <phone>` (src/ops/grant.ts). */
+async function opsAccess() {
+  const [cmd, phone, bundle, name] = process.argv.slice(3);
+  const app = await NestFactory.createApplicationContext(
+    { module: class OpsAccessModule {}, providers: coreProviders(config, log), global: true },
+    { logger: ['error'] },
+  );
+  const db = app.get(Database);
+  const phones = app.get(Phones);
+  const usage =
+    'Usage: ops-access list | grant <phone> agent|finance|agent+finance ["Name"] | revoke <phone>';
+  try {
+    if (cmd === 'list') {
+      const rows = await listOpsAccess(db);
+      if (!rows.length) console.log('No ops users yet.');
+      for (const r of rows)
+        console.log(
+          `  •••• ${r.phone_last4}  ${r.name ?? '(no name)'}  ${r.permissions.join(', ')}`,
+        );
+    } else if (cmd === 'grant' && phone && bundle) {
+      const r = await grantOpsAccess(db, phones, phone, bundle, name);
+      console.log(`✓ •••• ${r.last4} can use the ops console: ${r.permissions.join(', ')}`);
+    } else if (cmd === 'revoke' && phone) {
+      const r = await revokeOpsAccess(db, phones, phone);
+      console.log(r.revoked ? '✓ Ops access revoked; sessions ended.' : 'No ops access to revoke.');
+    } else {
+      console.error(usage);
+      process.exitCode = 1;
+    }
+  } finally {
+    await app.close();
+    await Promise.allSettled([db.close(), app.get(Redises).close()]);
+  }
+  // A one-off command: nothing else to wait for.
+  process.exit(process.exitCode ?? 0);
+}
+
+const run = { api, worker, gateway, 'ops-access': opsAccess }[entry];
 if (!run) {
-  log.error({ entry }, 'unknown entrypoint: use api, worker or gateway');
+  log.error({ entry }, 'unknown entrypoint: use api, worker, gateway or ops-access');
   process.exit(1);
 }
 guard()

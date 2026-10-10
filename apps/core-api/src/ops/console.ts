@@ -5,6 +5,7 @@ import { uuidv7 } from '../platform/ids';
 import { enqueue } from '../platform/outbox';
 import { Problem, notFound } from '../platform/problem';
 import { addDays, cairoToday, isoWeekday } from '../platform/time';
+import type { Phones } from '../identity/phone';
 import type { Money } from '../payments/money';
 import type { OpsPermission } from './access';
 import { approveRefundRequest, denyRefundRequest } from './refunds';
@@ -64,6 +65,7 @@ export class OpsConsole {
   constructor(
     private readonly db: Database,
     private readonly money: Money,
+    private readonly phones: Phones,
   ) {}
 
   me(userId: string, permissions: OpsPermission[]) {
@@ -892,6 +894,104 @@ export class OpsConsole {
           new Date(r.created_at).getTime() + DATA_REQUEST_DAYS * 86_400_000,
         ).toISOString(),
       }));
+    });
+  }
+
+  /**
+   * An access request (PDPL): everything Link holds about the person who asked, as JSON, for ops
+   * to send them securely. Gathered as the system (it spans every context); the export itself is
+   * audited. Never another person's data: only rows keyed on this user or their guardian profile.
+   */
+  async exportDataRequest(userId: string, id: string, requestId?: string) {
+    const d = await this.db.asOps(userId, async (tx) => {
+      const row = await tx
+        .selectFrom('identity.data_requests')
+        .select(['id', 'user_id', 'kind'])
+        .where('id', '=', id)
+        .executeTakeFirst();
+      if (!row) throw notFound('data request');
+      if (row.kind !== 'access')
+        throw new Problem(409, 'not_access_request', 'Only a copy (access) request is exported.');
+      await writeAudit(tx, {
+        actorId: userId,
+        actorType: 'user',
+        action: 'data_request.exported',
+        objectType: 'data_request',
+        objectRef: id,
+        requestId,
+      });
+      return row;
+    });
+    const subject = d.user_id;
+    return this.db.asSystem(async (tx) => {
+      const u = await tx
+        .selectFrom('identity.users')
+        .select(['id', 'name', 'language', 'phone_enc', 'created_at'])
+        .where('id', '=', subject)
+        .executeTakeFirstOrThrow();
+      const rows = async (q: ReturnType<typeof sql<Record<string, unknown>>>) =>
+        (await q.execute(tx)).rows;
+      const g = await tx
+        .selectFrom('org.guardians')
+        .select(['id', 'home_area'])
+        .where('user_id', '=', subject)
+        .executeTakeFirst();
+      const gid = g?.id ?? null;
+      const sections = {
+        roles:
+          await rows(sql`SELECT role, centre_id AS "centreId", status, created_at AS "createdAt"
+          FROM identity.role_assignments WHERE user_id = ${subject} ORDER BY created_at`),
+        consents: await rows(sql`SELECT kind, student_id AS "studentId", granted, version, source,
+          created_at AS "at" FROM org.consent_events
+          WHERE user_id = ${subject} OR (${gid}::uuid IS NOT NULL AND guardian_id = ${gid}::uuid)
+          ORDER BY created_at`),
+        children: await rows(sql`SELECT s.id, s.display_name AS "name", c.code AS curriculum,
+          y.name_en AS "schoolYear", sg.relation, sg.consent_version AS "consentVersion"
+          FROM org.student_guardians sg JOIN org.students s ON s.id = sg.student_id
+          JOIN ref.curricula c ON c.id = s.curriculum_id JOIN ref.school_years y ON y.id = s.school_year_id
+          WHERE sg.guardian_id = ${gid}::uuid ORDER BY s.created_at`),
+        enrolments: await rows(sql`SELECT e.reference, e.status, e.payment_plan AS plan,
+          e.price_pt AS "pricePt", ce.name AS centre, t.display_name AS teacher, e.created_at AS "createdAt"
+          FROM market.enrolments e JOIN org.centres ce ON ce.id = e.centre_id
+          JOIN org.teachers t ON t.id = e.teacher_id
+          WHERE e.guardian_id = ${gid}::uuid ORDER BY e.created_at`),
+        payments: await rows(sql`SELECT p.kind, p.amount_pt AS "amountPt", p.method, p.status,
+          p.card_last4 AS "cardLast4", p.succeeded_at AS "paidAt", p.created_at AS "createdAt"
+          FROM ledger.payments p WHERE p.payer_user_id = ${subject} ORDER BY p.created_at`),
+        refunds: await rows(sql`SELECT r.amount_pt AS "amountPt", r.policy, r.status, r.reason,
+          r.created_at AS "createdAt" FROM ledger.refunds r JOIN ledger.payments p ON p.id = r.payment_id
+          WHERE p.payer_user_id = ${subject} ORDER BY r.created_at`),
+        reviews:
+          await rows(sql`SELECT target_type AS "targetType", stars, tags, body, visibility, status,
+          created_at AS "createdAt" FROM market.reviews WHERE guardian_id = ${gid}::uuid ORDER BY created_at`),
+        teacherProfile:
+          await rows(sql`SELECT display_name AS name, bio_ar AS "bioAr", bio_en AS "bioEn",
+          years_experience AS "yearsExperience", verification, created_at AS "createdAt"
+          FROM org.teachers WHERE user_id = ${subject}`),
+        centresOwned:
+          await rows(sql`SELECT name, area, address, verification, created_at AS "createdAt"
+          FROM org.centres WHERE owner_id = ${subject}`),
+        payoutAccounts: await rows(sql`SELECT owner_type AS "ownerType", kind,
+          display_last4 AS "last4", status FROM ledger.payout_accounts pa
+          WHERE (owner_type = 'teacher' AND owner_id IN (SELECT id FROM org.teachers WHERE user_id = ${subject}))
+             OR (owner_type = 'centre' AND owner_id IN (SELECT id FROM org.centres WHERE owner_id = ${subject}))`),
+        dataRequests: await rows(sql`SELECT kind, status, outcome, created_at AS "createdAt",
+          completed_at AS "completedAt" FROM identity.data_requests WHERE user_id = ${subject}
+          ORDER BY created_at`),
+      };
+      return {
+        generatedAt: new Date().toISOString(),
+        dataRequestId: id,
+        person: {
+          id: u.id,
+          name: u.name,
+          phone: u.phone_enc ? this.phones.decrypt(u.phone_enc) : null,
+          language: u.language,
+          homeArea: g?.home_area ?? null,
+          createdAt: iso(u.created_at),
+        },
+        sections: JSON.parse(JSON.stringify(sections)) as Record<string, Record<string, unknown>[]>,
+      };
     });
   }
 

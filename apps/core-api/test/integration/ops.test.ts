@@ -4,6 +4,12 @@
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { OPS_AGENT_PHONE, OPS_FINANCE_PHONE, demoId } from '../../seeds/demo';
+import {
+  bundlePermissions,
+  grantOpsAccess,
+  listOpsAccess,
+  revokeOpsAccess,
+} from '../../src/ops/grant';
 import { uuidv7 } from '../../src/platform/ids';
 import { type Api, Client, PHONES, startApi } from '../helpers';
 import {
@@ -72,6 +78,26 @@ describe('MKT-OPS-08 ops access', () => {
     expect([r2.status, code(r2)]).toEqual([403, 'ops_permission_required']);
     // Signed out: 401 before anything else.
     expect((await new Client(api).call('GET', '/v1/ops/me')).status).toBe(401);
+  });
+
+  it('MKT-OPS-08: the server command grants and revokes ops access (OD-37 bundles)', async () => {
+    const phone = '+201000000059';
+    const g = await grantOpsAccess(api.s.db, api.s.phones, phone, 'finance', 'Sample ops');
+    expect(g.permissions).toEqual(['ops.finance']);
+    expect(() => bundlePermissions('admin')).toThrow(/Unknown bundle/);
+    const c = new Client(api, { web: true });
+    await c.signIn(phone);
+    expect((await c.call<{ permissions: string[] }>('GET', '/v1/ops/me')).body.permissions).toEqual(
+      ['ops.finance'],
+    );
+    // Re-granting changes the bundle in place (one live link_ops role).
+    await grantOpsAccess(api.s.db, api.s.phones, phone, 'agent+finance');
+    expect((await c.call<{ permissions: string[] }>('GET', '/v1/ops/me')).body.permissions).toEqual(
+      ['ops.verify', 'ops.moderate', 'ops.finance'],
+    );
+    expect((await listOpsAccess(api.s.db)).length).toBe(3);
+    expect((await revokeOpsAccess(api.s.db, api.s.phones, phone)).revoked).toBe(1);
+    expect((await c.call('GET', '/v1/ops/me')).status).toBe(403);
   });
 
   it('MKT-OPS-08: an ops user is not an app role (Me lists none)', async () => {
@@ -332,6 +358,28 @@ describe('MKT-OPS-09 data-subject requests (PDPL)', () => {
     expect((await finance.call('GET', '/v1/ops/data-requests')).status).toBe(403);
     // A parent never reaches the ops queue.
     expect((await parent.call('GET', '/v1/ops/data-requests')).status).toBe(403);
+  });
+
+  it('an access request exports the person’s own data (audited); other kinds are not exported', async () => {
+    const r = await parent.call<{ id: string }>('POST', '/v1/me/data-requests', {
+      kind: 'access',
+    });
+    expect(r.status).toBe(201);
+    const x = await agent.call<{
+      person: { phone: string; name: string };
+      sections: Record<string, unknown[]>;
+    }>('GET', `/v1/ops/data-requests/${r.body.id}/export`);
+    expect(x.status).toBe(200);
+    expect(x.body.person.phone).toBe(PHONES.parent);
+    expect(x.body.sections.children!.length).toBe(2);
+    expect(x.body.sections.consents!.length).toBeGreaterThan(0);
+    expect(x.body.sections.enrolments!.length).toBeGreaterThan(0);
+    expect((await audit(r.body.id)).map((a) => a.action)).toContain('data_request.exported');
+    const del = await parent.call<{ id: string }>('POST', '/v1/me/data-requests', {
+      kind: 'correction',
+    });
+    const no = await agent.call('GET', `/v1/ops/data-requests/${del.body.id}/export`);
+    expect([no.status, code(no)]).toEqual([409, 'not_access_request']);
   });
 
   it('MKT-OPS-08: ops lookups of the audit log show who did it', async () => {

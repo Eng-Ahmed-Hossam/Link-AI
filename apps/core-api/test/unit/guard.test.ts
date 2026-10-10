@@ -36,6 +36,9 @@ function prodEnv(over: Record<string, string | undefined> = {}): NodeJS.ProcessE
     WHATSAPP_PROVIDER: 'manual',
     WHATSAPP_WEBHOOK_SECRET: randomBytes(24).toString('base64url'),
     AI_SERVICE_URL: 'http://ai:8090',
+    // OD-60: the approved consent pack (sample labels).
+    CONSENT_VERSIONS:
+      'terms=2026-11-v1,privacy=2026-11-v1,child_data_processing=2026-11-v1,share_phone_with_teacher=2026-11-v1,whatsapp_updates=2026-11-v1,sms_updates=2026-11-v1,contact=2026-11-v1',
     ...over,
   };
   return Object.fromEntries(
@@ -97,6 +100,12 @@ describe('Production guard', () => {
     ],
     ['localhost CORS', { CORS_ALLOWED_ORIGINS: 'http://localhost:3000' }, /CORS_ALLOWED_ORIGINS/],
     ['local JWT values', { JWT_SIGNING_KEY_ID: 'local-dev' }, /JWT_SIGNING_KEY_ID/],
+    ['the draft consent pack (OD-60)', { CONSENT_VERSIONS: undefined }, /CONSENT_VERSIONS: terms/],
+    [
+      'one text still a draft',
+      { CONSENT_VERSIONS: 'terms=2026-11-v1,privacy=draft-2026-12' },
+      /CONSENT_VERSIONS: privacy/,
+    ],
     [
       'the default WhatsApp secret',
       { WHATSAPP_WEBHOOK_SECRET: undefined },

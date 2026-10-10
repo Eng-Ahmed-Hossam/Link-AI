@@ -2053,5 +2053,22 @@
   "ops.dataRequests.whatWasDone": "What was exported, corrected or anonymised",
   "ops.dataRequests.reject": "Refuse",
   "ops.leads.status.converted": "Joined",
-  "ops.leads.status.discarded": "Discarded"
+  "ops.leads.status.discarded": "Discarded",
+  "parent.account.data.title": "My data",
+  "parent.account.data.lead": "You can ask Link for a copy of your data, to correct it, or to delete your account. Link answers within 30 days.",
+  "parent.account.data.ask.access": "Ask for a copy of my data",
+  "parent.account.data.ask.correction": "Ask to correct my data",
+  "parent.account.data.ask.deletion": "Ask to delete my account",
+  "parent.account.data.kind.access": "A copy of my data",
+  "parent.account.data.kind.correction": "Correct my data",
+  "parent.account.data.kind.deletion": "Delete my account",
+  "parent.account.data.deletionNote": "Your name, phone and your children’s details are removed. Payment records stay, without your name, because the law requires them.",
+  "parent.account.data.details": "Anything Link should know (optional)",
+  "parent.account.data.send": "Send request",
+  "parent.account.data.alreadyOpen": "You already have an open request of this kind.",
+  "parent.account.data.yours": "Your requests",
+  "parent.account.data.status.open": "Received",
+  "parent.account.data.status.completed": "Done",
+  "parent.account.data.status.rejected": "Not done",
+  "ops.dataRequests.export": "Download the data (JSON)"
 }

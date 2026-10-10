@@ -55,7 +55,9 @@ Ship job S1, checked on 2026-10-09 against the code, the production images (`pnp
 
 | # | Item | Result | Evidence |
 |---|---|---|---|
-| 30 | Ops console: staff only, audited | **Not yet** | Ship job S2 |
+| 30 | Ops console: staff only, audited | **Pass** (S2) | `apps/ops` on its own host (`ops.<domain>`, no-store, noindex, CSP); every `/v1/ops/*` call checks `OPS_IP_ALLOWLIST` (empty = closed in production), an active `link_ops` role and the route's permission (OD-37); access is granted only by a server command (`ops-access`); every view of personal data and every decision is audited (MKT-OPS-08). Tests: `test/integration/ops.test.ts`, `test/unit/ops-access.test.ts`, `e2e-modes/ops.spec.ts`. Sign-in is a phone code, not SSO with MFA (CF-56) |
+| 34 | Consent pack approved before real data | **Enforced** (S2) | The production guard refuses draft consent labels (`CONSENT_VERSIONS`, OD-60, CF-57); drafts for the lawyer in [legal/](legal/README.md) |
+| 35 | Data-subject rights (PDPL) | **Pass** (S2) | Account → My data (access, correction, deletion); ops answer in the console within 30 days, with an audited JSON export for access requests; procedure in [legal/data-requests.md](legal/data-requests.md) |
 | 31 | Error tracking | **Pass** (optional) | `SENTRY_DSN` empty = off; no account needed to run |
 | 32 | Health checks on every service | **Pass** | core-api `/health` `/ready`, worker `/health` (4003), gateway `/health`, ai-service `/health` `/ready`, web `/api/health`; compose health checks on each |
 | 33 | Key rotation documented | **Pass** | [operations.md](operations.md#rotate-keys) |

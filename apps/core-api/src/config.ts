@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { parseConsentVersions } from './identity/consent-pack';
 
 /**
  * Typed configuration (docs/14 §3). Read once at start-up; a missing or malformed value stops the
@@ -26,6 +27,17 @@ const schema = z
      * Empty means `any` on a developer machine and staging, and NOBODY in production.
      */
     OPS_IP_ALLOWLIST: z.string().default(''),
+    /** OD-60: the approved consent-pack labels, `kind=label,…` (identity/consent-pack.ts). */
+    CONSENT_VERSIONS: z
+      .string()
+      .default('')
+      .superRefine((v, ctx) => {
+        try {
+          parseConsentVersions(v);
+        } catch (e) {
+          ctx.addIssue({ code: 'custom', message: (e as Error).message });
+        }
+      }),
     REDIS_CACHE_URL: z.string().url(),
     REDIS_STATE_URL: z.string().url(),
     HMAC_KEY_LOOKUP: z.string().min(32),

@@ -1285,6 +1285,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ops/data-requests/{id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An access request: the person’s own data as JSON (audited; sent to them securely) */
+        get: operations["exportDataRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ops/leads/{id}/status": {
         parameters: {
             query?: never;
@@ -2613,6 +2630,19 @@ export interface components {
             id: string;
             name: string;
             schoolYears: components["schemas"]["SchoolYearRef"][];
+        };
+        DataExport: {
+            dataRequestId: string;
+            /** @description ISO 8601 timestamp */
+            generatedAt: string;
+            person: {
+                [key: string]: unknown;
+            };
+            sections: {
+                [key: string]: {
+                    [key: string]: unknown;
+                }[];
+            };
         };
         DataRequest: {
             completedAt: string | null;
@@ -8535,6 +8565,82 @@ export interface operations {
                 };
             };
             /** @description `validation_failed`, `idempotency_key_reused` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `ops_off` */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    exportDataRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataExport"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `ops_ip_not_allowed`, `ops_permission_required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `not_access_request` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
             422: {
                 headers: {
                     [name: string]: unknown;

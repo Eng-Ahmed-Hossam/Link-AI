@@ -2053,5 +2053,22 @@
   "ops.dataRequests.whatWasDone": "إيه اللي اتصدّر أو اتصحّح أو اتشال منه الاسم",
   "ops.dataRequests.reject": "ارفض",
   "ops.leads.status.converted": "انضم",
-  "ops.leads.status.discarded": "مستبعد"
+  "ops.leads.status.discarded": "مستبعد",
+  "parent.account.data.title": "بياناتي",
+  "parent.account.data.lead": "تقدر تطلب من لينك نسخة من بياناتك، أو تصحيحها، أو مسح حسابك. لينك بترد خلال ٣٠ يوم.",
+  "parent.account.data.ask.access": "اطلب نسخة من بياناتي",
+  "parent.account.data.ask.correction": "اطلب تصحيح بياناتي",
+  "parent.account.data.ask.deletion": "اطلب مسح حسابي",
+  "parent.account.data.kind.access": "نسخة من بياناتي",
+  "parent.account.data.kind.correction": "تصحيح بياناتي",
+  "parent.account.data.kind.deletion": "مسح حسابي",
+  "parent.account.data.deletionNote": "اسمك ورقمك وبيانات أولادك هيتمسحوا. سجلات الدفع بتفضل من غير اسمك لأن القانون بيطلبها.",
+  "parent.account.data.details": "أي حاجة لينك محتاجة تعرفها (اختياري)",
+  "parent.account.data.send": "ابعت الطلب",
+  "parent.account.data.alreadyOpen": "عندك طلب مفتوح من النوع ده بالفعل.",
+  "parent.account.data.yours": "طلباتك",
+  "parent.account.data.status.open": "وصل",
+  "parent.account.data.status.completed": "اتنفّذ",
+  "parent.account.data.status.rejected": "ماتنفّذش",
+  "ops.dataRequests.export": "نزّل البيانات (JSON)"
 }
