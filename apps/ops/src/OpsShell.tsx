@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Building2, FileLock2, GraduationCap, Receipt, ShieldCheck } from 'lucide-react';
+import { Banknote, Building2, FileLock2, GraduationCap, Receipt, ShieldCheck } from 'lucide-react';
 import { api } from '@link/api-client';
 import { SideNav } from '@link/ui';
 import { createTranslator, type Locale, type MessageKey } from '@link/i18n';
@@ -30,6 +30,7 @@ function Shell({ locale, children }: { locale: Locale; children: ReactNode }) {
     teachers: <GraduationCap />,
     reviews: <ShieldCheck />,
     refunds: <Receipt />,
+    payouts: <Banknote />,
     'data-requests': <FileLock2 />,
   };
   const items = (Object.keys(SECTIONS) as Section[])

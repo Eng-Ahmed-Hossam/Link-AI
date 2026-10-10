@@ -14,11 +14,11 @@ The running log of the "ready to ship" job (Ahmed's brief of 2026-10-09). **A ne
 |---|---|---|---|---|
 | S0 | `pnpm run doctor`, `pnpm run setup`, setup-windows, go-live-switches, RUNNING/local-checks | **done** | #3 | `17d2216` |
 | S1 | Production images, prod compose (one VPS + Caddy), production guard, security pass, backups, monitoring, `pnpm prod:local` | **done** | #4 | `31febef` |
-| S2 | Ops console (`apps/ops`), consent pack drafts, legal drafts, user rights | built, PR open | — | — |
-| S3 | Payout batches, rent shortfall, home-area screen, `bookingsEnabled`, Android preview build docs, approved Arabic strings | — | — | — |
+| S2 | Ops console (`apps/ops`), consent pack drafts, legal drafts, user rights | **done** | #5 | `f0d0a9e` |
+| S3 | Payout batches, rent shortfall, home-area screen, `bookingsEnabled`, Android preview build docs, approved Arabic strings | built, PR open (Arabic: review file ready, waits on the reviewer) | — | — |
 | S4 | `docs/plan/provider-choice.md` (payments, SMS, WhatsApp) → stop and report | — | — | — |
 
-**Last green commit on `main`:** `31febef` (S1 merge).
+**Last green commit on `main`:** `f0d0a9e` (S2 merge; CI green including `images` and `story-live`).
 
 ## Decisions taken on the way (reversible)
 
@@ -41,6 +41,13 @@ The running log of the "ready to ship" job (Ahmed's brief of 2026-10-09). **A ne
 - **S2: user rights** — Account → My data in the parent app (copy, correction, deletion; one open per kind); ops answer in the console with an audited JSON export. Teacher app and owner web: by email for now (one card each later).
 - **S2 scope of the console:** L01, teacher checks, L02, L03 refunds, data requests, audit lookup. Disputes, reconciliation, commission rules, reference data, ledger adjustments and payout monitoring (MKT-OPS-05…07, -10, -11) come with their features (payouts in S3).
 
+- **S3: payouts are paid by hand** (provider `manual`): the Thursday batch (worker, off a developer machine; "Make this week's batch" in the console), a CSV for the bank or InstaPay, then sent / bounced / retry. A payout API is one more provider value after S4. Payees add their own payout account (teacher app, owner web); ops finance check every new one (BR-OUT-03).
+- **S3: rent shortfall** paid by card, wallet or Fawry from the teacher app's Earnings (`/v1/rent-invoices/{id}/checkout`, P4 on the webhook, the rest of Link's fee share); the provider returns to a website page that only says "being confirmed".
+- **S3: `bookings.enabled`** = `PAYMENT_PROVIDER≠none`: the parent app says "booking opens soon" and core-api refuses to hold a seat (503 `payments_off`) — a Follow-up-only start never leaves a dead checkout.
+- **S3: home area** from `GET /v1/areas` (areas with a verified centre).
+- **S3: Android preview** — `eas.json` (`preview` live, `preview-demo` sample) and docs/teacher-app-android.md; building needs Ahmed's free Expo account or Android Studio.
+- **S3: "approved Arabic strings"** — no reviewed Arabic has come back yet (`reviewed_arabic` is empty in both review files). The new S2–S3 strings are in `docs/plan/arabic-review-ship.csv` (266, `pnpm i18n:export-review-ship`); `pnpm i18n:apply-review <file>` applies whatever the reviewer fills in.
+
 ## Known gaps found (to close in later stages)
 
 - ~~No AWS on one VPS~~ — closed in S1 (see decisions).
@@ -56,7 +63,9 @@ The running log of the "ready to ship" job (Ahmed's brief of 2026-10-09). **A ne
 
 1. **Ops sign-in (CF-56):** phone code + office IP allow-list is built. Do you want SSO with MFA (Google Workspace or similar) instead? It would replace only the sign-in page.
 2. **Consent pack and legal texts (OD-60):** the drafts in `docs/legal/` need a lawyer; its README lists 8 questions for them.
+3. **Arabic review:** a native reviewer fills `reviewed_arabic` in `docs/pilot/strings-to-review.csv` (pilot screens) and `docs/plan/arabic-review-ship.csv` (S2–S3 screens); then `pnpm i18n:apply-review` on each.
+4. **Expo account** (free) for the Android preview build — or build locally with Android Studio (docs/teacher-app-android.md).
 
 ## Next step
 
-S2: full suites green locally (lint, typecheck, unit, `test:api`, `test:rls`, `test:money`, live story + ops + accounts, mock accounts, public-demo check, pilot e2e); open the PR, wait for CI (including `images` and `story-live`), merge. Then S3 from the top of its list (payout batches first).
+S3: full suites, open the PR, wait for CI, merge. Then S4: `docs/plan/provider-choice.md` (payments, SMS, WhatsApp) and stop with the report.

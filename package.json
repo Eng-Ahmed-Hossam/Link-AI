@@ -18,6 +18,7 @@
     "i18n:check": "node packages/i18n/scripts/check-keys.mjs",
     "i18n:export-review": "node packages/i18n/scripts/review-strings.mjs export",
     "i18n:apply-review": "node packages/i18n/scripts/review-strings.mjs apply",
+    "i18n:export-review-ship": "node packages/i18n/scripts/review-strings.mjs export-ship",
     "ai:eval": "node scripts/ai-eval.mjs",
     "ai:ingest-recordings": "uv --directory apps/ai-service run python scripts/ingest_recordings.py",
     "ai:bench": "uv --directory apps/ai-service run python scripts/bench_stt.py",

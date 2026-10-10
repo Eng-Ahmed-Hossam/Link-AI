@@ -224,6 +224,15 @@ export const SCREENS: Screen[] = [
     status: 'dev only',
     flow: 'P07 → Pay',
   },
+  {
+    id: 'W-PAID',
+    name: 'Payment received (return page after a teacher pays rent, S3)',
+    app: 'web',
+    path: '/payment-done',
+    roles: ['anyone'],
+    modes: DEMO,
+    status: 'built',
+  },
 
   // Owner web (centre workspace)
   {

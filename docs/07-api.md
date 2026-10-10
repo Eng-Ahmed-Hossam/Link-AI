@@ -125,6 +125,7 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 | Method | Path | Who | Purpose | Idem |
 |---|---|---|---|---|
 | GET | `/v1/curricula` | public | Curricula with school years | — read |
+| GET | `/v1/areas` | public | Areas with a verified centre: the home areas a parent can pick (**S3**, MKT-DSC-01) | — read |
 | GET | `/v1/subjects?curriculumId&schoolYearId` | public | Subjects | — read |
 | GET | `/v1/academic-terms` | public | Terms | — read |
 
@@ -228,24 +229,25 @@ The money endpoints in this table are for teachers only — including the four u
 
 | Method | Path | Who | Purpose | Idem | Money | Req |
 |---|---|---|---|---|---|---|
-| GET | `/v1/me/payout-account` | teacher | Payout account (masked) | — read | teacher | MKT-TCH-03 |
-| PUT | `/v1/me/payout-account` | teacher | Replace the payout account (re-verified) | ✓ | teacher | MKT-TCH-03 |
+| GET | `/v1/me/payout-account` | teacher | Payout account (masked) (**S3**) | — read | teacher | MKT-TCH-03 |
+| PUT | `/v1/me/payout-account` | teacher | Replace the payout account (re-verified): `{kind: bank\|wallet, number, holderName}`; an IBAN needs valid check digits (422 `invalid_iban` / `invalid_wallet`) (**S3**) | ✓ | teacher | MKT-TCH-03 |
 | GET | `/v1/me/balance` | teacher | Pending, available, rent reserve, next payout (live, never cached) | — read | teacher | BR-OUT-01 |
-| GET | `/v1/me/payouts` | teacher | Payout history | — read | teacher | MKT-LED-05 |
+| GET | `/v1/me/payouts` | teacher | Payout history (**S3**) | — read | teacher | MKT-LED-05 |
+| GET | `/v1/teachers/me/rent-due` | teacher | Rent still owed after the 1st (OD-12) (**S3**) | — read | teacher → centre | BR-RNT-05 |
 | GET | `/v1/me/statements.csv?month` | teacher | CSV export | — read | teacher | MKT-LED-07 |
 | GET | `/v1/teachers/me/earnings?month=2026-10` | teacher | J07 statement | — read | teacher | MKT-LED-07 |
 | GET | `/v1/rent-invoices?bookingId\|teacherId` · `/v1/rent-invoices/{id}` | teacher (payer), centre_owner (payee) | Invoices | — read | teacher → centre | MKT-LED-03 |
-| POST | `/v1/rent-invoices/{id}/checkout` | teacher | Pay a shortfall | ✓ | teacher → centre | MKT-LED-04 |
+| POST | `/v1/rent-invoices/{id}/checkout` | teacher | Pay a shortfall: card, wallet or Fawry; P4 on the webhook (**S3**) | ✓ | teacher → centre | MKT-LED-04 |
 
 ### Centre money (`/v1/centres/{id}/*`, owner of that centre only)
 One owner can own several centres; each centre has its own payout account, balance and payouts.
 
 | Method | Path | Who | Purpose | Idem | Money | Req |
 |---|---|---|---|---|---|---|
-| GET | `/v1/centres/{id}/payout-account` | centre_owner | Payout account (masked) | — read | centre | MKT-CEN-05 |
-| PUT | `/v1/centres/{id}/payout-account` | centre_owner | Replace the payout account (re-verified) | ✓ | centre | MKT-CEN-05 |
+| GET | `/v1/centres/{id}/payout-account` | centre_owner | Payout account (masked) (**S3**) | — read | centre | MKT-CEN-05 |
+| PUT | `/v1/centres/{id}/payout-account` | centre_owner | Replace the payout account (re-verified) (**S3**) | ✓ | centre | MKT-CEN-05 |
 | GET | `/v1/centres/{id}/balance` | centre_owner | Available, next payout (live, never cached) | — read | centre | MKT-LED-08 |
-| GET | `/v1/centres/{id}/payouts` | centre_owner | Payout history | — read | centre | MKT-LED-08 |
+| GET | `/v1/centres/{id}/payouts` | centre_owner | Payout history (**S3**) | — read | centre | MKT-LED-08 |
 | GET | `/v1/centres/{id}/statements.csv?month` | centre_owner | CSV export | — read | centre | MKT-LED-08 |
 | GET | `/v1/centres/{id}/rent-income?month=2026-10` | centre_owner | C07 statement | — read | teacher → centre | MKT-LED-08 |
 | GET | `/v1/rent-invoices?centreId` | centre_owner | Invoices for this centre | — read | teacher → centre | MKT-LED-08 |
@@ -289,8 +291,13 @@ Every route checks, in order: the caller's address against `OPS_IP_ALLOWLIST` (4
 | GET | `/v1/ops/data-requests?status` | ops.verify | PDPL requests queue (**S2**) | — read | — | MKT-OPS-09 |
 | POST | `/v1/ops/data-requests/{id}/complete` | ops.verify | Mark done, with what was exported, corrected or anonymised (**S2**) | ✓ | — | MKT-OPS-09 |
 | POST | `/v1/ops/ledger/adjustments` | ops.finance | Post a balanced adjustment (P11); `reason` required | ✓ | teacher, centre or Link (the accounts posted) | MKT-OPS-10 |
-| GET | `/v1/ops/payouts?status` | ops.finance | Payout runs and failures | — read | teacher; centre | MKT-OPS-11 |
-| POST | `/v1/ops/payouts/{id}/retry` | ops.finance | Retry a failed payout (same payout, new attempt) | ✓ | teacher or centre (the payee) | MKT-OPS-11 |
+| GET | `/v1/ops/payouts?status` | ops.finance | Payout runs and failures (**S3**) | — read | teacher; centre | MKT-OPS-11 |
+| GET | `/v1/ops/payout-batches` | ops.finance | Weekly batches with totals (**S3**) | — read | teacher; centre | MKT-OPS-11 |
+| POST | `/v1/ops/payout-batches/run` | ops.finance | Make this week's batch now (the worker does it Thursday 09:00; safe twice) (**S3**) | ✓ | teacher; centre | MKT-OPS-11 |
+| POST | `/v1/ops/payout-batches/{id}/export` | ops.finance | The batch as a CSV for the bank or InstaPay (full account numbers; audited) (**S3**) | — | teacher; centre | MKT-OPS-11 |
+| POST | `/v1/ops/payouts/{id}/settle` · `/fail` | ops.finance | The transfer went through (P6 settled) or bounced (P6 failed, the account to fix) (**S3**) | ✓ | teacher or centre | MKT-OPS-11, BR-OUT-06 |
+| GET | `/v1/ops/payout-accounts` · POST `…/{id}/verify` · `…/{id}/reject` | ops.finance | New or changed payout accounts to check (BR-OUT-03) (**S3**) | ✓ | — | BR-OUT-03 |
+| POST | `/v1/ops/payouts/{id}/retry` | ops.finance | Retry a failed payout (same payout, new attempt) (**S3**) | ✓ | teacher or centre (the payee) | MKT-OPS-11 |
 
 Every ops call is audited, including reads of personal data.
 

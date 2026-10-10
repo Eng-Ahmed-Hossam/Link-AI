@@ -160,3 +160,22 @@ test('MKT-OPS-09: a parent asks Link for a copy of their data from Account → M
   // One open request of each kind: the button is off until Link answers.
   await expect(card.getByTestId('data-request-access')).toBeDisabled();
 });
+
+test('S3 MKT-DSC-01: a parent picks a home area in Account', async ({ page }) => {
+  await page.goto('/en/welcome');
+  await ready(page);
+  await page.locator('input[type=tel]').fill(PEOPLE.parent);
+  const since = Date.now();
+  await page.locator('form button[type=submit]').click();
+  await page.locator('input[autocomplete=one-time-code]').fill(await codeFor(PEOPLE.parent, since));
+  await page.waitForURL(/\/en\/search/);
+  await page.goto('/en/account');
+  const card = page.getByTestId('home-area');
+  const select = card.getByTestId('home-area-select');
+  await expect(select.locator('option')).not.toHaveCount(1);
+  const value = await select.locator('option').nth(1).getAttribute('value');
+  await select.selectOption(value!);
+  await card.getByTestId('home-area-save').click();
+  await expect(card.getByRole('status')).toBeVisible();
+  expect(((await meInPage(page)) as { homeArea?: string } | null)?.homeArea).toBe(value);
+});

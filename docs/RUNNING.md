@@ -53,7 +53,7 @@ Each step starts from the one before. Screens by ID: [app map](product/app-map.m
 10. **Earnings**: teacher → Earnings (J07): parents paid, **Link commission** (5%, rounded down) on its own line, rent per hall, "Next payout" Thursday. My groups → New enrolments (J06): Mariam.
 11. **Rent income**: owner → Rent income (C07): Room 1 with Ms Salma, rent, **Link fee**, net.
 12. **Review**: Demo controls → "Simulate first session done"; parent → My children → Mariam → Rate → 5 stars and a sentence. Owner → Reviews (C04) → Reply. There is no delete.
-13. **Held for rent**: teacher → Earnings: "Held for rent (not paid out on Thursday)" under "Next payout".
+13. **Held for rent**: teacher → Earnings: "Held for rent (not paid out on Thursday)" under "Next payout". Below it: **Where we send your money** (the payout account; change it and Link re-checks it). **Payouts**: ops console as finance (0100 000 0052) → Payouts → Make this week's batch → Download CSV → Mark sent; the teacher's Earnings then lists the payout.
 14. **Refund by Link ops**: parent → My children → Mariam's place → "Ask Link to review a refund" → reason → Send. **Ops console** as finance (0100 000 0052): Refunds → Approve refund (or Deny with a reason). The booking page (P08) shows "Refund sent" or "Refund not approved". (`pnpm ops:refunds` still works locally.)
 15. **Record a session**: teacher → Follow-up (المتابعة) → the record due → Mariam absent → scores (25 of 20 is refused) → observation → Review → Confirm. Now it changes only by "Correct", with a reason; the original is kept.
 16. **A flag**: Demo controls → "Simulate first session done" again; record the next session with Mariam absent. Owner → Today: Mariam, "2 absences in a row", assigned to Reception, with the two source records.
@@ -77,7 +77,7 @@ Each step starts from the one before. Screens by ID: [app map](product/app-map.m
 
 **Real** (core-api, Postgres, the real rules): sign-in and sessions, accounts, children and consents, staff and invites, centre isolation, halls, room requests, groups, search, seats and holds, payments and the double-entry ledger, earnings and rent income, refunds, reviews, session records and corrections, voice notes (with ai-service), the 4 follow-up rules, flags and cases, parent messages and approval, the activity log, the Follow-up extra per centre.
 
-**Fake** (local stand-ins): SMS → sms-sink (:8093); payments → fake-pay (:8091, moves no money); WhatsApp → whatsapp-fake (:8094); Link ops → the ops console runs for real (http://localhost:3001), and the local shortcuts `pnpm ops:verify-centre`, `pnpm ops:refunds` and Demo controls stay; payouts are computed, never sent; Ask Link is off unless a local Ollama runs (`OLLAMA_URL`). The full list and what each needs: [sample-only](product/sample-only.md); the plan: [before real users](plan/before-real-users.md).
+**Fake** (local stand-ins): SMS → sms-sink (:8093); payments → fake-pay (:8091, moves no money); WhatsApp → whatsapp-fake (:8094); Link ops → the ops console runs for real (http://localhost:3001), and the local shortcuts `pnpm ops:verify-centre`, `pnpm ops:refunds` and Demo controls stay; payouts are paid by hand from the ops console's weekly CSV (Payouts, as finance), no money moves locally; Ask Link is off unless a local Ollama runs (`OLLAMA_URL`). The full list and what each needs: [sample-only](product/sample-only.md); the plan: [before real users](plan/before-real-users.md).
 
 ## 6. Time a voice note
 
