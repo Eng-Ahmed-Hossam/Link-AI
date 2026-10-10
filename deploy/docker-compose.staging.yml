@@ -1,6 +1,6 @@
 # Staging on one machine (pnpm prod:local): the production images and compose, with LINK_ENV=staging
 # — the only mode where the local fakes run next to production builds — the sample demo world,
-# demo routes for the story, and the ports the e2e specs use (web 3000, core-api 4000, teacher
+# demo routes for the story, and the ports the e2e specs use (web 3000, ops 3001, core-api 4000, teacher
 # app 8081, sms-sink 8093, fake-pay 8091, whatsapp-fake 8094). Never on a server with real users.
 #   docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.staging.yml \
 #     --env-file deploy/.env.staging up -d --build --wait
@@ -40,6 +40,7 @@ services:
       ACME_EMAIL: staging@link.invalid
     ports: !override
       - '3000:3000'
+      - '3001:3001'
     volumes: !override
       - ./Caddyfile.staging:/etc/caddy/Caddyfile:ro
 

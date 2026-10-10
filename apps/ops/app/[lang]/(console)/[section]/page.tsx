@@ -1,14 +1,9 @@
 import { notFound } from 'next/navigation';
-import { Card } from '@link/ui';
-import { getT, parseLocale } from '@/i18n';
+import { parseLocale } from '@/i18n';
+import { SectionView } from '@/SectionView';
+import { SECTIONS, type Section } from '@/sections';
 
-const SECTIONS = {
-  centres: 'ops.nav.centres',
-  reviews: 'ops.nav.reviews',
-  refunds: 'ops.nav.refunds',
-} as const;
-
-/** Placeholder for L01–L03 until Batch 4. */
+/** L01 centres, teachers, L02 reviews, L03 refunds, PDPL data requests. */
 export default async function OpsSectionPage({
   params,
 }: {
@@ -16,11 +11,5 @@ export default async function OpsSectionPage({
 }) {
   const { lang, section } = await params;
   if (!(section in SECTIONS)) notFound();
-  const t = getT(parseLocale(lang));
-  return (
-    <Card padding="lg">
-      <h1 className="text-title">{t(SECTIONS[section as keyof typeof SECTIONS])}</h1>
-      <p className="mt-2 text-body text-muted">{t('ops.shell.placeholder')}</p>
-    </Card>
-  );
+  return <SectionView locale={parseLocale(lang)} section={section as Section} />;
 }

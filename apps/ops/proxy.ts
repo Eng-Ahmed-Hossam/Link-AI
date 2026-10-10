@@ -11,4 +11,4 @@ export function proxy(req: NextRequest) {
   return NextResponse.redirect(url);
 }
 
-export const config = { matcher: ['/((?!_next|api|.*\\..*).*)'] };
+export const config = { matcher: ['/((?!_next|api|v1/|.*\\..*).*)'] };

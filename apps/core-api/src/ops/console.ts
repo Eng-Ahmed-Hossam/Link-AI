@@ -43,11 +43,11 @@ export const TEACHER_CHECKS: CheckCode[] = ['ekyc_id', 'degree', 'reference'];
 /** BR-VER-02: two working days (Egypt's weekend is Friday and Saturday). */
 export function callDueOn(createdOn: string): string {
   let d = createdOn;
-  let left = 2;
-  while (left > 0) {
+  let toGo = 2;
+  while (toGo > 0) {
     d = addDays(d, 1);
     const wd = isoWeekday(d);
-    if (wd !== 5 && wd !== 6) left--;
+    if (wd !== 5 && wd !== 6) toGo--;
   }
   return d;
 }

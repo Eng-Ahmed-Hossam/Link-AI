@@ -71,6 +71,8 @@ jobs:
         run: docker build -f apps/core-api/Dockerfile -t link/core-api:ci .
       - name: web (production)
         run: docker build -f apps/web/Dockerfile -t link/web:ci --build-arg NEXT_PUBLIC_SITE_URL=https://link.example .
+      - name: ops console
+        run: docker build -f apps/ops/Dockerfile -t link/ops:ci .
       - name: ai-service
         run: docker build -f apps/ai-service/Dockerfile -t link/ai-service:ci .
       - name: The production guard refuses local settings
@@ -105,8 +107,9 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm --filter @link/web exec playwright install --with-deps chromium
-      # pnpm dev (started by the Playwright config): services, migrations, seed, core-api, web, teacher app.
-      - run: node scripts/e2e-modes.mjs live story.spec.ts
+      # pnpm dev (started by the Playwright config): services, migrations, seed, core-api, web, teacher
+      # app and the ops console (S2).
+      - run: node scripts/e2e-modes.mjs live story.spec.ts ops.spec.ts
         env: { CI: '1' }
       - if: failure()
         uses: actions/upload-artifact@v4

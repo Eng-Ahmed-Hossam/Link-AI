@@ -28,3 +28,29 @@
 		reverse_proxy web:3000
 	}
 }
+
+# The ops console (S2): Link staff only. /v1 goes straight to core-api, so core-api sees the real
+# client address for OPS_IP_ALLOWLIST; the role and the permission are checked on every call.
+ops.{$LINK_DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+	request_body {
+		max_size 1MB
+	}
+	handle /v1/internal/* {
+		respond 404
+	}
+	handle /__demo* {
+		respond 404
+	}
+	handle /v1/* {
+		reverse_proxy api:4000
+	}
+	handle {
+		reverse_proxy ops:3001
+	}
+}
