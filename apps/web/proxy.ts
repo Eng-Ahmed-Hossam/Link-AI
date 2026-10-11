@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { defaultLocale, isLocale } from '@link/i18n';
+import { isLocale } from '@link/i18n';
 import { isCentreSection } from './src/centre-routes';
 
 /**
- * URLs carry the language: `/{lang}/…`, with `ar` as the default (RTL-01).
+ * URLs carry the language: `/{lang}/…`; the public website opens in English by default.
  * An owner link without the centre id (`/ar/centre/today`) goes to the centre entry, which signs
  * the person in and opens that page of their own centre (`?next=/today`).
  */
@@ -13,7 +13,7 @@ export function proxy(req: NextRequest) {
   const first = parts[1];
   if (!isLocale(first)) {
     const url = req.nextUrl.clone();
-    url.pathname = `/${defaultLocale}${pathname === '/' ? '' : pathname}`;
+    url.pathname = `/en${pathname === '/' ? '' : pathname}`;
     return NextResponse.redirect(url);
   }
   if (parts[2] === 'centre' && isCentreSection(parts[3])) {
