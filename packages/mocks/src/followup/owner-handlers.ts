@@ -159,7 +159,8 @@ export const ownerHandlers = [
         try {
           const text = await stt(audio, request.headers.get('content-type') ?? 'audio/webm');
           return HttpResponse.json({ text, language: 'ar-EG', real: true });
-        } catch {
+        } catch (error) {
+          console.warn('mock-server: speech-to-text failed', error);
           return problem(503, 'stt_unavailable', 'Speech-to-text is not responding.');
         }
       }
