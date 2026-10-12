@@ -59,7 +59,7 @@ export async function transcribeQuestion(ai: AiTarget, audio: Uint8Array, mime: 
     method: 'POST',
     headers: { 'x-link-internal-token': ai.token },
     body: form,
-    signal: AbortSignal.timeout(60_000),
+    signal: AbortSignal.timeout(180_000),
   });
   if (!r.ok) {
     const detail = await r.text().catch(() => '');
