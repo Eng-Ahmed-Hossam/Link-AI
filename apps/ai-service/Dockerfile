@@ -24,9 +24,9 @@ COPY --from=build /src/apps/ai-service/.venv /app/.venv
 COPY --from=build /src/apps/ai-service/ai_service /app/ai_service
 COPY --from=build /src/apps/ai-service/scripts /app/scripts
 COPY --from=demo /usr/local/bin/node /usr/local/bin/node
-COPY --from=demo /usr/local/bin/corepack /usr/local/bin/corepack
-COPY --from=demo /usr/local/bin/pnpm /usr/local/bin/pnpm
 COPY --from=demo /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack \
+ && ln -s ../lib/node_modules/corepack/dist/pnpm.js /usr/local/bin/pnpm
 COPY --from=demo /demo /demo
 RUN mkdir -p /demo/packages/mocks/.data && chown -R link /demo/packages/mocks/.data
 ENV PATH=/app/.venv/bin:$PATH PYTHONUNBUFFERED=1 AI_SERVICE_HOST=127.0.0.1 AI_MODELS_DIR=/models
