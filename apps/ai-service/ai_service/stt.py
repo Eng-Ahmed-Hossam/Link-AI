@@ -1,6 +1,6 @@
 """Local speech-to-text with faster-whisper (CTranslate2). Behind the gateway's SttProvider (docs/09 §2.2).
 
-Models (ADR-0007): OpenAI Whisper base, small, large-v3 and large-v3-turbo (MIT), and one
+Models (ADR-0007): OpenAI Whisper tiny, base, small, large-v3 and large-v3-turbo (MIT), and one
 Egyptian/dialectal fine-tune of large-v3-turbo (Apache-2.0). Audio never leaves the machine.
 """
 
@@ -17,6 +17,7 @@ from typing import Any
 
 MODELS: dict[str, dict[str, str]] = {
     # Low-memory CPU fallbacks for hosted demos; production pilots use the accuracy-tested model.
+    "tiny": {"repo": "Systran/faster-whisper-tiny", "licence": "MIT (OpenAI Whisper)"},
     "base": {"repo": "Systran/faster-whisper-base", "licence": "MIT (OpenAI Whisper)"},
     "small": {"repo": "Systran/faster-whisper-small", "licence": "MIT (OpenAI Whisper)"},
     "large-v3": {"repo": "Systran/faster-whisper-large-v3", "licence": "MIT (OpenAI Whisper)"},
@@ -137,7 +138,7 @@ class WhisperStt:
                 src,
                 language="ar",
                 task="transcribe",
-                beam_size=5,
+                beam_size=1 if self.name in {"tiny", "base"} else 5,
                 vad_filter=True,
                 initial_prompt=prompt,
                 condition_on_previous_text=False,
