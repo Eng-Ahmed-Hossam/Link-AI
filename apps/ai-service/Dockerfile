@@ -27,8 +27,8 @@ COPY --from=demo /usr/local/bin/node /usr/local/bin/node
 COPY --from=demo /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack \
  && ln -s ../lib/node_modules/corepack/dist/pnpm.js /usr/local/bin/pnpm
-COPY --from=demo /demo /demo
-RUN mkdir -p /demo/packages/mocks/.data && chown -R link /demo/packages/mocks/.data
+COPY --from=demo --chown=link /demo /demo
+RUN mkdir -p /demo/packages/mocks/.data && chown -R link /demo
 ENV PATH=/app/.venv/bin:$PATH PYTHONUNBUFFERED=1 AI_SERVICE_HOST=127.0.0.1 AI_MODELS_DIR=/models
 USER link
 EXPOSE 8090 8091
