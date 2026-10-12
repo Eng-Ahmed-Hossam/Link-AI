@@ -55,7 +55,7 @@ const persistFlags = (d: DemoState) => {
   writeFileSync(FLAGS_FILE, json + '\n');
 };
 
-const PORT = Number(process.env.PORT ?? process.env.MOCK_SERVER_PORT ?? 4010);
+const PORT = Number(process.env.MOCK_SERVER_PORT ?? process.env.PORT ?? 4010);
 const CALLBACK_BASE = (
   process.env.MOCK_SERVER_INTERNAL_URL ?? `http://127.0.0.1:${PORT}`
 ).replace(/\/$/, '');
