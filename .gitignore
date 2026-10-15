@@ -68,3 +68,6 @@ pilot-deletion-receipt-*
 # Expo prebuild output (docs/teacher-app-android.md): generated, never committed
 apps/teacher-app/android/
 apps/teacher-app/ios/
+
+# local demo logs
+.demo*.log
