@@ -1,5 +1,7 @@
 # Staging on Vercel + Railway (Codex trial deployment)
 
+> **2026-10-15, later:** Ahmed read the dashboards: Railway project `link-ai-staging` (region US East) runs `core-api-l9aa` from `main` (last deploy 12 Oct), `ai-service` from `codex/deploy-voice-demo`, `postgres` from `codex/vercel-teacher-demo`, and two `redis:7-alpine` services; Vercel has `link-ai-web`, `link-ai-teacher-demo` and an unused-looking `link-platform-demo`. What each service really runs (start command, mode) is still to be read; see [auth-map-staging](../plan/auth-map-staging.md) §8.
+
 Read-only inventory, 2026-10-15. **Source: only the git branches** `origin/codex/deploy-voice-demo` (14 commits) and `origin/codex/vercel-teacher-demo` (3 commits), both by Ahmed, 11–12 Oct. The Vercel and Railway dashboards were **not** opened, so service names, URLs, variable *values* and the run commands set in the dashboards are unknown. Everything marked *inferred* comes from the code; confirm it in the dashboards.
 
 ## What is deployed where
@@ -56,7 +58,7 @@ The browser calls the demo API **directly, across origins** (hence `CORS_ALLOWED
 | 1 | **Can a real person sign in or leave data?** Demo sign-in picks a sample user, no real accounts. But the landing form sends requests by email (ADR-0009) and a visitor can type a real name or number into demo forms; the mock server **stores state on the container disk** and shares it between visitors. | Medium | Tell visitors not to type real data; keep the "Demo, sample data" bar visible; reset state on deploy |
 | 2 | **Sample-data banner.** The Try bar (`apps/web/src/demo/TryBar.tsx`) is the only place that says it. Not checked on the live site (no dashboard, no browsing). | Medium | Open the site once and check |
 | 3 | **Secrets in commits.** None found in the two branches (names only; the Dockerfile commit *removed* secret mounts). The CI `secrets` job passes on `main`. | Low | none |
-| 4 | **Demo routes / Demo tools public.** The mock server has unauthenticated `/__demo/*` routes (reset, flags, provider switches; used by `followup.test.ts`). Through the proxy they sit at `/demo/__demo/*`, so anyone with the Railway URL can reset or flip the demo. `APP_ENV=local` is the only switch. The public-demo check only covers the web bundle, not the Railway API. | **High if the URL is shared** | Put the demo API behind the Vercel origin only (CORS is already origin-limited, but `curl` is not), or add a token to the control routes. Needs your decision |
+| 4 | **Demo routes / Demo tools public.** The mock server has unauthenticated `/__demo/*` routes (reset, flags, provider switches; used by `followup.test.ts`). Through the proxy they sit at `/demo/__demo/*`, so anyone with the Railway URL can reset or flip the demo. `APP_ENV=local` is the only switch. The public-demo check only covers the web bundle, not the Railway API. | **Fixed in code (Stage 0, 2026-10-15)**: on a hosted server `/__demo/*` answers 404, or 401 without the `x-link-demo-secret` header when `DEMO_ROUTES_SECRET` is set (core-api and the mock server). Live on Railway after the next deploy from `main` |
 | 5 | **`APP_ENV=local` on a public server.** The guard that stops fakes in production does not apply, because this is not `production`. Fine for a sample-data demo, never for real users. | Medium | Never point real users, payments or a real SMS provider at this stack |
 | 6 | **Whisper on a trial CPU** is slow and memory-bound; the branch tuned timeouts three times. Voice notes in the demo may time out. | Low | Expected on a trial plan |
 | 7 | **Vercel Hobby is for non-commercial use.** A site presenting a business to centres is commercial. | Medium | Move to Vercel Pro (paid, your call) or another host before sending the link to customers |
@@ -68,5 +70,5 @@ The browser calls the demo API **directly, across origins** (hence `CORS_ALLOWED
 1. Web and teacher app on Vercel; one Railway container with the demo API, proxy and Whisper; Railway Postgres (inferred from branches, dashboards not opened).
 2. It runs the **sample-data mock server** with fakes (`APP_ENV=local`), not core-api in staging or production mode.
 3. No secrets are committed; no real accounts exist; real data must not be entered.
-4. The demo controls and API are public to anyone with the Railway URL (risk 4).
+4. The demo controls were public to anyone with the Railway URL (risk 4); locked in code on 2026-10-15, live after the next deploy.
 5. Vercel Hobby is non-commercial (risk 7) — fix before sending the link to centres.

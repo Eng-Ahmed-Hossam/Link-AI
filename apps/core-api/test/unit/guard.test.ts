@@ -9,6 +9,7 @@ import {
   linkEnv,
   productionProblems,
 } from '../../src/platform/guard';
+import { demoSecretOk } from '../../src/dev/demo-secret.guard';
 
 const key = () => randomBytes(32).toString('base64');
 /** A correct production environment (sample values; nothing real). */
@@ -154,7 +155,34 @@ describe('Production guard', () => {
     });
     expect(demoRoutesAllowed(local, { LINK_ENV: 'development' })).toBe(true);
     expect(demoRoutesAllowed(staging, { LINK_ENV: 'staging' })).toBe(false);
-    expect(demoRoutesAllowed(staging, { LINK_ENV: 'staging', DEMO_ROUTES: '1' })).toBe(true);
+    // Hosted: staging, or any Railway service even with APP_ENV=local, needs DEMO_ROUTES_SECRET.
+    expect(demoRoutesAllowed(staging, { LINK_ENV: 'staging', DEMO_ROUTES: '1' })).toBe(false);
+    expect(
+      demoRoutesAllowed(staging, {
+        LINK_ENV: 'staging',
+        DEMO_ROUTES: '1',
+        DEMO_ROUTES_SECRET: 's',
+      }),
+    ).toBe(true);
+    expect(demoRoutesAllowed(local, { RAILWAY_PROJECT_ID: 'p' })).toBe(false);
+    expect(demoRoutesAllowed(local, { RAILWAY_PROJECT_ID: 'p', DEMO_ROUTES_SECRET: 's' })).toBe(
+      true,
+    );
     expect(demoRoutesAllowed(local, { LINK_ENV: 'production', DEMO_ROUTES: '1' })).toBe(false);
+    expect(
+      demoRoutesAllowed(local, {
+        LINK_ENV: 'production',
+        DEMO_ROUTES: '1',
+        DEMO_ROUTES_SECRET: 's',
+      }),
+    ).toBe(false);
+  });
+
+  it('demo secret: constant-time match, nothing to check without a secret', () => {
+    expect(demoSecretOk(undefined, undefined)).toBe(true);
+    expect(demoSecretOk('sample', undefined)).toBe(false);
+    expect(demoSecretOk('sample', '')).toBe(false);
+    expect(demoSecretOk('sample', 'sampl')).toBe(false);
+    expect(demoSecretOk('sample', 'sample')).toBe(true);
   });
 });

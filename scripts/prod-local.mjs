@@ -8,10 +8,10 @@
 // Uses deploy/.env.staging (written once with fresh secrets; never committed).
 // Behind a TLS-inspecting proxy set EXTRA_CA_FILE=<ca.crt> so image builds can reach npm and PyPI.
 import { spawnSync } from 'node:child_process';
-import { existsSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, fail } from './lib/env.mjs';
-import { renderEnv } from './lib/prod-env.mjs';
+import { renderEnv, secretFor } from './lib/prod-env.mjs';
 
 const args = process.argv.slice(2);
 const envFile = join(ROOT, 'deploy', '.env.staging');
@@ -79,6 +79,17 @@ if (!existsSync(envFile)) {
   console.log('✓ Wrote deploy/.env.staging (fresh secrets, sample data only).');
 }
 
+// Demo routes need a secret on any hosted server (core-api guard.ts); staging is one. Older
+// .env.staging files lack it, so add one once. The story below sends it in x-link-demo-secret.
+if (!/^DEMO_ROUTES_SECRET=.+/m.test(readFileSync(envFile, 'utf8')))
+  appendFileSync(
+    envFile,
+    `
+DEMO_ROUTES_SECRET=${secretFor('DEMO_ROUTES_SECRET')}
+`,
+  );
+env.DEMO_ROUTES_SECRET = /^DEMO_ROUTES_SECRET=(.+)$/m.exec(readFileSync(envFile, 'utf8'))[1].trim();
+
 // Images: built here so one optional proxy CA reaches every build (compose would need a file).
 const ca = process.env.EXTRA_CA_FILE;
 const build = (file, tag, buildArgs = [], context = '.') => {
@@ -130,7 +141,10 @@ console.log('\nStarting (LINK_ENV=staging)…');
 sh('docker', [...compose, 'up', '-d', '--no-build', '--wait', '--wait-timeout', '300']);
 
 // The sample world, through the staging demo routes (the same seed as pnpm seed:demo).
-const r = await fetch('http://localhost:4000/__demo/story/reset', { method: 'POST' });
+const r = await fetch('http://localhost:4000/__demo/story/reset', {
+  method: 'POST',
+  headers: { 'x-link-demo-secret': env.DEMO_ROUTES_SECRET },
+});
 if (!r.ok) fail(`Loading the sample world failed: ${r.status} ${await r.text()}`);
 console.log('✓ Sample world loaded.');
 

@@ -8,6 +8,8 @@ x-staging: &staging
   LINK_ENV: staging
   APP_ENV: staging
   DEMO_ROUTES: '1'
+  # Every /__demo call must send it (x-link-demo-secret); pnpm prod:local writes it to .env.staging.
+  DEMO_ROUTES_SECRET: ${DEMO_ROUTES_SECRET:?DEMO_ROUTES_SECRET is missing from deploy/.env.staging}
   PAYMENT_PROVIDER: fake
   FAKE_PAY_URL: http://fake-pay:8091
   SMS_PROVIDER: fake

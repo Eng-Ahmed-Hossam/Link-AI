@@ -1,0 +1,52 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
+
+/** The header every `/__demo/*` call sends when the server has DEMO_ROUTES_SECRET. */
+export const DEMO_SECRET_HEADER = 'x-link-demo-secret';
+
+/**
+ * Who may call the mock server's demo routes (`/__demo/*`: reset, settings, provider, story…).
+ *   secret set → the call must send it in `x-link-demo-secret`, else 401;
+ *   no secret on a hosted server → the routes are off (404);
+ *   no secret on a developer machine → open, as before.
+ * The handlers match `*\/__demo/…`, so any prefix reaches them (`/x/__demo/reset`, `/%5F%5Fdemo`):
+ * the check looks for `/__demo` anywhere in the decoded path.
+ */
+export interface DemoGateOptions {
+  secret: string;
+  hosted: boolean;
+}
+
+export const isDemoPath = (pathname: string) => {
+  let p = pathname;
+  try {
+    p = decodeURIComponent(pathname);
+  } catch {
+    /* malformed escapes: check the raw path */
+  }
+  return /\/__demo(\/|$)/i.test(p.replaceAll('\\', '/'));
+};
+
+const digest = (v: string) => createHash('sha256').update(v).digest();
+
+/** null = let the call through; 401 or 404 = answer that and run nothing. */
+export function demoGate(
+  pathname: string,
+  header: string | null | undefined,
+  o: DemoGateOptions,
+): null | 401 | 404 {
+  if (!isDemoPath(pathname)) return null;
+  if (o.secret) return header && timingSafeEqual(digest(o.secret), digest(header)) ? null : 401;
+  return o.hosted ? 404 : null;
+}
+
+/**
+ * Hosted = reachable by other people: a Railway service (RAILWAY_PROJECT_ID is always set there),
+ * browsers from other origins allowed (CORS_ALLOWED_ORIGINS), or MOCK_SERVER_PUBLIC=1.
+ */
+export const demoGateFromEnv = (env: NodeJS.ProcessEnv = process.env): DemoGateOptions => ({
+  secret: env.DEMO_ROUTES_SECRET ?? '',
+  hosted:
+    !!env.RAILWAY_PROJECT_ID ||
+    !!env.CORS_ALLOWED_ORIGINS?.trim() ||
+    env.MOCK_SERVER_PUBLIC === '1',
+});

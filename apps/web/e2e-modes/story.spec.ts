@@ -9,7 +9,16 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { axe } from '../e2e-demo/helpers';
-import { API, MODE, PEOPLE, TEACHER_APP, codeFor, fixtureId as id, ready } from './helpers';
+import {
+  API,
+  DEMO_HEADERS,
+  MODE,
+  PEOPLE,
+  TEACHER_APP,
+  codeFor,
+  fixtureId as id,
+  ready,
+} from './helpers';
 
 /** Live mode runs the story up to this step (R3: all nine, as mock mode). */
 const LIVE_STORY_STEPS = Number(process.env.LIVE_STORY_STEPS ?? 9);
@@ -40,11 +49,11 @@ async function snap(page: Page, name: string, full = true) {
     fullPage: full,
   });
 }
-const story = async () => (await fetch(`${API}/__demo/story`)).json();
+const story = async () => (await fetch(`${API}/__demo/story`, { headers: DEMO_HEADERS })).json();
 const outside = (path: string, body: unknown = {}) =>
   fetch(`${API}${path}`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...DEMO_HEADERS },
     body: JSON.stringify(body),
   });
 const seatsLeft = async (groupId: string) => {
@@ -338,7 +347,9 @@ test('the connected story: one hall slot, one group, one paid seat, one follow-u
       await reception.getByRole('button', { name: /استقبال/ }).click();
       await reception.waitForURL(/\/centre\/cen-nour\//);
     }
-    const c = (await (await fetch(`${API}/__demo/state/en`)).json()).cases.find(
+    const c = (
+      await (await fetch(`${API}/__demo/state/en`, { headers: DEMO_HEADERS })).json()
+    ).cases.find(
       (x: { student: string; status: string }) =>
         x.student === 'Mariam Hassan' && x.status !== 'resolved',
     );
