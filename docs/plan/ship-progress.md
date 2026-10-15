@@ -88,10 +88,11 @@ Plan: [auth-map-staging.md](auth-map-staging.md). One PR per stage; stop after e
 
 | Stage | What | State |
 |---|---|---|
-| 0 | Lock `/__demo/*` (secret header or off), Railway → `main` with pre-deploy migrations, unused list, plan | **Code and plan done**; deploy, the anonymous-reset proof and the Railway changes wait on the right Railway login (the CLI and MCP on this PC see another account) and `vercel login` |
+| 0 | Lock `/__demo/*`, Railway → `main`, unused list, plan | **done on Railway except `postgres`** (2026-10-16): core-api and ai-service build from `main` with auto-deploy; the lock is proven live (404); see [environments](../deploy/environments.md) open points |
 | 1 | Accounts and sign-in (email code, Google, linking, roles, allowlist) | not started |
 | 2 | Centre location on a real map | not started |
 | 3 | Real core-api on Railway staging | not started |
+| A | Part A of the 2026-10-16 brief: everything into `main`, branch clean-up, environments doc, deploy-branch CI check | **done**, except the open points in [environments](../deploy/environments.md) (postgres backup method, the `ai-models` volume, Vercel login) |
 
 ## Next step
 
