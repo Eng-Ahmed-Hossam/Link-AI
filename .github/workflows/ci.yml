@@ -24,6 +24,8 @@ jobs:
       - run: pnpm test
       - run: pnpm run i18n:check
       - run: pnpm run env:check
+      # Every deployment builds from main: no Vercel/Railway config in the repo names another branch.
+      - run: pnpm run check:deploy-branch
       # The OpenAPI document and the api-client types match the core-api contract.
       - run: pnpm openapi:check
       - run: npx prettier --check .

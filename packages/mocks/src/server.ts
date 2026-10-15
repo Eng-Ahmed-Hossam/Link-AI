@@ -139,6 +139,11 @@ const server = createServer(async (req, res) => {
   }
   const started = Date.now();
   const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+  // Health check for hosts (Railway): never a demo route, so it answers while /__demo is locked.
+  if (url.pathname === '/health' && (req.method === 'GET' || req.method === 'HEAD')) {
+    res.writeHead(200, { 'content-type': 'application/json' }).end('{"status":"ok"}');
+    return;
+  }
   // Demo routes: off on a hosted server unless the call sends DEMO_ROUTES_SECRET (demo-gate.ts).
   const gate = demoGate(url.pathname, req.headers[DEMO_SECRET_HEADER] as string | undefined, GATE);
   if (gate) {

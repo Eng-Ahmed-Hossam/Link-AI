@@ -49,6 +49,8 @@ const reset = (base: string, headers: Record<string, string> = {}) =>
 it('hosted without a secret: /__demo/* answers 404', async () => {
   const base = await start({ RAILWAY_PROJECT_ID: 'sample-project' });
   expect((await reset(base)).status).toBe(404);
+  expect((await fetch(`${base}/health`)).status).toBe(200);
+  expect((await fetch(`${base}/__demo/state/en`)).status).toBe(404);
   expect((await fetch(`${base}/x/__demo/reset`, { method: 'POST' })).status).toBe(404);
 }, 30_000);
 

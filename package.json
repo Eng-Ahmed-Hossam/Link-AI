@@ -46,6 +46,7 @@
     "pilot:build": "node apps/pilot/scripts/build-apps.mjs",
     "pilot:check": "pnpm --filter @link/pilot run check",
     "check:public-demo": "node scripts/check-public-demo.mjs",
+    "check:deploy-branch": "node scripts/check-deploy-branch.mjs",
     "pilot:preflight": "pnpm --filter @link/pilot run preflight",
     "pilot:practice": "pnpm --filter @link/pilot run practice",
     "pilot:practice-wipe": "pnpm --filter @link/pilot run practice-wipe",
