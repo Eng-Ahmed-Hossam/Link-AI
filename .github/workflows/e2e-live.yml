@@ -1,5 +1,5 @@
 name: e2e-live
-# The full live-mode e2e suite (apps/web/e2e-modes against pnpm dev): on demand and nightly.
+# Nightly rehearsals: the full live-mode e2e suite (apps/web/e2e-modes against pnpm dev): on demand and nightly.
 # The per-push run on main covers the connected story only (ci.yml, story-live).
 on:
   workflow_dispatch:
@@ -26,5 +26,29 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-live-traces
+          path: apps/web/test-results
+          retention-days: 7
+
+  # The production images on one machine in staging mode (LINK_ENV=staging), then the connected
+  # story against them: the rehearsal of the one-server setup (deploy/). Nightly and on demand only.
+  prod-local:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/docker-mirror
+      - run: pnpm --filter @link/web exec playwright install --with-deps chromium
+      - run: node scripts/prod-local.mjs --story
+        env: { CI: '1' }
+      - if: failure()
+        run: docker compose -p link-staging logs --no-color --tail 200
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-local-traces
           path: apps/web/test-results
           retention-days: 7
