@@ -40,6 +40,7 @@ if (existsSync(FLAGS_FILE)) {
 } else if (process.env.DEMO_DEFAULT_FLAGS && PRESETS[process.env.DEMO_DEFAULT_FLAGS]) {
   setDemo(PRESETS[process.env.DEMO_DEFAULT_FLAGS]!);
 }
+if (process.env.DEMO_REAL_STT === '1') setDemo({ realStt: true });
 let lastSaved = '';
 const persistFlags = (d: DemoState) => {
   applyRealStt(!!d.realStt);
@@ -54,7 +55,11 @@ const persistFlags = (d: DemoState) => {
   writeFileSync(FLAGS_FILE, json + '\n');
 };
 
-const PORT = Number(process.env.MOCK_SERVER_PORT ?? 4010);
+const PORT = Number(process.env.MOCK_SERVER_PORT ?? process.env.PORT ?? 4010);
+const CALLBACK_BASE = (process.env.MOCK_SERVER_INTERNAL_URL ?? `http://127.0.0.1:${PORT}`).replace(
+  /\/$/,
+  '',
+);
 
 // ── real speech-to-text in the demo (B3) ─────────────────────────────────────────
 const AI: AiTarget | null =
@@ -63,7 +68,7 @@ const AI: AiTarget | null =
         url: process.env.AI_SERVICE_URL,
         token: process.env.AI_SERVICE_TOKEN,
         dataClass: 'synthetic', // the presenter's role-played notes: never real student audio
-        callbackBase: `http://127.0.0.1:${PORT}`,
+        callbackBase: CALLBACK_BASE,
       }
     : null;
 const audio = new Map<string, { bytes: Uint8Array; mime: string }>();
@@ -95,8 +100,14 @@ if (env !== 'local') {
 
 // Browsers on the dev machine only: the PWA (3000), Storybook (6006), Expo web (8081).
 const ALLOWED = /^http:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2|192\.168\.\d+\.\d+)(:\d+)?$/;
+const ALLOWED_ORIGINS = new Set(
+  (process.env.CORS_ALLOWED_ORIGINS ?? '')
+    .split(',')
+    .map((x) => x.trim().replace(/\/$/, ''))
+    .filter(Boolean),
+);
 const cors = (origin: string | undefined): Record<string, string> =>
-  origin && ALLOWED.test(origin)
+  origin && (ALLOWED.test(origin) || ALLOWED_ORIGINS.has(origin.replace(/\/$/, '')))
     ? {
         'access-control-allow-origin': origin,
         'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
