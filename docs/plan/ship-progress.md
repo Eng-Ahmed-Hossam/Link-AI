@@ -51,7 +51,7 @@ The running log of the "ready to ship" job (Ahmed's brief of 2026-10-09). **A ne
 ## Known gaps found (to close in later stages)
 
 - ~~No AWS on one VPS~~ — closed in S1 (see decisions).
-- **`pnpm prod:local` fails** (found 2026-10-15, [status-before-hosting](status-before-hosting.md) M1): it builds the Postgres image from the wrong folder (`/initdb: not found`) and never builds the ops console image (`link/ops:local`). CI does not run it. S1 was marked done without a clean run. To fix, then add it to nightly CI.
+- ~~`pnpm prod:local` fails~~ — fixed 2026-10-15: the Postgres image builds from its own folder, the ops image is built, and `prod:local --story` passes (story 40 s against the production images). It runs in the nightly workflow (`e2e-live.yml`, job `prod-local`); its first nightly run is not seen yet. If dev fakes (`link-sms-sink-1` etc.) are running, stop them first: they hold ports 8091/8093/8094.
 - **Docs behind the code** (same report, M2–M6): the app map still says the ops console is not built; sample-only still lists the rent-shortfall and home-area screens as missing; before-real-users §2 still says AWS; docs/13 shows 111 rows as "open".
 - No uptime check or alert; Sentry is optional and off until `SENTRY_DSN` is set.
 - **Production cannot start before a real SMS adapter** (the guard refuses `SMS_PROVIDER=fake`, and sign-in needs codes). Expected: the SMS adapter is the first code after the S4 choice.
@@ -70,6 +70,17 @@ The running log of the "ready to ship" job (Ahmed's brief of 2026-10-09). **A ne
 4. **Expo account** (free) for the Android preview build — or build locally with Android Studio (docs/teacher-app-android.md).
 5. **Providers (S4):** pick from [provider-choice.md](provider-choice.md) (recommended: Paymob, then Kashier; an Egyptian SMS aggregator plus a global fallback; Meta Cloud API) and send each the questions there. All need the company papers first.
 6. **Processing fee vs the 5% commission (OD-02, OD-15):** at 2.85% + EGP 3 (an older published rate, to verify) Link earns nothing on payments under about EGP 140. Ask providers for the flat fee; decide whether the commission or OD-15 changes.
+
+## Session of 2026-10-15 (kickoff tasks 0–5)
+
+| Task | Result |
+|---|---|
+| 0 Push `2ae877d` | done |
+| 1 Staging inventory | [deploy/staging-vercel-railway.md](../deploy/staging-vercel-railway.md) |
+| 2 Merge Codex work | merged (proxy, mock-server settings, Whisper models, teacher-app rewrite, Railway Postgres); ai-service demo Dockerfile kept separate as `Dockerfile.railway-demo`; web default locale now `NEXT_PUBLIC_DEFAULT_LOCALE` |
+| 3 prod:local | fixed; passes locally; nightly job added |
+| 4 Docs clean-up | app map, sample-only, before-real-users, `.gitignore` |
+| 5 docs/13 triage | 35 rows closed; [decisions-for-ahmed.md](decisions-for-ahmed.md) lists 15 |
 
 ## Next step
 
