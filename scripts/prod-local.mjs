@@ -81,7 +81,7 @@ if (!existsSync(envFile)) {
 
 // Images: built here so one optional proxy CA reaches every build (compose would need a file).
 const ca = process.env.EXTRA_CA_FILE;
-const build = (file, tag, buildArgs = []) => {
+const build = (file, tag, buildArgs = [], context = '.') => {
   const t = Date.now();
   sh('docker', [
     'build',
@@ -91,13 +91,14 @@ const build = (file, tag, buildArgs = []) => {
     '-t',
     tag,
     ...buildArgs.flatMap((b) => ['--build-arg', b]),
-    '.',
+    context,
   ]);
   console.log(`  ✓ ${tag} in ${((Date.now() - t) / 1000).toFixed(0)} s`);
 };
 const skipBuild = args.includes('--no-build');
 if (!skipBuild) console.log('\nBuilding the production images…');
 if (!skipBuild) build('apps/core-api/Dockerfile', 'link/core-api:local');
+if (!skipBuild) build('apps/ops/Dockerfile', 'link/ops:local');
 if (!skipBuild)
   build('apps/web/Dockerfile', 'link/web:staging', [
     'NEXT_PUBLIC_APP_ENV=staging',
@@ -109,7 +110,13 @@ if (!skipBuild)
     'EXPO_PUBLIC_API_BASE_URL=http://localhost:4000',
   ]);
 if (!skipBuild && !process.env.PROD_LOCAL_SKIP_PG_BUILD)
-  build('infra/local/postgres/Dockerfile', 'link/postgres:16-postgis-pgvector');
+  // Its Dockerfile copies initdb/ from its own folder, so that folder is the build context.
+  build(
+    'infra/local/postgres/Dockerfile',
+    'link/postgres:16-postgis-pgvector',
+    [],
+    'infra/local/postgres',
+  );
 for (const fake of skipBuild ? [] : ['sms-sink', 'fake-pay', 'whatsapp-fake'])
   sh(
     'docker',
