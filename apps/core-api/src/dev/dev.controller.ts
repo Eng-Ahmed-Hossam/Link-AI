@@ -7,6 +7,7 @@ import {
   type OnModuleDestroy,
   Param,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { Kysely, PostgresDialect, sql } from 'kysely';
 import pg from 'pg';
@@ -31,10 +32,12 @@ import { Messages } from '../followup/messages';
 import { Records } from '../followup/records';
 import { Voice } from '../followup/voice';
 import * as fx from '@link/mocks/fixtures';
+import { DemoSecretGuard } from './demo-secret.guard';
 
 /**
  * Demo controls for live mode (docs/14 §5.2). This controller is registered ONLY when
  * APP_ENV=local, or staging with DEMO_ROUTES=1 (src/platform/guard.ts) — never production. Sample data only.
+ * On a hosted server every call needs the DEMO_ROUTES_SECRET header (DemoSecretGuard).
  */
 const FeaturesBody = z.object({ centreId: z.uuid(), followupExtra: z.boolean() });
 const SettingsBody = z.object({
@@ -85,6 +88,7 @@ const migratorUrl = () => {
 };
 
 @Controller('__demo')
+@UseGuards(DemoSecretGuard)
 export class DevController implements OnModuleDestroy {
   private migrator?: Kysely<unknown>;
 

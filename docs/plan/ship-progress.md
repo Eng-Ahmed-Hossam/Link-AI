@@ -82,6 +82,17 @@ The running log of the "ready to ship" job (Ahmed's brief of 2026-10-09). **A ne
 | 4 Docs clean-up | app map, sample-only, before-real-users, `.gitignore` |
 | 5 docs/13 triage | 35 rows closed; [decisions-for-ahmed.md](decisions-for-ahmed.md) lists 15 |
 
+## Auth, map and real staging (brief of 2026-10-15, Stages 0–3)
+
+Plan: [auth-map-staging.md](auth-map-staging.md). One PR per stage; stop after each for Ahmed's review.
+
+| Stage | What | State |
+|---|---|---|
+| 0 | Lock `/__demo/*` (secret header or off), Railway → `main` with pre-deploy migrations, unused list, plan | **Code and plan done**; deploy, the anonymous-reset proof and the Railway changes wait on the right Railway login (the CLI and MCP on this PC see another account) and `vercel login` |
+| 1 | Accounts and sign-in (email code, Google, linking, roles, allowlist) | not started |
+| 2 | Centre location on a real map | not started |
+| 3 | Real core-api on Railway staging | not started |
+
 ## Next step
 
 S0–S4 are merged. The job now waits on Ahmed: the open questions above. The agent's next work, in order: fix `pnpm prod:local` and add it to nightly CI (S), add an uptime alert (S), then — once the provider choice and sandboxes exist — the real `SmsSender` (production cannot start without it) and the `PaymentProvider` adapter against the chosen sandbox. Full list with sizes: [status-before-hosting](status-before-hosting.md) §3.

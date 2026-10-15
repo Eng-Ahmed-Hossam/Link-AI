@@ -10,6 +10,10 @@ export const MODE: 'mock' | 'live' = process.env.E2E_MODE === 'live' ? 'live' : 
 export const API = MODE === 'live' ? 'http://localhost:4000' : 'http://localhost:4010';
 export const SMS = 'http://localhost:8093';
 export const TEACHER_APP = 'http://localhost:8081';
+/** Demo routes on a hosted or staging core-api need the demo secret (pnpm prod:local sets it). */
+export const DEMO_HEADERS: Record<string, string> = process.env.DEMO_ROUTES_SECRET
+  ? { 'x-link-demo-secret': process.env.DEMO_ROUTES_SECRET }
+  : {};
 
 /**
  * A sample record's ID in this mode: the mock's own ID (`hall-nour-1`), or the deterministic UUID
@@ -29,7 +33,7 @@ export const PEOPLE = {
 export async function resetWorld() {
   const r = await fetch(`${API}/__demo/reset`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...DEMO_HEADERS },
     body: '{}',
   });
   expect(r.ok).toBe(true);

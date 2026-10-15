@@ -16,6 +16,7 @@ import { handlers } from './handlers';
 import { configureVoice, demoSnapshot, onDemoChange, setDemo, type DemoState } from './followup/db';
 import { configureBridge } from './followup/voice-bridge';
 import { sendVoiceJob, transcribeQuestion, type AiTarget } from './followup/ai-client';
+import { DEMO_SECRET_HEADER, demoGate, demoGateFromEnv } from './demo-gate';
 
 // ── persisted demo flags ─────────────────────────────────────────────────────────
 const FLAGS_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', '.data', 'demo-flags.json');
@@ -126,6 +127,10 @@ async function bodyOf(req: IncomingMessage) {
   return chunks.length ? Buffer.concat(chunks) : undefined;
 }
 
+const GATE = demoGateFromEnv();
+if (GATE.hosted && !GATE.secret)
+  console.log('mock-server: hosted without DEMO_ROUTES_SECRET, so /__demo/* is off (404).');
+
 const server = createServer(async (req, res) => {
   const origin = req.headers.origin;
   if (req.method === 'OPTIONS') {
@@ -134,6 +139,20 @@ const server = createServer(async (req, res) => {
   }
   const started = Date.now();
   const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+  // Demo routes: off on a hosted server unless the call sends DEMO_ROUTES_SECRET (demo-gate.ts).
+  const gate = demoGate(url.pathname, req.headers[DEMO_SECRET_HEADER] as string | undefined, GATE);
+  if (gate) {
+    const detail = gate === 401 ? 'Demo routes need the demo secret.' : 'Not found.';
+    res.writeHead(gate, { 'content-type': 'application/problem+json', ...cors(origin) }).end(
+      JSON.stringify({
+        status: gate,
+        code: gate === 401 ? 'demo_secret_required' : 'not_found',
+        detail,
+      }),
+    );
+    log(req.method!, url.pathname, gate, started);
+    return;
+  }
   const headers = new Headers();
   for (const [k, v] of Object.entries(req.headers))
     if (typeof v === 'string') headers.set(k, v);

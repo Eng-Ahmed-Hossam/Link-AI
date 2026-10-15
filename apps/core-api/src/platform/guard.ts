@@ -20,10 +20,23 @@ export function linkEnv(env: NodeJS.ProcessEnv = process.env): LinkEnv {
   throw new Error(`LINK_ENV must be development, staging or production (got "${v}").`);
 }
 
-/** Demo routes (`/__demo/*`): a developer machine, or staging when DEMO_ROUTES=1. */
+/**
+ * A server other people can reach: staging or production, or any Railway service (Railway sets
+ * RAILWAY_PROJECT_ID on every service, whatever APP_ENV says). Not a developer machine.
+ */
+export function hostedServer(env: NodeJS.ProcessEnv = process.env) {
+  return linkEnv(env) !== 'development' || !!env.RAILWAY_PROJECT_ID;
+}
+
+/**
+ * Demo routes (`/__demo/*`): a developer machine, or staging when DEMO_ROUTES=1. On a hosted
+ * server they also need DEMO_ROUTES_SECRET (every call then sends it, DemoSecretGuard); without
+ * it they are off (404), so nobody on the internet can reset or flip the sample world.
+ */
 export function demoRoutesAllowed(c: Config, env: NodeJS.ProcessEnv = process.env) {
   const kind = linkEnv(env);
   if (kind === 'production') return false;
+  if (hostedServer(env) && !env.DEMO_ROUTES_SECRET) return false;
   return c.APP_ENV === 'local' || (kind === 'staging' && env.DEMO_ROUTES === '1');
 }
 
