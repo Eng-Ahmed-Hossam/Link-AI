@@ -99,12 +99,12 @@ One way in: the role chooser at `/{lang}/try` opens each app signed in as a samp
 | A15 | Import students | — | [27:197](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=27-197) | blocked (OD-21) | — | — |
 | A19 | Centre setup: groups & teachers | — | [32:235](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=32-235) | blocked (OD-21) | — | — |
 
-## Link ops: Ops console (later, PRODUCT_BRIEF §5)
+## Link ops: Ops console (built in S2, `apps/ops`)
 
-0 of 3 built.
+3 of 3 built, on the real API only (phone code + office-address allow-list; no mock mode). The CLI scripts `pnpm ops:verify-centre` and `pnpm ops:refunds` still work.
 
 | ID | Screen | Route | Figma | Status | Live / Mock | Screenshot |
 |---|---|---|---|---|---|---|
-| L01 | Centre join requests & verification | — | [52:344](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=52-344) | later | not built: `pnpm ops:verify-centre` | — |
-| L02 | Review moderation | — | [53:355](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=53-355) | later | not built | — |
-| L03 | Refunds & disputes | — | [53:445](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=53-445) | later | not built: `pnpm ops:refunds` | — |
+| L01 | Centre join requests & verification | — | [52:344](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=52-344) | built | live only (`apps/ops`) · CLI `pnpm ops:verify-centre` | — |
+| L02 | Review moderation | — | [53:355](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=53-355) | built | live only (`apps/ops`) | — |
+| L03 | Refunds & disputes | — | [53:445](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=53-445) | built | live only (`apps/ops`) · CLI `pnpm ops:refunds` | — |

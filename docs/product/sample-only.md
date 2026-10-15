@@ -7,12 +7,12 @@ With `pnpm dev` ([RUNNING](../RUNNING.md)) Link runs on its real backend: sign-i
 | **SMS** | sms-sink (:8093) catches every code and invite; nothing is sent. | An SMS sender (OD-45). |
 | **Payments** | fake-pay (:8091) plays the provider: hosted page, Fawry references, signed webhooks, refunds, a 2% sample fee. No money moves. | A merchant account with hosted checkout (card, Fawry, wallet); the real gateway fee rate. |
 | **Payouts** | Built (S3): payout accounts, the Thursday batch, the CSV and sent / bounced in the ops console. Locally the batch is made by pressing "Make this week's batch"; sample accounts have no real numbers. | Real payout accounts (added by teachers and owners, checked by ops finance) and someone who makes the transfers every Thursday. |
-| **Rent shortfall** | The ledger can post a teacher's rent top-up (P4), but there is no screen to pay it. | A "Pay the rent shortfall" checkout for teachers. |
+| **Rent shortfall** | Built (S3): Earnings → Rent still to pay → card or Fawry, paid through fake-pay here. | A real payment provider. |
 | **WhatsApp** | whatsapp-fake (:8094) receives approved messages; delivery and replies only when Demo controls ask. | WhatsApp Business: a number, approved templates, delivery events. |
 | **Voice notes** | Local Whisper through ai-service on this machine, sample audio only (`pnpm voice:try`). | Hosting ai-service, and the consent pack before any real recording (OD-60). |
 | **Ask Link** | Off unless a local model runs (Ollama). | A decision on the model and where it runs. |
 | **Link ops** | The ops console runs on the real API (S2): verification, review moderation, refunds, data requests; sample ops users sign in with a code from sms-sink. | Real ops staff accounts (a `link_ops` role with a bundle, granted by an admin), the office address in `OPS_IP_ALLOWLIST`, DNS for `ops.<domain>`. |
-| **Parent's home area** | Stored on the profile, set only through the API; the browser location is used otherwise. | The settings screen to set it. |
+| **Parent's home area** | Built (S3): Account → Home area, from the areas that have a verified centre. | Nothing; real areas come with real centres. |
 | **Maps and photos** | A drawn map with pins; coloured tiles for photos. | A map provider and geocoding; photo uploads with review. |
 | **Notifications** | None beyond sign-in codes and invites. | In-app and SMS/WhatsApp notices (MKT-NTF). |
 | **Hosting, email, domain** | Everything on this machine; the contact address and `PILOT_REQUEST_TO` are empty. | Servers, backups, a domain and a contact address. |

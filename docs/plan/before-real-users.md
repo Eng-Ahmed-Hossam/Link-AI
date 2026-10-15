@@ -22,9 +22,9 @@ These take longer to arrive than the code takes to write; start them first.
 |---|---|---|
 | Website, parent app, owner and staff web (`apps/web`) | A Next.js host with server routes | **Vercel** is fine |
 | Public demo (mock data in the browser) | Static hosting | **Vercel** (already planned) |
-| core-api: api, worker, messaging-gateway | Always-on containers (the worker runs the money jobs every few minutes; the gateway receives provider webhooks) | A server: containers on a cloud (AWS proposed, OD-31) |
-| PostgreSQL with PostGIS, Redis ×2 | Managed databases with backups | The same cloud as core-api |
-| File storage, encryption keys, queues | S3-compatible storage with encryption, a key service, a queue with dead-letter queues | The same cloud |
+| core-api: api, worker, messaging-gateway | Always-on containers (the worker runs the money jobs every few minutes; the gateway receives provider webhooks) | One server running the production compose (`deploy/docker-compose.prod.yml`, built in S1), not a cloud. AWS stays a later switch (OD-31). The trial **staging** on Vercel + Railway is [separate](../deploy/staging-vercel-railway.md) and is sample data only |
+| PostgreSQL with PostGIS, Redis ×2 | Postgres and Redis in the same compose, with the encrypted nightly backup and restore (`deploy/backup.sh`) | The same server |
+| File storage, encryption keys, queues | Encrypted files on a volume (`STORAGE_PROVIDER=file`, `FIELD_KEY`), the Postgres queue with a dead state (`QUEUE_PROVIDER=postgres`) | The same server |
 | ai-service (Whisper and the extraction) | A server with a strong CPU or a GPU, in a region allowed for student data | A server, never Vercel (OD-26) |
 | Teacher app | App store builds (Expo); the web build is for demos only | Apple and Google stores |
 | Ops console | A web app at `ops.<domain>` behind the IP allow-list (built, S2) | The same server, with core-api (`deploy/docker-compose.prod.yml`) |
