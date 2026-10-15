@@ -59,9 +59,12 @@ export async function transcribeQuestion(ai: AiTarget, audio: Uint8Array, mime: 
     method: 'POST',
     headers: { 'x-link-internal-token': ai.token },
     body: form,
-    signal: AbortSignal.timeout(60_000),
+    signal: AbortSignal.timeout(180_000),
   });
-  if (!r.ok) throw new Error(`ai-service ${r.status}`);
+  if (!r.ok) {
+    const detail = await r.text().catch(() => '');
+    throw new Error(`ai-service ${r.status}: ${detail.slice(0, 300)}`);
+  }
   return ((await r.json()) as { text: string }).text;
 }
 
