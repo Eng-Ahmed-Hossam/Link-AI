@@ -18,7 +18,7 @@ The running log of the "ready to ship" job (Ahmed's brief of 2026-10-09). **A ne
 | S3 | Payout batches, rent shortfall, home-area screen, `bookingsEnabled`, Android preview build docs, approved Arabic strings | **done** (Arabic: review file ready, waits on the reviewer) | #6 | `74f207a` |
 | S4 | `docs/plan/provider-choice.md` (payments, SMS, WhatsApp) → stop and report | **done** (docs only, with S3); reported to Ahmed | #6 | `74f207a` |
 
-**Last green commit on `main`:** `74f207a` (S3 + S4 merge; CI green including `images` and `story-live`).
+**Last green commit on `main`:** `9f1dfb2` (docs after the S3 + S4 merge `74f207a`; CI green including `images` and `story-live`; nightly live e2e green 11–15 Oct). Re-checked in the [status check of 2026-10-15](status-before-hosting.md).
 
 ## Decisions taken on the way (reversible)
 
@@ -51,6 +51,9 @@ The running log of the "ready to ship" job (Ahmed's brief of 2026-10-09). **A ne
 ## Known gaps found (to close in later stages)
 
 - ~~No AWS on one VPS~~ — closed in S1 (see decisions).
+- **`pnpm prod:local` fails** (found 2026-10-15, [status-before-hosting](status-before-hosting.md) M1): it builds the Postgres image from the wrong folder (`/initdb: not found`) and never builds the ops console image (`link/ops:local`). CI does not run it. S1 was marked done without a clean run. To fix, then add it to nightly CI.
+- **Docs behind the code** (same report, M2–M6): the app map still says the ops console is not built; sample-only still lists the rent-shortfall and home-area screens as missing; before-real-users §2 still says AWS; docs/13 shows 111 rows as "open".
+- No uptime check or alert; Sentry is optional and off until `SENTRY_DSN` is set.
 - **Production cannot start before a real SMS adapter** (the guard refuses `SMS_PROVIDER=fake`, and sign-in needs codes). Expected: the SMS adapter is the first code after the S4 choice.
 - `pnpm audit`: 2 high in Expo/Metro build tools only (no fix published; in no server image) — [security-checklist.md](../security-checklist.md) #26.
 - CSP allows inline scripts (Next's boot script); nonces are a later hardening (#11).
@@ -70,4 +73,4 @@ The running log of the "ready to ship" job (Ahmed's brief of 2026-10-09). **A ne
 
 ## Next step
 
-S0–S4 are merged. The job now waits on Ahmed: the open questions above. After the provider choice, the first code is the real `SmsSender` (production cannot start without it), then the `PaymentProvider` adapter against the chosen sandbox.
+S0–S4 are merged. The job now waits on Ahmed: the open questions above. The agent's next work, in order: fix `pnpm prod:local` and add it to nightly CI (S), add an uptime alert (S), then — once the provider choice and sandboxes exist — the real `SmsSender` (production cannot start without it) and the `PaymentProvider` adapter against the chosen sandbox. Full list with sizes: [status-before-hosting](status-before-hosting.md) §3.
