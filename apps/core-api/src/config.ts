@@ -57,7 +57,8 @@ const schema = z
      * behind Caddy on one server 'loopback, uniquelocal'. Per-address rate limits depend on it.
      */
     TRUST_PROXY: z.string().default('loopback'),
-    SMS_PROVIDER: z.enum(['fake']).default('fake'),
+    /** fake = the local sms-sink; inbox = the hosted staging's private code inbox in core-api. */
+    SMS_PROVIDER: z.enum(['fake', 'inbox']).default('fake'),
     SMS_SINK_URL: z.string().url().optional(),
     /** The hosted staging's private code inbox (Stage 3): sms-sink's Basic-auth password. */
     SMS_SINK_TOKEN: z.string().min(16).optional(),
@@ -159,6 +160,14 @@ const schema = z
         path: ['SMS_SINK_URL'],
         message: 'required with SMS_PROVIDER=fake',
       });
+    if (c.SMS_PROVIDER === 'inbox' && !c.SMS_SINK_TOKEN)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SMS_SINK_TOKEN'],
+        message: 'required with SMS_PROVIDER=inbox (the inbox password)',
+      });
+    if (c.SMS_PROVIDER !== 'fake' && c.SMS_PROVIDER !== 'inbox' && c.APP_ENV === 'prod')
+      ctx.addIssue({ code: 'custom', path: ['SMS_PROVIDER'], message: 'unknown provider' });
     if (c.SMS_PROVIDER === 'fake' && c.APP_ENV === 'prod')
       ctx.addIssue({ code: 'custom', path: ['SMS_PROVIDER'], message: 'fake is refused in prod' });
     if (c.PAYMENT_PROVIDER === 'fake' && c.APP_ENV === 'prod')
