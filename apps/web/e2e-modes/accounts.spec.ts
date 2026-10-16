@@ -1,7 +1,17 @@
 // R1 accounts, clicked through the real screens, in BOTH modes (E2E_MODE=mock | live).
 // Test names carry requirement IDs.
 import { expect, test } from '@playwright/test';
-import { codeFor, meInPage, MODE, PEOPLE, ready, resetWorld, smsTo, TEACHER_APP } from './helpers';
+import {
+  API,
+  codeFor,
+  meInPage,
+  MODE,
+  PEOPLE,
+  ready,
+  resetWorld,
+  smsTo,
+  TEACHER_APP,
+} from './helpers';
 
 test.beforeEach(async () => {
   await resetWorld();
@@ -134,7 +144,7 @@ test('T14: the sample teacher signs in on the teacher app', async ({ page }) => 
     // Live: the app keeps its tokens itself (secure storage on phones); check over the API.
     const stored = await page.evaluate(() => localStorage.getItem('link.teacher.session'));
     const { accessToken } = JSON.parse(stored!) as { accessToken: string };
-    const r = await fetch('http://localhost:4000/v1/me', {
+    const r = await fetch(`${API}/v1/me`, {
       headers: { authorization: `Bearer ${accessToken}` },
     });
     expect(((await r.json()) as { roles: string[] }).roles).toEqual(['teacher']);

@@ -1,12 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
-import { MODE, codeFor, resetWorld } from './helpers';
+import { MODE, OPS_APP, codeFor, resetWorld } from './helpers';
 
 /**
  * S2 ops console (apps/ops, :3001) on the real backend: live only — ops never runs on mock data.
  * An agent signs in by phone code (CF-60), sees the sample lead in L01 and the teacher queue; the
  * finance user lands on refunds and cannot open the agent's sections (MKT-OPS-08, OD-37).
  */
-const OPS = 'http://localhost:3001';
+const OPS = OPS_APP;
 const AGENT = '1000000051';
 const FINANCE = '1000000052';
 const OWNER = '1000000003';
