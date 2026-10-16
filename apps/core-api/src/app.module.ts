@@ -93,8 +93,12 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
     factory(Phones, [FieldCipher], (cipher: FieldCipher) => new Phones(c.HMAC_KEY_LOOKUP, cipher)),
     factory(
       SMS_SENDER,
-      [],
-      () => overrides.sms ?? new SmsSinkSender(c.SMS_SINK_URL!, c.SMS_SINK_TOKEN),
+      [Redises],
+      (r: Redises) =>
+        overrides.sms ??
+        (c.SMS_PROVIDER === 'inbox'
+          ? new RedisInboxSender(r)
+          : new SmsSinkSender(c.SMS_SINK_URL!, c.SMS_SINK_TOKEN)),
     ),
     factory(
       OtpService,
