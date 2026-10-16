@@ -6,6 +6,8 @@ import { loadConfig } from '../../src/config';
 import {
   demoRoutesAllowed,
   formatProblems,
+  hostedStaging,
+  stagingProblems,
   linkEnv,
   productionProblems,
 } from '../../src/platform/guard';
@@ -187,5 +189,47 @@ describe('Production guard', () => {
     expect(demoSecretOk('sample', '')).toBe(false);
     expect(demoSecretOk('sample', 'sampl')).toBe(false);
     expect(demoSecretOk('sample', 'sample')).toBe(true);
+  });
+});
+
+describe('Stage 3: the hosted staging', () => {
+  const hosted = (over: Record<string, string | undefined> = {}) => {
+    const env = prodEnv({
+      LINK_ENV: 'staging',
+      APP_ENV: 'staging',
+      RAILWAY_PROJECT_ID: 'sample-project',
+      PAYMENT_PROVIDER: 'none',
+      SMS_PROVIDER: 'fake',
+      SMS_SINK_URL: 'http://sms-sink.railway.internal:8090',
+      SMS_SINK_TOKEN: 'sample-sink-token-0123456789',
+      ...over,
+    });
+    return stagingProblems(loadConfig(env), env);
+  };
+
+  it('a correct hosted staging passes; prod:local (no Railway) is not checked', () => {
+    expect(hosted()).toEqual([]);
+    const local = prodEnv({
+      LINK_ENV: 'staging',
+      APP_ENV: 'staging',
+      PAYMENT_PROVIDER: 'fake',
+      FAKE_PAY_URL: 'http://fake-pay:8091',
+      SMS_PROVIDER: 'fake',
+      SMS_SINK_URL: 'http://sms-sink:8090',
+    });
+    expect(hostedStaging(local)).toBe(false);
+    expect(stagingProblems(loadConfig(local), local)).toEqual([]);
+  });
+
+  it.each([
+    [
+      'bookings on',
+      { PAYMENT_PROVIDER: 'fake', FAKE_PAY_URL: 'http://fake-pay:8091' },
+      /PAYMENT_PROVIDER=fake/,
+    ],
+    ['an open code inbox', { SMS_SINK_TOKEN: undefined }, /SMS_SINK_TOKEN/],
+    ['the sample-places geocoder', { GEOCODER_PROVIDER: 'dev' }, /GEOCODER_PROVIDER=dev/],
+  ])('refuses %s', (_, over, re) => {
+    expect(hosted(over).join('\n')).toMatch(re);
   });
 });

@@ -53,6 +53,7 @@ export function MapView(props: MapViewProps) {
             pins={props.pins}
             cluster={props.cluster}
             showCentre={props.showCentre ?? true}
+            fitPins
             zoom={props.zoom ?? 13}
             label={props.label}
             className="h-full w-full"

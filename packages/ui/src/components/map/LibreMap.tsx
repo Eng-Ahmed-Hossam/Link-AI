@@ -26,6 +26,8 @@ export interface LibreMapProps {
   /** The C02 picker: one draggable pin; a click on the map moves it too. */
   draggable?: { lat: number; lng: number; onChange: (p: { lat: number; lng: number }) => void };
   zoom?: number;
+  /** Frame every pin (and the centre dot) on screen; with one pin or none, `centre` and `zoom` win. */
+  fitPins?: boolean;
   interactive?: boolean;
   label: string;
   className?: string;
@@ -92,9 +94,26 @@ export function LibreMap(props: LibreMapProps) {
         d.onChange({ lat: e.lngLat.lat, lng: e.lngLat.lng });
       });
       map.on('moveend', () => draw());
+      map.on('load', () => fit());
       mapRef.current = map;
       draw();
     });
+
+    function fit() {
+      const m = mapRef.current;
+      const p = latest.current;
+      const pts = [...(p.pins ?? []), ...(p.showCentre ? [p.centre] : [])];
+      if (!m || !p.fitPins || (p.pins ?? []).length < 2) return;
+      const lats = pts.map((x) => x.lat);
+      const lngs = pts.map((x) => x.lng);
+      m.fitBounds(
+        [
+          [Math.min(...lngs), Math.min(...lats)],
+          [Math.max(...lngs), Math.max(...lats)],
+        ],
+        { padding: 48, maxZoom: 15, duration: 0 },
+      );
+    }
 
     function clear() {
       for (const m of markers.current) m.remove();

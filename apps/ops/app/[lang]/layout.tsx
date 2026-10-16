@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { dirOf } from '@link/i18n';
-import { LinkProvider } from '@link/ui';
+import { EnvBanner, LinkProvider } from '@link/ui';
 import { getT, parseLocale } from '@/i18n';
 import '../globals.css';
 
@@ -19,6 +19,9 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir={dirOf(locale)}>
       <body>
+        {process.env.NEXT_PUBLIC_APP_ENV === 'staging' ? (
+          <EnvBanner label={getT(locale)('common.envBanner')} />
+        ) : null}
         <LinkProvider locale={locale}>{children}</LinkProvider>
       </body>
     </html>
