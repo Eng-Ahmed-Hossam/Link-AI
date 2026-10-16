@@ -1,8 +1,9 @@
-// pnpm db:migrate | db:rollback | db:status | db:seed
+// pnpm db:migrate | db:rollback | db:status | db:seed | db:backup | db:restore <file> --yes
 // Migrations are plain SQL, applied by dbmate as app_migrator (ADR-0006).
 import { dirname, join } from 'node:path';
 import { createRequire } from 'node:module';
 import { ROOT, loadEnv, requireEnv, run, fail } from './lib/env.mjs';
+import { backup, backupProblems, restore, summary } from './lib/db-backup.mjs';
 
 loadEnv();
 const cmd = process.argv[2];
@@ -51,8 +52,45 @@ async function setLocalRolePasswords() {
   }
 }
 
+/**
+ * db:migrate backs up first (docs/plan/database-v2.md §7): only the local dev database `link`,
+ * never in CI or for the throwaway test database (test-api.mjs), and not with --no-backup.
+ */
+async function backupBeforeMigrate() {
+  const dbName = new URL(DATABASE_URL_MIGRATOR).pathname.slice(1);
+  if (process.env.CI || process.argv.includes('--no-backup') || dbName !== 'link') return;
+  if (backupProblems(process.env).length) return;
+  const { file, size } = await backup();
+  console.log(`Backup before migrating: ${file} (${Math.round(size / 1024)} KB)`);
+}
+
 switch (cmd) {
+  case 'backup': {
+    const problems = backupProblems(process.env);
+    if (problems.length) fail(`db:backup only backs up the local database: ${problems.join('; ')}`);
+    const { file, size } = await backup();
+    const s = summary();
+    console.log(
+      `✔ ${file} (${Math.round(size / 1024)} KB · ${s.users} users · migration ${s.migration})`,
+    );
+    break;
+  }
+  case 'restore': {
+    const file = process.argv[3];
+    const problems = backupProblems(process.env);
+    if (problems.length)
+      fail(`db:restore only restores the local database: ${problems.join('; ')}`);
+    if (!file || file.startsWith('--')) fail('Usage: pnpm db:restore <backups/file.dump> --yes');
+    if (!process.argv.includes('--yes'))
+      fail(`This replaces the local database "link" with ${file}. Run again with --yes.`);
+    await restore(file);
+    await setLocalRolePasswords();
+    const s = summary();
+    console.log(`✔ Restored ${file} (${s.users} users · migration ${s.migration})`);
+    break;
+  }
   case 'migrate':
+    await backupBeforeMigrate();
     dbmate('up');
     await setLocalRolePasswords();
     break;
@@ -109,5 +147,5 @@ switch (cmd) {
     );
     break;
   default:
-    fail('Usage: node scripts/db.mjs migrate|rollback|status|types|seed');
+    fail('Usage: node scripts/db.mjs migrate|rollback|status|types|seed|backup|restore');
 }
