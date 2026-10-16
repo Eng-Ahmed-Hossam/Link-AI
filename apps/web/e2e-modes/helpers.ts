@@ -7,9 +7,17 @@ import { demoId } from '../../core-api/seeds/demo-id';
  *   E2E_MODE=live → the `pnpm dev` stack (core-api :4000, codes read from sms-sink :8093)
  */
 export const MODE: 'mock' | 'live' = process.env.E2E_MODE === 'live' ? 'live' : 'mock';
-export const API = MODE === 'live' ? 'http://localhost:4000' : 'http://localhost:4010';
-export const SMS = 'http://localhost:8093';
-export const TEACHER_APP = 'http://localhost:8081';
+/** A deployed stack (playwright.modes.config.ts): the hosted staging. */
+export const REMOTE = !!process.env.E2E_WEB_URL;
+export const API =
+  process.env.E2E_API_URL ?? (MODE === 'live' ? 'http://localhost:4000' : 'http://localhost:4010');
+export const SMS = process.env.E2E_SMS_URL ?? 'http://localhost:8093';
+export const TEACHER_APP = process.env.E2E_TEACHER_URL ?? 'http://localhost:8081';
+export const OPS_APP = process.env.E2E_OPS_URL ?? 'http://localhost:3001';
+/** The hosted staging's private code inbox: HTTP Basic auth with the token as the password. */
+const SMS_HEADERS: Record<string, string> = process.env.E2E_SMS_TOKEN
+  ? { authorization: `Basic ${Buffer.from(`e2e:${process.env.E2E_SMS_TOKEN}`).toString('base64')}` }
+  : {};
 /** Demo routes on a hosted or staging core-api need the demo secret (pnpm prod:local sets it). */
 export const DEMO_HEADERS: Record<string, string> = process.env.DEMO_ROUTES_SECRET
   ? { 'x-link-demo-secret': process.env.DEMO_ROUTES_SECRET }
@@ -31,6 +39,8 @@ export const PEOPLE = {
 
 /** A fresh world: the mock scenario, or the seeded database (local only). */
 export async function resetWorld() {
+  // The hosted staging has no demo routes: it keeps its world (seeded once, sample data).
+  if (REMOTE) return;
   const r = await fetch(`${API}/__demo/reset`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...DEMO_HEADERS },
@@ -49,7 +59,9 @@ export async function codeFor(national: string, since: number): Promise<string> 
   if (MODE === 'mock') return '123456';
   const to = `+20${national}`;
   for (let i = 0; i < 40; i++) {
-    const { items } = (await (await fetch(`${SMS}/api/messages`)).json()) as {
+    const { items } = (await (
+      await fetch(`${SMS}/api/messages`, { headers: SMS_HEADERS })
+    ).json()) as {
       items: { to: string; body: string; templateCode: string | null; receivedAt: string }[];
     };
     const m = items.find(
@@ -63,7 +75,9 @@ export async function codeFor(national: string, since: number): Promise<string> 
 
 /** SMS messages to a number since a moment (live only; the mock sends none). */
 export async function smsTo(national: string, since: number) {
-  const { items } = (await (await fetch(`${SMS}/api/messages`)).json()) as {
+  const { items } = (await (
+    await fetch(`${SMS}/api/messages`, { headers: SMS_HEADERS })
+  ).json()) as {
     items: { to: string; body: string; templateCode: string | null; receivedAt: string }[];
   };
   return items.filter((x) => x.to === `+20${national}` && Date.parse(x.receivedAt) >= since - 1000);

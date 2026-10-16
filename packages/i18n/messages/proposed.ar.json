@@ -2167,5 +2167,6 @@
   "ops.centres.pinOld",
   "ops.centres.pinNew",
   "ops.centres.pinMoved",
-  "ops.centres.pinFirst"
+  "ops.centres.pinFirst",
+  "common.envBanner"
 ]

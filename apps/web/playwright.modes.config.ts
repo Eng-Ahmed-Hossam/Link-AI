@@ -7,10 +7,16 @@ import { defineConfig } from '@playwright/test';
  * Both stacks use the web on 3000 and the teacher app on 8081, so only one runs at a time.
  */
 const LIVE = process.env.E2E_MODE === 'live';
+/**
+ * Against a deployed stack (Stage 3: the hosted staging), live only: E2E_WEB_URL, E2E_API_URL,
+ * E2E_TEACHER_URL, E2E_OPS_URL, E2E_SMS_URL and E2E_SMS_TOKEN (the private code inbox). No local
+ * servers are started and the world is not reset (demo routes are off there).
+ */
+const REMOTE = !!process.env.E2E_WEB_URL;
 
 export default defineConfig({
   testDir: './e2e-modes',
-  globalSetup: './e2e-modes/warmup.ts',
+  globalSetup: REMOTE ? undefined : './e2e-modes/warmup.ts',
   timeout: 120_000,
   expect: { timeout: 20_000 },
   fullyParallel: false,
@@ -18,25 +24,27 @@ export default defineConfig({
   retries: 0,
   reporter: [['list']],
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: process.env.E2E_WEB_URL ?? 'http://localhost:3000',
     viewport: { width: 1440, height: 1060 },
     trace: 'retain-on-failure',
   },
-  webServer: LIVE
-    ? {
-        command: 'node ../../scripts/dev.mjs',
-        // The specs never use real speech-to-text: no ai-service (as DEMO_AI=0 below).
-        env: { DEV_AI: '0' },
-        url: 'http://localhost:4000/ready',
-        reuseExistingServer: true,
-        // A cold machine builds the local service images first (CI).
-        timeout: 900_000,
-      }
-    : {
-        command: 'node ../../scripts/demo.mjs',
-        env: { DEMO_AI: '0' },
-        url: 'http://localhost:4010/__demo/state',
-        reuseExistingServer: true,
-        timeout: 300_000,
-      },
+  webServer: REMOTE
+    ? undefined
+    : LIVE
+      ? {
+          command: 'node ../../scripts/dev.mjs',
+          // The specs never use real speech-to-text: no ai-service (as DEMO_AI=0 below).
+          env: { DEV_AI: '0' },
+          url: 'http://localhost:4000/ready',
+          reuseExistingServer: true,
+          // A cold machine builds the local service images first (CI).
+          timeout: 900_000,
+        }
+      : {
+          command: 'node ../../scripts/demo.mjs',
+          env: { DEMO_AI: '0' },
+          url: 'http://localhost:4010/__demo/state',
+          reuseExistingServer: true,
+          timeout: 300_000,
+        },
 });

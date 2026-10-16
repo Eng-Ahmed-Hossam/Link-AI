@@ -108,9 +108,11 @@ const env = (k: string) => {
   return v;
 };
 
-export async function seedDemo(migratorUrl: string) {
-  // A developer machine, or staging with demo routes (pnpm prod:local) — never production.
-  const staging = process.env.LINK_ENV === 'staging' && process.env.DEMO_ROUTES === '1';
+export async function seedDemo(migratorUrl: string, opts: { emptyStaging?: boolean } = {}) {
+  // A developer machine, or staging with demo routes (pnpm prod:local), or the hosted staging's
+  // first deploy into an empty database (src/seed-staging.ts checks it is empty) — never production.
+  const staging =
+    process.env.LINK_ENV === 'staging' && (process.env.DEMO_ROUTES === '1' || !!opts.emptyStaging);
   if (process.env.LINK_ENV === 'production' || (process.env.APP_ENV !== 'local' && !staging))
     throw new Error(
       'seed:demo wipes the app tables: it runs only with APP_ENV=local (or staging with DEMO_ROUTES=1).',

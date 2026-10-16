@@ -90,7 +90,11 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
       return new FieldCipher(new LocalKeyWrapper(key));
     }),
     factory(Phones, [FieldCipher], (cipher: FieldCipher) => new Phones(c.HMAC_KEY_LOOKUP, cipher)),
-    factory(SMS_SENDER, [], () => overrides.sms ?? new SmsSinkSender(c.SMS_SINK_URL!)),
+    factory(
+      SMS_SENDER,
+      [],
+      () => overrides.sms ?? new SmsSinkSender(c.SMS_SINK_URL!, c.SMS_SINK_TOKEN),
+    ),
     factory(
       OtpService,
       [Redises, Phones, SMS_SENDER],

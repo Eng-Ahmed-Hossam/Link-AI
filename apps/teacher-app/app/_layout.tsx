@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { I18nManager, View } from 'react-native';
+import { I18nManager, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -11,7 +11,7 @@ import {
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
 } from '@expo-google-fonts/plus-jakarta-sans';
-import { MockBadge } from '@link/ui-native';
+import { MockBadge, textStyle } from '@link/ui-native';
 import { color } from '@link/tokens';
 import { setApiBaseUrl } from '@link/api-client';
 import { LocaleProvider, useLocale } from '@/locale';
@@ -31,6 +31,18 @@ function Shell() {
       style={{ flex: 1, backgroundColor: color.bg, direction: locale === 'ar' ? 'rtl' : 'ltr' }}
     >
       <StatusBar style="dark" />
+      {/* Stage 3: every screen of a staging build says so. */}
+      {process.env.EXPO_PUBLIC_APP_ENV === 'staging' ? (
+        <View
+          accessibilityRole="text"
+          testID="env-banner"
+          style={{ backgroundColor: color.amberSoft, paddingVertical: 4, paddingHorizontal: 16 }}
+        >
+          <Text style={[textStyle(locale, 'caption'), { color: color.navy, textAlign: 'center' }]}>
+            {t('common.envBanner')}
+          </Text>
+        </View>
+      ) : null}
       <TryBanner />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.bg } }}>
         <Stack.Screen name="student/[id]/note" options={{ presentation: 'transparentModal' }} />

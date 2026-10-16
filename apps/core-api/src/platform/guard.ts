@@ -43,6 +43,45 @@ export function demoRoutesAllowed(c: Config, env: NodeJS.ProcessEnv = process.en
 const LOCAL_URL =
   /^https?:\/\/(localhost|127\.0\.0\.1|host\.docker\.internal|aws-local|sms-sink|fake-pay|whatsapp-fake)([:/]|$)/i;
 
+/**
+ * The hosted staging (Stage 3): LINK_ENV=staging on a server other people reach (Railway, or
+ * STAGING_PUBLIC=1). `pnpm prod:local` is staging on a developer machine and is not this.
+ */
+export function hostedStaging(env: NodeJS.ProcessEnv = process.env) {
+  return linkEnv(env) === 'staging' && (!!env.RAILWAY_PROJECT_ID || env.STAGING_PUBLIC === '1');
+}
+
+/**
+ * What is wrong for the hosted staging (Stage 3), one line per setting (empty = fine). Sample
+ * data and allowlisted testers only: the only fakes are payments, SMS and WhatsApp; bookings are
+ * off (no payment provider); sign-in codes go only to the private inbox (SMS_SINK_TOKEN); the
+ * address search is real; demo routes stay behind DEMO_ROUTES_SECRET (demoRoutesAllowed).
+ */
+export function stagingProblems(c: Config, env: NodeJS.ProcessEnv = process.env): string[] {
+  if (!hostedStaging(env)) return [];
+  const p: string[] = [];
+  if (c.APP_ENV !== 'staging')
+    p.push(`APP_ENV=${c.APP_ENV}: the hosted staging runs with APP_ENV=staging.`);
+  if (c.PAYMENT_PROVIDER !== 'none')
+    p.push(
+      `PAYMENT_PROVIDER=${c.PAYMENT_PROVIDER}: bookings are off on the hosted staging (none).`,
+    );
+  if (c.SMS_PROVIDER === 'fake' && !c.SMS_SINK_TOKEN)
+    p.push(
+      'SMS_SINK_TOKEN: the fake SMS inbox must be private (HTTP Basic auth) on the hosted staging.',
+    );
+  if (c.GEOCODER_PROVIDER === 'dev')
+    p.push(
+      'GEOCODER_PROVIDER=dev: the address search must be real on the hosted staging (nominatim).',
+    );
+  if (env.FIELD_KEY_LOCAL)
+    p.push('FIELD_KEY_LOCAL: the developer key from .env.local is not allowed; set FIELD_KEY.');
+  for (const name of ['AWS_ENDPOINT_URL', 'S3_ENDPOINT'] as const)
+    if (env[name] && LOCAL_URL.test(env[name]!))
+      p.push(`${name}: points at a local fake (aws-local).`);
+  return p;
+}
+
 /** What is wrong for LINK_ENV=production, one line per setting (empty = fine). */
 export function productionProblems(c: Config, env: NodeJS.ProcessEnv = process.env): string[] {
   if (linkEnv(env) !== 'production') return [];

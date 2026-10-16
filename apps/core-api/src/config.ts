@@ -59,6 +59,8 @@ const schema = z
     TRUST_PROXY: z.string().default('loopback'),
     SMS_PROVIDER: z.enum(['fake']).default('fake'),
     SMS_SINK_URL: z.string().url().optional(),
+    /** The hosted staging's private code inbox (Stage 3): sms-sink's Basic-auth password. */
+    SMS_SINK_TOKEN: z.string().min(16).optional(),
     SMS_SENDER_ID: z.string().default('Link'),
     /** sqs: SNS + SQS (aws-local locally); postgres: the outbox is the queue (one server). */
     QUEUE_PROVIDER: z.enum(['sqs', 'postgres']).default('sqs'),

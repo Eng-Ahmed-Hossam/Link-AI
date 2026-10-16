@@ -15,7 +15,12 @@ const external = Object.keys(pkg.dependencies).filter((d) => !d.startsWith('@lin
 
 rmSync(join(root, 'dist'), { recursive: true, force: true });
 const r = await build({
-  entryPoints: { main: join(root, 'src/main.ts'), migrate: join(root, 'src/migrate.ts') },
+  entryPoints: {
+    main: join(root, 'src/main.ts'),
+    migrate: join(root, 'src/migrate.ts'),
+    // The hosted staging's sample world, into an empty database only (Stage 3).
+    'seed-staging': join(root, 'src/seed-staging.ts'),
+  },
   outdir: join(root, 'dist'),
   outExtension: { '.js': '.mjs' },
   bundle: true,

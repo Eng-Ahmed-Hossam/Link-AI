@@ -15,12 +15,21 @@ export interface SmsSender {
 }
 
 export class SmsSinkSender implements SmsSender {
-  constructor(private readonly baseUrl: string) {}
+  constructor(
+    private readonly baseUrl: string,
+    /** Hosted staging: the sink's Basic-auth password (SMS_SINK_TOKEN); none locally. */
+    private readonly token?: string,
+  ) {}
 
   async send(msg: SmsMessage) {
     const res = await fetch(`${this.baseUrl.replace(/\/$/, '')}/messages`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type': 'application/json',
+        ...(this.token
+          ? { authorization: `Basic ${Buffer.from(`core-api:${this.token}`).toString('base64')}` }
+          : {}),
+      },
       body: JSON.stringify(msg),
       signal: AbortSignal.timeout(5000),
     });

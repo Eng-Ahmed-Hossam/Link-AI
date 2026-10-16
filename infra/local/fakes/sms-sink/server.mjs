@@ -4,10 +4,23 @@
 // GET  /api/messages                        -> JSON
 // DELETE /api/messages                      -> clear
 // GET  /health
-// Nothing leaves this container. Local only.
+// Nothing leaves this container. Local, or the hosted staging's private code inbox: with
+// SMS_SINK_TOKEN set every route but /health needs HTTP Basic auth (any user, the token as the
+// password), so only the person holding the token reads the sign-in codes (Stage 3).
 import { createServer } from 'node:http';
+import { createHash, timingSafeEqual } from 'node:crypto';
 
 const PORT = Number(process.env.PORT ?? 8090);
+const TOKEN = process.env.SMS_SINK_TOKEN ?? '';
+const digest = (v) => createHash('sha256').update(v).digest();
+/** No token: open (local). With a token: Basic auth, password = the token (constant time). */
+export function authorised(header, token = TOKEN) {
+  if (!token) return true;
+  const m = /^Basic\s+(.+)$/i.exec(header ?? '');
+  if (!m) return false;
+  const pass = Buffer.from(m[1], 'base64').toString('utf8').split(':').slice(1).join(':');
+  return timingSafeEqual(digest(pass), digest(token));
+}
 const MAX = 500;
 const messages = [];
 
@@ -59,10 +72,14 @@ const send = (res, code, body, type = 'application/json') => {
   res.end(type === 'application/json' ? JSON.stringify(body) : body);
 };
 
-createServer(async (req, res) => {
+export const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   try {
     if (req.method === 'GET' && url.pathname === '/health') return send(res, 200, { ok: true });
+    if (!authorised(req.headers.authorization)) {
+      res.writeHead(401, { 'www-authenticate': 'Basic realm="Link staging codes"' });
+      return res.end();
+    }
     if (req.method === 'GET' && url.pathname === '/')
       return send(res, 200, page(), 'text/html; charset=utf-8');
     if (req.method === 'GET' && url.pathname === '/api/messages')
@@ -89,4 +106,6 @@ createServer(async (req, res) => {
   } catch {
     send(res, 400, { error: 'bad request' });
   }
-}).listen(PORT, () => console.log(`sms-sink on :${PORT}`));
+});
+if (process.argv[1]?.endsWith('server.mjs'))
+  server.listen(PORT, () => console.log(`sms-sink on :${PORT}${TOKEN ? ' (Basic auth on)' : ''}`));

@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { axe } from '../e2e-demo/helpers';
-import { MODE, PEOPLE, codeFor, ready, resetWorld } from './helpers';
+import { MODE, OPS_APP, PEOPLE, codeFor, ready, resetWorld } from './helpers';
 
 /**
  * Part B (MKT-CEN-02, CF-44, OD-46): the owner sets the centre's exact location in C02 — address
@@ -8,7 +8,7 @@ import { MODE, PEOPLE, codeFor, ready, resetWorld } from './helpers';
  * pin until an ops agent compares old and new in the ops console and approves. Live only: the ops
  * console runs on core-api. The map is the drawn dev map here (no map network in tests).
  */
-const OPS = 'http://localhost:3001';
+const OPS = OPS_APP;
 const AGENT = '1000000051';
 
 test.skip(MODE !== 'live', 'The ops console (the approval) runs on core-api only.');

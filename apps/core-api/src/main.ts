@@ -8,7 +8,13 @@ import { Phones } from './identity/phone';
 import { FieldCipher } from './platform/crypto';
 import { currentKeyIds, KEY_MISMATCH_HELP, keyMismatches } from './platform/data-keys';
 import { Database } from './platform/db';
-import { formatProblems, linkEnv, productionProblems, sampleWorldProblems } from './platform/guard';
+import {
+  formatProblems,
+  linkEnv,
+  productionProblems,
+  sampleWorldProblems,
+  stagingProblems,
+} from './platform/guard';
 import { createLogger } from './platform/logger';
 import { Redises } from './platform/redis';
 import { createApi } from './server';
@@ -187,7 +193,7 @@ async function gateway() {
  */
 async function guard() {
   const kind = linkEnv();
-  const problems = productionProblems(config);
+  const problems = [...productionProblems(config), ...stagingProblems(config)];
   // The database is checked only once the settings are right (it may not even be reachable).
   if (kind === 'production' && !problems.length) {
     const db = new Database(config.DATABASE_URL, config.DATABASE_URL_WORKER);
