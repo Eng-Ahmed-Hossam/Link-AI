@@ -1,26 +1,25 @@
 # Environments
 
-Every running copy of Link, one row each. **Every deployment builds from `main` only** (CI step `pnpm run check:deploy-branch` covers the deploy configs in the repo; the source branch of a Railway service or a Vercel project is a dashboard setting, recorded here and read on 2026-10-16). Variable **names** only, never values.
+Every running copy of Link, one row each. The URLs themselves live in [deploy/deployed-urls.json](../../deploy/deployed-urls.json) (the source for `pnpm smoke:deployed`); every app answers `/health` (teacher apps: `/health.json`) with the commit it runs. For whom each link is: [where-is-what.md](where-is-what.md). **Every deployment builds from `main` only** (CI step `pnpm run check:deploy-branch` covers the deploy configs in the repo; the source branch of a Railway service or a Vercel project is a dashboard setting, recorded here and read on 2026-10-16). Variable **names** only, never values.
 
 ## The live staging (Stage 3, 2026-10-16) — sample data, testers only
 
 | Thing | What it is | Branch | URL | Mode | Variable names | How it deploys |
 |---|---|---|---|---|---|---|
-| **Vercel `link-ai-staging-web`** | landing + parent PWA + owner web on the **real core-api** | `main` | https://link-ai-staging-web.vercel.app | live, `NEXT_PUBLIC_APP_ENV=staging` (banner "Test environment — sample data"), real map | `NEXT_PUBLIC_API_MODE`, `NEXT_PUBLIC_APP_ENV`, `CORE_API_URL` (the `/v1` rewrite, so cookies stay first-party), `NEXT_PUBLIC_MAP_PROVIDER`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_TEACHER_APP_URL` | Vercel Git, root `apps/web` |
+| **Vercel `link-ai-staging-web`** | landing + parent PWA + owner web on the **real core-api** | `main` | https://link-ai-staging-web.vercel.app | live, `NEXT_PUBLIC_APP_ENV=staging` (banner "Test environment — sample data"), real map | `NEXT_PUBLIC_API_MODE`, `NEXT_PUBLIC_APP_ENV`, `CORE_API_URL` (the `/v1` proxy, so cookies stay first-party), `LINK_PROXY_SECRET` (signs the visitor's address for core-api), `NEXT_PUBLIC_MAP_PROVIDER`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_TEACHER_APP_URL` | Vercel Git, root `apps/web` |
 | **Vercel `link-ai-staging-teacher`** | teacher app, Expo web build, on the real core-api | `main` | https://link-ai-staging-teacher.vercel.app | live, staging banner, J01 real map | `EXPO_PUBLIC_API_MODE`, `EXPO_PUBLIC_API_BASE_URL` (Bearer + CORS), `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_MAP_PROVIDER`, `EXPO_PUBLIC_SITE_URL` | Vercel Git, root `apps/teacher-app` |
 | **Vercel `link-ai-staging-ops`** | ops console on the real core-api | `main` | https://link-ai-staging-ops.vercel.app | live, staging banner; `OPS_IP_ALLOWLIST` empty (open outside production) | `NEXT_PUBLIC_APP_ENV`, `CORE_API_URL` | Vercel Git, root `apps/ops` |
-| **Railway `core-api-l9aa`** (project `link-ai-staging`, US East) | the real core-api: `api` + `worker` (no gateway: no provider webhooks yet) | `main` | https://core-api-l9aa-production.up.railway.app | **`LINK_ENV=staging`**, `APP_ENV=staging`; the hosted-staging guard: bookings off (`PAYMENT_PROVIDER=none`), `SMS_PROVIDER=inbox` (the private code inbox at `/__staging/sms`, Basic auth `SMS_SINK_TOKEN`), `WHATSAPP_PROVIDER=manual`, `GEOCODER_PROVIDER=nominatim`; `/__demo` off | as before plus `LINK_ENV`, `SMS_PROVIDER`, `SMS_SINK_TOKEN`, `GEOCODER_PROVIDER`, `GEOCODER_USER_AGENT`, `CORS_ALLOWED_ORIGINS` (both teacher origins); leftovers from the Codex proxy (`CORE_API_UPSTREAM_PORT`, `MOCK_SERVER_*`, `DEMO_DEFAULT_FLAGS`, `DEMO_REAL_STT`, `SMS_SINK_URL`) are unused | Railpack; **pre-deploy** `node apps/core-api/dist/migrate.mjs && node apps/core-api/dist/seed-staging.mjs` (the sample world, only into an empty database — loaded 2026-10-16); auto-deploy on push to `main` |
+| **Railway `core-api-l9aa`** (project `link-ai-staging`, US East) | the real core-api: `api` + `worker` (no gateway: no provider webhooks yet) | `main` | https://core-api-l9aa-production.up.railway.app | **`LINK_ENV=staging`**, `APP_ENV=staging`; the hosted-staging guard: bookings off (`PAYMENT_PROVIDER=none`), `SMS_PROVIDER=inbox` (the private code inbox at `/__staging/sms`, Basic auth `SMS_SINK_TOKEN`), `WHATSAPP_PROVIDER=manual`, `GEOCODER_PROVIDER=nominatim`; `/__demo` off | as before plus `LINK_ENV`, `SMS_PROVIDER`, `SMS_SINK_TOKEN`, `GEOCODER_PROVIDER`, `GEOCODER_USER_AGENT`, `CORS_ALLOWED_ORIGINS` (both teacher origins); `LINK_PROXY_SECRET` (the web's signed client address); the Codex leftovers were removed on 2026-10-16 (`CORE_API_UPSTREAM_PORT`, `MOCK_SERVER_INTERNAL_URL`, `MOCK_SERVER_PORT`, `DEMO_DEFAULT_FLAGS`, `DEMO_REAL_STT`, `SMS_SINK_URL`) | Railpack; **pre-deploy** `node apps/core-api/dist/migrate.mjs && node apps/core-api/dist/seed-staging.mjs` (the sample world, only into an empty database — loaded 2026-10-16); auto-deploy on push to `main` |
 | **Railway `ai-service`** | the public trial's demo API (mock server) + private Whisper `tiny` | `main` | https://ai-service-production-43b7.up.railway.app | mock server, `/__demo` off | `AI_*`, `CORS_ALLOWED_ORIGINS`, `DEMO_REAL_STT`, `HF_HOME`, `XDG_CACHE_HOME`, `MODEL_ROUTING_CONFIG`, `PORT` | `Dockerfile.railway-demo`, healthcheck `/health` |
 | **Railway `postgres`** | Postgres 16 + PostGIS + pgvector, volume `postgres-data` | `main` (moved by Ahmed) | private | sample data | `POSTGRES_*`, `PGDATA`, `APP_MIGRATOR_PASSWORD`, `CREATE_TEST_DB` | `deploy/railway-postgres.Dockerfile` |
 | **Railway `redis-state`**, **`redis-cache`** | Redis 7 (`redis-state` with a volume) | image | private | — | — | image |
 
-## The public trial (unchanged: the mock, "Try Link")
+## The public trial ("Try Link": sample data, a sandbox per visitor, ADR-0010)
 
 | Thing | What it is | Branch | URL | Mode | Variable names |
 |---|---|---|---|---|---|
-| **Vercel `link-ai-web`** | landing + "Try Link" | `main` | https://link-ai-web-sigma.vercel.app | in-browser mock, real map | `NEXT_PUBLIC_MAP_PROVIDER`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_TEACHER_APP_URL` |
+| **Vercel `link-ai-web`** | landing + "Try Link" | `main` | https://link-ai-web-sigma.vercel.app | **mock-server** on the demo API, each visitor in their own sandbox (since 2026-10-16), real map | `NEXT_PUBLIC_API_MODE=mock-server`, `NEXT_PUBLIC_API_BASE_URL` (the demo API), `NEXT_PUBLIC_MAP_PROVIDER`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_TEACHER_APP_URL` |
 | **Vercel `link-ai-teacher-demo`** | teacher app for the trial | `main` | https://link-ai-teacher-demo.vercel.app | mock-server (Railway `ai-service`), real map | `EXPO_PUBLIC_API_MODE`, `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_MAP_PROVIDER`, `EXPO_PUBLIC_SITE_URL` |
-| **Vercel `link-platform-demo`** | a single static "Bundled Page" (not this repo), one deploy on 10 Oct, no custom domain | — | https://link-platform-demo.vercel.app | static | waiting on Ahmed (see open points) |
 
 ## Local
 
@@ -64,8 +63,6 @@ Before any deletion, every branch not merged by git was archived as a tag `archi
 | # | What | Why it waits |
 |---|---|---|
 | 1 | **Nightly backup on Railway** (`deploy/backup.Dockerfile`, a cron service running `deploy/backup.sh`) | Railway refused a new service: "Free plan resource provision limit exceeded". Needs a paid plan, or one service removed, or the backup run elsewhere (your choice) |
-| 2 | `link-platform-demo` | No custom domain, one deploy on 10 Oct; its automatic `*.vercel.app` address still serves a page, so not deleted without your word |
-| 3 | Leftover Codex variables on `core-api-l9aa` | Unused; removing them is a deletion: your call |
 
 ## Map settings (Part B, 2026-10-16)
 
@@ -76,3 +73,10 @@ Before any deletion, every branch not merged by git was archived as a tag `archi
 | Railway `core-api-l9aa` | `GEOCODER_PROVIDER`, `GEOCODER_USER_AGENT` | unset → sample places | `nominatim` and `Link-staging (https://link-ai-web-sigma.vercel.app)`; matters from Stage 3, when the web calls core-api |
 
 Proof on staging (2026-10-16): core-api ran migration 0019 in its pre-deploy step ("1 applied, 18 already there"); `/v1/geo/search` answers 401 without a session; the C02 picker flow (search → pick → drag → save → "Location under review" beside the approved pin) passed on `https://link-ai-web-sigma.vercel.app` in mock mode. Ops approval on staging waits for Stage 3 (the web on core-api); it is proven locally by `e2e-modes/location.spec.ts` (live).
+
+## Changes on 2026-10-16 (the trial fix)
+
+- The public trial's teacher entry was broken by the `/__demo` lock; the demo API now runs one sandbox per visitor (ADR-0010) and the trial web calls it (`mock-server`); `ai-service` `CORS_ALLOWED_ORIGINS` lists both trial origins.
+- `link-platform-demo` deleted (Ahmed's approval).
+- Both teacher projects build with `pnpm --filter @link/teacher-app run build:web` (writes `health.json`).
+- The deployed check runs after every deploy of `main`, nightly and on demand (workflow `deployed`).

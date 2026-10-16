@@ -93,6 +93,10 @@ export function productionProblems(c: Config, env: NodeJS.ProcessEnv = process.e
     p.push('SMS_PROVIDER=fake / SMS_SINK_URL: sms-sink is not allowed in production.');
   if (c.SMS_PROVIDER === 'inbox')
     p.push('SMS_PROVIDER=inbox: the staging code inbox is not allowed in production.');
+  if (c.OTP_PER_PHONE_10MIN > 3 || c.OTP_PER_PHONE_DAY > 10)
+    p.push(
+      'OTP_PER_PHONE_10MIN / OTP_PER_PHONE_DAY: production keeps the sign-in code limits (3 per 10 min, 10 a day).',
+    );
   if (c.WHATSAPP_PROVIDER === 'fake' || env.WHATSAPP_FAKE_URL)
     p.push(
       'WHATSAPP_PROVIDER=fake / WHATSAPP_FAKE_URL: whatsapp-fake is not allowed in production (use manual until a provider is set).',

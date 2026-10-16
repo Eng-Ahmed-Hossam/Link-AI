@@ -97,6 +97,7 @@ describe('Production guard', () => {
     ['whatsapp-fake', { WHATSAPP_PROVIDER: 'fake' }, /whatsapp-fake/],
     ['demo routes', { DEMO_ROUTES: '1' }, /DEMO_ROUTES=1/],
     ['the sample places geocoder', { GEOCODER_PROVIDER: 'dev' }, /GEOCODER_PROVIDER=dev/],
+    ['looser sign-in code limits', { OTP_PER_PHONE_DAY: '200' }, /OTP_PER_PHONE_DAY/],
     ['the dev phone key', { FIELD_KEY_LOCAL: key() }, /FIELD_KEY_LOCAL/],
     ['aws-local', { AWS_ENDPOINT_URL: 'http://aws-local:4566' }, /AWS_ENDPOINT_URL/],
     [

@@ -62,6 +62,13 @@ const schema = z
      * x-link-client-ip, src/platform/client-ip.ts); unset = only Express' trust proxy decides.
      */
     LINK_PROXY_SECRET: z.string().min(24).optional(),
+    /**
+     * Sign-in codes one phone may ask for (MKT-ACC-01): 3 per 10 minutes and 10 a day. The hosted
+     * staging raises them for its sample numbers (automated checks sign in after every deploy);
+     * production refuses anything looser than the defaults (guard.ts).
+     */
+    OTP_PER_PHONE_10MIN: z.coerce.number().int().min(1).max(100).default(3),
+    OTP_PER_PHONE_DAY: z.coerce.number().int().min(1).max(1000).default(10),
     /** fake = the local sms-sink; inbox = the hosted staging's private code inbox in core-api. */
     SMS_PROVIDER: z.enum(['fake', 'inbox']).default('fake'),
     SMS_SINK_URL: z.string().url().optional(),
