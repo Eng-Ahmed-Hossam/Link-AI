@@ -4,11 +4,20 @@ import type { Browser, BrowserContext, Page } from '@playwright/test';
 
 /** Every deployed URL (deploy/deployed-urls.json): one source for this suite and the docs. */
 const here = __dirname;
-export const URLS = JSON.parse(
+const FILE = JSON.parse(
   readFileSync(join(here, '..', '..', '..', 'deploy', 'deployed-urls.json'), 'utf8'),
 ) as {
   publicTrial: { web: string; teacher: string; demoApi: string };
   staging: { web: string; teacher: string; ops: string; api: string; smsInbox: string };
+};
+/** SMOKE_TRIAL_WEB / SMOKE_TRIAL_TEACHER point the trial checks at a local run (before a deploy). */
+export const URLS = {
+  ...FILE,
+  publicTrial: {
+    ...FILE.publicTrial,
+    web: process.env.SMOKE_TRIAL_WEB ?? FILE.publicTrial.web,
+    teacher: process.env.SMOKE_TRIAL_TEACHER ?? FILE.publicTrial.teacher,
+  },
 };
 
 export type Lang = 'ar' | 'en';
@@ -51,6 +60,11 @@ mkdirSync(dirname(OUT), { recursive: true });
 
 /** Requests that may fail without being a problem (the browser's own probes). */
 const IGNORED = /favicon|\/_next\/static\/.*\.map$|hot-update|__nextjs/;
+/**
+ * Expected: a signed-out visitor's app asks for a session it does not have (401 on /v1/me and
+ * /v1/auth/refresh). A lost session on a signed-in page still fails: its main action does.
+ */
+const EXPECTED = /^401 [^ ]*\/v1\/(me|auth\/refresh)$/;
 
 /** Watches one page for console errors, failed requests and map tiles. */
 export function watch(page: Page) {
@@ -123,7 +137,9 @@ export async function checkPage(
       .split('\n')[0]!
       .slice(0, 200);
   }
-  const failedRequests = [...new Set(w.failed)].filter((f) => !opts.allowFailed?.test(f));
+  const failedRequests = [...new Set(w.failed)].filter(
+    (f) => !EXPECTED.test(f) && !opts.allowFailed?.test(f),
+  );
   const mapBad = map ? map.tiles === 0 || map.blank : false;
   const ok = actionOk && !w.consoleErrors.length && !failedRequests.length && !mapBad;
   record({

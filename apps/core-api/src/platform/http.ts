@@ -1,3 +1,4 @@
+import { clientIp } from './client-ip';
 import {
   type CallHandler,
   type CanActivate,
@@ -126,7 +127,9 @@ export class AuthGuard implements CanActivate {
     // Ops routes (MKT-OPS-08): the address first (nothing is read for a refused caller), then the
     // `link_ops` role and the route's permission (OD-37).
     if (def.ops && req.principal) {
-      if (!opsIpAllowed(req.ip, this.c.OPS_IP_ALLOWLIST, linkEnv()))
+      if (
+        !opsIpAllowed(clientIp(req, this.c.LINK_PROXY_SECRET), this.c.OPS_IP_ALLOWLIST, linkEnv())
+      )
         throw new Problem(
           403,
           'ops_ip_not_allowed',

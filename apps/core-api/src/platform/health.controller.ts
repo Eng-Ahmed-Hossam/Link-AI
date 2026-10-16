@@ -3,6 +3,13 @@ import type { Response } from 'express';
 import { Database } from './db';
 import { Redises } from './redis';
 
+/** The commit this process was built from: Railway, Vercel or an explicit COMMIT_SHA. */
+export const commitSha = () =>
+  process.env.RAILWAY_GIT_COMMIT_SHA ??
+  process.env.VERCEL_GIT_COMMIT_SHA ??
+  process.env.COMMIT_SHA ??
+  'unknown';
+
 /**
  * Liveness (`/health`: the process answers) and readiness (`/ready`: Postgres and both Redis
  * instances answer). Not part of the /v1 contract.
@@ -17,7 +24,8 @@ export class HealthController {
   @Get('health')
   @HttpCode(200)
   health() {
-    return { status: 'ok' };
+    // The deployed commit, so a check can confirm the new version is live (smoke:deployed).
+    return { status: 'ok', app: 'core-api', commit: commitSha() };
   }
 
   @Get('ready')

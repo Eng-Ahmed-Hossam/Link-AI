@@ -57,6 +57,11 @@ const schema = z
      * behind Caddy on one server 'loopback, uniquelocal'. Per-address rate limits depend on it.
      */
     TRUST_PROXY: z.string().default('loopback'),
+    /**
+     * The web's /v1 proxy signs the visitor's address with this (x-link-proxy-secret +
+     * x-link-client-ip, src/platform/client-ip.ts); unset = only Express' trust proxy decides.
+     */
+    LINK_PROXY_SECRET: z.string().min(24).optional(),
     /** fake = the local sms-sink; inbox = the hosted staging's private code inbox in core-api. */
     SMS_PROVIDER: z.enum(['fake', 'inbox']).default('fake'),
     SMS_SINK_URL: z.string().url().optional(),

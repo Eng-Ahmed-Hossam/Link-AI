@@ -1,3 +1,4 @@
+import { clientIp } from '../platform/client-ip';
 import { CONFIG } from '../platform/di';
 import type { Config } from '../config';
 import { Controller, Inject, Req } from '@nestjs/common';
@@ -53,7 +54,11 @@ export class CentresController {
     const e164 = toE164(b.phone);
     // 07 §1 rate limits (starting values): a public form, so per address and per phone.
     for (const [key, limit, window] of [
-      [this.redis.key('rl', 'c01', 'ip', req.ip ?? 'unknown'), C01_LIMITS.perIpHour, 3600],
+      [
+        this.redis.key('rl', 'c01', 'ip', clientIp(req, this.config.LINK_PROXY_SECRET)),
+        C01_LIMITS.perIpHour,
+        3600,
+      ],
       [
         this.redis.key('rl', 'c01', 'p', this.phones.redisKey(e164)),
         C01_LIMITS.perPhoneDay,

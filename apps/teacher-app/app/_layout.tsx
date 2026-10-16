@@ -17,12 +17,14 @@ import { setApiBaseUrl } from '@link/api-client';
 import { LocaleProvider, useLocale } from '@/locale';
 import { API_BASE_URL, API_MODE } from '@/api-mode';
 import { SessionProvider } from '@/session';
+import { withSandbox } from '@/sandbox';
 import { DemoControls, TryBanner, startMocks } from '@/demo';
 import { startQueueWorker } from '@/offline/voiceQueue';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 const USE_IN_APP_MOCKS = API_MODE === 'mock';
-setApiBaseUrl(API_BASE_URL);
+// The public trial: the visitor's own sandbox on the demo API, shared with the web (ADR-0010).
+setApiBaseUrl(withSandbox(API_BASE_URL));
 
 function Shell() {
   const { locale, t } = useLocale();

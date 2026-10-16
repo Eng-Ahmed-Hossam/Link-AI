@@ -2171,5 +2171,6 @@
   "ops.centres.pinNew": "الجديد (من المالك)",
   "ops.centres.pinMoved": "انتقل {metres, number} متر",
   "ops.centres.pinFirst": "أول دبوس (غير معروض بعد)",
-  "common.envBanner": "بيئة اختبار — بيانات تجريبية"
+  "common.envBanner": "بيئة اختبار — بيانات تجريبية",
+  "centre.nav.menu": "القائمة"
 }

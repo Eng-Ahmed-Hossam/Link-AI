@@ -1,0 +1,59 @@
+name: deployed
+# pnpm smoke:deployed against every deployed app (deploy/deployed-urls.json): after each push to
+# main once Vercel and Railway serve that commit, nightly, and on demand. A failure opens or
+# updates the issue "Deployed check failing" (GitHub emails the owner); a pass closes it.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * *' # 02:00 UTC
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: deployed
+  cancel-in-progress: true
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile --filter @link/web...
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm --filter @link/web exec playwright install --with-deps chromium
+      # After a push: wait until every app serves this commit (health endpoints name it).
+      - if: github.event_name == 'push'
+        run: node scripts/wait-deployed.mjs ${{ github.sha }} --timeout-min 25
+      - run: node scripts/smoke-deployed.mjs --report apps/web/test-results/deployed-report.md
+        env:
+          # The staging's private code inbox (Railway core-api-l9aa → SMS_SINK_TOKEN). Without it
+          # the staging sign-in checks are skipped and say so.
+          SMOKE_SMS_TOKEN: ${{ secrets.STAGING_SMS_SINK_TOKEN }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployed-report
+          path: apps/web/test-results/deployed-report.md
+          retention-days: 14
+      - if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Deployed check failing"
+          body="$(printf 'Run: %s/%s/actions/runs/%s (%s, %s)\n\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_EVENT_NAME" "${GITHUB_SHA::7}"; grep -E '^\| .*\*\*problem\*\*|^#|^`pnpm|^\|---|^\| Env' apps/web/test-results/deployed-report.md 2>/dev/null | head -80 || echo 'No report: the run failed before the checks (see the run log).')"
+          n=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ -n "$n" ]; then gh issue comment "$n" --body "$body"; else gh issue create --title "$title" --body "$body"; fi
+      - if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          n=$(gh issue list --state open --search '"Deployed check failing" in:title' --json number --jq '.[0].number')
+          if [ -n "$n" ]; then gh issue close "$n" --comment "Passing again: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"; fi

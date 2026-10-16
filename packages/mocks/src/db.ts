@@ -232,6 +232,15 @@ function save() {
   }
 }
 
+/** The demo API's per-visitor sandboxes (ADR-0010): the whole marketplace world, out and in. */
+export function exportState(): State | null {
+  return state;
+}
+export function importState(s: State | null) {
+  state = s;
+  clearSessionCache();
+}
+
 export function resetMockDb() {
   state = fresh();
   // Ids of groups opened after a reset repeat (grp-new-…): drop calendars cached before it.

@@ -15,6 +15,7 @@ import { resetFollowupDb, setDemo } from '@link/mocks/followup';
 import type { Locale } from '@link/i18n';
 import type { Session } from '../session';
 import { API_BASE_URL, API_MODE, CORE_API } from '../api-mode';
+import { sandboxId, withSandbox } from '../sandbox';
 
 export type TryRole = 'parent' | 'teacher' | 'owner';
 export interface TrySession {
@@ -68,7 +69,11 @@ export async function startTry(input: { role: TryRole; lang: Locale }): Promise<
   const prior = readTry();
   writeTry({ ...input, startedAt: prior?.startedAt ?? Date.now(), cardDone: prior?.cardDone });
   if (input.role === 'teacher')
-    return `${TEACHER_APP}/try?${new URLSearchParams({ lang: input.lang })}`;
+    // The teacher app joins this visitor's sandbox (the same world as the web, ADR-0010).
+    return `${TEACHER_APP}/try?${new URLSearchParams({
+      lang: input.lang,
+      ...(API_MODE === 'mock-server' ? { sandbox: sandboxId() } : {}),
+    })}`;
   if (API_MODE === 'mock') {
     // First visit in this browser: the sample scenario; later visits keep what was done.
     if (!prior) {
@@ -79,7 +84,7 @@ export async function startTry(input: { role: TryRole; lang: Locale }): Promise<
   } else {
     // The website pages load no app providers, which set the API address: set it here, or these
     // calls would go to the web app itself (404).
-    setApiBaseUrl(API_BASE_URL);
+    setApiBaseUrl(withSandbox(API_BASE_URL));
     await demoApi.settings(SETTINGS);
   }
   try {
@@ -108,7 +113,7 @@ export function useTryOn(): boolean {
 /** "Reset demo": the shared sample scenario again, this browser's demo data wiped, then home. */
 export async function resetTry(lang: Locale) {
   if (API_MODE !== 'mock') {
-    setApiBaseUrl(API_BASE_URL);
+    setApiBaseUrl(withSandbox(API_BASE_URL));
     await demoApi.reset().catch(() => undefined);
   }
   try {

@@ -16,6 +16,9 @@ const PHONE = {
   owner: '1000000003',
   agent: '1000000051',
 };
+/** Real sign-in needs the inbox token (GitHub secret STAGING_SMS_SINK_TOKEN). */
+const NO_TOKEN = !process.env.SMOKE_SMS_TOKEN;
+const NEEDS_TOKEN = 'SMOKE_SMS_TOKEN not set: add the GitHub secret STAGING_SMS_SINK_TOKEN';
 const stateFile = (role: string) => join(tmpdir(), `link-smoke-${role}-${process.pid}.json`);
 
 async function webSignIn(page: Page, role: 'owner' | 'parent') {
@@ -157,6 +160,8 @@ test('staging: owner signs in (real code) — schedule and the location picker',
 });
 
 test('staging: parent signs in (real code) — children', async ({ browser }) => {
+  test.skip(NO_TOKEN, NEEDS_TOKEN);
+  test.skip(NO_TOKEN, NEEDS_TOKEN);
   const problems: string[] = [];
   for (const [i, c] of COMBOS.entries()) {
     const { ctx, page } = await newPage(browser, c, i ? stateFile('parent') : undefined);
@@ -201,6 +206,7 @@ test('staging: parent signs in (real code) — children', async ({ browser }) =>
 });
 
 test('staging: teacher signs in (real code) — tabs and J01 map', async ({ browser }) => {
+  test.skip(NO_TOKEN, NEEDS_TOKEN);
   const problems: string[] = [];
   for (const [i, c] of COMBOS.entries()) {
     const { ctx, page } = await newPage(browser, c, i ? stateFile('teacher') : undefined);
@@ -252,6 +258,7 @@ test('staging: teacher signs in (real code) — tabs and J01 map', async ({ brow
 });
 
 test('staging: ops agent signs in (real code) — centre requests', async ({ browser }) => {
+  test.skip(NO_TOKEN, NEEDS_TOKEN);
   const problems: string[] = [];
   for (const [i, c] of COMBOS.entries()) {
     const { ctx, page } = await newPage(browser, c, i ? stateFile('agent') : undefined);

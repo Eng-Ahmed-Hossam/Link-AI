@@ -340,6 +340,15 @@ export function configureFollowupStore(s: FollowupStore | null) {
   pendingAudit = [];
 }
 
+/** The demo API's per-visitor sandboxes (ADR-0010): the whole follow-up world, out and in. */
+export function exportState(): FuState | null {
+  return state;
+}
+export function importState(s: FuState | null) {
+  state = s;
+  pendingAudit = [];
+}
+
 function load(): FuState {
   if (state) return state;
   if (store) {

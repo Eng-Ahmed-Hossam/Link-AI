@@ -43,23 +43,32 @@ async function start(env: Record<string, string>) {
   throw new Error('mock server did not start');
 }
 
-const reset = (base: string, headers: Record<string, string> = {}) =>
-  fetch(`${base}/__demo/reset`, { method: 'POST', headers, body: '{}' });
+const SB = '/sb/gateTestSandboxAAAAAAAAAAAAAA';
+const post = (base: string, path: string, headers: Record<string, string> = {}) =>
+  fetch(`${base}${path}`, { method: 'POST', headers, body: '{}' });
 
-it('hosted without a secret: /__demo/* answers 404', async () => {
+it('hosted without a secret: no sandbox → 400; the global demo routes → 404 even in a sandbox', async () => {
   const base = await start({ RAILWAY_PROJECT_ID: 'sample-project' });
-  expect((await reset(base)).status).toBe(404);
+  expect((await post(base, '/__demo/reset')).status).toBe(400);
   expect((await fetch(`${base}/health`)).status).toBe(200);
-  expect((await fetch(`${base}/__demo/state/en`)).status).toBe(404);
-  expect((await fetch(`${base}/x/__demo/reset`, { method: 'POST' })).status).toBe(404);
+  expect((await fetch(`${base}/__demo/state/en`)).status).toBe(400);
+  expect((await post(base, `${SB}/__demo/provider`)).status).toBe(404);
+  expect((await post(base, `${SB}/__demo/story/reset`)).status).toBe(404);
+  expect((await post(base, `${SB}/x/__demo/reset`)).status).toBe(404);
+  // The trial's own routes work, on the caller's sandbox only (sandbox.test.ts).
+  expect((await post(base, `${SB}/__demo/reset`)).ok).toBe(true);
 }, 30_000);
 
-it('hosted with a secret: anonymous 401, wrong 401, right header works', async () => {
+it('hosted with a secret: the global routes need it (401 without, 401 wrong, works with it)', async () => {
   const base = await start({
     RAILWAY_PROJECT_ID: 'sample-project',
     DEMO_ROUTES_SECRET: 'sample-secret',
   });
-  expect((await reset(base)).status).toBe(401);
-  expect((await reset(base, { 'x-link-demo-secret': 'nope' })).status).toBe(401);
-  expect((await reset(base, { 'x-link-demo-secret': 'sample-secret' })).ok).toBe(true);
+  expect((await post(base, `${SB}/__demo/provider`)).status).toBe(401);
+  expect((await post(base, `${SB}/__demo/provider`, { 'x-link-demo-secret': 'nope' })).status).toBe(
+    401,
+  );
+  expect(
+    (await post(base, `${SB}/__demo/reset`, { 'x-link-demo-secret': 'sample-secret' })).ok,
+  ).toBe(true);
 }, 30_000);
