@@ -22,10 +22,11 @@ import { Owner } from './followup/owner';
 import { Records } from './followup/records';
 import { Voice } from './followup/voice';
 import { type SmsSender, SMS_SENDER, SmsSinkSender } from './adapters/sms';
+import { RedisInboxSender, SmsInboxController } from './adapters/sms-inbox';
 import { DevGeocoder, GEOCODER, type Geocoder, NominatimGeocoder } from './adapters/geocoder';
 import { Geo, GeoController } from './market/geo';
 import { type Config } from './config';
-import { demoRoutesAllowed } from './platform/guard';
+import { demoRoutesAllowed, linkEnv } from './platform/guard';
 import { Accounts } from './identity/accounts';
 import { AuthController } from './identity/auth.controller';
 import { MeController } from './identity/me.controller';
@@ -92,8 +93,12 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
     factory(Phones, [FieldCipher], (cipher: FieldCipher) => new Phones(c.HMAC_KEY_LOOKUP, cipher)),
     factory(
       SMS_SENDER,
-      [],
-      () => overrides.sms ?? new SmsSinkSender(c.SMS_SINK_URL!, c.SMS_SINK_TOKEN),
+      [Redises],
+      (r: Redises) =>
+        overrides.sms ??
+        (c.SMS_PROVIDER === 'inbox'
+          ? new RedisInboxSender(r)
+          : new SmsSinkSender(c.SMS_SINK_URL!, c.SMS_SINK_TOKEN)),
     ),
     factory(
       OtpService,
@@ -242,6 +247,9 @@ export async function apiModule(
     PayoutsController,
   ];
   if (demoRoutesAllowed(c)) controllers.push((await import('./dev/dev.controller')).DevController);
+  // The hosted staging's private code inbox (SMS_PROVIDER=inbox; refused in production).
+  if (c.SMS_PROVIDER === 'inbox' && linkEnv() !== 'production')
+    controllers.push(SmsInboxController);
   @Module({})
   class ApiModule {}
   return {
