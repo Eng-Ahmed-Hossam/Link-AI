@@ -213,47 +213,59 @@ export function CentreShell({
       </RequireStaff>
     );
 
+  // One navigation, two places: the sidebar from tablet width, a "Menu" disclosure on phones.
+  const nav = (className: string) => (
+    <SideNav
+      className={className}
+      label={t('centre.nav.label')}
+      sections={sections}
+      activeId={activeId}
+      header={
+        <div className="flex flex-col gap-4 px-3">
+          <Logo variant="lockup-light" size={32} label={t('common.appName')} />
+          <div className="rounded-12 border border-border bg-soft p-3">
+            <p className="text-label text-navy">
+              <bdi>{centreName}</bdi>
+            </p>
+            <p className="text-caption text-muted">{t('owner.shell.workspace')}</p>
+          </div>
+        </div>
+      }
+      footer={
+        session ? (
+          <div className="flex flex-col gap-1 px-3 text-caption text-muted">
+            <span data-testid="signed-in-as">
+              {t('owner.shell.signedInAs', { name: me.data?.name ?? '' })}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                signOut();
+                router.replace(`/${locale}/centre`);
+              }}
+              className="inline-flex min-h-11 items-center self-start text-blueText"
+            >
+              {t('owner.shell.signOut')}
+            </button>
+          </div>
+        ) : null
+      }
+      renderLink={(item, props) => <Link href={item.href} {...props} />}
+    />
+  );
+
   return (
     <RequireStaff>
-      <div className="flex min-h-dvh bg-bg">
-        <SideNav
-          label={t('centre.nav.label')}
-          sections={sections}
-          activeId={activeId}
-          header={
-            <div className="flex flex-col gap-4 px-3">
-              <Logo variant="lockup-light" size={32} label={t('common.appName')} />
-              <div className="rounded-12 border border-border bg-soft p-3">
-                <p className="text-label text-navy">
-                  <bdi>{centreName}</bdi>
-                </p>
-                <p className="text-caption text-muted">{t('owner.shell.workspace')}</p>
-              </div>
-            </div>
-          }
-          footer={
-            session ? (
-              <div className="flex flex-col gap-1 px-3 text-caption text-muted">
-                <span data-testid="signed-in-as">
-                  {t('owner.shell.signedInAs', { name: me.data?.name ?? '' })}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    signOut();
-                    router.replace(`/${locale}/centre`);
-                  }}
-                  className="inline-flex min-h-11 items-center self-start text-blueText"
-                >
-                  {t('owner.shell.signOut')}
-                </button>
-              </div>
-            ) : null
-          }
-          renderLink={(item, props) => <Link href={item.href} {...props} />}
-        />
+      <div className="flex min-h-dvh flex-col bg-bg md:flex-row">
+        {nav('hidden md:flex')}
+        <details className="border-b border-border bg-white md:hidden" data-testid="phone-nav">
+          <summary className="flex min-h-11 cursor-pointer items-center px-4 text-label text-navy">
+            {t('centre.nav.menu')}
+          </summary>
+          {nav('w-full border-e-0')}
+        </details>
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-white px-8 py-3">
+          <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-white px-4 py-3 md:px-8">
             <p className="text-caption uppercase text-muted">
               {PILOT
                 ? t('owner.pilot.breadcrumb', { centre: centreName })
@@ -279,7 +291,7 @@ export function CentreShell({
               <LangSwitch locale={locale} />
             </div>
           </header>
-          <main id="main" className="flex flex-1 flex-col gap-6 p-8">
+          <main id="main" className="flex min-w-0 flex-1 flex-col gap-6 p-4 md:p-8">
             {locked ? null : children}
           </main>
         </div>

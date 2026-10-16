@@ -300,7 +300,7 @@ function HallEditor({
       {hall ? (
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-2 text-label text-navy">{t('centre.rooms.slots')}</legend>
-          <div className="grid grid-cols-6 gap-1.5" role="group">
+          <div className="grid grid-cols-6 gap-1.5 overflow-x-auto" role="group">
             {DAYS.map((d) => (
               <span key={d} className="text-center text-caption text-muted">
                 {formatWeekday(d, locale)}
@@ -329,7 +329,7 @@ function HallEditor({
                       })
                     }
                     className={cn(
-                      'min-h-11 rounded-8 text-caption',
+                      'min-h-11 min-w-11 rounded-8 text-caption',
                       taken
                         ? 'bg-soft text-muted'
                         : isClosed

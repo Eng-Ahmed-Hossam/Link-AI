@@ -10,7 +10,8 @@
     "typecheck": "tsc -p .",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "build:web": "expo export --platform web && node scripts/health.mjs dist"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

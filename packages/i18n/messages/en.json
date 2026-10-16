@@ -2171,5 +2171,6 @@
   "ops.centres.pinNew": "New (owner)",
   "ops.centres.pinMoved": "Moved {metres, number} m",
   "ops.centres.pinFirst": "First pin (not public yet)",
-  "common.envBanner": "Test environment — sample data"
+  "common.envBanner": "Test environment — sample data",
+  "centre.nav.menu": "Menu"
 }

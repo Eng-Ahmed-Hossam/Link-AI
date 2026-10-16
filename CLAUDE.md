@@ -83,6 +83,12 @@ infra/  docs/
 - Fonts: Cairo (Arabic), Plus Jakarta Sans (English). Tokens in `docs/11-design-system.md`.
 - Dates/times in `Africa/Cairo`. Missing translation keys fail CI.
 
+## Definition of done — deployed apps
+
+- A change that affects a deployed app (anything in `deploy/deployed-urls.json`: the public trial, the live staging) is **done only when `pnpm smoke:deployed` passes against the deployed URLs**, after the deploy of that commit (`node scripts/wait-deployed.mjs <sha>` confirms every app's `/health` names it).
+- Every report says that result: clean / problem counts and the link to the GitHub run (workflow `deployed`), or why it could not run.
+- The public trial is read-mostly and sandboxed (ADR-0010): checks never reset shared data.
+
 ## Commands (placeholders until code exists)
 
 ```bash
@@ -94,6 +100,7 @@ pnpm test:money       # ledger property tests + golden examples A–I + seat tes
 pnpm lint             # eslint/prettier + ruff
 pnpm typecheck        # tsc + mypy
 pnpm openapi:check    # OpenAPI drift check + regenerate api-client
+pnpm smoke:deployed   # every deployed app, read-mostly (--full: Arabic + English, 390 + 1280 px)
 ```
 
 Local services, env vars, seed data and sandbox accounts: `docs/14-dev-environment.md`.

@@ -33,6 +33,14 @@ const mapHost = realMap
   : '';
 
 /**
+ * The public trial calls the hosted demo API on its own origin (mock-server mode, ADR-0010).
+ */
+const demoApi =
+  process.env.NEXT_PUBLIC_API_MODE === 'mock-server' && process.env.NEXT_PUBLIC_API_BASE_URL
+    ? ` ${new URL(process.env.NEXT_PUBLIC_API_BASE_URL).origin}`
+    : '';
+
+/**
  * MapLibre's worker (public/maplibre/) gets its own, narrower policy: it loads the Arabic text
  * plugin — our own vendored file — with fetch + eval, which the page's policy refuses. The worker
  * has no DOM; scripts only from this origin; connections only here and to the map host. The
@@ -76,7 +84,7 @@ function securityHeaders() {
         "style-src 'self' 'unsafe-inline'",
         `img-src 'self' data: blob:${mapHost}`,
         "font-src 'self' data:",
-        `connect-src 'self'${analytics}${mapHost}`,
+        `connect-src 'self'${analytics}${mapHost}${demoApi}`,
         "worker-src 'self' blob:",
         "frame-ancestors 'none'",
         "base-uri 'self'",

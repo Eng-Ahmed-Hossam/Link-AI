@@ -9,6 +9,7 @@ import { MapConfigProvider, MockBadge, ToastProvider } from '@link/ui';
 import type { Locale } from '@link/i18n';
 import { createTranslator } from '@link/i18n';
 import { SessionProvider } from './session';
+import { withSandbox } from './sandbox';
 import { API_BASE_URL, API_MODE, CORE_API, MAP_PROVIDER, MAP_STYLE_URL } from './api-mode';
 
 // Demo-only panels load on demand: they pull the mock data in, which the website never needs.
@@ -27,7 +28,8 @@ const TryBar = dynamic(() => import('@demo').then((m) => m.TryBar), { ssr: false
 
 const USE_MSW = API_MODE === 'mock';
 // `mock-server` talks to a URL; `mock` and `live` stay same-origin (MSW worker / the /v1 proxy).
-setApiBaseUrl(API_BASE_URL);
+// The public trial: each visitor's own sandbox on the demo API (ADR-0010).
+setApiBaseUrl(withSandbox(API_BASE_URL));
 // Live: the session is in httpOnly cookies; the client adds the X-Link-Auth header (07 §1).
 if (CORE_API) configureAuth({ transport: 'cookie' });
 

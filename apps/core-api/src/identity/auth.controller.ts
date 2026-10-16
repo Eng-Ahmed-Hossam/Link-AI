@@ -17,12 +17,10 @@ import {
 import { unauthenticated } from '../platform/problem';
 import { requestIdOf } from '../platform/request-context';
 import { Accounts } from './accounts';
+import { clientIp } from '../platform/client-ip';
 import { OtpService } from './otp';
 import { toE164 } from './phone';
 import { type Client, Tokens } from './tokens';
-
-/** The client's IP for the per-IP OTP limit (behind a proxy, Express' trust proxy decides). */
-const ipOf = (req: Request) => req.ip ?? req.socket.remoteAddress ?? 'unknown';
 
 /**
  * Phone sign-in (MKT-ACC-01, -02, -04). The teacher app gets the tokens in the body; the web gets
@@ -40,7 +38,12 @@ export class AuthController {
 
   @Endpoint(routes.otpRequest)
   request(@Input() i: In<typeof routes.otpRequest>, @Req() req: Request) {
-    return this.otp.request(toE164(i.body.phone), ipOf(req), createTranslator(langOf(req)));
+    // The client's real address for the per-IP limit (behind the web's proxy: client-ip.ts).
+    return this.otp.request(
+      toE164(i.body.phone),
+      clientIp(req, this.c.LINK_PROXY_SECRET),
+      createTranslator(langOf(req)),
+    );
   }
 
   @Endpoint(routes.otpVerify)
@@ -50,7 +53,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const e164 = toE164(i.body.phone);
-    await this.otp.verify(e164, i.body.code, req.ip ?? 'unknown');
+    await this.otp.verify(e164, i.body.code, clientIp(req, this.c.LINK_PROXY_SECRET));
     const lang = langOf(req);
     const { userId, isNewUser } = await this.accounts.signIn(e164, lang, requestIdOf(req));
     const client: Client = usesCookies(req) ? 'web' : 'app';

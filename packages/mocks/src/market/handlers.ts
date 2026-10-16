@@ -54,6 +54,12 @@ type MockPayoutAccount = {
   addedAt: string;
 };
 const payoutAccounts = new Map<string, MockPayoutAccount>();
+/** Per-visitor sandboxes (ADR-0010): the payout accounts belong to one sandbox's world. */
+export const payoutAccountsSnapshot = () => [...payoutAccounts.entries()];
+export function payoutAccountsRestore(entries: [string, MockPayoutAccount][]) {
+  payoutAccounts.clear();
+  for (const [k, v] of entries) payoutAccounts.set(k, v);
+}
 /** The sample world's payees have a verified account, as in the seed. */
 const payoutAccountOf = (owner: string): MockPayoutAccount =>
   payoutAccounts.get(owner) ?? {

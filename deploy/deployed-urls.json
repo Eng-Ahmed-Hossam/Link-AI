@@ -1,0 +1,15 @@
+{
+  "$comment": "Every deployed URL, the single source for pnpm smoke:deployed and docs/deploy/environments.md. Sample data only.",
+  "publicTrial": {
+    "web": "https://link-ai-web-sigma.vercel.app",
+    "teacher": "https://link-ai-teacher-demo.vercel.app",
+    "demoApi": "https://ai-service-production-43b7.up.railway.app"
+  },
+  "staging": {
+    "web": "https://link-ai-staging-web.vercel.app",
+    "teacher": "https://link-ai-staging-teacher.vercel.app",
+    "ops": "https://link-ai-staging-ops.vercel.app",
+    "api": "https://core-api-l9aa-production.up.railway.app",
+    "smsInbox": "https://core-api-l9aa-production.up.railway.app/__staging/sms"
+  }
+}

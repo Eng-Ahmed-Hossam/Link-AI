@@ -50,3 +50,24 @@ export const demoGateFromEnv = (env: NodeJS.ProcessEnv = process.env): DemoGateO
     !!env.CORS_ALLOWED_ORIGINS?.trim() ||
     env.MOCK_SERVER_PUBLIC === '1',
 });
+
+/**
+ * The demo routes a visitor's browser may call on the public trial (ADR-0010), always inside its
+ * own sandbox: switch the trial's flags, start its own world over, read its own state. Everything
+ * else under /__demo stays behind DEMO_ROUTES_SECRET.
+ */
+export const PUBLIC_DEMO_ROUTES: readonly (readonly [string, RegExp])[] = [
+  ['POST', /^\/__demo\/settings$/],
+  ['POST', /^\/__demo\/reset$/],
+  ['GET', /^\/__demo\/state(\/(ar|en))?$/],
+];
+export const isPublicDemoRoute = (method: string, pathname: string) =>
+  PUBLIC_DEMO_ROUTES.some(([m, re]) => m === method && re.test(pathname));
+
+/** A visitor may switch only these trial flags (never real speech-to-text, never faults). */
+export function publicSettings(body: unknown) {
+  const b = (body ?? {}) as Record<string, unknown>;
+  const out: Record<string, boolean> = {};
+  for (const k of ['phase2', 'marketplace'] as const) if (typeof b[k] === 'boolean') out[k] = b[k];
+  return out;
+}
