@@ -340,9 +340,20 @@ export class Halls {
         'hours',
         'verification',
         'location_status',
+        'governorate',
+        'street',
+        'landmark',
         sql<number | null>`ST_Y(location::geometry)`.as('lat'),
         sql<number | null>`ST_X(location::geometry)`.as('lng'),
         distanceKmSql(DEFAULT_POINT.lat, DEFAULT_POINT.lng).as('distance_km'),
+        sql<number | null>`ST_Y(pending_location::geometry)`.as('p_lat'),
+        sql<number | null>`ST_X(pending_location::geometry)`.as('p_lng'),
+        'pending_address',
+        'pending_governorate',
+        'pending_area',
+        'pending_street',
+        'pending_landmark',
+        'pending_at',
       ])
       .where('id', '=', centreId)
       .executeTakeFirst();
@@ -390,19 +401,47 @@ export class Halls {
         lat: c.lat ?? 0,
         lng: c.lng ?? 0,
         address: c.address ?? '',
+        governorate: c.governorate ?? '',
+        area: c.area ?? '',
+        street: c.street ?? '',
+        landmark: c.landmark ?? '',
         underReview: c.location_status === 'under_review',
+        pending:
+          c.p_lat != null && c.p_lng != null
+            ? {
+                lat: c.p_lat,
+                lng: c.p_lng,
+                address: c.pending_address ?? '',
+                governorate: c.pending_governorate ?? '',
+                area: c.pending_area ?? '',
+                street: c.pending_street ?? '',
+                landmark: c.pending_landmark ?? '',
+                submittedAt: new Date(c.pending_at!).toISOString(),
+              }
+            : null,
       },
     };
   }
 
-  /** C02 edits (owner only). CF-44: a moved pin is under review until Link ops verify it. */
+  /**
+   * C02 edits (owner only). CF-44: a moved pin is the pending location until Link ops approve it;
+   * the public keeps the approved one (the owner can't write the live columns: 0019).
+   */
   patchCentre(
     userId: string,
     centreId: string,
     p: {
       about?: string;
       photos?: number;
-      location?: { lat: number; lng: number; address: string };
+      location?: {
+        lat: number;
+        lng: number;
+        address: string;
+        governorate: string;
+        area: string;
+        street?: string;
+        landmark?: string;
+      };
     },
     lang: Lang,
     requestId?: string,
@@ -420,12 +459,22 @@ export class Halls {
         // Egypt, roughly: the pin must be on the map Link serves.
         if (!(lat >= 22 && lat <= 32 && lng >= 24.5 && lng <= 37))
           throw new Problem(422, 'invalid_location', 'Put the pin in Egypt.');
-        set.location = sql`ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography`;
-        set.address = address;
+        const text = (v: string | undefined) => v?.trim() || null;
+        const governorate = text(p.location.governorate);
+        const area = text(p.location.area);
+        if (!governorate || !area)
+          throw new Problem(422, 'invalid_address', 'Write the governorate and the area.');
+        set.pending_location = sql`ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography`;
+        set.pending_address = address;
+        set.pending_governorate = governorate;
+        set.pending_area = area;
+        set.pending_street = text(p.location.street);
+        set.pending_landmark = text(p.location.landmark);
+        set.pending_at = new Date();
       }
       if (Object.keys(set).length)
         await tx.updateTable('org.centres').set(set).where('id', '=', centreId).execute();
-      // CF-44: the database marks a moved pin `under_review` (trigger centres_location_review).
+      // CF-44: the database marks a pending pin `under_review` (trigger centres_location_review).
       await writeAudit(tx, {
         actorId: userId,
         actorType: 'user',

@@ -1,4 +1,4 @@
-# App map
+ — Part B: a real map on the web build (`EXPO_PUBLIC_MAP_PROVIDER`); Android keeps the drawn map and the list with distances | — Part B: small map of the approved pin, landmark, "Open in Google Maps" | — Part B: clustered pins on the real map when `NEXT_PUBLIC_MAP_PROVIDER=openfreemap` | — Part B: address search, draggable pin, "Use my current location", governorate / area / street / landmark; the new pin waits for ops beside the approved one |# App map
 
 Every role → app → screen → status: the quickest way to find your way around. Product rules: [PRODUCT_BRIEF](../PRODUCT_BRIEF.md). Screen details and differences from Figma: [screen log](../frontend/screen-log.md). Figma inventory: [docs/11 §7](../11-design-system.md#7-screen-inventory).
 
@@ -105,6 +105,6 @@ One way in: the role chooser at `/{lang}/try` opens each app signed in as a samp
 
 | ID | Screen | Route | Figma | Status | Live / Mock | Screenshot |
 |---|---|---|---|---|---|---|
-| L01 | Centre join requests & verification | — | [52:344](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=52-344) | built | live only (`apps/ops`) · CLI `pnpm ops:verify-centre` | — |
+| L01 | Centre join requests & verification (Part B: old and new pin on one map, the distance moved, both addresses) | — | [52:344](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=52-344) | built | live only (`apps/ops`) · CLI `pnpm ops:verify-centre` | — |
 | L02 | Review moderation | — | [53:355](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=53-355) | built | live only (`apps/ops`) | — |
 | L03 | Refunds & disputes | — | [53:445](https://www.figma.com/design/3TteHvTvk9JrvUthg2AyE7/?node-id=53-445) | built | live only (`apps/ops`) · CLI `pnpm ops:refunds` | — |

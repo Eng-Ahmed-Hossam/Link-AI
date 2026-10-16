@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Money, Ok } from './market';
+import { Money, Ok, PendingLocation } from './market';
 import type { RouteDef } from './routes';
 
 /**
@@ -71,6 +71,10 @@ export const CentreApplication = named(
     ownerPhoneLast4: z.string().nullable(),
     stage: CentreStage,
     locationUnderReview: z.boolean(),
+    /** The approved pin the public sees (null before the first approval). */
+    location: PendingLocation.omit({ submittedAt: true }).nullable(),
+    /** The owner's moved pin waiting for approval (CF-44): shown beside `location`. */
+    pendingLocation: PendingLocation.nullable(),
     halls: z.number().int(),
     createdAt: iso,
     /** BR-VER-02: ops call a new centre within 2 working days. */

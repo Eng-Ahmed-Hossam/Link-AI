@@ -185,7 +185,9 @@ RLS for all `ref` tables: `PUBLIC` read; `OPS` write.
 | about_en, about_ar | text | |
 | governorate, area | text | |
 | address | text | Public once the centre is verified |
-| location | geography(Point, 4326) | Geocoded on save only |
+| street, landmark | text | **(added, Part B)** Structured address; the landmark («علامة مميزة») is what people know nearby |
+| location | geography(Point, 4326) | The **approved** pin: the owner's own placement (dragged to the door), never a cached geocoding result. Only ops approval writes it (0019: `app_user` has no UPDATE on the live location columns) |
+| pending_location, pending_governorate, pending_area, pending_address, pending_street, pending_landmark, pending_at | **(added, Part B)** | The owner's moved location waiting for Link ops (CF-44); all set together or all NULL (`centres_pending_whole`). Ops approval copies them to the live columns and clears them. Never in a public view |
 | location_status | text | `verified` \| `under_review` — an owner's moved pin is under review until Link ops verify it (CF-44); P04 shows "Location under review" |
 | hours | jsonb | `[{weekday, opens, closes}]`, closed days |
 | photos | jsonb | Object-storage keys |

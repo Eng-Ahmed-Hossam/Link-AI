@@ -456,8 +456,8 @@ export function searchCentres(a: SearchArgs, lang: Lang) {
         fromSessionFee: money(Math.min(...mine.map((g) => g.sessionFeePt))),
         seatState: states.includes('open') ? 'open' : 'waitlist',
         verified: c.verified,
-        lat: c.lat,
-        lng: c.lng,
+        lat: movedLocation(c.id, lang, c).lat,
+        lng: movedLocation(c.id, lang, c).lng,
       };
       return card;
     })
@@ -532,12 +532,21 @@ function reviewDto(r: fx.ReviewFx, lang: Lang): PublicReview {
   };
 }
 
-/** The centre's map pin and address, after an owner's move (CF-44, market state). */
+/**
+ * The centre's public pin and address: the sample centre's own, or a move Link ops approved. A
+ * pin still waiting for ops is never public (CF-44, Part B); it only sets "under review".
+ */
 function movedLocation(centreId: string, lang: Lang, c: fx.CentreFx) {
-  const loc = state?.market?.centreEdits[centreId]?.location;
-  return loc
-    ? { lat: loc.lat, lng: loc.lng, address: loc.address, locationUnderReview: loc.underReview }
-    : { lat: c.lat, lng: c.lng, address: t(c.address, lang), locationUnderReview: false };
+  const e = state?.market?.centreEdits[centreId];
+  const loc = e?.location;
+  return {
+    lat: loc?.lat ?? c.lat,
+    lng: loc?.lng ?? c.lng,
+    address: loc?.address ?? t(c.address, lang),
+    street: loc?.street ?? '',
+    landmark: loc?.landmark ?? '',
+    locationUnderReview: !!e?.pending,
+  };
 }
 
 export function centreProfile(

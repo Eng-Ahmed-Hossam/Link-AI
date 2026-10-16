@@ -4135,6 +4135,186 @@
         }
       }
     },
+    "/v1/geo/reverse": {
+      "get": {
+        "operationId": "lookupPlace",
+        "summary": "C02 picker: the address at a pin (to prefill governorate, area and street)",
+        "tags": [
+          "centres"
+        ],
+        "x-rules": [
+          "MKT-CEN-02",
+          "OD-46"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "minimum": 22,
+              "maximum": 32
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "minimum": 24.5,
+              "maximum": 37
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceLookup"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`geocoder_unavailable`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/geo/search": {
+      "get": {
+        "operationId": "searchPlaces",
+        "summary": "C02 picker: address → places in Egypt (search on submit; the pin decides the point)",
+        "tags": [
+          "centres"
+        ],
+        "x-rules": [
+          "MKT-CEN-02",
+          "OD-46"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 120
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`validation_failed`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`geocoder_unavailable`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/groups": {
       "post": {
         "operationId": "createGroup",
@@ -14815,6 +14995,58 @@
           "locationUnderReview": {
             "type": "boolean"
           },
+          "location": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "lat": {
+                    "type": "number"
+                  },
+                  "lng": {
+                    "type": "number"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "governorate": {
+                    "type": "string"
+                  },
+                  "area": {
+                    "type": "string"
+                  },
+                  "street": {
+                    "type": "string"
+                  },
+                  "landmark": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "lat",
+                  "lng",
+                  "address",
+                  "governorate",
+                  "area",
+                  "street",
+                  "landmark"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pendingLocation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PendingLocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "halls": {
             "type": "integer",
             "minimum": -9007199254740991,
@@ -14861,6 +15093,8 @@
           "ownerPhoneLast4",
           "stage",
           "locationUnderReview",
+          "location",
+          "pendingLocation",
           "halls",
           "createdAt",
           "callDueAt",
@@ -15110,15 +15344,42 @@
           "address": {
             "type": "string"
           },
+          "governorate": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "street": {
+            "type": "string"
+          },
+          "landmark": {
+            "type": "string"
+          },
           "underReview": {
             "type": "boolean"
+          },
+          "pending": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PendingLocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "lat",
           "lng",
           "address",
-          "underReview"
+          "governorate",
+          "area",
+          "street",
+          "landmark",
+          "underReview",
+          "pending"
         ]
       },
       "CentrePatch": {
@@ -15134,7 +15395,7 @@
             "maximum": 12
           },
           "location": {
-            "description": "CF-44: a moved pin is under review until Link ops verify it",
+            "description": "CF-44: the moved pin waits as the pending location until Link ops approve it; the public keeps the approved one",
             "type": "object",
             "properties": {
               "lat": {
@@ -15146,12 +15407,32 @@
               "address": {
                 "type": "string",
                 "maxLength": 200
+              },
+              "governorate": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "area": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "street": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "landmark": {
+                "type": "string",
+                "maxLength": 120
               }
             },
             "required": [
               "lat",
               "lng",
-              "address"
+              "address",
+              "governorate",
+              "area"
             ]
           }
         }
@@ -15351,6 +15632,12 @@
           "lng": {
             "type": "number"
           },
+          "street": {
+            "type": "string"
+          },
+          "landmark": {
+            "type": "string"
+          },
           "locationUnderReview": {
             "type": "boolean"
           }
@@ -15373,6 +15660,8 @@
           "reviews",
           "lat",
           "lng",
+          "street",
+          "landmark",
           "locationUnderReview"
         ]
       },
@@ -15672,6 +15961,12 @@
           "lng": {
             "type": "number"
           },
+          "street": {
+            "type": "string"
+          },
+          "landmark": {
+            "type": "string"
+          },
           "locationUnderReview": {
             "type": "boolean"
           },
@@ -15700,6 +15995,8 @@
           "reviews",
           "lat",
           "lng",
+          "street",
+          "landmark",
           "locationUnderReview",
           "groupsForChild"
         ]
@@ -19219,6 +19516,45 @@
           "totalPt"
         ]
       },
+      "PendingLocation": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "address": {
+            "type": "string"
+          },
+          "governorate": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "street": {
+            "type": "string"
+          },
+          "landmark": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "lat",
+          "lng",
+          "address",
+          "governorate",
+          "area",
+          "street",
+          "landmark",
+          "submittedAt"
+        ]
+      },
       "PersonRef": {
         "type": "object",
         "properties": {
@@ -19232,6 +19568,69 @@
         "required": [
           "id",
           "displayName"
+        ]
+      },
+      "Place": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "governorate": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "street": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "lat",
+          "lng",
+          "governorate",
+          "area",
+          "street"
+        ]
+      },
+      "PlaceList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Place"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "PlaceLookup": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Place"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "place"
         ]
       },
       "ProblemDetails": {
@@ -20575,13 +20974,21 @@
               },
               "distanceKm": {
                 "type": "number"
+              },
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
               }
             },
             "required": [
               "id",
               "name",
               "area",
-              "distanceKm"
+              "distanceKm",
+              "lat",
+              "lng"
             ]
           },
           "freeSlots": {

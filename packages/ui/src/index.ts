@@ -27,6 +27,8 @@ export * from './components/PhoneField';
 export * from './components/Misc';
 export * from './components/MobileShell';
 export * from './components/MapView';
+export * from './components/map/config';
+export * from './components/map/PinPicker';
 export * from './components/Countdown';
 export * from './components/Select';
 export * from './components/Followup';

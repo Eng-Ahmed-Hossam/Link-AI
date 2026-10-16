@@ -41,7 +41,7 @@ import * as fx from '../data';
 import * as db from '../db';
 import { addDays, cairoToUtc, cairoToday, isoWeekday } from '../time';
 import * as mfx from './data';
-import type { BookingRow, HallRow, RequestRow } from './seed';
+import type { BookingRow, HallRow, MockLocation, RequestRow } from './seed';
 
 type Lang = db.Lang;
 const tr = (l: fx.L, lang: Lang) => l[lang];
@@ -188,33 +188,71 @@ export function addHall(centreId: string, b: NewHallBody, lang: Lang): Hall {
   }
 }
 
-/** The centre's location: a moved pin is under review until Link ops verify it (CF-44). */
-export function centreLocation(centreId: string, lang: Lang) {
+/** The approved (public) location: an ops-approved move, else the sample centre's own. */
+export function liveLocation(centreId: string, lang: Lang): MockLocation {
   const c = centreFx(centreId);
-  const moved = m().centreEdits[centreId]?.location;
-  return moved ?? { lat: c.lat, lng: c.lng, address: tr(c.address, lang), underReview: false };
+  return (
+    m().centreEdits[centreId]?.location ?? {
+      lat: c.lat,
+      lng: c.lng,
+      address: tr(c.address, lang),
+      governorate: tr(c.governorate, lang),
+      area: tr(c.area, lang),
+      street: '',
+      landmark: '',
+    }
+  );
+}
+/** C02: the approved location, and the owner's moved pin waiting for Link ops (CF-44). */
+export function centreLocation(centreId: string, lang: Lang) {
+  const pending = m().centreEdits[centreId]?.pending ?? null;
+  return { ...liveLocation(centreId, lang), underReview: !!pending, pending };
 }
 export function moveCentrePin(
   centreId: string,
-  p: { lat: number; lng: number; address: string },
+  p: {
+    lat: number;
+    lng: number;
+    address: string;
+    governorate?: string;
+    area?: string;
+    street?: string;
+    landmark?: string;
+  },
   lang: Lang,
 ) {
   const address = p.address?.trim();
   if (!address || address.length > 200) fail(422, 'invalid_address', 'Write the address.');
+  const governorate = p.governorate?.trim() ?? '';
+  const area = p.area?.trim() ?? '';
+  if (!governorate || !area) fail(422, 'invalid_address', 'Write the governorate and the area.');
   // Egypt, roughly: the pin must be on the map Link serves.
   if (!(p.lat >= 22 && p.lat <= 32 && p.lng >= 24.5 && p.lng <= 37))
     fail(422, 'invalid_location', 'Put the pin in Egypt.');
   m().centreEdits[centreId] = {
     ...(m().centreEdits[centreId] ?? {}),
-    location: { lat: p.lat, lng: p.lng, address: address!, underReview: true },
+    pending: {
+      lat: p.lat,
+      lng: p.lng,
+      address: address!,
+      governorate,
+      area,
+      street: p.street?.trim() ?? '',
+      landmark: p.landmark?.trim() ?? '',
+      submittedAt: new Date().toISOString(),
+    },
   };
   db.persist();
   return centreProfile(centreId, lang);
 }
-/** Link ops checked the new location (the ops console is later; the demo has a control). */
+/** Link ops approved the moved pin: it becomes the public one (the demo has a control). */
 export function verifyCentreLocation(centreId: string) {
-  const loc = m().centreEdits[centreId]?.location;
-  if (loc) loc.underReview = false;
+  const e = m().centreEdits[centreId];
+  if (e?.pending) {
+    const { lat, lng, address, governorate, area, street, landmark } = e.pending;
+    e.location = { lat, lng, address, governorate, area, street, landmark };
+    delete e.pending;
+  }
   db.persist();
   return { ok: true as const };
 }
@@ -739,6 +777,8 @@ export function searchRooms(
           name: tr(c.name, lang),
           area: tr(c.area, lang),
           distanceKm: c.distanceKm,
+          lat: liveLocation(c.id, lang).lat,
+          lng: liveLocation(c.id, lang).lng,
         },
         freeSlots,
         rentRule: ruleDto(h),
@@ -1017,7 +1057,7 @@ export function pendingCentres() {
       locationUnderReview: false,
     }));
   const moved = Object.entries(m().centreEdits)
-    .filter(([, e]) => e.location?.underReview)
+    .filter(([, e]) => e.pending)
     .map(([id]) => ({
       id,
       name: tr(centreFx(id).name, 'en'),

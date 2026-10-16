@@ -30,3 +30,17 @@ export const DEMO_CONTROLS =
   process.env.EXPO_PUBLIC_APP_ENV === 'local' &&
   process.env.EXPO_PUBLIC_DEMO_CONTROLS === '1' &&
   API_MODE !== 'live';
+
+/**
+ * J01's map on the web build (docs/plan/map-provider.md): `openfreemap` draws real tiles with
+ * MapLibre (served from public/maplibre/); otherwise, and always on Android for now, the drawn map
+ * plus the list with distances.
+ */
+export const MAP_PROVIDER: 'dev' | 'maplibre' =
+  Platform.OS === 'web' &&
+  !PILOT &&
+  /^(openfreemap|maplibre)$/.test(process.env.EXPO_PUBLIC_MAP_PROVIDER ?? '')
+    ? 'maplibre'
+    : 'dev';
+export const MAP_STYLE_URL =
+  process.env.EXPO_PUBLIC_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty';

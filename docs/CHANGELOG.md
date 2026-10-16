@@ -2,6 +2,15 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-16 — Part B: the centre's exact location on a real map
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| B-1 | `docs/plan/map-provider.md` (new) | OpenFreeMap tiles + Nominatim search recommended (no key, no card); Google Geocoding as the upgrade; comparison with Mapbox and MapTiler | OD-46 |
+| B-2 | `docs/06-data-model.md` | `org.centres`: `street`, `landmark`, the `pending_*` location; the live location is ops-approved only (migration 0019) | CF-44: a pin is public only once verified |
+| B-3 | `docs/07-api.md` | `PATCH /v1/centres/{id}` location fields; `GET /v1/geo/search`, `GET /v1/geo/reverse` | Part B |
+| B-4 | `docs/go-live-switches.md`, `docs/security-checklist.md` #11 | The Maps row (env names, adapters); the CSP additions when the real map is on | Part B |
+
 ## 2026-10-10 — S4: provider choice (ship job)
 
 | # | File | What changed | Why |

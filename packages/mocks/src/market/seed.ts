@@ -1,3 +1,13 @@
+/** A centre's location with its structured address (C02, Part B). */
+export interface MockLocation {
+  lat: number;
+  lng: number;
+  address: string;
+  governorate: string;
+  area: string;
+  street: string;
+  landmark: string;
+}
 /**
  * The marketplace part of the mock database (kept in `../db.ts` State, so it is saved and reset
  * with everything else). This file only builds the starting state from fixtures: no db import.
@@ -69,8 +79,10 @@ export interface MarketState {
     {
       about?: string;
       photos?: number;
-      /** CF-44: a moved pin, under review until Link ops verify it. */
-      location?: { lat: number; lng: number; address: string; underReview: boolean };
+      /** The approved location (after Link ops approved a move): the public pin. */
+      location?: MockLocation;
+      /** CF-44: the owner's moved pin, waiting for Link ops; the public keeps `location`. */
+      pending?: MockLocation & { submittedAt: string };
     }
   >;
   teacherEdits: Record<string, TeacherSelfPatch>;

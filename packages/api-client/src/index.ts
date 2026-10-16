@@ -98,6 +98,8 @@ import type {
 import type {
   AutoApproveRules,
   CentreApplicationBody,
+  CentreLocationInput,
+  Place,
   CentreFeatures,
   CentreProfileEdit,
   CentreSchedule,
@@ -601,8 +603,14 @@ export const marketApi = {
   addHall: (centreId: string, body: NewHallBody) =>
     request<Hall>('POST', `/v1/centres/${centreId}/rooms`, { body }),
   /** CF-44: owners move the map pin; the location is under review until ops verify it. */
-  moveCentrePin: (centreId: string, body: { lat: number; lng: number; address: string }) =>
+  moveCentrePin: (centreId: string, body: CentreLocationInput) =>
     request<CentreProfileEdit>('PATCH', `/v1/centres/${centreId}`, { body: { location: body } }),
+  /** C02 picker: address search on submit (OD-46; the pin decides the stored point). */
+  searchPlaces: (q: string) =>
+    request<{ items: Place[] }>('GET', `/v1/geo/search?q=${encodeURIComponent(q)}`),
+  /** C02 picker: the address at a pin (prefills governorate, area and street). */
+  lookupPlace: (lat: number, lng: number) =>
+    request<{ place: Place | null }>('GET', `/v1/geo/reverse?lat=${lat}&lng=${lng}`),
   updateHall: (hallId: string, body: HallPatch) =>
     request<Hall>('PATCH', `/v1/rooms/${hallId}`, { body }),
   schedule: (centreId: string) =>

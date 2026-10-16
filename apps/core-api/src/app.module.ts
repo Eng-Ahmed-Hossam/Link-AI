@@ -22,6 +22,8 @@ import { Owner } from './followup/owner';
 import { Records } from './followup/records';
 import { Voice } from './followup/voice';
 import { type SmsSender, SMS_SENDER, SmsSinkSender } from './adapters/sms';
+import { DevGeocoder, GEOCODER, type Geocoder, NominatimGeocoder } from './adapters/geocoder';
+import { Geo, GeoController } from './market/geo';
 import { type Config } from './config';
 import { demoRoutesAllowed } from './platform/guard';
 import { Accounts } from './identity/accounts';
@@ -65,6 +67,7 @@ export interface Overrides {
   /** null = no ai-service (voice notes answer "Type the note instead"). */
   ai?: VoiceAi | null;
   whatsapp?: WhatsAppSender;
+  geocoder?: Geocoder;
 }
 
 /** Shared services, built from the typed config. Used by every entrypoint (api, worker, gateway). */
@@ -112,6 +115,16 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
           : new FakePayProvider(c.FAKE_PAY_URL!, c.PAYMENT_WEBHOOK_SECRET)),
     ),
     factory(Halls, [Database, Seats], (db: Database, s: Seats) => new Halls(db, s)),
+    factory(
+      GEOCODER,
+      [],
+      () =>
+        overrides.geocoder ??
+        (c.GEOCODER_PROVIDER === 'nominatim'
+          ? new NominatimGeocoder(c.GEOCODER_URL, c.GEOCODER_USER_AGENT!)
+          : new DevGeocoder()),
+    ),
+    factory(Geo, [GEOCODER, Redises], (g: Geocoder, r: Redises) => new Geo(g, r)),
     factory(Requests, [Database], (db: Database) => new Requests(db)),
     factory(
       Groups,
@@ -214,6 +227,7 @@ export async function apiModule(
     ReferenceController,
     CentresController,
     HallsController,
+    GeoController,
     RequestsController,
     GroupsController,
     SearchController,

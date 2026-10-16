@@ -16,7 +16,8 @@
     "./server": "./src/server.ts",
     "./voice-bridge": "./src/followup/voice-bridge.ts",
     "./ai-client": "./src/followup/ai-client.ts",
-    "./market-fixtures": "./src/market/data.ts"
+    "./market-fixtures": "./src/market/data.ts",
+    "./places": "./src/market/places.ts"
   },
   "scripts": {
     "typecheck": "tsc -p .",

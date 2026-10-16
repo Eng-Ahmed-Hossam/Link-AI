@@ -33,3 +33,6 @@ apps/ai-service/bench/gold
 packages/api-client/src/generated/
 apps/core-api/openapi.json
 apps/core-api/src/db/schema.ts
+
+# Vendored MapLibre files (scripts/vendor-maplibre.mjs)
+**/public/maplibre/

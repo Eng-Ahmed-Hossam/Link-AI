@@ -5,11 +5,11 @@ import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { configureAuth, setApiBaseUrl, setApiLocale } from '@link/api-client';
-import { MockBadge, ToastProvider } from '@link/ui';
+import { MapConfigProvider, MockBadge, ToastProvider } from '@link/ui';
 import type { Locale } from '@link/i18n';
 import { createTranslator } from '@link/i18n';
 import { SessionProvider } from './session';
-import { API_BASE_URL, API_MODE, CORE_API } from './api-mode';
+import { API_BASE_URL, API_MODE, CORE_API, MAP_PROVIDER, MAP_STYLE_URL } from './api-mode';
 
 // Demo-only panels load on demand: they pull the mock data in, which the website never needs.
 // The presenter's Demo controls exist only in the local demo. The condition is written out so the
@@ -66,7 +66,17 @@ export function Providers({ locale, children }: { locale: Locale; children: Reac
       <SessionProvider>
         <ToastProvider label={t('common.notifications')}>
           <TryBar locale={locale} />
-          {ready ? children : null}
+          <MapConfigProvider
+            value={{
+              provider: MAP_PROVIDER,
+              styleUrl: MAP_STYLE_URL,
+              rtlPluginUrl: '/maplibre/mapbox-gl-rtl-text.js',
+              workerUrl: '/maplibre/maplibre-gl-worker.mjs',
+              lang: locale,
+            }}
+          >
+            {ready ? children : null}
+          </MapConfigProvider>
           {API_MODE !== 'live' ? <MockBadge label={t('common.mockBadge')} /> : null}
           {USE_MSW && devPage ? <DevPanel /> : null}
           {/* The floating button only on /dev (2A.6); the banner's "Demo tools" opens the panel anywhere. */}

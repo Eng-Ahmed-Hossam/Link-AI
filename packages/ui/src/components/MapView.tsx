@@ -1,5 +1,8 @@
-import type { ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { cn } from '../cn';
+import { useMapConfig } from './map/config';
+
+const LibreMap = lazy(() => import('./map/LibreMap').then((m) => ({ default: m.LibreMap })));
 
 export interface MapPin {
   id: string;
@@ -20,18 +23,48 @@ export interface MapViewProps {
   label: string;
   className?: string;
   children?: ReactNode;
+  /** Group nearby pins into one numbered button (P03 with many centres). Real map only. */
+  cluster?: boolean;
+  /** Show the "you are here" marker at `centre` (default true; off for one centre's own map). */
+  showCentre?: boolean;
+  zoom?: number;
 }
 
 const dot: Record<MapPin['state'], string> = { open: 'bg-blue', waitlist: 'bg-amber' };
 
 /**
- * MapView — development implementation (OD-46: provider not chosen). Plots pins from fixture
- * coordinates on a stylised background; no tiles, no network. The real provider replaces the
- * body of this component, not its props.
+ * MapView — pins on a map (P03 results, P04 centre page, J01 rooms). Provider `maplibre`
+ * (docs/plan/map-provider.md): real tiles, Arabic labels, clustered pins. Provider `dev` (the
+ * local fake): pins from fixture coordinates on a stylised background; no tiles, no network.
  *
  * Maps are not mirrored in RTL (north stays up, east stays right): the canvas is an LTR isolate.
  */
-export function MapView({ pins, centre, label, className, children }: MapViewProps) {
+export function MapView(props: MapViewProps) {
+  const cfg = useMapConfig();
+  if (cfg.provider === 'maplibre')
+    return (
+      <Suspense
+        fallback={<div className={cn('h-80 w-full rounded-16 bg-greenSoft', props.className)} />}
+      >
+        <div className={cn('relative h-80 w-full overflow-hidden rounded-16', props.className)}>
+          <LibreMap
+            config={cfg}
+            centre={props.centre}
+            pins={props.pins}
+            cluster={props.cluster}
+            showCentre={props.showCentre ?? true}
+            zoom={props.zoom ?? 13}
+            label={props.label}
+            className="h-full w-full"
+          />
+          {props.children}
+        </div>
+      </Suspense>
+    );
+  return <DrawnMap {...props} />;
+}
+
+function DrawnMap({ pins, centre, label, className, children, showCentre = true }: MapViewProps) {
   // Fit all pins plus the centre into the box with a margin.
   const pts = [...pins, { ...centre }];
   const lats = pts.map((p) => p.lat);
@@ -60,13 +93,15 @@ export function MapView({ pins, centre, label, className, children }: MapViewPro
         <div className="absolute inset-y-0 start-[12%] w-2 rotate-6 bg-white" />
         <div className="absolute inset-y-0 start-[58%] w-1.5 -rotate-6 bg-white" />
       </div>
-      <span
-        aria-hidden
-        className="absolute flex size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-blue/20"
-        style={{ insetInlineStart: `${x(centre.lng)}%`, top: `${y(centre.lat)}%` }}
-      >
-        <span className="size-3.5 rounded-full border-2 border-white bg-blue" />
-      </span>
+      {showCentre ? (
+        <span
+          aria-hidden
+          className="absolute flex size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-blue/20"
+          style={{ insetInlineStart: `${x(centre.lng)}%`, top: `${y(centre.lat)}%` }}
+        >
+          <span className="size-3.5 rounded-full border-2 border-white bg-blue" />
+        </span>
+      ) : null}
       {pins.map((p) => (
         <button
           key={p.id}

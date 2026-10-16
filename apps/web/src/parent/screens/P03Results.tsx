@@ -31,7 +31,14 @@ import { money, seatStateTone } from '../format';
 import { forgetLocation, shareLocation, useNearPoint } from '../near';
 import { useSession } from '../../session';
 
-const MAADI = { lat: 29.9602 - 0.004, lng: 31.2569 + 0.002 }; // the parent's chosen area (fixture)
+const MAADI = { lat: 29.9602 - 0.004, lng: 31.2569 + 0.002 }; // the sample district (fixture)
+const middleOf = (xs: { lat: number; lng: number }[]) =>
+  xs.length
+    ? {
+        lat: xs.reduce((a, x) => a + x.lat, 0) / xs.length,
+        lng: xs.reduce((a, x) => a + x.lng, 0) / xs.length,
+      }
+    : null;
 const DISTANCES = [2, 5, 10];
 const FEES = [12000, 15000, 20000];
 
@@ -187,7 +194,10 @@ export function P03Results() {
             {view === 'map' ? (
               <MapView
                 label={t('parent.results.mapLabel', { count: d.data.length })}
-                centre={MAADI}
+                // The parent's tapped location (never stored), else the middle of the results (their
+                // home area's centres), else the sample district.
+                centre={near ?? middleOf(d.data) ?? MAADI}
+                cluster
                 pins={d.data.map((c) => ({
                   id: c.id,
                   lat: c.lat,

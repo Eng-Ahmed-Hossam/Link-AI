@@ -90,7 +90,7 @@ Plan: [auth-map-staging.md](auth-map-staging.md). One PR per stage; stop after e
 |---|---|---|
 | 0 | Lock `/__demo/*`, Railway → `main`, unused list, plan | **done on Railway except `postgres`** (2026-10-16): core-api and ai-service build from `main` with auto-deploy; the lock is proven live (404); see [environments](../deploy/environments.md) open points |
 | 1 | Accounts and sign-in (email code, Google, linking, roles, allowlist) | not started |
-| 2 | Centre location on a real map | not started |
+| 2 / B | Centre location on a real map (Part B of the 2026-10-16 brief) | **built** (branch `partB/map`): migration 0019 (pending location, owner can't write the live one), `Geocoder` adapter (dev + Nominatim) and `/v1/geo/*`, MapLibre `MapView`/`PinPicker` in `packages/ui`, C02 picker, P03 clusters, P04 small map + Google Maps link, ops old/new pin review, J01 web map (teacher web build). Provider: [map-provider.md](map-provider.md) (OpenFreeMap + Nominatim, no key). Tests: geocoder contract, location integration, picker e2e (live). Screenshots: `docs/frontend/screenshots/part-b/` |
 | 3 | Real core-api on Railway staging | not started |
 | A | Part A of the 2026-10-16 brief: everything into `main`, branch clean-up, environments doc, deploy-branch CI check | **done**, except the open points in [environments](../deploy/environments.md) (postgres backup method, the `ai-models` volume, Vercel login) |
 

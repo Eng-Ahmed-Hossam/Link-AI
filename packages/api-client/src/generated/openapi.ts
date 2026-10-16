@@ -769,6 +769,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/geo/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** C02 picker: the address at a pin (to prefill governorate, area and street) */
+        get: operations["lookupPlace"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/geo/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** C02 picker: address → places in Egypt (search on submit; the pin decides the point) */
+        get: operations["searchPlaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/groups": {
         parameters: {
             query?: never;
@@ -2565,11 +2599,21 @@ export interface components {
             governorate: string | null;
             halls: number;
             id: string;
+            location: {
+                address: string;
+                area: string;
+                governorate: string;
+                landmark: string;
+                lat: number;
+                lng: number;
+                street: string;
+            } | null;
             locationUnderReview: boolean;
             name: string;
             notes: components["schemas"]["OpsNote"][];
             ownerName: string | null;
             ownerPhoneLast4: string | null;
+            pendingLocation: components["schemas"]["PendingLocation"] | null;
             stage: components["schemas"]["CentreStage"];
         };
         CentreApplicationBody: {
@@ -2621,17 +2665,26 @@ export interface components {
         };
         CentreLocation: {
             address: string;
+            area: string;
+            governorate: string;
+            landmark: string;
             lat: number;
             lng: number;
+            pending: components["schemas"]["PendingLocation"] | null;
+            street: string;
             underReview: boolean;
         };
         CentrePatch: {
             about?: string;
-            /** @description CF-44: a moved pin is under review until Link ops verify it */
+            /** @description CF-44: the moved pin waits as the pending location until Link ops approve it; the public keeps the approved one */
             location?: {
                 address: string;
+                area: string;
+                governorate: string;
+                landmark?: string;
                 lat: number;
                 lng: number;
+                street?: string;
             };
             photos?: number;
         };
@@ -2646,6 +2699,7 @@ export interface components {
                 weekday: number;
             }[];
             id: string;
+            landmark: string;
             lat: number;
             lng: number;
             locationUnderReview: boolean;
@@ -2657,6 +2711,7 @@ export interface components {
             }[];
             reviews: components["schemas"]["PublicReview"][];
             slug: string;
+            street: string;
             subjects: {
                 curriculum: components["schemas"]["CurriculumRef"];
                 subject: components["schemas"]["SubjectRef"];
@@ -2710,6 +2765,7 @@ export interface components {
                 weekday: number;
             }[];
             id: string;
+            landmark: string;
             lat: number;
             lng: number;
             locationUnderReview: boolean;
@@ -2721,6 +2777,7 @@ export interface components {
             }[];
             reviews: components["schemas"]["PublicReview"][];
             slug: string;
+            street: string;
             subjects: {
                 curriculum: components["schemas"]["CurriculumRef"];
                 subject: components["schemas"]["SubjectRef"];
@@ -3511,9 +3568,33 @@ export interface components {
             totalPt: number;
             week: string;
         };
+        PendingLocation: {
+            address: string;
+            area: string;
+            governorate: string;
+            landmark: string;
+            lat: number;
+            lng: number;
+            street: string;
+            submittedAt: string;
+        };
         PersonRef: {
             displayName: string;
             id: string;
+        };
+        Place: {
+            area: string;
+            governorate: string;
+            label: string;
+            lat: number;
+            lng: number;
+            street: string;
+        };
+        PlaceList: {
+            items: components["schemas"]["Place"][];
+        };
+        PlaceLookup: {
+            place: components["schemas"]["Place"] | null;
         };
         /** @description RFC 9457 problem. Clients switch on `code`. */
         ProblemDetails: {
@@ -3821,6 +3902,8 @@ export interface components {
                 area: string;
                 distanceKm: number;
                 id: string;
+                lat: number;
+                lng: number;
                 name: string;
             };
             fits: boolean;
@@ -6974,6 +7057,123 @@ export interface operations {
             };
             /** @description `unauthenticated` */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    lookupPlace: {
+        parameters: {
+            query: {
+                lat: number;
+                lng: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceLookup"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `rate_limited` */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `geocoder_unavailable` */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    searchPlaces: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceList"];
+                };
+            };
+            /** @description `unauthenticated` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `validation_failed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `rate_limited` */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description `geocoder_unavailable` */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
