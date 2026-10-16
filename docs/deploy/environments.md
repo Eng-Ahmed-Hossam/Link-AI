@@ -1,26 +1,38 @@
 # Environments
 
-Every running copy of Link, one row each. **Every deployment builds from `main` only** (CI step `pnpm run check:deploy-branch` covers the deploy configs in the repo; the source branch of a Railway service or a Vercel project is a dashboard setting, recorded here). Variable **names** only, never values. Checked 2026-10-16.
+Every running copy of Link, one row each. **Every deployment builds from `main` only** (CI step `pnpm run check:deploy-branch` covers the deploy configs in the repo; the source branch of a Railway service or a Vercel project is a dashboard setting, recorded here and read on 2026-10-16). Variable **names** only, never values.
+
+## The live staging (Stage 3, 2026-10-16) — sample data, testers only
 
 | Thing | What it is | Branch | URL | Mode | Variable names | How it deploys |
 |---|---|---|---|---|---|---|
-| **Local dev** (`pnpm dev`) | core-api (api, worker, gateway), web, teacher app, ops, Postgres, Redis, local fakes | any working branch | `http://localhost:3000` (web), `:4000` (core-api), `:8081` (teacher), `:3001` (ops) | live on the local fakes (sms-sink, fake-pay, whatsapp-fake) | `.env.example` (all) | by hand |
-| **Local demo** (`pnpm demo`) | mock server + web + teacher app on sample data | any | `http://localhost:4010` (mock server) | mock-server | `DEMO_*`, `MOCK_SERVER_PORT` | by hand |
-| **Local staging** (`pnpm prod:local`) | the production images and compose with `LINK_ENV=staging` | any | `http://localhost:3000` | staging, fakes, demo routes behind `DEMO_ROUTES_SECRET` | `deploy/.env.staging` (written once, never committed) | by hand; nightly in CI (`e2e-live.yml`, job `prod-local`) |
-| **Railway `core-api-l9aa`** (project `link-ai-staging`, US East) | the real core-api: `api` and `worker` in one container (no gateway yet) | `main` (unpinned 2026-10-16; it was pinned to `9f1dfb2`) | `https://core-api-l9aa-production.up.railway.app` | `APP_ENV=staging`, no `LINK_ENV` (so `development` rules); `PAYMENT_PROVIDER=none`, `SMS_PROVIDER=fake` (no sink reachable), `WHATSAPP_PROVIDER=manual`, `QUEUE_PROVIDER=postgres`, `STORAGE_PROVIDER=file`. `/__demo` off (404). **Not used by either Vercel app yet** | `APP_ENV`, `DATABASE_URL*`, `APP_*_PASSWORD`, `REDIS_*_URL`, `FIELD_KEY`, `HMAC_KEY_LOOKUP`, `STORAGE_KEY`, `JWT_*`, `AI_SERVICE_*`, `PAYMENT_*`, `SMS_*`, `WHATSAPP_*`, `CORS_ALLOWED_ORIGINS`, `OPS_IP_ALLOWLIST`, `TRUST_PROXY`, `FILE_STORAGE_DIR`, `NEXT_PUBLIC_SITE_URL`, `PORT`, plus leftovers from the Codex proxy (`CORE_API_UPSTREAM_PORT`, `MOCK_SERVER_*`, `DEMO_*`) | Railpack build (`pnpm --filter @link/core-api build`); pre-deploy `node apps/core-api/dist/migrate.mjs`; start `main.mjs worker &` + `main.mjs api`; auto-deploy on push to `main` |
-| **Railway `ai-service`** | **the public demo API**: the mock server (sample data) on port 8090, with private Whisper `tiny` (ai-service on 127.0.0.1:8091) beside it | **`main`** (since 2026-10-16, `efced47`) | `https://ai-service-production-43b7.up.railway.app` | mock server, `APP_ENV=local` inside the start command; real speech-to-text on; `/__demo` off (404) from `main` | `AI_*`, `CORS_ALLOWED_ORIGINS`, `DEMO_REAL_STT`, `HF_HOME`, `XDG_CACHE_HOME`, `MODEL_ROUTING_CONFIG`, `PORT` | Dockerfile `apps/ai-service/Dockerfile.railway-demo`; healthcheck `/health` (was `/__demo/state/en`, which the lock turns off); auto-deploy on push to `main`. Whisper `tiny` is downloaded at each start (seconds); volume `ai-models` **not mounted yet** (see below) |
-| **Railway `postgres`** | Postgres 16 + PostGIS + pgvector, volume `postgres-data` at `/var/lib/postgresql/data` (`PGDATA` under it) | `codex/vercel-teacher-demo` → `main` **after a backup** (waiting on Ahmed: see the open points) | private only (`*.railway.internal`) | sample data | `POSTGRES_*`, `PGDATA`, `APP_MIGRATOR_PASSWORD`, `CREATE_TEST_DB` | Dockerfile `deploy/railway-postgres.Dockerfile` |
-| **Railway `redis-state`** | Redis 7 with volume `redis-state-data` at `/data` | image `redis:7-alpine` | private only | — | — | image |
-| **Railway `redis-cache`** | Redis 7, no volume | image `redis:7-alpine` | private only | — | — | image |
-| **Vercel `link-ai-web`** (team `ahmed-hossams-projects-059a8e76`) | landing page + parent PWA + owner web | **`main`** (observed: `599e82a` was live within minutes of the push, 2026-10-16; settings not read, Vercel CLI logged out) | `https://link-ai-web-sigma.vercel.app` | in the browser: **mock** (MSW; `mockServiceWorker.js` served, no Railway URL in the app bundles); opens in Arabic (`/ar`) | `NEXT_PUBLIC_API_MODE`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_TEACHER_APP_URL`, `NEXT_PUBLIC_DEFAULT_LOCALE`, `NEXT_PUBLIC_CONTACT_*`, `EMAIL_*`, `PILOT_REQUEST_TO` | Vercel Git integration (branch and root folder to be read) |
-| **Vercel `link-ai-teacher-demo`** | teacher app, Expo web build | **`main`** (observed the same way) | `https://link-ai-teacher-demo.vercel.app` | **mock-server** against the Railway `ai-service` URL (baked into the bundle) | `EXPO_PUBLIC_API_MODE`, `EXPO_PUBLIC_API_BASE_URL` | Vercel Git integration; `apps/teacher-app/vercel.json` (SPA rewrite) |
-| **Vercel `link-platform-demo`** | a single static "Bundled Page" (not this repo's app) | **not read yet** | `https://link-platform-demo.vercel.app` | static | — | to delete if it has no domain, alias or recent deployment (Ahmed's rule 9) |
+| **Vercel `link-ai-staging-web`** | landing + parent PWA + owner web on the **real core-api** | `main` | https://link-ai-staging-web.vercel.app | live, `NEXT_PUBLIC_APP_ENV=staging` (banner "Test environment — sample data"), real map | `NEXT_PUBLIC_API_MODE`, `NEXT_PUBLIC_APP_ENV`, `CORE_API_URL` (the `/v1` rewrite, so cookies stay first-party), `NEXT_PUBLIC_MAP_PROVIDER`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_TEACHER_APP_URL` | Vercel Git, root `apps/web` |
+| **Vercel `link-ai-staging-teacher`** | teacher app, Expo web build, on the real core-api | `main` | https://link-ai-staging-teacher.vercel.app | live, staging banner, J01 real map | `EXPO_PUBLIC_API_MODE`, `EXPO_PUBLIC_API_BASE_URL` (Bearer + CORS), `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_MAP_PROVIDER`, `EXPO_PUBLIC_SITE_URL` | Vercel Git, root `apps/teacher-app` |
+| **Vercel `link-ai-staging-ops`** | ops console on the real core-api | `main` | https://link-ai-staging-ops.vercel.app | live, staging banner; `OPS_IP_ALLOWLIST` empty (open outside production) | `NEXT_PUBLIC_APP_ENV`, `CORE_API_URL` | Vercel Git, root `apps/ops` |
+| **Railway `core-api-l9aa`** (project `link-ai-staging`, US East) | the real core-api: `api` + `worker` (no gateway: no provider webhooks yet) | `main` | https://core-api-l9aa-production.up.railway.app | **`LINK_ENV=staging`**, `APP_ENV=staging`; the hosted-staging guard: bookings off (`PAYMENT_PROVIDER=none`), `SMS_PROVIDER=inbox` (the private code inbox at `/__staging/sms`, Basic auth `SMS_SINK_TOKEN`), `WHATSAPP_PROVIDER=manual`, `GEOCODER_PROVIDER=nominatim`; `/__demo` off | as before plus `LINK_ENV`, `SMS_PROVIDER`, `SMS_SINK_TOKEN`, `GEOCODER_PROVIDER`, `GEOCODER_USER_AGENT`, `CORS_ALLOWED_ORIGINS` (both teacher origins); leftovers from the Codex proxy (`CORE_API_UPSTREAM_PORT`, `MOCK_SERVER_*`, `DEMO_DEFAULT_FLAGS`, `DEMO_REAL_STT`, `SMS_SINK_URL`) are unused | Railpack; **pre-deploy** `node apps/core-api/dist/migrate.mjs && node apps/core-api/dist/seed-staging.mjs` (the sample world, only into an empty database — loaded 2026-10-16); auto-deploy on push to `main` |
+| **Railway `ai-service`** | the public trial's demo API (mock server) + private Whisper `tiny` | `main` | https://ai-service-production-43b7.up.railway.app | mock server, `/__demo` off | `AI_*`, `CORS_ALLOWED_ORIGINS`, `DEMO_REAL_STT`, `HF_HOME`, `XDG_CACHE_HOME`, `MODEL_ROUTING_CONFIG`, `PORT` | `Dockerfile.railway-demo`, healthcheck `/health` |
+| **Railway `postgres`** | Postgres 16 + PostGIS + pgvector, volume `postgres-data` | `main` (moved by Ahmed) | private | sample data | `POSTGRES_*`, `PGDATA`, `APP_MIGRATOR_PASSWORD`, `CREATE_TEST_DB` | `deploy/railway-postgres.Dockerfile` |
+| **Railway `redis-state`**, **`redis-cache`** | Redis 7 (`redis-state` with a volume) | image | private | — | — | image |
 
-## Not yet true (Stage 3 changes it)
+## The public trial (unchanged: the mock, "Try Link")
 
-- The Vercel apps run on the mock, not on the real core-api. Stage 3 points them at `core-api-l9aa` in `LINK_ENV=staging`.
-- core-api runs without `LINK_ENV`, so the staging guard rules of Stage 3 do not apply yet; it holds sample data only.
-- No messaging-gateway on Railway (no provider webhooks yet).
+| Thing | What it is | Branch | URL | Mode | Variable names |
+|---|---|---|---|---|---|
+| **Vercel `link-ai-web`** | landing + "Try Link" | `main` | https://link-ai-web-sigma.vercel.app | in-browser mock, real map | `NEXT_PUBLIC_MAP_PROVIDER`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_TEACHER_APP_URL` |
+| **Vercel `link-ai-teacher-demo`** | teacher app for the trial | `main` | https://link-ai-teacher-demo.vercel.app | mock-server (Railway `ai-service`), real map | `EXPO_PUBLIC_API_MODE`, `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_MAP_PROVIDER`, `EXPO_PUBLIC_SITE_URL` |
+| **Vercel `link-platform-demo`** | a single static "Bundled Page" (not this repo), one deploy on 10 Oct, no custom domain | — | https://link-platform-demo.vercel.app | static | waiting on Ahmed (see open points) |
+
+## Local
+
+| Thing | URL | Mode |
+|---|---|---|
+| `pnpm dev` | :3000 web, :4000 core-api, :8081 teacher, :3001 ops | live on the local fakes |
+| `pnpm demo` | :4010 mock server | mock-server |
+| `pnpm prod:local` | :3000 | production images, `LINK_ENV=staging` (not the hosted staging: no Railway, bookings on with fake-pay) |
+
+## How a tester gets in (until Google/email sign-in, Stage 1)
+
+Sign in with a **sample** phone number (`010 0000 000x`, docs/14 §4); the code is **not** sent — it lands in the private inbox at `https://core-api-l9aa-production.up.railway.app/__staging/sms` (browser asks for a password: any user name, `SMS_SINK_TOKEN` from Railway → `core-api-l9aa` → Variables). Codes are kept one hour. Bookings are off on staging ("booking opens soon").
 
 ## Branch inventory (2026-10-16, Part A)
 
@@ -49,11 +61,11 @@ Before any deletion, every branch not merged by git was archived as a tag `archi
 
 ## Open points (waiting on Ahmed)
 
-| # | What | Why it waits | Options |
-|---|---|---|---|
-| 1 | `postgres` → `main` | The backup comes first. `railway ssh` needs an SSH key registered on the Railway account, and this PC's permission check refused to register one. A TCP proxy for `pg_dump` would itself **redeploy the database** before the backup | (a) Ahmed runs `railway ssh keys add` once, then the agent runs `pg_dump` through `railway ssh`; (b) Ahmed approves one Postgres restart for a temporary TCP proxy, removed after the dump; (c) skip the backup (sample data only) |
-| 2 | Volume `ai-models` at `/models` | Railway mounts volumes as root; the image runs as the non-root user `link`, so it could not write the models. Railway's only documented fix is `RAILWAY_RUN_UID=0` (the whole container as root) | Recommended: **don't mount** (Whisper `tiny` downloads in seconds), and delete the empty volume later; or accept root for this demo container |
-| 3 | Vercel inventory and `link-platform-demo` | The Vercel CLI on this PC is logged out (`vercel whoami`) | Ahmed runs `vercel login` with eng.ahmed.hossam144@gmail.com |
+| # | What | Why it waits |
+|---|---|---|
+| 1 | **Nightly backup on Railway** (`deploy/backup.Dockerfile`, a cron service running `deploy/backup.sh`) | Railway refused a new service: "Free plan resource provision limit exceeded". Needs a paid plan, or one service removed, or the backup run elsewhere (your choice) |
+| 2 | `link-platform-demo` | No custom domain, one deploy on 10 Oct; its automatic `*.vercel.app` address still serves a page, so not deleted without your word |
+| 3 | Leftover Codex variables on `core-api-l9aa` | Unused; removing them is a deletion: your call |
 
 ## Map settings (Part B, 2026-10-16)
 
