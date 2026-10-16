@@ -103,7 +103,11 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
     factory(
       OtpService,
       [Redises, Phones, SMS_SENDER],
-      (r: Redises, p: Phones, sms: SmsSender) => new OtpService(r, p, sms, c.HMAC_KEY_LOOKUP),
+      (r: Redises, p: Phones, sms: SmsSender) =>
+        new OtpService(r, p, sms, c.HMAC_KEY_LOOKUP, {
+          perPhone10Min: c.OTP_PER_PHONE_10MIN,
+          perPhoneDay: c.OTP_PER_PHONE_DAY,
+        }),
     ),
     factory(Tokens, [Database], (db: Database) => new Tokens(c, db)),
     factory(Accounts, [Database, Phones], (db: Database, p: Phones) => new Accounts(db, p)),

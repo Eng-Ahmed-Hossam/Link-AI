@@ -33,6 +33,8 @@ export class OtpService {
     private readonly phones: Phones,
     private readonly sms: SmsSender,
     private readonly hmacKey: string,
+    /** Per-phone limits; the hosted staging may raise them for its sample numbers (config). */
+    private readonly limits: { perPhone10Min: number; perPhoneDay: number } = OTP,
   ) {}
 
   private hash(e164: string, code: string) {
@@ -49,8 +51,8 @@ export class OtpService {
       });
     for (const [key, limit, window] of [
       [this.redis.key('rl', 'otp', 'ip', ip), OTP.perIpHour, 3600],
-      [this.redis.key('rl', 'otp', 'p10', p), OTP.perPhone10Min, 600],
-      [this.redis.key('rl', 'otp', 'pday', p), OTP.perPhoneDay, 86_400],
+      [this.redis.key('rl', 'otp', 'p10', p), this.limits.perPhone10Min, 600],
+      [this.redis.key('rl', 'otp', 'pday', p), this.limits.perPhoneDay, 86_400],
     ] as const) {
       const { count, retryAfter } = await hit(r, key, window);
       if (count > limit)

@@ -98,6 +98,7 @@ test('staging: visitor pages and maps', async ({ browser }) => {
 test('staging: owner signs in (real code) — schedule and the location picker', async ({
   browser,
 }) => {
+  test.skip(NO_TOKEN, NEEDS_TOKEN);
   const problems: string[] = [];
   let base = '';
   for (const [i, c] of COMBOS.entries()) {
@@ -160,7 +161,6 @@ test('staging: owner signs in (real code) — schedule and the location picker',
 });
 
 test('staging: parent signs in (real code) — children', async ({ browser }) => {
-  test.skip(NO_TOKEN, NEEDS_TOKEN);
   test.skip(NO_TOKEN, NEEDS_TOKEN);
   const problems: string[] = [];
   for (const [i, c] of COMBOS.entries()) {
