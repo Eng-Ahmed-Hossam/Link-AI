@@ -1,10 +1,13 @@
 // node scripts/wait-deployed.mjs <commit-sha> [--timeout-min 20]
-// Waits until every deployed app (deploy/deployed-urls.json) reports <commit-sha> on its health
-// endpoint — Vercel and Railway deploy main on every push — then exits 0. Exits 1 on timeout,
-// naming the apps still on an older commit. Used by .github/workflows/deployed.yml.
+// Waits until every deployed app (deploy/deployed-urls.json) is current for <commit-sha>, then
+// exits 0. Current = its health endpoint reports <commit-sha>, or an older commit when nothing
+// that app is built from changed since (Vercel skips unaffected projects; scripts/lib/deployed-apps.mjs).
+// Exits 1 on timeout, naming the apps still behind. Needs the git history (fetch-depth: 0).
+// Used by .github/workflows/deployed.yml.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './lib/env.mjs';
+import { deployedApps, isCurrent } from './lib/deployed-apps.mjs';
 
 const sha = process.argv[2];
 if (!sha) {
@@ -13,16 +16,9 @@ if (!sha) {
 }
 const i = process.argv.indexOf('--timeout-min');
 const until = Date.now() + (i > 0 ? Number(process.argv[i + 1]) : 20) * 60_000;
-const u = JSON.parse(readFileSync(join(ROOT, 'deploy', 'deployed-urls.json'), 'utf8'));
-const apps = {
-  'trial web': `${u.publicTrial.web}/health`,
-  'trial teacher': `${u.publicTrial.teacher}/health.json`,
-  'demo API': `${u.publicTrial.demoApi}/health`,
-  'staging web': `${u.staging.web}/health`,
-  'staging teacher': `${u.staging.teacher}/health.json`,
-  'staging ops': `${u.staging.ops}/health`,
-  'core-api': `${u.staging.api}/health`,
-};
+const apps = deployedApps(
+  JSON.parse(readFileSync(join(ROOT, 'deploy', 'deployed-urls.json'), 'utf8')),
+);
 
 async function commitOf(url) {
   try {
@@ -35,13 +31,19 @@ async function commitOf(url) {
 
 const pending = new Set(Object.keys(apps));
 for (;;) {
-  for (const name of [...pending]) if ((await commitOf(apps[name])) === sha) pending.delete(name);
+  for (const name of [...pending]) {
+    const running = await commitOf(apps[name].health);
+    if (isCurrent(running, sha, apps[name].paths, ROOT)) {
+      pending.delete(name);
+      if (running !== sha) console.log(`· ${name}: ${running.slice(0, 7)}, unchanged since`);
+    }
+  }
   if (!pending.size) {
-    console.log(`✓ every app runs ${sha.slice(0, 7)}`);
+    console.log(`✓ every app is current for ${sha.slice(0, 7)}`);
     process.exit(0);
   }
   if (Date.now() > until) {
-    for (const name of pending) console.error(`✗ ${name}: ${await commitOf(apps[name])}`);
+    for (const name of pending) console.error(`✗ ${name}: ${await commitOf(apps[name].health)}`);
     process.exit(1);
   }
   await new Promise((r) => setTimeout(r, 20_000));
