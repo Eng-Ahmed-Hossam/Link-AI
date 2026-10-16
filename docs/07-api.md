@@ -137,7 +137,9 @@ Every request sets the RLS context from the token. See [10-security-privacy.md](
 | GET | `/v1/centres/{id}` · `/v1/centres/by-slug/{slug}` | public | Public profile | — read | MKT-DSC-04 |
 | GET | `/v1/centres/{id}/profile` | owner, staff | The C02 editing view: public fields plus halls, completeness, badges and `locationUnderReview` (added 2026-10-08) | — read | MKT-CEN-02, CF-44 |
 | GET | `/v1/centres/{id}/features` | owner, staff | Paid extras for this centre: `{followupExtra}` (added 2026-10-08) | — read | OD-58 |
-| PATCH | `/v1/centres/{id}` | centre_owner | Edit profile; a moved map pin (`location`) puts the centre under review (CF-44) | ✓ | MKT-CEN-02 |
+| PATCH | `/v1/centres/{id}` | centre_owner | Edit profile. `location` = `{lat, lng, address, governorate, area, street?, landmark?}` is stored as the **pending** location and puts the centre under review (CF-44, Part B); the public keeps the approved one until ops approve (`POST /v1/ops/centres/{id}/approve`). 422 `invalid_location` (outside Egypt), `invalid_address` | ✓ | MKT-CEN-02 |
+| GET | `/v1/geo/search?q` | any signed-in | C02 picker: address → up to 5 places in Egypt `{label, lat, lng, governorate, area, street}`, in the caller's language. Search on submit only; 60 per user per hour (429 `rate_limited`); 503 `geocoder_unavailable` (Part B, OD-46) | — read | MKT-CEN-02 |
+| GET | `/v1/geo/reverse?lat&lng` | any signed-in | C02 picker: the address at a pin (`{place}` or `{place: null}`); same limits | — read | MKT-CEN-02 |
 | POST | `/v1/centres/{id}/photos/upload-url` | centre_owner | Signed upload URL | ✓ | MKT-CEN-02 |
 | GET | `/v1/centres/{id}/rooms` | owner, staff | List halls | — read | MKT-CEN-03 |
 | POST | `/v1/centres/{id}/rooms` | centre_owner | Add a hall | ✓ | MKT-CEN-03 |

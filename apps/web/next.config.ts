@@ -24,6 +24,34 @@ if (PRODUCTION) {
  * this origin (Next inlines its boot script, hence 'unsafe-inline'), no framing, no plugins,
  * analytics only when its key is set.
  */
+// The real map (docs/plan/map-provider.md): tiles, style, glyphs and sprites from the map host;
+// the Arabic text plugin (served from here) compiles WebAssembly in the map's worker.
+const realMap =
+  !PILOT && /^(openfreemap|maplibre)$/.test(process.env.NEXT_PUBLIC_MAP_PROVIDER ?? '');
+const mapHost = realMap
+  ? ` ${new URL(process.env.NEXT_PUBLIC_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty').origin}`
+  : '';
+
+/**
+ * MapLibre's worker (public/maplibre/) gets its own, narrower policy: it loads the Arabic text
+ * plugin — our own vendored file — with fetch + eval, which the page's policy refuses. The worker
+ * has no DOM; scripts only from this origin; connections only here and to the map host. The
+ * page's policy is unchanged (no 'unsafe-eval' there).
+ */
+function mapWorkerHeaders() {
+  return [
+    {
+      key: 'Content-Security-Policy',
+      value: [
+        "default-src 'none'",
+        "script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'",
+        `connect-src 'self'${mapHost}`,
+        "img-src 'self' data: blob:",
+      ].join('; '),
+    },
+  ];
+}
+
 function securityHeaders() {
   const headers = [
     { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -44,11 +72,11 @@ function securityHeaders() {
       key: 'Content-Security-Policy',
       value: [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline'",
+        `script-src 'self' 'unsafe-inline'${realMap ? " 'wasm-unsafe-eval'" : ''}`,
         "style-src 'self' 'unsafe-inline'",
-        "img-src 'self' data: blob:",
+        `img-src 'self' data: blob:${mapHost}`,
         "font-src 'self' data:",
-        `connect-src 'self'${analytics}`,
+        `connect-src 'self'${analytics}${mapHost}`,
         "worker-src 'self' blob:",
         "frame-ancestors 'none'",
         "base-uri 'self'",
@@ -66,7 +94,18 @@ const config: NextConfig = {
     ? { output: 'standalone' as const, outputFileTracingRoot: join(process.cwd(), '..', '..') }
     : {}),
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders() }];
+    return [
+      { source: '/:path*', headers: securityHeaders() },
+      // Last match wins for the same header key: the worker files get their own policy.
+      ...(process.env.NODE_ENV === 'production' && realMap
+        ? [
+            {
+              source: '/maplibre/:file(maplibre-gl-worker.mjs|maplibre-gl-shared.mjs)',
+              headers: mapWorkerHeaders(),
+            },
+          ]
+        : []),
+    ];
   },
   // The concierge pilot builds into its own folder so it never mixes with `pnpm demo` (apps/pilot).
   distDir: process.env.NEXT_DIST_DIR || '.next',

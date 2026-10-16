@@ -26,6 +26,10 @@ export type RoomRequest = Schemas['RoomRequest'];
 export type ScheduleCell = Schemas['ScheduleCell'];
 export type CentreSchedule = Schemas['CentreSchedule'];
 export type CentreLocation = Schemas['CentreLocation'];
+export type PendingLocation = Schemas['PendingLocation'];
+export type Place = Schemas['Place'];
+/** C02: the location an owner submits (it waits for Link ops, CF-44). */
+export type CentreLocationInput = NonNullable<Schemas['CentrePatch']['location']>;
 export type NewHallBody = Schemas['NewHallBody'];
 export type CentreProfileEdit = Schemas['CentreProfileEdit'];
 export type RoomSearchQuery = Schemas['RoomSearchQuery'];

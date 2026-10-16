@@ -72,6 +72,8 @@ export class Requests {
           'c.id as centre_id',
           'c.name as centre_name',
           'c.area',
+          sql<number>`ST_Y(c.location::geometry)`.as('lat'),
+          sql<number>`ST_X(c.location::geometry)`.as('lng'),
           sql<number>`round((ST_Distance(c.location, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography) / 1000)::numeric, 1)::float8`.as(
             'distance_km',
           ),
@@ -101,6 +103,8 @@ export class Requests {
             name: r.centre_name!,
             area: r.area ?? '',
             distanceKm: Number(r.distance_km),
+            lat: Number(r.lat),
+            lng: Number(r.lng),
           },
           freeSlots: slots
             .filter(

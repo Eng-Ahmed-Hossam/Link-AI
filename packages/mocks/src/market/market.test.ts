@@ -341,25 +341,55 @@ describe('CF-44 (decided 2026-10-08): owners add halls and move the pin', () => 
     expect((await marketApi.halls(C)).length).toBe(before + 1);
   });
 
-  it('a moved pin shows "Location under review" to the owner and on P04 until ops verify it', async () => {
-    const p = await marketApi.moveCentrePin(C, {
+  it('a moved pin waits for Link ops (CF-44): the public keeps the approved pin until then', async () => {
+    const move = {
       lat: 29.961,
       lng: 31.258,
       address: '14 Road 9, Maadi',
+      governorate: 'Cairo',
+      area: 'Maadi',
+      street: 'Road 9',
+      landmark: 'Next to the pharmacy',
+    };
+    const p = await marketApi.moveCentrePin(C, move);
+    expect(p.location).toMatchObject({
+      underReview: true,
+      pending: { address: '14 Road 9, Maadi' },
     });
-    expect(p.location).toMatchObject({ address: '14 Road 9, Maadi', underReview: true });
     const pub = await (await fetch(`${BASE}/v1/centres/by-slug/al-nour-maadi`)).json();
     expect(pub.locationUnderReview).toBe(true);
-    expect(pub.address).toBe('14 Road 9, Maadi');
+    // Not public before approval: the old pin and address stay.
+    expect(pub.address).not.toBe('14 Road 9, Maadi');
     await fetch(`${BASE}/__demo/verify-location`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ centreId: C }),
     });
-    expect((await marketApi.centreProfile(C)).location.underReview).toBe(false);
+    const after = await marketApi.centreProfile(C);
+    expect(after.location).toMatchObject({ underReview: false, pending: null, lat: 29.961 });
+    const pub2 = await (await fetch(`${BASE}/v1/centres/by-slug/al-nour-maadi`)).json();
+    expect(pub2).toMatchObject({
+      address: '14 Road 9, Maadi',
+      lat: 29.961,
+      locationUnderReview: false,
+    });
     expect(
-      (await err(marketApi.moveCentrePin(C, { lat: 48.8, lng: 2.3, address: 'Paris' }))).problem
-        .status,
+      (await err(marketApi.moveCentrePin(C, { ...move, lat: 48.8, lng: 2.3, address: 'Paris' })))
+        .problem.status,
     ).toBe(422);
+    expect((await err(marketApi.moveCentrePin(C, { ...move, area: ' ' }))).problem.status).toBe(
+      422,
+    );
+  });
+
+  it('the picker searches the sample places in Arabic and English, and looks up a pin', async () => {
+    const ar = await marketApi.searchPlaces('المعادى');
+    // An Arabic query finds the place; names come back in the caller's language (English here).
+    expect(ar.items[0]).toMatchObject({ area: 'Maadi' });
+    const en = await marketApi.searchPlaces('road 9 maadi');
+    expect(en.items[0]).toMatchObject({ street: 'Road 9', lat: 29.9602 });
+    const at = await marketApi.lookupPlace(29.9605, 31.257);
+    expect(at.place).toMatchObject({ lat: 29.9605, lng: 31.257 });
+    expect((await marketApi.lookupPlace(24.1, 32.9)).place).toBeNull();
   });
 });

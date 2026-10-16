@@ -5,6 +5,7 @@ import type { Database } from '../platform/db';
 import { isUuid } from '../platform/ids';
 import { enqueue } from '../platform/outbox';
 import { Problem } from '../platform/problem';
+import { approveLocation } from '../market/location';
 
 /**
  * LOCAL stand-in for Link ops verifying a centre (MKT-OPS-01; the ops console comes later). Used by
@@ -47,9 +48,11 @@ export async function verifyCentre(
     if (!centres.length) throw new Problem(404, 'not_found', 'No such centre.');
     for (const c of centres) {
       if (c.verification === 'verified' && c.location_status === 'verified') continue;
+      // The owner's pending pin becomes the public one (CF-44, Part B).
+      await approveLocation(tx, c.id);
       await tx
         .updateTable('org.centres')
-        .set({ verification: 'verified', verified_at: new Date(), location_status: 'verified' })
+        .set({ verification: 'verified', verified_at: new Date() })
         .where('id', '=', c.id)
         .execute();
       await writeAudit(tx, {

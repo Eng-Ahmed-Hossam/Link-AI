@@ -35,6 +35,8 @@ function prodEnv(over: Record<string, string | undefined> = {}): NodeJS.ProcessE
     PAYMENT_PROVIDER: 'none',
     PAYMENT_WEBHOOK_SECRET: randomBytes(24).toString('base64url'),
     WHATSAPP_PROVIDER: 'manual',
+    GEOCODER_PROVIDER: 'nominatim',
+    GEOCODER_USER_AGENT: 'Link-test (sample)',
     WHATSAPP_WEBHOOK_SECRET: randomBytes(24).toString('base64url'),
     AI_SERVICE_URL: 'http://ai:8090',
     // OD-60: the approved consent pack (sample labels).
@@ -92,6 +94,7 @@ describe('Production guard', () => {
     ['sms-sink', { SMS_PROVIDER: 'fake', SMS_SINK_URL: 'http://sms-sink:8093' }, /sms-sink/],
     ['whatsapp-fake', { WHATSAPP_PROVIDER: 'fake' }, /whatsapp-fake/],
     ['demo routes', { DEMO_ROUTES: '1' }, /DEMO_ROUTES=1/],
+    ['the sample places geocoder', { GEOCODER_PROVIDER: 'dev' }, /GEOCODER_PROVIDER=dev/],
     ['the dev phone key', { FIELD_KEY_LOCAL: key() }, /FIELD_KEY_LOCAL/],
     ['aws-local', { AWS_ENDPOINT_URL: 'http://aws-local:4566' }, /AWS_ENDPOINT_URL/],
     [

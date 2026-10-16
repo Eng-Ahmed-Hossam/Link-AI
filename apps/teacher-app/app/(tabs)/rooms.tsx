@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -6,7 +6,9 @@ import { marketApi, type RoomSearchResult } from '@link/api-client';
 import { formatWeekday } from '@link/i18n';
 import { Button, Card, Chip, StatusBadge, textStyle } from '@link/ui-native';
 import { color, radius, space } from '@link/tokens';
+import { MAP_PROVIDER } from '@/api-mode';
 import { useLocale } from '@/locale';
+import { WebMap } from '@/market/WebMap';
 import { track } from '@/net';
 import { num } from '@/format';
 import { egp, facilities, ruleText, slotsText } from '@/market/text';
@@ -95,7 +97,11 @@ export default function Rooms() {
       >
         {(rooms) => (
           <>
-            <MapPins rooms={rooms} />
+            {MAP_PROVIDER === 'maplibre' ? (
+              <RoomsWebMap rooms={rooms} />
+            ) : (
+              <MapPins rooms={rooms} />
+            )}
             {rooms.map((r) => (
               <RoomCard
                 key={r.hall.id}
@@ -116,7 +122,23 @@ export default function Rooms() {
   );
 }
 
-/** A small drawn map with one pin per centre (no map provider in the demo). */
+/** J01 on the web build with a map provider: the centres on a real map (Part B). */
+function RoomsWebMap({ rooms }: { rooms: RoomSearchResult[] }) {
+  const { locale, t } = useLocale();
+  const pins = useMemo(
+    () =>
+      [...new Map(rooms.map((r) => [r.centre.id, r.centre])).values()].map((c) => ({
+        id: c.id,
+        lat: c.lat,
+        lng: c.lng,
+        label: c.name,
+      })),
+    [rooms],
+  );
+  return <WebMap pins={pins} label={t('teacher.rooms.map')} lang={locale} />;
+}
+
+/** A small drawn map with one pin per centre (no map provider: the demo and Android). */
 function MapPins({ rooms }: { rooms: RoomSearchResult[] }) {
   const { locale, t } = useLocale();
   const centres = [...new Map(rooms.map((r) => [r.centre.id, r.centre])).values()];

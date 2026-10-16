@@ -301,7 +301,13 @@ describe('P02–P05 search (MKT-DSC-01…05): verified centres and active teache
 
   it('CF-44: a moved pin shows "under review" on P04 until ops verify it', async () => {
     await owner.call('PATCH', `/v1/centres/${NOUR}`, {
-      location: { lat: 29.961, lng: 31.257, address: '14 Road 9, Maadi' },
+      location: {
+        lat: 29.961,
+        lng: 31.257,
+        address: '14 Road 9, Maadi',
+        governorate: 'Cairo',
+        area: 'Maadi',
+      },
     });
     const anon = new Client(api);
     const before = await anon.call<{ locationUnderReview: boolean }>(

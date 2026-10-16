@@ -525,11 +525,13 @@ export interface MarketPublicCentres {
   governorate: string | null;
   hours: Json | null;
   id: string | null;
+  landmark: string | null;
   location: string | null;
   location_status: string | null;
   name: string | null;
   photo_count: number | null;
   slug: string | null;
+  street: string | null;
 }
 
 export interface MarketPublicGroups {
@@ -815,14 +817,23 @@ export interface OrgCentres {
   governorate: string | null;
   hours: Generated<Json>;
   id: string;
+  landmark: string | null;
   location: string | null;
   location_status: Generated<string>;
   name: string;
   ops_stage: Generated<string>;
   owner_id: string;
+  pending_address: string | null;
+  pending_area: string | null;
+  pending_at: Timestamp | null;
+  pending_governorate: string | null;
+  pending_landmark: string | null;
+  pending_location: string | null;
+  pending_street: string | null;
   photos: Generated<Json>;
   settings: Generated<Json>;
   slug: string;
+  street: string | null;
   updated_at: Generated<Timestamp>;
   verification: Generated<string>;
   verified_at: Timestamp | null;

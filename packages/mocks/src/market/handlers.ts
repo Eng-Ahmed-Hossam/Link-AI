@@ -16,6 +16,7 @@ import * as fx from '../data';
 import { MockProblem } from '../db';
 import { authed, problem } from '../http';
 import * as mk from './logic';
+import { reverseSamplePlace, searchSamplePlaces } from './places';
 import { SAMPLE_RECEPTION_PERMISSIONS, parentCentreIds } from '../followup/db';
 
 /** The signed-in user's marketplace roles (sample accounts: followup/data.ts staff). */
@@ -114,11 +115,29 @@ export const marketHandlers = [
       const body = (await request.json()) as {
         about?: string;
         photos?: number;
-        location?: { lat: number; lng: number; address: string };
+        location?: Parameters<typeof mk.moveCentrePin>[1];
       };
       const { location, ...rest } = body;
       if (location) mk.moveCentrePin(params.id!, location, lang);
       return HttpResponse.json(mk.patchCentreProfile(params.id!, rest, lang));
+    }),
+  ),
+  // C02 picker: address search and reverse lookup over the sample places (the dev geocoder).
+  http.get(
+    '*/v1/geo/search',
+    authed(({ request, lang }) => {
+      const q = new URL(request.url).searchParams.get('q')?.trim() ?? '';
+      if (q.length < 2) return problem(422, 'validation_failed', 'Write at least 2 letters.');
+      return HttpResponse.json({ items: searchSamplePlaces(q, lang) });
+    }),
+  ),
+  http.get(
+    '*/v1/geo/reverse',
+    authed(({ request, lang }) => {
+      const u = new URL(request.url).searchParams;
+      return HttpResponse.json({
+        place: reverseSamplePlace(Number(u.get('lat')), Number(u.get('lng')), lang),
+      });
     }),
   ),
   http.post(

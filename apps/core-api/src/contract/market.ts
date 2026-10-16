@@ -86,9 +86,28 @@ export const AutoApproveRules = named(
   }),
 );
 
+/** A centre's location with its structured address (C02; Part B). */
+const LocationFields = {
+  lat: z.number(),
+  lng: z.number(),
+  address: z.string(),
+  governorate: z.string(),
+  area: z.string(),
+  street: z.string(),
+  landmark: z.string(),
+};
+export const PendingLocation = named(
+  'PendingLocation',
+  z.object({ ...LocationFields, submittedAt: z.string() }),
+);
 export const CentreLocation = named(
   'CentreLocation',
-  z.object({ lat: z.number(), lng: z.number(), address: z.string(), underReview: z.boolean() }),
+  z.object({
+    ...LocationFields,
+    underReview: z.boolean(),
+    /** The owner's moved pin waiting for Link ops (CF-44); the public still sees the fields above. */
+    pending: PendingLocation.nullable(),
+  }),
 );
 export const CentreProfileEdit = named(
   'CentreProfileEdit',
@@ -118,9 +137,19 @@ export const CentrePatch = named(
     about: z.string().max(600).optional(),
     photos: z.number().int().min(0).max(12).optional(),
     location: z
-      .object({ lat: z.number(), lng: z.number(), address: z.string().max(200) })
+      .object({
+        lat: z.number(),
+        lng: z.number(),
+        address: z.string().max(200),
+        governorate: z.string().min(1).max(60),
+        area: z.string().min(1).max(60),
+        street: z.string().max(120).optional(),
+        landmark: z.string().max(120).optional(),
+      })
       .optional()
-      .describe('CF-44: a moved pin is under review until Link ops verify it'),
+      .describe(
+        'CF-44: the moved pin waits as the pending location until Link ops approve it; the public keeps the approved one',
+      ),
   }),
 );
 
@@ -251,6 +280,9 @@ export const RoomSearchResult = named(
       name: z.string(),
       area: z.string(),
       distanceKm: z.number(),
+      /** The approved pin (J01 map, Part B). */
+      lat: z.number(),
+      lng: z.number(),
     }),
     freeSlots: z.array(WeeklySlot),
     rentRule: RentRule,
@@ -554,6 +586,9 @@ export const CentreProfile = named(
     reviews: z.array(PublicReview),
     lat: z.number(),
     lng: z.number(),
+    /** The approved structured address (Part B); empty strings when not given. */
+    street: z.string(),
+    landmark: z.string(),
     locationUnderReview: z.boolean(),
   }),
 );
@@ -599,3 +634,23 @@ export const InviteList = z.array(Invite);
 
 export const IdParams = z.object({ id: Uuid });
 export const SlugParams = z.object({ slug: z.string().regex(/^[a-z0-9-]{1,80}$/) });
+
+// ── Address search and reverse lookup for the C02 picker (Part B, map-provider.md) ─────────
+export const Place = named(
+  'Place',
+  z.object({
+    label: z.string(),
+    lat: z.number(),
+    lng: z.number(),
+    governorate: z.string(),
+    area: z.string(),
+    street: z.string(),
+  }),
+);
+export const PlaceList = named('PlaceList', z.object({ items: z.array(Place) }));
+export const PlaceLookup = named('PlaceLookup', z.object({ place: Place.nullable() }));
+export const GeoSearchQuery = z.object({ q: z.string().trim().min(2).max(120) });
+export const GeoReverseQuery = z.object({
+  lat: z.coerce.number().min(22).max(32),
+  lng: z.coerce.number().min(24.5).max(37),
+});

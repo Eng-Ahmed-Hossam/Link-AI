@@ -423,6 +423,8 @@ export class Search {
           'area',
           'governorate',
           'address',
+          'street',
+          'landmark',
           'hours',
           'location_status',
           sql<number>`ST_Y(location::geometry)`.as('lat'),
@@ -518,6 +520,8 @@ export class Search {
         reviews: await publicReviews(tx, 'centre', c.id!, lang),
         lat: Number(c.lat),
         lng: Number(c.lng),
+        street: c.street ?? '',
+        landmark: c.landmark ?? '',
         locationUnderReview: c.location_status === 'under_review',
         groupsForChild: summaries.filter(
           (g) =>

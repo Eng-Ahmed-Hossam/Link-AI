@@ -63,6 +63,10 @@ export function productionProblems(c: Config, env: NodeJS.ProcessEnv = process.e
     p.push('WHATSAPP_WEBHOOK_SECRET: the local default secret is not allowed in production.');
   if (env.DEMO_ROUTES === '1')
     p.push('DEMO_ROUTES=1: demo routes (/__demo) are not allowed in production.');
+  if (c.GEOCODER_PROVIDER === 'dev')
+    p.push(
+      'GEOCODER_PROVIDER=dev: the address search offers sample places; set nominatim (docs/plan/map-provider.md).',
+    );
   if (env.FIELD_KEY_LOCAL)
     p.push(
       'FIELD_KEY_LOCAL: the developer phone key from .env.local is not allowed; set FIELD_KEY.',

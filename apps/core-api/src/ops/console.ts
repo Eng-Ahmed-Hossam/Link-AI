@@ -9,6 +9,7 @@ import type { Phones } from '../identity/phone';
 import type { Money } from '../payments/money';
 import type { OpsPermission } from './access';
 import { approveRefundRequest, denyRefundRequest } from './refunds';
+import { approveLocation, locationColumns } from '../market/location';
 
 /**
  * The ops console's work (S2; MKT-OPS-01..04, -08, -09). Everything except refunds runs as
@@ -151,6 +152,16 @@ export class OpsConsole {
           'c.location_status',
           'c.ops_stage',
           'c.created_at',
+          'c.street',
+          'c.landmark',
+          'c.pending_address',
+          'c.pending_governorate',
+          'c.pending_area',
+          'c.pending_street',
+          'c.pending_landmark',
+          'c.pending_at',
+          ...locationColumns.live,
+          ...locationColumns.pending,
           'u.name as owner_name',
           'u.phone_last4',
           sql<number>`(SELECT count(*)::int FROM market.rooms r WHERE r.centre_id = c.id)`.as(
@@ -174,7 +185,17 @@ export class OpsConsole {
       const checks = await this.checksOf(tx, 'centre', ids);
       const notes = await this.notesOf(tx, 'centre', ids);
       const centres = picked.map((r) => {
-        const cs = checks.get(r.id)!;
+        // A pin check done before the owner's latest move is about the old pin: show it pending.
+        const cs = checks
+          .get(r.id)!
+          .map((x) =>
+            x.code === 'address_pin_match' &&
+            r.pending_at &&
+            x.status === 'done' &&
+            (!x.doneAt || new Date(x.doneAt) < new Date(r.pending_at))
+              ? { ...x, status: 'pending' as const, doneAt: null, doneByName: null }
+              : x,
+          );
         const s = stageOf(r);
         return {
           id: r.id,
@@ -186,12 +207,38 @@ export class OpsConsole {
           ownerPhoneLast4: r.phone_last4,
           stage: s,
           locationUnderReview: r.location_status === 'under_review',
+          // Side by side for ops (CF-44): the approved pin the public sees, and the owner's new one.
+          location:
+            r.lat != null && r.lng != null
+              ? {
+                  lat: r.lat,
+                  lng: r.lng,
+                  address: r.address ?? '',
+                  governorate: r.governorate ?? '',
+                  area: r.area ?? '',
+                  street: r.street ?? '',
+                  landmark: r.landmark ?? '',
+                }
+              : null,
+          pendingLocation:
+            r.p_lat != null && r.p_lng != null
+              ? {
+                  lat: r.p_lat,
+                  lng: r.p_lng,
+                  address: r.pending_address ?? '',
+                  governorate: r.pending_governorate ?? '',
+                  area: r.pending_area ?? '',
+                  street: r.pending_street ?? '',
+                  landmark: r.pending_landmark ?? '',
+                  submittedAt: iso(r.pending_at)!,
+                }
+              : null,
           halls: r.halls,
           createdAt: iso(r.created_at)!,
           callDueAt:
             s === 'new' ? `${callDueOn(cairoToday(new Date(r.created_at)))}T23:59:59+02:00` : null,
           checks: cs,
-          canApprove: canApproveCentre(r.verification, r.location_status, cs),
+          canApprove: canApproveCentre(r.verification, r.location_status, cs, r.pending_at),
           notes: notes.get(r.id) ?? [],
         };
       });
@@ -336,7 +383,7 @@ export class OpsConsole {
     return this.db.asOps(userId, async (tx) => {
       const c = await this.centre(tx, id);
       const checks = (await this.checksOf(tx, 'centre', [id])).get(id)!;
-      if (!canApproveCentre(c.verification, c.location_status, checks))
+      if (!canApproveCentre(c.verification, c.location_status, checks, c.pending_at))
         throw new Problem(
           409,
           'checks_incomplete',
@@ -350,9 +397,11 @@ export class OpsConsole {
               .filter((code) => c.verification !== 'verified' || code === 'address_pin_match'),
           },
         );
+      // The owner's pending pin becomes the public one (CF-44, Part B), then the centre is verified.
+      await approveLocation(tx, id);
       await tx
         .updateTable('org.centres')
-        .set({ verification: 'verified', verified_at: new Date(), location_status: 'verified' })
+        .set({ verification: 'verified', verified_at: new Date() })
         .where('id', '=', id)
         .execute();
       await writeAudit(tx, {
@@ -429,7 +478,7 @@ export class OpsConsole {
   private async centre(tx: Tx, id: string) {
     const c = await tx
       .selectFrom('org.centres')
-      .select(['id', 'verification', 'location_status', 'ops_stage'])
+      .select(['id', 'verification', 'location_status', 'ops_stage', 'pending_at'])
       .where('id', '=', id)
       .forUpdate()
       .executeTakeFirst();
@@ -1061,13 +1110,17 @@ function checkView(
 function canApproveCentre(
   verification: string,
   locationStatus: string,
-  checks: { code: CheckCode; status: CheckStatus }[],
+  checks: { code: CheckCode; status: CheckStatus; doneAt: string | null }[],
+  pendingAt: Date | string | null = null,
 ) {
-  if (verification === 'verified')
-    return (
-      locationStatus === 'under_review' &&
-      checks.find((c) => c.code === 'address_pin_match')?.status === 'done'
-    );
+  if (verification === 'verified') {
+    const pin = checks.find((c) => c.code === 'address_pin_match');
+    // Part B: the check must be about THIS move — done after the owner submitted the new pin.
+    const fresh =
+      !pendingAt ||
+      (!!pin?.doneAt && new Date(pin.doneAt).getTime() >= new Date(pendingAt).getTime());
+    return locationStatus === 'under_review' && pin?.status === 'done' && fresh;
+  }
   if (!['pending', 'in_review'].includes(verification)) return false;
   return checks.every((c) => c.status === 'done');
 }

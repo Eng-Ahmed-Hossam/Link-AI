@@ -36,3 +36,15 @@ export const DEMO_CONTROLS =
   process.env.NEXT_PUBLIC_APP_ENV === 'local' &&
   process.env.NEXT_PUBLIC_DEMO_CONTROLS === '1' &&
   !PILOT;
+
+/**
+ * The map (docs/plan/map-provider.md): `openfreemap` (or `maplibre`) draws real tiles with
+ * MapLibre; anything else, and always the pilot (a centre laptop, no map network), the drawn dev
+ * map. Read at build time.
+ */
+export const MAP_PROVIDER: 'dev' | 'maplibre' =
+  !PILOT && /^(openfreemap|maplibre)$/.test(process.env.NEXT_PUBLIC_MAP_PROVIDER ?? '')
+    ? 'maplibre'
+    : 'dev';
+export const MAP_STYLE_URL =
+  process.env.NEXT_PUBLIC_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty';

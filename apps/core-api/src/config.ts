@@ -110,6 +110,14 @@ const schema = z
     WHATSAPP_PROVIDER: z.enum(['fake', 'manual']).default('fake'),
     WHATSAPP_FAKE_URL: z.string().url().default('http://localhost:8094'),
     WHATSAPP_WEBHOOK_SECRET: z.string().min(16).default('local-whatsapp-fake-secret'),
+    /**
+     * Address search and reverse lookup for the C02 picker (docs/plan/map-provider.md): `dev` is
+     * the sample places (the local fake), `nominatim` is OpenStreetMap's Nominatim.
+     */
+    GEOCODER_PROVIDER: z.enum(['dev', 'nominatim']).default('dev'),
+    GEOCODER_URL: z.string().url().default('https://nominatim.openstreetmap.org/'),
+    /** Identifies Link to Nominatim (its usage policy requires it), e.g. "Link-staging (contact …)". */
+    GEOCODER_USER_AGENT: z.string().min(8).optional(),
     GATEWAY_PORT: z.coerce.number().int().positive().default(4002),
     /** The worker's own /health (deploy health checks): its loops must have run recently. */
     WORKER_HEALTH_PORT: z.coerce.number().int().positive().default(4003),
@@ -130,6 +138,12 @@ const schema = z
         path: ['FIELD_KEY'],
         message:
           'required outside APP_ENV=local (32 random bytes, base64; keep it with the backups)',
+      });
+    if (c.GEOCODER_PROVIDER === 'nominatim' && !c.GEOCODER_USER_AGENT)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['GEOCODER_USER_AGENT'],
+        message: 'required with GEOCODER_PROVIDER=nominatim (its usage policy)',
       });
     if (c.STORAGE_PROVIDER === 'file' && !c.STORAGE_KEY)
       ctx.addIssue({

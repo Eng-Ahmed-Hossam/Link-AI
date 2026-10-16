@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { opsApi, type CentreApplication, type CentreStage, type OpsLead } from '@link/api-client';
 import { createTranslator, formatNumber, type Locale, type MessageKey } from '@link/i18n';
-import { Button, Card, Segmented, StatusBadge } from '@link/ui';
+import { Button, Card, MapView, Segmented, StatusBadge } from '@link/ui';
 import {
   ActionError,
   Checklist,
@@ -194,6 +194,8 @@ function CentreCard({
         </div>
       ) : null}
 
+      {c.pendingLocation ? <PinCompare c={c} t={t} /> : null}
+
       <Checklist
         t={t}
         locale={locale}
@@ -246,5 +248,92 @@ function CentreCard({
       <Notes t={t} locale={locale} subjectType="centre" subjectId={c.id} initial={c.notes} />
       <History t={t} locale={locale} objectType="centre" objectRef={c.id} />
     </Card>
+  );
+}
+
+/** Metres between two points (haversine). */
+const metres = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+  const r = (d: number) => (d * Math.PI) / 180;
+  const h =
+    Math.sin(r(b.lat - a.lat) / 2) ** 2 +
+    Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(r(b.lng - a.lng) / 2) ** 2;
+  return Math.round(2 * 6_371_000 * Math.asin(Math.sqrt(h)));
+};
+
+/**
+ * CF-44 review (Part B): the pin the public sees now and the owner's new one on one map, with the
+ * distance moved and both addresses side by side. Approving copies the new one to the public.
+ */
+function PinCompare({ c, t }: { c: CentreApplication; t: T }) {
+  const next = c.pendingLocation!;
+  const now = c.location;
+  const lines = (x: {
+    address: string;
+    street: string;
+    area: string;
+    governorate: string;
+    landmark: string;
+  }) => (
+    <>
+      <p className="text-label text-navy">{x.address}</p>
+      <p className="text-caption text-muted">
+        {[x.street, x.area, x.governorate].filter(Boolean).join('، ')}
+      </p>
+      {x.landmark ? <p className="text-caption text-muted">{x.landmark}</p> : null}
+    </>
+  );
+  return (
+    <section
+      aria-label={t('ops.centres.pinCompare')}
+      className="flex flex-col gap-3"
+      data-testid="pin-compare"
+    >
+      <h3 className="text-label text-navy">{t('ops.centres.pinCompare')}</h3>
+      <MapView
+        label={t('ops.centres.pinCompare')}
+        centre={next}
+        showCentre={false}
+        zoom={16}
+        className="h-56"
+        pins={[
+          ...(now
+            ? [
+                {
+                  id: 'old',
+                  lat: now.lat,
+                  lng: now.lng,
+                  label: t('ops.centres.pinOld'),
+                  state: 'waitlist' as const,
+                },
+              ]
+            : []),
+          {
+            id: 'new',
+            lat: next.lat,
+            lng: next.lng,
+            label: t('ops.centres.pinNew'),
+            state: 'open' as const,
+            selected: true,
+          },
+        ]}
+      />
+      <p className="text-caption text-muted" data-testid="pin-moved">
+        {now ? t('ops.centres.pinMoved', { metres: metres(now, next) }) : t('ops.centres.pinFirst')}
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-1" data-testid="pin-old">
+          <p className="text-caption font-semibold text-amber">{t('ops.centres.pinOld')}</p>
+          {now ? (
+            lines(now)
+          ) : (
+            <p className="text-caption text-muted">{t('ops.centres.pinFirst')}</p>
+          )}
+        </div>
+        <div className="flex flex-col gap-1" data-testid="pin-new">
+          <p className="text-caption font-semibold text-blueText">{t('ops.centres.pinNew')}</p>
+          {lines(next)}
+        </div>
+      </div>
+    </section>
   );
 }

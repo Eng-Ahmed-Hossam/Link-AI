@@ -13,6 +13,7 @@ import {
 import { formatClock, formatDate, formatKm, formatNumber, formatWeekday } from '@link/i18n';
 import {
   Avatar,
+  MapView,
   Button,
   Callout,
   Card,
@@ -165,6 +166,40 @@ export function P04Centre({ slug }: { slug: string }) {
                   ) : null}
                 </div>
               </div>
+
+              {/* Part B: the approved pin only (a moved pin waits for Link ops), and a plain link to Google Maps (no key). */}
+              <section
+                aria-label={t('centre.location.mapLabel')}
+                className="flex flex-col gap-2"
+                data-testid="centre-map"
+              >
+                <MapView
+                  pins={[{ id: c.id, lat: c.lat, lng: c.lng, label: c.name, state: 'open' }]}
+                  centre={{ lat: c.lat, lng: c.lng }}
+                  showCentre={false}
+                  zoom={15}
+                  label={t('centre.location.mapLabel')}
+                  className="h-40"
+                />
+                <p className="text-caption text-muted">
+                  <bdi>{c.address}</bdi>
+                  {c.landmark ? (
+                    <>
+                      {' • '}
+                      {t('parent.centre.landmark', { landmark: c.landmark })}
+                    </>
+                  ) : null}
+                </p>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 items-center self-start text-label text-blueText underline"
+                  data-testid="open-in-maps"
+                >
+                  {t('parent.centre.openInMaps')}
+                </a>
+              </section>
 
               {c.rating ? (
                 <Rating
