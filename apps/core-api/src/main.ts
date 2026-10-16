@@ -37,6 +37,7 @@ import { notificationsHandler } from './worker/notifications';
 import { Messages } from './followup/messages';
 import { Voice } from './followup/voice';
 import { followupHandler, followupJobs, messagingHandler, voiceHandler } from './worker/followup';
+import { StudentJobs, studentJobs } from './students/jobs';
 
 /**
  * core-api entrypoints (ADR-0001): `api` (HTTP), `worker` (outbox relay, consumers, jobs) and
@@ -122,6 +123,7 @@ async function worker() {
       payouts: isLocal(config) ? undefined : app.get(Payouts),
     }),
     ...followupJobs({ voice: app.get(Voice), messages: app.get(Messages) }),
+    ...studentJobs({ jobs: app.get(StudentJobs) }),
   ]);
   void loop('outbox-relay', 500, () => relay.tick());
   void loop('scheduler', 5_000, () => scheduler.tick());

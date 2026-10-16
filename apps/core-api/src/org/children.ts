@@ -15,7 +15,8 @@ type Kind =
   | 'whatsapp_updates'
   | 'sms_updates'
   | 'focus_plans'
-  | 'ai_training_use';
+  | 'ai_training_use'
+  | 'student_account';
 
 /** Children and consents of the signed-in parent (MKT-ACC-05, BR-DAT-03). GUARDIAN RLS. */
 export class Children {
@@ -133,7 +134,15 @@ export class Children {
     body: { kind: Kind; granted: boolean; version: string; studentId?: string },
     requestId?: string,
   ) {
+    if (body.kind === 'student_account' && body.granted)
+      throw new Problem(
+        422,
+        'use_student_account',
+        'A student account is created from the child’s page (POST /v1/children/{id}/student-account).',
+      );
     return this.db.asUser(userId, async (tx, ctx) => {
+      if (body.kind === 'student_account' && !body.studentId)
+        throw new Problem(422, 'validation_failed', 'Name the child (studentId).');
       if (body.studentId) {
         // GUARDIAN RLS hides other families' children, so "not visible" = not their guardian.
         const mine = await tx
@@ -157,6 +166,10 @@ export class Children {
           source: 'settings',
         })
         .execute();
+      // Withdrawing the student_account consent closes the child's student account at once:
+      // every device is unbound and every session ends (database v2; decision D-13 in the report).
+      if (body.kind === 'student_account' && body.studentId)
+        await sql`SELECT identity.close_student_account(${body.studentId}::uuid)`.execute(tx);
       await writeAudit(tx, {
         actorId: userId,
         actorType: 'user',

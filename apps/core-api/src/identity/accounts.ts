@@ -18,6 +18,8 @@ export interface MeView {
   centreIds: string[];
   teacherId: string | null;
   homeArea?: string | null;
+  activeRole?: AppRole | null;
+  student?: { studentId: string; displayName: string } | null;
 }
 
 const slugify = (name: string) => {
@@ -187,9 +189,26 @@ export class Accounts {
   async meIn(tx: Tx, ctx: RlsContext): Promise<MeView> {
     const u = await tx
       .selectFrom('identity.users')
-      .select(['id', 'name', 'language'])
+      .select(['id', 'name', 'language', 'active_role'])
       .where('id', '=', ctx.userId)
       .executeTakeFirstOrThrow();
+    // A student account (migration 0023): its name lives on the student row, never on the user.
+    if (ctx.studentId) {
+      const st = await tx
+        .selectFrom('org.students')
+        .select('display_name')
+        .where('id', '=', ctx.studentId)
+        .executeTakeFirstOrThrow();
+      return {
+        id: u.id,
+        name: st.display_name,
+        language: u.language === 'en' ? 'en' : 'ar',
+        roles: [],
+        centreIds: [],
+        teacherId: null,
+        student: { studentId: ctx.studentId, displayName: st.display_name },
+      };
+    }
     const g = ctx.guardianId
       ? await tx
           .selectFrom('org.guardians')
@@ -205,6 +224,7 @@ export class Accounts {
       centreIds: ctx.centreIds,
       teacherId: ctx.teacherId,
       ...(ctx.guardianId ? { homeArea: g?.home_area ?? null } : {}),
+      activeRole: APP_ROLES.find((r) => r === u.active_role && ctx.roles.includes(r)) ?? null,
     };
   }
 

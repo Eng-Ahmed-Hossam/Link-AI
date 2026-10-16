@@ -16,6 +16,14 @@ export const RACE_GRACE_MS = 15_000;
 export interface AccessClaims {
   sub: string;
   lang: 'ar' | 'en';
+  /** A student session's device (migration 0023): checked on every request (AuthGuard). */
+  did?: string;
+}
+
+/** How a sign-in was proved, and the student's device (identity.auth_sessions.amr). */
+export interface SessionStart {
+  amr: 'phone' | 'email' | 'google' | 'student_pin';
+  studentDeviceId?: string;
 }
 
 export type Client = 'web' | 'app';
@@ -30,13 +38,19 @@ export class Tokens {
     this.key = new Uint8Array(Buffer.from(c.JWT_SIGNING_KEY, 'base64'));
   }
 
-  async access(userId: string, ctx: Omit<RlsContext, 'userId'> | null, lang: 'ar' | 'en') {
+  async access(
+    userId: string,
+    ctx: Omit<RlsContext, 'userId'> | null,
+    lang: 'ar' | 'en',
+    deviceId?: string | null,
+  ) {
     return new SignJWT({
       roles: ctx?.roles ?? [],
       centreIds: ctx?.centreIds ?? [],
       teacherId: ctx?.teacherId ?? null,
       guardianId: ctx?.guardianId ?? null,
       lang,
+      ...(deviceId ? { did: deviceId } : {}),
     })
       .setProtectedHeader({ alg: 'HS256', kid: this.c.JWT_SIGNING_KEY_ID })
       .setSubject(userId)
@@ -55,7 +69,11 @@ export class Tokens {
         algorithms: ['HS256'],
       });
       if (typeof payload.sub !== 'string') throw unauthenticated();
-      return { sub: payload.sub, lang: payload.lang === 'en' ? 'en' : 'ar' };
+      return {
+        sub: payload.sub,
+        lang: payload.lang === 'en' ? 'en' : 'ar',
+        ...(typeof payload.did === 'string' ? { did: payload.did } : {}),
+      };
     } catch (e) {
       if (e instanceof errors.JWTExpired)
         throw unauthenticated('token_expired', 'Your session timed out. Refreshing…');
@@ -64,8 +82,9 @@ export class Tokens {
   }
 
   /** A new sign-in: a new chain (family) with its first refresh token. */
-  async startSession(userId: string, client: Client) {
+  async startSession(userId: string, client: Client, start: SessionStart = { amr: 'phone' }) {
     const token = randomToken();
+    const now = new Date();
     await this.db.system
       .insertInto('identity.auth_sessions')
       .values({
@@ -74,7 +93,10 @@ export class Tokens {
         family_id: uuidv7(),
         refresh_token_hash: sha256(token),
         client,
-        last_used_at: new Date(),
+        amr: start.amr,
+        authenticated_at: now,
+        student_device_id: start.studentDeviceId ?? null,
+        last_used_at: now,
         expires_at: new Date(Date.now() + this.c.REFRESH_TOKEN_TTL * 1000),
       })
       .execute();
@@ -118,6 +140,10 @@ export class Tokens {
           family_id: row.family_id,
           refresh_token_hash: sha256(next),
           client,
+          // The chain keeps how and when the person proved themselves, and the student's device.
+          amr: row.amr,
+          authenticated_at: row.authenticated_at,
+          student_device_id: row.student_device_id,
           last_used_at: new Date(),
           // The chain keeps its 30 days from each use (MKT-ACC-04: 30 days, rotated on use).
           expires_at: new Date(Date.now() + this.c.REFRESH_TOKEN_TTL * 1000),
@@ -128,12 +154,21 @@ export class Tokens {
         .set({ replaced_by: id, revoked_at: new Date(), last_used_at: new Date() })
         .where('id', '=', row.id)
         .execute();
-      return { kind: 'ok' as const, userId: row.user_id, refreshToken: next };
+      return {
+        kind: 'ok' as const,
+        userId: row.user_id,
+        refreshToken: next,
+        deviceId: row.student_device_id,
+      };
     });
     if (outcome.kind === 'raced')
       throw new Problem(409, 'refresh_raced', 'Already refreshed; retry the request.');
     if (outcome.kind === 'invalid') throw invalid();
-    return { userId: outcome.userId, refreshToken: outcome.refreshToken };
+    return {
+      userId: outcome.userId,
+      refreshToken: outcome.refreshToken,
+      deviceId: outcome.deviceId,
+    };
   }
 
   /** Logout: the chain this token belongs to ends. Unknown tokens are ignored (204 either way). */

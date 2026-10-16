@@ -1,4 +1,5 @@
 import { sql } from 'kysely';
+import { onRecordConfirmed } from '../students/teaching';
 import { writeAudit } from '../platform/audit';
 import { type Database, type RlsContext, type Tx } from '../platform/db';
 import { uuidv7 } from '../platform/ids';
@@ -687,6 +688,8 @@ export class Records {
         })
         .where('id', '=', id)
         .execute();
+      // Database v2: the homework this record set reaches its students now (records.homework_statuses).
+      await onRecordConfirmed(sys, id);
       await sys
         .updateTable('records.voice_extractions')
         .set({ status: 'accepted' })

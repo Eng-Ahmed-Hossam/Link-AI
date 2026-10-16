@@ -20,6 +20,8 @@ export interface RlsContext {
   guardianId: string | null;
   /** Staff permissions per centre. Owners hold every permission of their centre. */
   permissions: Record<string, string[]>;
+  /** A student account's own student (set only while the account is active, migration 0023). */
+  studentId: string | null;
 }
 
 export const isOwnerOf = (c: RlsContext, centreId: string) => c.ownerCentreIds.includes(centreId);
@@ -103,9 +105,11 @@ async function loadContext(tx: Tx, userId: string): Promise<RlsContext> {
     teacher_id: string | null;
     guardian_id: string | null;
     permissions: Record<string, string[]>;
+    student_id: string | null;
   }>`SELECT * FROM identity.load_context()`.execute(tx);
   const row = rows[0];
-  // No row: the account was deleted or suspended since the token was issued.
+  // No row: the account was deleted or suspended since the token was issued, or it is a student
+  // account that is paused, locked or closed (it stops on its very next request).
   if (!row) throw unauthenticated();
   return {
     userId,
@@ -115,6 +119,7 @@ async function loadContext(tx: Tx, userId: string): Promise<RlsContext> {
     teacherId: row.teacher_id,
     guardianId: row.guardian_id,
     permissions: row.permissions,
+    studentId: row.student_id,
   };
 }
 
@@ -125,5 +130,6 @@ export async function setContext(tx: Tx, c: RlsContext) {
     set_config('app.roles', ${arr(c.roles)}, true),
     set_config('app.centre_ids', ${arr(c.centreIds)}, true),
     set_config('app.teacher_id', ${c.teacherId ?? ''}, true),
-    set_config('app.guardian_id', ${c.guardianId ?? ''}, true)`.execute(tx);
+    set_config('app.guardian_id', ${c.guardianId ?? ''}, true),
+    set_config('app.student_id', ${c.studentId ?? ''}, true)`.execute(tx);
 }

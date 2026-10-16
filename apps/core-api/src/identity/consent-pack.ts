@@ -1,3 +1,5 @@
+import type { Database } from '../platform/db';
+
 /**
  * The consent pack (OD-60): the version label of each text people agree to. Every consent event
  * stores the label of the text the person saw (BR-DAT-03), so an approved text gets its own label
@@ -16,6 +18,8 @@ export const CONSENT_TEXTS = [
   'sms_updates',
   'focus_plans',
   'ai_training_use',
+  /** The guardian agrees that this child gets a student account (database v2, migration 0023). */
+  'student_account',
   /** C01 "Link may contact me about joining" (stored on the lead). */
   'contact',
 ] as const;
@@ -30,6 +34,7 @@ const DRAFTS: Record<ConsentText, string> = {
   sms_updates: 'draft-2026-10',
   focus_plans: 'draft-2026-10',
   ai_training_use: 'draft-2026-10',
+  student_account: 'draft-2026-10',
   contact: 'c01-draft-2026-10',
 };
 
@@ -75,4 +80,26 @@ export function consentVersion(kind: ConsentText, env: NodeJS.ProcessEnv = proce
 export function draftConsentTexts(env: NodeJS.ProcessEnv = process.env): ConsentText[] {
   const v = parseConsentVersions(env.CONSENT_VERSIONS ?? '');
   return REQUIRED_FOR_PRODUCTION.filter((k) => isDraftVersion(v[k]));
+}
+
+/**
+ * The register of consent texts (org.consent_versions, migration 0022): every label this pack
+ * uses is listed, with whether it is approved (a draft label is not). Run at API start-up; a
+ * label already registered is kept as it is (ops may have recorded its text hash).
+ */
+export async function registerConsentVersions(
+  db: Pick<Database, 'system'>,
+  env: NodeJS.ProcessEnv = process.env,
+) {
+  const versions = parseConsentVersions(env.CONSENT_VERSIONS ?? '');
+  const rows = CONSENT_TEXTS.map((kind) => ({
+    kind,
+    version: versions[kind],
+    approved: !isDraftVersion(versions[kind]),
+  }));
+  await db.system
+    .insertInto('org.consent_versions')
+    .values(rows)
+    .onConflict((oc) => oc.columns(['kind', 'version']).doNothing())
+    .execute();
 }

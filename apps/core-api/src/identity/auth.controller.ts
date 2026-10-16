@@ -75,8 +75,11 @@ export class AuthController {
     const web = usesCookies(req);
     const presented = web ? this.refreshCookie(req) : i.body?.refreshToken;
     if (!presented) throw unauthenticated('refresh_invalid', 'Sign in again to continue.');
-    const { userId, refreshToken } = await this.tokens.rotate(presented, web ? 'web' : 'app');
-    const { accessToken } = await this.issue(userId, langOf(req));
+    const { userId, refreshToken, deviceId } = await this.tokens.rotate(
+      presented,
+      web ? 'web' : 'app',
+    );
+    const { accessToken } = await this.issue(userId, langOf(req), deviceId);
     if (web) {
       this.setCookies(res, accessToken, refreshToken);
       return {};
@@ -102,18 +105,18 @@ export class AuthController {
   }
 
   /** A fresh access token for the user's current roles, plus the `Me` view. */
-  private issue(userId: string, lang: 'ar' | 'en') {
+  issue(userId: string, lang: 'ar' | 'en', deviceId?: string | null) {
     return this.db.asUser(userId, async (tx, ctx) => ({
       user: await this.accounts.meIn(tx, ctx),
-      accessToken: await this.tokens.access(userId, ctx, lang),
+      accessToken: await this.tokens.access(userId, ctx, lang, deviceId),
     }));
   }
 
-  private cookieOptions() {
+  cookieOptions() {
     return { httpOnly: true, sameSite: 'lax' as const, secure: this.c.APP_ENV !== 'local' };
   }
 
-  private setCookies(res: Response, access: string, refresh: string) {
+  setCookies(res: Response, access: string, refresh: string) {
     const opts = this.cookieOptions();
     res.cookie(ACCESS_COOKIE, access, {
       ...opts,

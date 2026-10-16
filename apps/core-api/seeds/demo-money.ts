@@ -289,6 +289,23 @@ export async function seedMoney(
     const count = Math.max(0, Math.min(g.takenUpcoming[0] ?? 0, g.seatCap - own));
     for (let i = 0; i < count; i++, k++) {
       const key = `fam-${g.id}-${i}`;
+      // Database v2 (docs/plan/database-v2.md §5): Mariam, the sample student, holds the first of
+      // these seats in Mr Karim's Sec 2 Maths group at Al Nour, so the seats taken stay as the mock shows.
+      if (g.id === 'grp-karim-nour' && i === 0) {
+        const id = seat({
+          key,
+          group: g,
+          studentId: demoId('chd-mariam'),
+          guardianId: o.parentGuardian,
+          payerUserId: o.parentUser,
+          // Started three weeks ago (on the follow-up history's rosters), renewing monthly.
+          plan: 'monthly_recurring',
+          startedDaysAgo: 20,
+          method: 'card',
+        });
+        if (id) familySeats.set(g.id, [...(familySeats.get(g.id) ?? []), id]);
+        continue;
+      }
       const guardianId = demoId(`gdn:${key}`);
       const studentId = demoId(`stu:${key}`);
       guardians.push({ id: guardianId });

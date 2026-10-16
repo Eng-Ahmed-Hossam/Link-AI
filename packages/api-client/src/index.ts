@@ -853,3 +853,4 @@ declare module '@tanstack/react-query' {
     defaultError: ApiError;
   }
 }
+export * from './students';

@@ -228,3 +228,18 @@ export class Client {
     return r.body;
   }
 }
+
+/** Mariam's student session on the seeded sample device (seeds/demo-students.ts, database v2). */
+export async function studentClient(api: Api, opts: { web?: boolean } = {}) {
+  const { SAMPLE_DEVICE } = await import('../seeds/demo-students');
+  const c = new Client(api, opts);
+  const r = await c.call<{ accessToken?: string; refreshToken?: string }>(
+    'POST',
+    '/v1/auth/student/sign-in',
+    { deviceId: SAMPLE_DEVICE.id, deviceSecret: SAMPLE_DEVICE.secret, pin: SAMPLE_DEVICE.pin },
+  );
+  if (r.status !== 200) throw new Error(`student sign-in ${r.status} ${JSON.stringify(r.body)}`);
+  c.token = r.body.accessToken ?? null;
+  c.refresh = r.body.refreshToken ?? null;
+  return c;
+}

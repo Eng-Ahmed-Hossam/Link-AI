@@ -14,9 +14,11 @@ import { SLOT_DAYS, SLOT_TIMES, plus2h, sessionTimes } from '../src/market/model
 import { addDays, cairoToUtc, cairoToday } from '../src/platform/time';
 
 export { demoId } from './demo-id';
+import type { DB } from '../src/db/schema';
 import { demoId } from './demo-id';
 import { seedMoney } from './demo-money';
 import { seedFollowup } from './demo-followup';
+import { seedStudentWorld } from './demo-students';
 
 /** Second owner and centre: tenant B for `pnpm test:rls`. */
 export const OWNER_B_PHONE = '+201000000007';
@@ -30,6 +32,27 @@ const RLS_CENTRE = 'cen-nile';
 
 /** Tables the seed owns, emptied in one statement (CASCADE follows the in-schema FKs). */
 const TABLES = [
+  // Database v2 (migrations 0020–0030).
+  'analytics.focus_plan_items',
+  'analytics.focus_plans',
+  'analytics.topic_score_snapshots',
+  'analytics.item_topics',
+  'records.session_topics',
+  'records.student_notes',
+  'records.homework_statuses',
+  'records.homework_items',
+  'records.record_corrections',
+  'market.makeup_requests',
+  'market.session_changes',
+  'messaging.in_app_notifications',
+  'identity.student_devices',
+  'identity.student_access_codes',
+  'identity.student_accounts',
+  'identity.user_identities',
+  'identity.access_allowlist',
+  'org.consent_versions',
+  'ref.topic_template_nodes',
+  'ref.topic_templates',
   'messaging.notification_log',
   'messaging.inbound_messages',
   'messaging.message_status_events',
@@ -731,6 +754,17 @@ export async function seedDemo(migratorUrl: string, opts: { emptyStaging?: boole
 
   // R3: Ms Salma's follow-up history at Al Nour, through the real rules engine.
   for (const [t, n] of Object.entries(await seedFollowup(migratorUrl))) counts[t] = n;
+
+  // Database v2: Mariam's student account, notes, make-up, a moved session, focus plans.
+  const sdb = new Kysely<DB>({
+    dialect: new PostgresDialect({ pool: new pg.Pool({ connectionString: migratorUrl, max: 1 }) }),
+  });
+  try {
+    const more = await sdb.transaction().execute((tx) => seedStudentWorld(tx, hmacKey));
+    for (const [t, n] of Object.entries(more)) counts[t] = n;
+  } finally {
+    await sdb.destroy();
+  }
 
   // Codes, rate limits and idempotency keys of the old world go too.
   for (const url of [process.env.REDIS_STATE_URL, process.env.REDIS_CACHE_URL]) {

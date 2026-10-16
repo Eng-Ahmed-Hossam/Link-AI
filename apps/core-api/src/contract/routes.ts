@@ -4,6 +4,7 @@ import * as m from './market';
 import * as $ from './money';
 import { opsRoutes } from './ops';
 import { payoutRoutes } from './payouts';
+import { studentRoutes } from './students';
 import * as s from './schemas';
 
 /**
@@ -1015,6 +1016,9 @@ export const routes = {
 
   // ── Payouts (S3, 07 money tables, MKT-OPS-11) ─────────────────────────────────
   ...payoutRoutes,
+
+  // ── Students and what they read (database v2, docs/plan/database-v2.md §8) ───
+  ...studentRoutes,
 } satisfies Record<string, RouteDef>;
 
 export type RouteName = keyof typeof routes;

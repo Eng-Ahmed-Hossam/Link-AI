@@ -7,6 +7,7 @@ import { pinoHttp } from 'pino-http';
 import { type Overrides, apiModule } from './app.module';
 import type { Config } from './config';
 import { Database } from './platform/db';
+import { registerConsentVersions } from './identity/consent-pack';
 import type { Logger } from './platform/logger';
 import { ProblemFilter } from './platform/problem';
 import { Redises } from './platform/redis';
@@ -93,6 +94,8 @@ export async function createApi(config: Config, log: Logger, overrides: Override
     });
   app.useGlobalFilters(new ProblemFilter(log));
   app.enableShutdownHooks();
+  // Database v2: the consent pack's labels are in the register of consent texts (migration 0022).
+  await registerConsentVersions(app.get(Database));
   const close = async () => {
     await app.close();
     await Promise.allSettled([app.get(Database).close(), app.get(Redises).close()]);

@@ -58,6 +58,12 @@ import { Money } from './payments/money';
 import { DataRequests } from './identity/data-requests';
 import { OpsConsole } from './ops/console';
 import { OpsController } from './ops/ops.controller';
+import { StudentAccounts } from './students/accounts';
+import { StudentsController } from './students/controller';
+import { Learning } from './students/learning';
+import { Makeups } from './students/makeups';
+import { Teaching } from './students/teaching';
+import { StudentJobs } from './students/jobs';
 import { Payouts } from './ledger/payouts';
 import { PayoutsController } from './ledger/payouts.controller';
 
@@ -224,6 +230,17 @@ export function coreProviders(c: Config, log: Logger, overrides: Overrides = {})
       (db: Database, f: FieldCipher, r: Reports) => new Payouts(db, f, r),
     ),
     factory(Assistant, [Cases, Messages], (cs: Cases, m: Messages) => new Assistant(cs, m, c, log)),
+    // ── Database v2: student accounts and what students read ──────────────────
+    factory(
+      StudentAccounts,
+      [Database, Redises, Tokens, Reference],
+      (db: Database, r: Redises, t: Tokens, ref: Reference) =>
+        new StudentAccounts(db, r, t, ref, c.HMAC_KEY_LOOKUP),
+    ),
+    factory(Learning, [Database], (db: Database) => new Learning(db)),
+    factory(Makeups, [Database, Seats], (db: Database, s: Seats) => new Makeups(db, s)),
+    factory(Teaching, [Database, Records], (db: Database, r: Records) => new Teaching(db, r)),
+    factory(StudentJobs, [Database], (db: Database) => new StudentJobs(db)),
   ];
 }
 
@@ -249,6 +266,7 @@ export async function apiModule(
     FollowupController,
     OpsController,
     PayoutsController,
+    StudentsController,
   ];
   if (demoRoutesAllowed(c)) controllers.push((await import('./dev/dev.controller')).DevController);
   // The hosted staging's private code inbox (SMS_PROVIDER=inbox; refused in production).

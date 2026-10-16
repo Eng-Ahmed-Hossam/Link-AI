@@ -47,6 +47,14 @@ export const Me = named(
       .nullable()
       .optional()
       .describe('Parent: the area search measures from when no location is shared (a name only)'),
+    activeRole: Role.nullable()
+      .optional()
+      .describe('The workspace the role switcher last opened (permissions come from every role)'),
+    student: z
+      .object({ studentId: z.string(), displayName: z.string() })
+      .nullable()
+      .optional()
+      .describe('Set for a student account (it holds no other role)'),
   }),
 );
 
@@ -115,6 +123,7 @@ export const ConsentKind = named(
     'sms_updates',
     'focus_plans',
     'ai_training_use',
+    'student_account',
   ]),
 );
 export const PutConsentBody = named(

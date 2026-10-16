@@ -27,6 +27,68 @@ export type Numeric = ColumnType<string, number | string, number | string>;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export interface AnalyticsFocusPlanItems {
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  focus_plan_id: string;
+  id: string;
+  position: number;
+  text_ar: string;
+  text_en: string | null;
+  ticked_at: Timestamp | null;
+  topic_node_id: string | null;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface AnalyticsFocusPlans {
+  approved_at: Timestamp | null;
+  approved_by: string | null;
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  created_by: string;
+  draft: string | null;
+  group_id: string;
+  id: string;
+  status: Generated<string>;
+  student_id: string;
+  teacher_id: string;
+  updated_at: Generated<Timestamp>;
+  week_of: Timestamp;
+}
+
+export interface AnalyticsItemTopics {
+  assessment_item_id: string;
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  topic_node_id: string;
+}
+
+export interface AnalyticsStudentTopicScores {
+  band: string | null;
+  centre_id: string | null;
+  group_id: string | null;
+  quiz_count: number | null;
+  score: Numeric | null;
+  score_display: number | null;
+  student_id: string | null;
+  topic_node_id: string | null;
+  unit_node_id: string | null;
+}
+
+export interface AnalyticsTopicScoreSnapshots {
+  band: string;
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  group_id: string;
+  id: string;
+  month: Timestamp;
+  quiz_count: number;
+  score: Numeric | null;
+  score_display: number | null;
+  student_id: string;
+  topic_node_id: string;
+}
+
 export interface AuditAuditEvents {
   action: string;
   actor_id: string | null;
@@ -137,7 +199,22 @@ export interface FollowupSignals {
   updated_at: Generated<Timestamp>;
 }
 
+export interface IdentityAccessAllowlist {
+  added_by: string;
+  audience: string;
+  created_at: Generated<Timestamp>;
+  hint: string;
+  id: string;
+  kind: string;
+  note: string | null;
+  removed_at: Timestamp | null;
+  subject: Buffer;
+  used_at: Timestamp | null;
+}
+
 export interface IdentityAuthSessions {
+  amr: string | null;
+  authenticated_at: Timestamp | null;
   client: string;
   created_at: Generated<Timestamp>;
   device_label: string | null;
@@ -148,6 +225,7 @@ export interface IdentityAuthSessions {
   refresh_token_hash: Buffer;
   replaced_by: string | null;
   revoked_at: Timestamp | null;
+  student_device_id: string | null;
   user_id: string;
 }
 
@@ -175,6 +253,15 @@ export interface IdentityDevices {
   user_id: string;
 }
 
+export interface IdentityMySignInMethods {
+  created_at: Timestamp | null;
+  hint: string | null;
+  id: string | null;
+  last_used_at: Timestamp | null;
+  provider: string | null;
+  verified_at: Timestamp | null;
+}
+
 export interface IdentityRoleAssignments {
   centre_id: string | null;
   created_at: Generated<Timestamp>;
@@ -189,15 +276,76 @@ export interface IdentityRoleAssignments {
   user_id: string;
 }
 
+export interface IdentityStudentAccessCodes {
+  code_hmac: Buffer;
+  created_at: Generated<Timestamp>;
+  created_by_user_id: string;
+  expires_at: Timestamp;
+  id: string;
+  redeem_attempts: Generated<number>;
+  revoked_at: Timestamp | null;
+  student_id: string;
+  used_at: Timestamp | null;
+  used_by_device_id: string | null;
+}
+
+export interface IdentityStudentAccounts {
+  closed_at: Timestamp | null;
+  consent_event_id: string;
+  created_at: Generated<Timestamp>;
+  created_by_user_id: string;
+  failed_pin_count: Generated<number>;
+  guardian_id: string;
+  locked_at: Timestamp | null;
+  paused_at: Timestamp | null;
+  paused_by: string | null;
+  status: Generated<string>;
+  student_id: string;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+}
+
+export interface IdentityStudentDevices {
+  access_code_id: string | null;
+  created_at: Generated<Timestamp>;
+  id: string;
+  label: string;
+  last_used_at: Timestamp | null;
+  pin_hash: string | null;
+  pin_set_at: Timestamp | null;
+  platform: string;
+  revoked_at: Timestamp | null;
+  revoked_reason: string | null;
+  secret_hash: Buffer;
+  student_id: string;
+  user_id: string;
+}
+
+export interface IdentityUserIdentities {
+  contact_enc: Buffer | null;
+  created_at: Generated<Timestamp>;
+  hint: string;
+  id: string;
+  last_used_at: Timestamp | null;
+  provider: string;
+  subject: Buffer;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+  verified_at: Timestamp | null;
+}
+
 export interface IdentityUsers {
+  account_type: Generated<string>;
+  active_centre_id: string | null;
+  active_role: string | null;
   created_at: Generated<Timestamp>;
   deleted_at: Timestamp | null;
   id: string;
   language: Generated<string>;
   name: string | null;
-  phone_enc: Buffer;
-  phone_hmac: Buffer;
-  phone_last4: string;
+  phone_enc: Buffer | null;
+  phone_hmac: Buffer | null;
+  phone_last4: string | null;
   status: Generated<string>;
   updated_at: Generated<Timestamp>;
 }
@@ -510,11 +658,32 @@ export interface MarketGroupSessions {
   group_id: string;
   id: string;
   rent_invoice_id: string | null;
+  room_id: string | null;
   starts_at: Timestamp;
   status: Generated<string>;
   status_changed_at: Timestamp | null;
   status_changed_by: string | null;
   status_reason: string | null;
+}
+
+export interface MarketMakeupRequests {
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  decided_at: Timestamp | null;
+  decided_by: string | null;
+  decision_note: string | null;
+  group_id: string;
+  guardian_id: string;
+  id: string;
+  makeup_session_id: string | null;
+  missed_session_id: string;
+  note: string | null;
+  parent_seen_at: Timestamp | null;
+  requested_by: string;
+  requested_by_user_id: string;
+  status: Generated<string>;
+  student_id: string;
+  updated_at: Generated<Timestamp>;
 }
 
 export interface MarketPublicCentres {
@@ -700,6 +869,23 @@ export interface MarketRoomsSeenByTeacher {
   rent_rule: Json | null;
 }
 
+export interface MarketSessionChanges {
+  centre_id: string;
+  changed_by: string | null;
+  created_at: Generated<Timestamp>;
+  group_id: string;
+  group_session_id: string;
+  id: string;
+  kind: string;
+  new_ends_at: Timestamp;
+  new_room_id: string | null;
+  new_starts_at: Timestamp;
+  old_ends_at: Timestamp;
+  old_room_id: string | null;
+  old_starts_at: Timestamp;
+  reason: string | null;
+}
+
 export interface MarketTeacherApplications {
   auto_approved: Generated<boolean>;
   centre_id: string;
@@ -738,6 +924,20 @@ export interface MarketWaitlistEntries {
   status: Generated<string>;
   student_id: string;
   updated_at: Generated<Timestamp>;
+}
+
+export interface MessagingInAppNotifications {
+  centre_id: string | null;
+  created_at: Generated<Timestamp>;
+  event_id: string;
+  group_id: string | null;
+  id: string;
+  kind: string;
+  object_id: string;
+  object_type: string;
+  read_at: Timestamp | null;
+  student_id: string | null;
+  user_id: string;
 }
 
 export interface MessagingInboundMessages {
@@ -849,6 +1049,15 @@ export interface OrgConsentEvents {
   source: string;
   student_id: string | null;
   user_id: string | null;
+  version: string;
+}
+
+export interface OrgConsentVersions {
+  approved: Generated<boolean>;
+  kind: string;
+  published_at: Generated<Timestamp>;
+  retired_at: Timestamp | null;
+  text_sha256: Buffer | null;
   version: string;
 }
 
@@ -1058,6 +1267,36 @@ export interface RecordsCorrections {
   student_id: string;
 }
 
+export interface RecordsHomeworkItems {
+  archived_at: Timestamp | null;
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  created_by: string;
+  details: string | null;
+  due_session_id: string | null;
+  group_id: string;
+  group_session_id: string;
+  id: string;
+  session_record_id: string;
+  source: Generated<string>;
+  source_spans: Json | null;
+  teacher_id: string;
+  title: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface RecordsHomeworkStatuses {
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  homework_item_id: string;
+  marked_at: Timestamp | null;
+  marked_by: string | null;
+  marked_in_record_id: string | null;
+  status: Generated<string>;
+  student_id: string;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface RecordsItemScores {
   assessment_item_id: string;
   centre_id: string;
@@ -1089,6 +1328,19 @@ export interface RecordsNotes {
   visibility: Generated<string>;
 }
 
+export interface RecordsRecordCorrections {
+  centre_id: string;
+  corrected_by: string;
+  created_at: Generated<Timestamp>;
+  field: string;
+  id: string;
+  new_value: string | null;
+  object_id: string | null;
+  old_value: string | null;
+  reason: string;
+  session_record_id: string;
+}
+
 export interface RecordsRecordEntries {
   assessment_id: string | null;
   attendance: Generated<string>;
@@ -1118,13 +1370,76 @@ export interface RecordsSessionRecords {
   group_id: string;
   group_observation: string | null;
   group_session_id: string;
+  homework_set: string | null;
   id: string;
   idempotency_key: string | null;
   session_date: Timestamp;
   source: Generated<string>;
   status: Generated<string>;
   teacher_id: string;
+  topic_covered: string | null;
   updated_at: Generated<Timestamp>;
+}
+
+export interface RecordsSessionTopics {
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  group_id: string;
+  session_record_id: string;
+  topic_node_id: string;
+}
+
+export interface RecordsStudentHomework {
+  centre_id: string | null;
+  details: string | null;
+  due_session_id: string | null;
+  group_id: string | null;
+  group_session_id: string | null;
+  homework_item_id: string | null;
+  marked_at: Timestamp | null;
+  set_at: Timestamp | null;
+  status: string | null;
+  student_id: string | null;
+  title: string | null;
+}
+
+export interface RecordsStudentNotes {
+  approved_at: Timestamp | null;
+  approved_by: string | null;
+  author_id: string;
+  body: string;
+  centre_id: string;
+  created_at: Generated<Timestamp>;
+  group_id: string;
+  id: string;
+  rejected_at: Timestamp | null;
+  rejected_by: string | null;
+  rejected_reason: string | null;
+  session_record_id: string | null;
+  status: Generated<string>;
+  student_id: string;
+  submitted_at: Timestamp | null;
+  teacher_id: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface RecordsStudentSessionSummaries {
+  attendance: string | null;
+  centre_id: string | null;
+  group_id: string | null;
+  group_session_id: string | null;
+  homework_set: string | null;
+  session_date: Timestamp | null;
+  session_record_id: string | null;
+  student_id: string | null;
+  topic_covered: string | null;
+}
+
+export interface RecordsStudentSessionTopics {
+  group_session_id: string | null;
+  session_record_id: string | null;
+  student_id: string | null;
+  topic_node_id: string | null;
 }
 
 export interface RecordsVoiceExtractions {
@@ -1218,7 +1533,35 @@ export interface RefSubjects {
   updated_at: Generated<Timestamp>;
 }
 
+export interface RefTopicTemplateNodes {
+  created_at: Generated<Timestamp>;
+  id: string;
+  kind: string;
+  name_ar: string;
+  name_en: string;
+  parent_id: string | null;
+  planned_week: number | null;
+  position: number;
+  template_id: string;
+}
+
+export interface RefTopicTemplates {
+  academic_year: string;
+  confirmed: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+  id: string;
+  name_ar: string;
+  name_en: string;
+  status: Generated<string>;
+  subject_id: string;
+}
+
 export interface DB {
+  "analytics.focus_plan_items": AnalyticsFocusPlanItems;
+  "analytics.focus_plans": AnalyticsFocusPlans;
+  "analytics.item_topics": AnalyticsItemTopics;
+  "analytics.student_topic_scores": AnalyticsStudentTopicScores;
+  "analytics.topic_score_snapshots": AnalyticsTopicScoreSnapshots;
   "audit.audit_events": AuditAuditEvents;
   "followup.case_attempts": FollowupCaseAttempts;
   "followup.case_events": FollowupCaseEvents;
@@ -1226,10 +1569,16 @@ export interface DB {
   "followup.rule_versions": FollowupRuleVersions;
   "followup.rules": FollowupRules;
   "followup.signals": FollowupSignals;
+  "identity.access_allowlist": IdentityAccessAllowlist;
   "identity.auth_sessions": IdentityAuthSessions;
   "identity.data_requests": IdentityDataRequests;
   "identity.devices": IdentityDevices;
+  "identity.my_sign_in_methods": IdentityMySignInMethods;
   "identity.role_assignments": IdentityRoleAssignments;
+  "identity.student_access_codes": IdentityStudentAccessCodes;
+  "identity.student_accounts": IdentityStudentAccounts;
+  "identity.student_devices": IdentityStudentDevices;
+  "identity.user_identities": IdentityUserIdentities;
   "identity.users": IdentityUsers;
   "ledger.commission_rules": LedgerCommissionRules;
   "ledger.ledger_accounts": LedgerLedgerAccounts;
@@ -1250,6 +1599,7 @@ export interface DB {
   "market.enrolments": MarketEnrolments;
   "market.group_sessions": MarketGroupSessions;
   "market.groups": MarketGroups;
+  "market.makeup_requests": MarketMakeupRequests;
   "market.public_centres": MarketPublicCentres;
   "market.public_group_sessions": MarketPublicGroupSessions;
   "market.public_groups": MarketPublicGroups;
@@ -1265,15 +1615,18 @@ export interface DB {
   "market.room_open_slots": MarketRoomOpenSlots;
   "market.rooms": MarketRooms;
   "market.rooms_seen_by_teacher": MarketRoomsSeenByTeacher;
+  "market.session_changes": MarketSessionChanges;
   "market.teacher_applications": MarketTeacherApplications;
   "market.teachers_seen_by_centre": MarketTeachersSeenByCentre;
   "market.waitlist_entries": MarketWaitlistEntries;
+  "messaging.in_app_notifications": MessagingInAppNotifications;
   "messaging.inbound_messages": MessagingInboundMessages;
   "messaging.message_status_events": MessagingMessageStatusEvents;
   "messaging.messages": MessagingMessages;
   "messaging.notification_log": MessagingNotificationLog;
   "org.centres": OrgCentres;
   "org.consent_events": OrgConsentEvents;
+  "org.consent_versions": OrgConsentVersions;
   "org.guardians": OrgGuardians;
   "org.leads": OrgLeads;
   "org.ops_notes": OrgOpsNotes;
@@ -1292,15 +1645,25 @@ export interface DB {
   "records.assessments": RecordsAssessments;
   "records.correction_requests": RecordsCorrectionRequests;
   "records.corrections": RecordsCorrections;
+  "records.homework_items": RecordsHomeworkItems;
+  "records.homework_statuses": RecordsHomeworkStatuses;
   "records.item_scores": RecordsItemScores;
   "records.known_students": RecordsKnownStudents;
   "records.notes": RecordsNotes;
+  "records.record_corrections": RecordsRecordCorrections;
   "records.record_entries": RecordsRecordEntries;
   "records.session_records": RecordsSessionRecords;
+  "records.session_topics": RecordsSessionTopics;
+  "records.student_homework": RecordsStudentHomework;
+  "records.student_notes": RecordsStudentNotes;
+  "records.student_session_summaries": RecordsStudentSessionSummaries;
+  "records.student_session_topics": RecordsStudentSessionTopics;
   "records.voice_extractions": RecordsVoiceExtractions;
   "records.voice_notes": RecordsVoiceNotes;
   "ref.academic_terms": RefAcademicTerms;
   "ref.curricula": RefCurricula;
   "ref.school_years": RefSchoolYears;
   "ref.subjects": RefSubjects;
+  "ref.topic_template_nodes": RefTopicTemplateNodes;
+  "ref.topic_templates": RefTopicTemplates;
 }

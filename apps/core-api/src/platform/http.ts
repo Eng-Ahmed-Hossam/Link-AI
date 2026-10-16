@@ -41,6 +41,8 @@ export interface Principal {
   lang: 'ar' | 'en';
   /** How the token came: a Bearer header (teacher app) or the httpOnly cookie (web). */
   transport: 'bearer' | 'cookie';
+  /** A student session's device (migration 0023); removed devices stop at the next request. */
+  deviceId?: string;
 }
 
 export const ACCESS_COOKIE = 'link_at';
@@ -107,10 +109,17 @@ export class AuthGuard implements CanActivate {
     }
     try {
       const claims = await this.tokens.verifyAccess(token);
+      // A student's PIN works only with its device: a removed device stops here, at once.
+      if (claims.did && !(await this.deviceLive(claims.sub, claims.did)))
+        throw unauthenticated(
+          'student_device_removed',
+          'This device was removed. Ask your parent for a new code.',
+        );
       req.principal = {
         userId: claims.sub,
         lang: req.header('accept-language') ? langOf(req) : claims.lang,
         transport,
+        ...(claims.did ? { deviceId: claims.did } : {}),
       };
     } catch (e) {
       if (def.auth === 'user') throw e;
@@ -140,6 +149,17 @@ export class AuthGuard implements CanActivate {
       req.opsPermissions = have;
     }
     return true;
+  }
+
+  /** The student device is still bound (never cached: a removal counts on the next request). */
+  private async deviceLive(userId: string, deviceId: string) {
+    const d = await this.db.system
+      .selectFrom('identity.student_devices')
+      .select('revoked_at')
+      .where('id', '=', deviceId)
+      .where('user_id', '=', userId)
+      .executeTakeFirst();
+    return !!d && d.revoked_at === null;
   }
 }
 

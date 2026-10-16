@@ -18,7 +18,8 @@ export function notificationsHandler(sms: SmsSender, phones: Phones) {
       .select(['ra.status', 'ra.centre_id', 'u.phone_enc', 'u.language'])
       .where('ra.id', '=', roleAssignmentId)
       .executeTakeFirst();
-    if (!row || row.status === 'revoked' || !row.centre_id) return;
+    // No phone (an email- or Google-only account): no SMS invite to send.
+    if (!row || row.status === 'revoked' || !row.centre_id || !row.phone_enc) return;
     const centre = await tx
       .selectFrom('org.centres')
       .select('name')

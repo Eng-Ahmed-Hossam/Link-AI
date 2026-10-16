@@ -61,6 +61,39 @@ const CONSTRAINT_PROBLEMS: Record<string, () => Problem> = {
   reviews_once: () => new Problem(409, 'already_reviewed', 'You already reviewed this term.'),
   review_replies_review_id_key: () =>
     new Problem(409, 'already_replied', 'This review already has a reply.'),
+  // Database v2 (migrations 0023–0030).
+  student_device_limit: () =>
+    new Problem(
+      409,
+      'student_device_limit',
+      'This account already has 2 devices. Ask your parent to remove a device.',
+    ),
+  student_account_guardian: () =>
+    new Problem(403, 'forbidden', 'Only a parent of this child can create a student account.'),
+  hall_taken: () => new Problem(409, 'hall_taken', 'The hall is taken at that time.'),
+  hall_not_of_centre: () => new Problem(422, 'hall_not_of_centre', 'Pick a hall of this centre.'),
+  makeup_session_invalid: () =>
+    new Problem(
+      422,
+      'makeup_session_invalid',
+      'Pick a coming session of this centre, for the same subject and school year.',
+    ),
+  makeup_decided: () =>
+    new Problem(409, 'makeup_decided', 'This make-up request was already decided.'),
+  makeup_requests_live: () =>
+    new Problem(
+      409,
+      'makeup_already_requested',
+      'A make-up for this session is already asked for.',
+    ),
+  note_locked: () => new Problem(409, 'note_locked', 'An approved note can’t be changed.'),
+  note_approver: () =>
+    new Problem(403, 'forbidden', 'You need the messages.approve permission at this centre.'),
+  focus_plan_locked: () =>
+    new Problem(409, 'focus_plan_locked', 'An approved plan can’t be changed.'),
+  focus_plan_not_approved: () =>
+    new Problem(409, 'focus_plan_not_approved', 'Only an approved plan can be ticked.'),
+  topic_unknown: () => new Problem(422, 'topic_unknown', 'Pick a topic of the topic map.'),
 };
 
 /** The constraint a PostgreSQL error names, if any. */

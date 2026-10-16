@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { demoId } from '../../seeds/demo';
-import { type Api, Client, PHONES, startApi } from '../helpers';
+import { type Api, Client, PHONES, startApi, studentClient } from '../helpers';
 import { followupRowsOfB } from './rows-b';
 
 type Spec = {
@@ -15,7 +15,7 @@ type Spec = {
 };
 const spec = JSON.parse(readFileSync(join(__dirname, '..', '..', 'openapi.json'), 'utf8')) as Spec;
 
-type Actor = 'ownerA' | 'teacherA';
+type Actor = 'ownerA' | 'teacherA' | 'parentA' | 'studentA';
 /**
  * For each path template, who asks and the IDs of a resource that is not theirs:
  * - centre B's resources, asked by the owner of centre A;
@@ -56,6 +56,20 @@ const SWEEP: Record<
   '/v1/teachers/by-slug/{slug}': { public: 'public teacher profile (P05)' },
   // S3: a rent invoice of another teacher (Mr Karim at Nile Academy), asked by Ms Salma.
   '/v1/rent-invoices/{id}': { actor: 'teacherA', ids: () => ({ id: bInvoiceId }) },
+  // Database v2: another family's child (asked by the sample parent), a make-up request, a note,
+  // a focus plan and its item, a quiz and a notification of centre B or of someone else, and a
+  // session of Mr Karim's group at Nile Academy (asked by Ms Salma).
+  '/v1/children/{id}': {
+    actor: 'parentA',
+    ids: () => ({ id: bStudentId, deviceId: '0190f0f0-0000-7000-8000-000000000009' }),
+  },
+  '/v1/makeup-requests/{id}': { actor: 'ownerA', ids: () => ({ id: bMakeupId }) },
+  '/v1/student-notes/{id}': { actor: 'ownerA', ids: () => ({ id: bNoteId }) },
+  '/v1/focus-plans/{id}': { actor: 'teacherA', ids: () => ({ id: bPlanId }) },
+  '/v1/focus-plan-items/{id}': { actor: 'studentA', ids: () => ({ id: bPlanItemId }) },
+  '/v1/assessments/{id}': { actor: 'ownerA', ids: () => ({ id: bAssessmentId }) },
+  '/v1/me/notifications/{id}': { actor: 'ownerA', ids: () => ({ id: bNotificationId }) },
+  '/v1/sessions/{id}': { actor: 'teacherA', ids: () => ({ id: bSessionId }) },
   // S2: ops work across centres by design (MKT-OPS-08); anyone without link_ops gets 403 below.
   '/v1/ops/': { opsOnly: 'Link ops see every centre; the role and permission are checked' },
 };
@@ -91,6 +105,37 @@ const BODIES: Record<string, unknown> = {
   approveMessage: { checked: true },
   resolveVoiceIdentity: { itemId: 'i1', studentId: '0190f0f0-0000-7000-8000-000000000001' },
   discardVoiceItem: { itemId: 'i1' },
+  // Database v2
+  createFocusPlan: {
+    studentId: '0190f0f0-0000-7000-8000-000000000001',
+    weekOf: '2026-10-19',
+    items: [{ textAr: 'x' }],
+  },
+  createStudentNote: { studentId: '0190f0f0-0000-7000-8000-000000000001', body: 'x' },
+  putHomeworkMarks: {
+    marks: [
+      {
+        homeworkItemId: '0190f0f0-0000-7000-8000-000000000001',
+        studentId: '0190f0f0-0000-7000-8000-000000000001',
+        status: 'late',
+      },
+    ],
+  },
+  correctSessionLearning: { field: 'topic_covered', newValue: 'x', reason: 'x' },
+  moveSession: { startsAt: '2027-03-01T15:00:00.000Z', reason: 'x' },
+  acceptMakeupRequest: { makeupSessionId: '0190f0f0-0000-7000-8000-000000000001' },
+  rejectStudentNote: { reason: 'x' },
+  tickFocusItem: { ticked: true },
+  putAssessmentTopics: { mode: 'whole_quiz', topicIds: ['0190f0f0-0000-7000-8000-000000000001'] },
+  putQuestionMarks: {
+    marks: [
+      {
+        questionId: '0190f0f0-0000-7000-8000-000000000001',
+        studentId: '0190f0f0-0000-7000-8000-000000000001',
+        marks: 1,
+      },
+    ],
+  },
 };
 /**
  * GET /v1/groups/{id} is the public group card (P06); its PATCH is the teacher's. Any parent may
@@ -114,6 +159,14 @@ let bRequestId = '';
 let bReviewId = '';
 let bWaitlistId = '';
 let bInvoiceId = '';
+let bStudentId = '';
+let bMakeupId = '';
+let bNoteId = '';
+let bPlanId = '';
+let bPlanItemId = '';
+let bAssessmentId = '';
+let bNotificationId = '';
+let bSessionId = '';
 /** Follow-up rows of centre B (Nile Academy), written as the table owner for the sweep. */
 let b: Awaited<ReturnType<typeof followupRowsOfB>>;
 const clients = {} as Record<Actor, Client>;
@@ -123,6 +176,9 @@ beforeAll(async () => {
   await clients.ownerA.signIn(PHONES.owner);
   clients.teacherA = new Client(api);
   await clients.teacherA.signIn(PHONES.teacher);
+  clients.parentA = new Client(api);
+  await clients.parentA.signIn(PHONES.parent);
+  clients.studentA = await studentClient(api);
   // A room request at centre B (Mr Karim at Nile Academy), so the sweep has one to ask for.
   const karim = new Client(api);
   await karim.signIn('+201000000101');
@@ -186,6 +242,109 @@ beforeAll(async () => {
       daterange('2026-01-01', '2026-02-01', '[)'), 1000, 5, 50, 950, 'issued', '2026-02-05')`.execute(
     api.db,
   );
+  // Database v2 rows of centre B (sample rows, written as the owner).
+  bStudentId = e.student_id;
+  const bPast = await api.db
+    .selectFrom('market.group_sessions')
+    .select('id')
+    .where('group_id', '=', e.group_id)
+    .where('starts_at', '<', new Date())
+    .orderBy('starts_at', 'desc')
+    .executeTakeFirstOrThrow();
+  bMakeupId = demoId('rls-makeup-b');
+  await api.db
+    .insertInto('market.makeup_requests')
+    .values({
+      id: bMakeupId,
+      student_id: e.student_id,
+      guardian_id: e.guardian_id,
+      group_id: e.group_id,
+      centre_id: e.centre_id,
+      missed_session_id: bPast.id,
+      requested_by_user_id: demoId('usr-parent'),
+      requested_by: 'parent',
+    })
+    .execute();
+  const karimNile = demoId('grp-karim-nile');
+  bNoteId = demoId('rls-note-b');
+  await api.db
+    .insertInto('records.student_notes')
+    .values({
+      id: bNoteId,
+      student_id: e.student_id,
+      group_id: karimNile,
+      centre_id: e.centre_id,
+      teacher_id: kb.teacher_id,
+      author_id: demoId('usr-tch-karim'),
+      body: 'Sample note at centre B.',
+      status: 'submitted',
+      submitted_at: new Date(),
+    })
+    .execute();
+  bPlanId = demoId('rls-plan-b');
+  await api.db
+    .insertInto('analytics.focus_plans')
+    .values({
+      id: bPlanId,
+      student_id: e.student_id,
+      group_id: karimNile,
+      centre_id: e.centre_id,
+      teacher_id: kb.teacher_id,
+      week_of: '2026-10-19' as never,
+      created_by: demoId('usr-tch-karim'),
+    })
+    .execute();
+  bPlanItemId = demoId('rls-plan-item-b');
+  await api.db
+    .insertInto('analytics.focus_plan_items')
+    .values({
+      id: bPlanItemId,
+      focus_plan_id: bPlanId,
+      centre_id: e.centre_id,
+      text_ar: 'x',
+      position: 1,
+    })
+    .execute();
+  const existing = await api.db
+    .selectFrom('records.assessments')
+    .select('id')
+    .where('session_record_id', '=', b.record)
+    .executeTakeFirst();
+  bAssessmentId = existing?.id ?? demoId('rls-assessment-b');
+  if (!existing)
+    await api.db
+      .insertInto('records.assessments')
+      .values({
+        id: bAssessmentId,
+        group_id: e.group_id,
+        centre_id: e.centre_id,
+        session_record_id: b.record,
+        title: 'Sample quiz B',
+        max_score: '10',
+        taken_on: '2026-10-01' as never,
+      })
+      .execute();
+  bNotificationId = demoId('rls-notification-b');
+  await api.db
+    .insertInto('messaging.in_app_notifications')
+    .values({
+      id: bNotificationId,
+      user_id: demoId('usr-tch-karim'),
+      kind: 'note_approved',
+      object_type: 'student_note',
+      object_id: bNoteId,
+      event_id: bNoteId,
+    })
+    .execute();
+  bSessionId = (
+    await api.db
+      .selectFrom('market.group_sessions')
+      .select('id')
+      .where('group_id', '=', karimNile)
+      .where('starts_at', '>', new Date())
+      .orderBy('starts_at')
+      .executeTakeFirstOrThrow()
+  ).id;
 });
 afterAll(() => api.close());
 

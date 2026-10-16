@@ -217,7 +217,7 @@ export class CentresController {
         const role =
           r.role === 'centre_owner' ? 'owner' : r.role === 'centre_staff' ? 'reception' : 'teacher';
         return {
-          user: { id: r.user_id, displayName: r.name ?? maskedPhone(r.phone_last4) },
+          user: { id: r.user_id, displayName: r.name ?? maskedPhone(r.phone_last4 ?? '') },
           role: role as 'owner' | 'reception' | 'teacher',
           scope: t(`server.staff.scope.${role}`),
           permissions:
