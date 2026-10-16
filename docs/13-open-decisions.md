@@ -78,6 +78,7 @@ Status values: `open` · `decided` · `superseded`. `decided: built default` (tr
 |---|---|---|---|---|
 | OD-60 | **Approve the consent pack** (the texts parents, teachers and owners agree to: terms, privacy, child data processing, contact consent for C01, WhatsApp/SMS updates). | The consent events store placeholder version labels (`draft-2026-10`, `c01-draft-2026-10`); no real data until the pack is approved (sample data only). Each approved text gets its own version label. | Founder | open |
 | — | **Contact email** for the footer, the request confirmation and `PILOT_REQUEST_TO`. | Left blank (decided 2026-10-09: blank for now). | Founder | open |
+| OD-61 | **Backups of the hosted staging database (Railway).** | **None for now** (decided 2026-10-16): the staging holds only sample data, and the free plan has no room for a backup service. Revisit when hosting moves to Hostinger or before any real data. Local work backs up the local database with `pnpm db:backup` before every migration ([database-v2.md](plan/database-v2.md) §7). | Founder | decided |
 
 ### A3. Concierge pilot (decided 2026-10-04)
 
