@@ -65,7 +65,10 @@ test('Part B: search → drag → save → under review → ops approve → the 
   await page.getByTestId('location-search').fill('شارع ٩ المعادي');
   await page.getByTestId('location-search-button').click();
   await page.getByTestId('place-result').first().click();
-  await expect(page.getByTestId('location-area')).toHaveValue('المعادي');
+  // The search fills the fields (any geocoder: the sample places here, Nominatim on staging,
+  // which may give the city as the area); the owner corrects what is wrong.
+  await expect(page.getByTestId('location-area')).not.toHaveValue('');
+  await page.getByTestId('location-area').fill('المعادي');
   await axe(page);
 
   // Drag the pin a little (toward the door), then add the landmark.

@@ -1,5 +1,7 @@
 # Staging on Vercel + Railway (Codex trial deployment)
 
+> **Superseded on 2026-10-16 (Stage 3).** The current state — the live staging on the real core-api, the public mock trial, URLs, modes and settings — is in [environments.md](environments.md). This page is the record of what Codex deployed.
+
 > **2026-10-15, later:** Ahmed read the dashboards: Railway project `link-ai-staging` (region US East) runs `core-api-l9aa` from `main` (last deploy 12 Oct), `ai-service` from `codex/deploy-voice-demo`, `postgres` from `codex/vercel-teacher-demo`, and two `redis:7-alpine` services; Vercel has `link-ai-web`, `link-ai-teacher-demo` and an unused-looking `link-platform-demo`. What each service really runs (start command, mode) is still to be read; see [auth-map-staging](../plan/auth-map-staging.md) §8.
 
 Read-only inventory, 2026-10-15. **Source: only the git branches** `origin/codex/deploy-voice-demo` (14 commits) and `origin/codex/vercel-teacher-demo` (3 commits), both by Ahmed, 11–12 Oct. The Vercel and Railway dashboards were **not** opened, so service names, URLs, variable *values* and the run commands set in the dashboards are unknown. Everything marked *inferred* comes from the code; confirm it in the dashboards.

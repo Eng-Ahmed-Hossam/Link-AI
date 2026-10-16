@@ -110,3 +110,14 @@ pnpm test:e2e:mock                                   # the same specs on pnpm de
 ```
 
 Ports: 3000 web · 8081 teacher app · 4000 core-api · 4002 messaging-gateway · 5432 Postgres (`POSTGRES_HOST_PORT`) · 6379/6380 Redis · 4566 aws-local · 8090 ai-service · 8091 fake-pay · 8093 sms-sink · 8094 whatsapp-fake · 8025 mail-sink.
+
+## The hosted staging (sample data, testers only)
+
+| Open | Address |
+|---|---|
+| Website, parent app, owner web | https://link-ai-staging-web.vercel.app |
+| Teacher app (web build) | https://link-ai-staging-teacher.vercel.app |
+| Ops console | https://link-ai-staging-ops.vercel.app |
+| Sign-in codes (password: `SMS_SINK_TOKEN` from Railway) | https://core-api-l9aa-production.up.railway.app/__staging/sms |
+
+Sign in with a sample number (`010 0000 0001` parent · `…0002` teacher · `…0003` owner · `…0051` ops agent); the code appears in the inbox, never as an SMS. Everything is in [deploy/environments.md](deploy/environments.md). The public trial ("Try Link", the mock) stays at https://link-ai-web-sigma.vercel.app.
