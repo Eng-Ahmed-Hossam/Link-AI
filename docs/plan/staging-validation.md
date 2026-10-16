@@ -77,8 +77,7 @@ Every screen in [app-map.md](../product/app-map.md), opened on the **hosted stag
 | Run | Result |
 |---|---|
 | Pin flow e2e (`e2e-modes/location.spec.ts`) against the staging URLs | **passed** (20 s): owner search (Nominatim) → drag → save → under review → ops approve → public map updated |
-| `accounts.spec.ts` | 6 passed; 2 failed on the test (hard-coded localhost: fixed), 3 on the per-phone code limit (3 codes / 10 min for one sample person; staging keeps its rate limits, local runs reset them) |
-| `ops.spec.ts` | failed on the test (hard-coded localhost:3001: fixed) |
+| `accounts.spec.ts` + `ops.spec.ts` (second run, after fixing two hard-coded localhost URLs) | **7 passed**: parent sign-in, new parent sign-up, owner sign-in and staff list, Reception sign-in, teacher sign-in (T14), ops agent L01, finance on refunds and an owner refused. **5 failed, not product bugs:** 2 on the per-phone code limit (3 codes / 10 min for one sample person), 3 because staging keeps its data and these specs expect a fresh world (the invite, the join request and the data request from the first run were still there). A staging-safe smoke spec is backlog P2-1 |
 | Story spec | **not runnable on staging by design**: it starts with a demo-route reset and pays for a seat; demo routes and bookings are off on the hosted staging |
 | Voice path (sample bench clip, 7.9 s) | works: upload 1.2 s, **draft after 145 s**; Whisper **tiny** int8 on the Railway trial CPU (ai-service log: `faster-whisper:tiny@int8/cpu latency_ms=143738`); transcript poor, 0 items matched to the roster |
 | Real map | OpenFreeMap tiles + Arabic labels on C02, P03 (clusters), P04, J01; no console errors under the production CSP |
