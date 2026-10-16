@@ -1,6 +1,6 @@
 # Plan: database v2 — accounts, student accounts, student v1 and v1.5 (Stage D0)
 
-Stage D0 plan, 2026-10-16, for Ahmed's brief "database phase, built and tested locally". **Nothing here is built yet.** D1 builds it on the branch `db/local-v2`, against the local Docker Postgres only; nothing is merged into `main` (which deploys to Railway and migrates there) until Ahmed says so.
+Stage D0 plan, 2026-10-16, for Ahmed's brief "database phase, built and tested locally". **Built in D1 (2026-10-16): see §11 for what was built and what changed from this plan.** D1 builds it on the branch `db/local-v2`, against the local Docker Postgres only; nothing is merged into `main` (which deploys to Railway and migrates there) until Ahmed says so.
 
 Read with: [docs/06](../06-data-model.md) (conventions, policy codes), [docs/10](../10-security-privacy.md) (roles, consent, retention), [auth-map-staging.md](auth-map-staging.md) §1–§4 (group A comes from there). Where this plan departs from a doc or the brief, §9 says so and why; the decisions waiting for Ahmed are in §10.
 
@@ -646,3 +646,151 @@ Student endpoints answer only to a student session; every `{id}` path joins the 
 | D10 | Does the weekly focus checklist need the guardian's `focus_plans` consent (docs/10 §3), as the WhatsApp copy does? | **Yes**: no consent, no plan shown to the student |
 | D11 | Can an approved student note be taken back if it was a mistake? | **Not in v1** (locked, as asked). A later "hide with reason" would be a new audited status |
 | D12 | Is `backups/` kept forever locally? | Yes, all dumps kept; delete by hand |
+
+**Ahmed's answers (2026-10-16):** CF-58 one score everywhere · D2 up to 2 devices, each with its own code · D5 a one-session seat, not an enrolment · D7 the parent sees everything the child sees (band and number) · D8 approved, level per subject · D10 approved · CF-59, CF-60 approved · the other defaults approved.
+
+---
+
+## 11. As built (Stage D1, 2026-10-16; branch `db/local-v2`, not merged)
+
+Try it: [database-v2-tryit.md](database-v2-tryit.md). API: [docs/07](../07-api.md) §2e. Rules: [docs/03](../03-prd-phase2-followup.md) §10. Tables: [docs/06](../06-data-model.md) §13.
+
+### ERD as built
+
+```mermaid
+erDiagram
+  identity_users ||--o{ identity_user_identities : "sign-in methods (phone mirrors users.phone_*)"
+  identity_users ||--o| identity_student_accounts : "student users only"
+  org_students ||--o| identity_student_accounts : "one per child"
+  org_guardians ||--o{ identity_student_accounts : "created by a guardian of the child"
+  identity_student_accounts ||--o{ identity_student_access_codes : "10-minute one-time codes"
+  identity_student_accounts ||--o{ identity_student_devices : "0 to 2 live devices"
+  identity_student_devices ||--o{ identity_auth_sessions : "student sessions (did claim)"
+  identity_users ||--o{ identity_auth_sessions : ""
+  org_consent_versions ||..o{ org_consent_events : "registered labels (no FK)"
+  org_students ||--o{ org_consent_events : "student_account, focus_plans per child"
+  market_groups ||--o{ market_group_sessions : ""
+  market_rooms ||--o{ market_group_sessions : "room_id: one-off hall"
+  market_group_sessions ||--o{ market_session_changes : "trigger-written log"
+  market_session_changes ||--o{ messaging_in_app_notifications : "trigger-written, one per person"
+  identity_users ||--o{ messaging_in_app_notifications : ""
+  market_group_sessions ||--|| records_session_records : ""
+  records_session_records ||--o{ records_record_corrections : "topic covered, homework set fixes"
+  records_session_records ||--o{ records_homework_items : "homework set"
+  records_homework_items ||--o{ records_homework_statuses : "per student"
+  records_session_records ||--o{ records_homework_statuses : "marked in a later record"
+  records_session_records ||--o{ records_session_topics : "topics covered"
+  ref_subjects ||--o{ ref_topic_templates : "topic map"
+  ref_topic_templates ||--o{ ref_topic_template_nodes : "units then topics"
+  ref_topic_template_nodes ||--o{ records_session_topics : ""
+  records_assessments ||--o{ records_assessment_items : "questions, or one whole-quiz item"
+  records_assessment_items ||--o{ analytics_item_topics : "tagged"
+  ref_topic_template_nodes ||--o{ analytics_item_topics : ""
+  records_assessment_items ||--o{ records_item_scores : "per-question marks"
+  market_group_sessions ||--o{ market_makeup_requests : "missed session"
+  market_group_sessions ||--o{ market_makeup_requests : "make-up session, one seat"
+  org_students ||--o{ market_makeup_requests : ""
+  org_students ||--o{ records_student_notes : "visible once approved"
+  market_groups ||--o{ records_student_notes : ""
+  org_students ||--o{ analytics_topic_score_snapshots : "monthly"
+  org_students ||--o{ analytics_focus_plans : "weekly"
+  analytics_focus_plans ||--o{ analytics_focus_plan_items : "the student ticks"
+
+  identity_users {
+    uuid id PK
+    text account_type "adult or student"
+    bytea phone_hmac "nullable, NULL for students"
+    text active_role
+  }
+  identity_user_identities {
+    uuid id PK
+    text provider "phone, email, google"
+    bytea subject "HMAC, UNIQUE with provider"
+  }
+  identity_access_allowlist {
+    uuid id PK
+    bytea subject "HMAC"
+    text audience "app or ops"
+  }
+  identity_student_accounts {
+    uuid student_id PK
+    uuid user_id UK
+    text status "awaiting_device, active, paused, locked, closed"
+    smallint failed_pin_count "5 locks it"
+  }
+  identity_student_access_codes {
+    uuid id PK
+    bytea code_hmac UK
+    timestamptz expires_at "at most 10 min"
+  }
+  identity_student_devices {
+    uuid id PK
+    bytea secret_hash UK
+    text pin_hash "scrypt with a server pepper"
+    timestamptz revoked_at
+  }
+  org_consent_versions {
+    text kind PK
+    text version PK
+    boolean approved
+  }
+  market_session_changes {
+    uuid id PK
+    text kind "moved, cancelled, room_changed"
+  }
+  messaging_in_app_notifications {
+    uuid id PK
+    uuid event_id "UNIQUE with user and kind"
+  }
+  records_homework_statuses {
+    uuid homework_item_id PK
+    uuid student_id PK
+    text status "set, handed_in, late"
+  }
+  market_makeup_requests {
+    uuid id PK
+    text status "requested, accepted, declined, withdrawn"
+    uuid makeup_session_id "counted in seats_committed"
+  }
+  records_student_notes {
+    uuid id PK
+    text status "draft, submitted, approved, rejected"
+  }
+  analytics_topic_score_snapshots {
+    uuid id PK
+    date month
+  }
+  analytics_focus_plans {
+    uuid id PK
+    date week_of "Monday"
+  }
+```
+
+Views (not tables): `analytics.student_topic_scores` (the one topic score, CF-58), `records.student_session_summaries`, `records.student_session_topics`, `records.student_homework`, `identity.my_sign_in_methods`.
+
+### What changed from D0, and why
+
+| # | D0 said | Built | Why |
+|---|---|---|---|
+| 1 | One device per student (D2 default) | **Up to 2 live devices**, enforced by a trigger (the account row is locked first); a 3rd is `409 student_device_limit`. A code used on a device **already bound** resets its PIN instead of binding a new one | Your D2 answer. A locked student with 2 devices then never needs a 3rd |
+| 2 | A student score separate from ANL-SCR-01 (CF-58 split) | **One view for every role** (`analytics.student_topic_scores`); the teacher's `GET /v1/groups/{id}/topic-scores` reads the same view | Your CF-58 answer |
+| 3 | Parent sees the band only (D7) | **Student and parent see the band and the number** | Your D7 answer (CF-61) |
+| 4 | Level from all stars | **Level per subject** | Your D8 answer |
+| 5 | A make-up seat counted like an enrolment | **One seat in one session**: `market.seats_committed` counts accepted make-ups; the accept takes a one-session Redis hold, then the database trigger checks the cap again. No enrolment, payment or ledger row | Your D5 answer |
+| 6 | Notifications fanned out by a worker from an outbox event | Written **in the same transaction**: by the session trigger for schedule changes, by core-api for make-ups and notes | Nothing can be missed or sent twice (`UNIQUE (event_id, user_id, kind)`); no worker needed |
+| 7 | SECURITY DEFINER functions for code redeem, PIN check, pause | core-api runs them **as the system** (app_worker), like phone sign-in; the database still enforces the rules (guardian-only creation, the 5-try lock, 2 devices, no student identities) | The pattern every other sign-in and write already uses |
+| 8 | A new `STUDENT_PIN_PEPPER` secret | The pepper is **derived from `HMAC_KEY_LOOKUP`** | No new secret to set; still outside the database |
+| 9 | `consent_events (kind, version)` → FK to `consent_versions` | **No FK**: core-api registers its consent pack's labels at start-up; a test checks that every draft label in use is registered | Labels are configurable (`CONSENT_VERSIONS`), and existing tests use other labels |
+| 10 | The record body gains `topicCovered`, `homeworkSet` | A sub-resource **`/v1/session-records/{id}/learning`** (+ `/homework-marks`, `/learning-corrections`); the record DTO is unchanged | The record contract is used by many screens and tests |
+| 11 | Quiz items with per-item marks | **Both** per-question quizzes (`item_scores`) and whole quizzes (one item covering the quiz; the score from the record entry) count | Today's records store one score per student per quiz |
+| 12 | Hall overlap checked on every session change | Checked on **moves and hall changes** (updates), within the same centre | New sessions come from bookings, which already can't overlap (INV-06) |
+| 13 | Sample student in Ms Salma's group | Mariam is in **Mr Karim's** Sec 2 Maths group at Al Nour (the first seeded family's seat, so the seats taken don't move) | The connected story reserves Mariam a seat in Ms Salma's group, live |
+| 14 | — | Withdrawing the `student_account` consent **closes the account** (OD-62) | PDPL: withdrawal as easy as giving |
+| 15 | — | Retention and monthly snapshot **jobs** (`student-retention` daily 04:30; `topic-snapshots` on the 1st, 01:30 Cairo) | docs/10 §4 and STU-TOP-01 |
+| 16 | — | Every new session records `amr` and `authenticated_at` (the "recent sign-in" check of the auth stage) | Group A, ready for Stage 1 |
+
+### Backup and restore (used)
+
+- `pnpm db:backup` / `pnpm db:restore <file> --yes` (`scripts/lib/db-backup.mjs`); `pnpm db:migrate` takes a backup first (local `link` only; never in CI or for `link_test`).
+- **Restore tested on Windows (2026-10-16):** backup → every centre renamed and a probe table added → restore → the centres' checksum is identical, the probe table is gone, the 4 extensions, the owner (`app_migrator`), the grants and all 201 RLS policies are back.
+- **Undo proven on a copy of the seeded database:** `link` copied to `link_copy` → all 11 migrations rolled back (existing data untouched: 194 enrolments, 1,402 ledger entries, 8 records; only the sample student user and its consent go) → all 11 applied again.

@@ -287,3 +287,45 @@ As a centre owner, I want transparent rules for my centre, so that flags are fai
 | A17 Activity history | FUP-DSH-04 |
 | A19 Centre setup | FUP-ONB-01 (blocked) |
 | P09 Updates feed | FUP-MSG-08 |
+
+## 10. Students — `STU` (database v2, decided 2026-10-16)
+
+Built locally on the branch `db/local-v2` ([plan/database-v2.md](plan/database-v2.md); API: [07](07-api.md) §2e). The screens come later. Every rule below holds for the student **and** the parent: the parent sees everything the child sees, and nothing more about other children.
+
+### STU-ACC-01 · Student accounts
+- **Only a parent of the child creates one**, recording the `student_account` consent (versioned, per child). Withdrawing that consent closes the account at once.
+- The parent's app makes a **one-time code that lasts 10 minutes**, for one device. On that device the student sets a **4-digit PIN**, which works **only on that device** (the device keeps a secret; the PIN is checked with it).
+- **Up to 2 devices** (a phone and a laptop); each needs its own code. A 3rd is refused with "ask your parent to remove a device". The parent sees the devices (name, last used) and removes any of them; a removed device stops on its next request.
+- **5 wrong PINs lock the account** until the parent makes a new code (the student sets a new PIN with it). A wrong device secret never counts toward the lock.
+- The parent can **pause** the account (every session stops on its next request) or **sign it out everywhere** (every device unbound).
+- **No Google or email sign-in, and no phone number, for a student.** A student holds no other role.
+
+### STU-SCH-01 · Schedule changes
+A moved session, a hall change and a cancellation are written to the session change log by the database itself, with who and why, and each makes one in-app notification for the student and the parent of every live enrolment covering the session (push comes later). The teacher moves their own sessions; the centre (`bookings.manage`) moves sessions and changes halls. A hall that is taken then is refused.
+
+### STU-MIS-01 · What you missed, and make-up requests
+- "What you missed" lists the sessions the **confirmed** record marks absent ("Not recorded" is never absence), with what was covered, the homework set and the topics. Both fields are part of the record the teacher confirms (from the voice note as a draft, or typed) and change afterwards only with a correction and a reason.
+- **Make-up request:** the student (or the parent) asks → the parent sees it → the centre accepts into one coming session of the centre (same subject and school year) or declines. **An accepted make-up holds one seat in that single session and counts toward its seat cap** — no enrolment, no payment, no ledger entry; a full session can't be accepted ("That session is full"). Every change is audited.
+
+### STU-HW-01 · Homework
+Homework items per session, set in the session record; a status per student — `set`, `handed in`, `late` — that the teacher marks in a later session record. A mark shows only once that record is confirmed. An item still `set` after its due session reads **"Not marked yet"**, never "missing". The record's homework field (`record_entries.homework`) stays the teacher's session summary (CF-60); students see the per-item list.
+
+### STU-NOTE-01 · Teacher notes for the student
+The teacher drafts a note for a student and submits it; it reaches the student and the parent **only after the centre approves it** (owner, or staff with `messages.approve`, checked by the database too). An approved note is locked.
+
+### STU-TOP-01 · Topic map and topic score (CF-58: one score everywhere)
+- A **topic map per subject** (a subject fixes the curriculum and school year): subject → unit → topic. Sample data: Maths · Secondary 2 · National (not the official syllabus; `confirmed = false` until OD-07).
+- Quiz questions (or a whole quiz) are tagged to topics; marks come from the teacher's **confirmed** records only.
+- **Topic score** = the average, over the quizzes that touch the topic, of `Σ marks ÷ Σ max marks × 100` on the questions tagged to it. **Shown only with at least 2 quizzes.** Shown as a whole number (half up).
+- **Bands** (from the whole number): ≥ 80 **mastered** · 60–79 **improving** · < 60 **needs practice**. "Not taught yet" until a confirmed record of the group covers the topic (or a confirmed quiz is tagged to it); "not scored yet" while it has fewer than 2 quizzes.
+- **Every role reads the same view** (`analytics.student_topic_scores`): the student, the parent, the teacher and the centre always see the same number. The weighted score of [04](04-prd-phase3-analytics.md) ANL-SCR-01 (recency × precision, 3+ results) comes later and then replaces this one **for everyone at once**, behind a flag, with a test that student, parent and teacher still see the same number.
+- **Monthly snapshots** per student and topic, for the "last month" comparison.
+- Wording stays kind ("needs practice", never "weak"). **There is no ranking and no comparison with classmates** anywhere — not in the API, not in the views.
+
+### ANL-STU-01 · Stars and level (calculated in code, never stored)
+- **Stars per topic:** mastered 3 · improving 2 · needs practice 1 · not taught yet or under 2 quizzes 0. A 0-star topic is shown as "not taught yet" or "not scored yet", never as a failure.
+- **Level, per subject:** `1 + floor(total stars ÷ 10)`.
+- Code: `apps/core-api/src/students/progress.ts`; tests: the band edges 79/80 and 59/60, and 1 quiz → 0 stars.
+
+### STU-FOC-01 · Weekly focus checklist
+Items from the plan the teacher approved; the student ticks them and the teacher sees the ticks. A student or parent sees a plan **only when it is approved and a guardian's latest `focus_plans` consent for the child is granted** (read live, never cached).

@@ -54,7 +54,9 @@ As a teacher, I want my subject split into units and topics, so that quizzes and
 
 ## 3. Topic score — `ANL-SCR`
 
-### ANL-SCR-01 · Formula
+> **Now (CF-58, decided 2026-10-16):** one score for every role — the simple average of confirmed quiz marks, shown from 2 quizzes ([03](03-prd-phase2-followup.md) STU-TOP-01). The weighted formula below comes later and then replaces the simple one **for everyone at once**, behind a flag, with a test that the student, the parent and the teacher see the same number.
+
+### ANL-SCR-01 · Formula (later)
 For one student *s* and one topic *t*:
 
 **Step 1 — one piece of evidence per assessment.** For each assessment *i* that touches topic *t*:
@@ -103,7 +105,7 @@ Score = 95.55 ÷ 2.1275 = **44.9 → 45**. Three pieces of evidence → band **N
 
 ### ANL-SCR-03 · Who sees what
 - AC1: Teacher (and centre owner): the number, band, evidence count and "How is this calculated?" link.
-- AC2: Parent: the band only (AN06).
+- AC2: Parent: the band **and the number**, the same as the student (decided 2026-10-16: the parent sees everything the child sees; CF-61).
 - AC3: Teacher notes tagged to the topic show next to the score, labelled as notes.
 
 ### ANL-SCR-04 · Snapshots (system)

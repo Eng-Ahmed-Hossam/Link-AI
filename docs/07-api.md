@@ -489,6 +489,54 @@ ai-service itself (`127.0.0.1:8090`, bearer token): `POST /v1/jobs` (multipart `
 
 `TeacherToday.correctionRequests` and `SessionRecord.correctionRequests` carry open and done requests (CF-34). `CaseAttempt.channel` gains `whatsapp_manual` (06 `case_attempts`).
 
+## 2e. Database v2 — student accounts and what students read (D1, 2026-10-16; branch `db/local-v2`)
+
+Built locally ([database-v2.md](plan/database-v2.md), decisions of 2026-10-16); the screens come later. The contract is `apps/core-api/src/contract/students.ts`; the client types are in `@link/api-client` (`students.ts`). Requirement IDs: `STU-ACC-01` accounts · `STU-SCH-01` schedule changes · `STU-MIS-01` what you missed and make-ups · `STU-HW-01` homework · `STU-NOTE-01` teacher notes for the student · `STU-TOP-01` topic map and scores · `STU-FOC-01` focus checklist · `ANL-STU-01` stars and level ([03](03-prd-phase2-followup.md) §10).
+
+**Who reads what.** A student session (code + PIN, no phone, email or Google) answers only the student's own `/v1/me/*` routes below (`403 students_only` for anyone else). A parent reads the same views of their own child under `/v1/children/{id}/*` — **the parent sees everything the child sees** (D7) — and another family's child is `404`. Nothing here returns another student's row, a class average or a rank.
+
+| Method | Path | Who | What | Idem |
+|---|---|---|---|---|
+| POST | `/v1/children/{id}/student-account` | parent of the child | Create (records the `student_account` consent); `409 student_account_exists` | ✓ |
+| GET | `/v1/children/{id}/student-account` | parent | Status, failed PIN count, live devices (label, last used; at most 2) | — |
+| POST | `/v1/children/{id}/student-account/access-codes` | parent | A one-time code for one device: `{code, expiresAt}` (10 minutes; cancels the previous code; unlocks a locked account once its PIN is set) | ✓ |
+| POST | `/v1/children/{id}/student-account/pause` · `/resume` | parent | Pause (every session stops at its next request) · resume (the same devices and PINs work again) | ✓ |
+| POST | `/v1/children/{id}/student-account/sign-out-everywhere` | parent | Every session ends and every device is unbound (a new code is needed) | ✓ |
+| DELETE | `/v1/children/{id}/student-account/devices/{deviceId}` | parent | Remove one device: it stops on its next request (`401 student_device_removed`) | ✓ |
+| POST | `/v1/auth/student/redeem` | public | `{code, platform, label?, deviceId?, deviceSecret?}` → `{deviceId, deviceSecret?, pinSetupToken}`. A new device gets a secret (shown once); a device already bound resets its PIN. A 3rd device: `409 student_device_limit` ("ask your parent to remove a device") | — |
+| POST | `/v1/auth/student/pin` | public | `{pinSetupToken, pin}` (4 digits) → tokens (body for the app, cookies for the web) + `StudentMe` | — |
+| POST | `/v1/auth/student/sign-in` | public | `{deviceId, deviceSecret, pin}` → tokens. `401 wrong_pin {triesLeft}` · `423 student_locked` (after 5) · `403 student_paused` · `401 student_device_unknown` (a wrong device secret never counts toward the lock) · `429 rate_limited` (30 per address per hour) | — |
+| GET | `/v1/me/student` | student | Name, curriculum, school year, groups | — |
+| GET | `/v1/me/schedule?from&to` | student | Own sessions (default: the next 14 days; an accepted make-up is marked) | — |
+| GET | `/v1/me/schedule-changes` · `/v1/children/{id}/schedule-changes` | student · parent | Moved, cancelled and hall-changed sessions (30 days back, and coming) | — |
+| GET | `/v1/me/notifications` · POST `/v1/me/notifications/{id}/read` | any | In-app notifications (90 days); no text is stored, the app renders it from the IDs | — |
+| GET | `/v1/me/missed` · `/v1/children/{id}/missed` | student · parent | Sessions the confirmed record marks absent: topic covered, homework set, topics, homework, the make-up request | — |
+| GET | `/v1/me/homework` · `/v1/children/{id}/homework` | student · parent | Items of confirmed records with `set \| handed_in \| late`; `set` after its due session = "Not marked yet", never "missing" | — |
+| GET | `/v1/me/student-notes` · `/v1/children/{id}/student-notes` | student · parent | Teacher notes for the student, **approved by the centre only** | — |
+| GET | `/v1/me/topics?groupId` · `/v1/children/{id}/topics?groupId` | student · parent | Per subject: each topic's score (null under 2 quizzes), band, stars, last month's snapshot; the subject's stars and level | — |
+| GET | `/v1/me/focus-plans` · `/v1/children/{id}/focus-plans` | student · parent | This week's approved checklists — only with a guardian's `focus_plans` consent for the child | — |
+| PUT | `/v1/focus-plan-items/{id}/tick` | student | `{ticked}` on an item of their own approved plan (the teacher sees it) | ✓ |
+| POST | `/v1/makeup-requests` | student · parent | `{missedSessionId, studentId? (parent), note?}`; one live request per session (`409 makeup_already_requested`) | ✓ |
+| POST | `/v1/makeup-requests/{id}/withdraw` · `/seen` | student or parent · parent | Withdraw while `requested` · the parent has seen it | ✓ · — |
+| GET | `/v1/me/makeup-requests` · `/v1/children/{id}/makeup-requests` · `/v1/centres/{id}/makeup-requests` | student · parent · centre (`bookings.manage`) | Lists | — |
+| POST | `/v1/makeup-requests/{id}/accept` · `/decline` | centre (`bookings.manage`) | Accept `{makeupSessionId, note?}`: ONE seat in that one session (a coming session of the centre, same subject and school year), counted in the seat cap (INV-05); **no enrolment, payment or ledger row**; `409 session_full` / `already_in_session`. Decline `{note?}` | ✓ |
+| PATCH | `/v1/sessions/{id}` | teacher (own) or centre (`bookings.manage`); the hall: the centre only | `{startsAt?, endsAt?, roomId?, reason}`: move a coming session or change its hall (`409 hall_taken`); logged in the change log and notified by the database | ✓ |
+| GET · PUT | `/v1/session-records/{id}/learning` | teacher (own; PUT on a draft only) · staff (`records.read`, read) | Topic covered, homework set, topics covered, homework items — part of the record the teacher confirms | ✓ (PUT) |
+| PUT | `/v1/session-records/{id}/homework-marks` | teacher (draft) | Mark earlier homework `handed_in \| late \| set` in this record; visible once it is confirmed | ✓ |
+| POST | `/v1/session-records/{id}/learning-corrections` | teacher | A confirmed record's topic covered or homework set, with a reason (append-only, INV-09) | ✓ |
+| POST · GET | `/v1/groups/{id}/student-notes` | teacher (own group) | Draft a note for a student of the group · list them | ✓ (POST) |
+| POST | `/v1/student-notes/{id}/submit` | teacher | Send for approval | ✓ |
+| GET | `/v1/centres/{id}/student-notes` | owner or staff with `messages.approve` | Submitted and decided notes | — |
+| POST | `/v1/student-notes/{id}/approve` · `/reject` | owner or staff with `messages.approve` (checked by the database too) | Approve (locked from now on) · reject `{reason}` | ✓ |
+| GET | `/v1/topic-maps?subjectId` | public | The published topic map: units → topics (`confirmed: false` = sample until OD-07) | — |
+| PUT | `/v1/assessments/{id}/topics` | teacher (draft record) | Tag the whole quiz `{mode: whole_quiz, topicIds}` or each question `{mode: per_question, questions: [{label, maxMarks, topicIds}]}` (the maximums add up to the quiz's) | ✓ |
+| PUT | `/v1/assessments/{id}/question-marks` | teacher (draft record) | Per-question marks; above a question's maximum is `422 score_out_of_range` (never capped) | ✓ |
+| GET | `/v1/groups/{id}/topic-scores` | teacher (own) · staff (`records.read`) | The same scores, per student of the group (CF-58: one view for every role) | — |
+| POST · GET | `/v1/groups/{id}/focus-plans` | teacher (own group) | Draft a weekly checklist for a student · list them with the ticks | ✓ (POST) |
+| POST | `/v1/focus-plans/{id}/approve` | teacher (own) | Approve (locked from now on) | ✓ |
+
+`Me` gains `activeRole` (the role switcher's last workspace) and `student` (`{studentId, displayName}` for a student account, which holds no other role). `ConsentKind` gains `student_account`; withdrawing it (`PUT /v1/me/consents`, `granted: false`, with `studentId`) closes the child's student account at once.
+
 ## 3. Later phases (outline only)
 
 | Area | Endpoints (Phase) |

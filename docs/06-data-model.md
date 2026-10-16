@@ -25,7 +25,7 @@ PostgreSQL 16+ with PostGIS and pgvector. This file mirrors the Eraser ERD (diag
 
 core-api sets `app.user_id` from the verified token and loads the rest from `identity.load_context()` (SECURITY DEFINER, the caller's own rows only) in the same transaction, so a revoked role counts on the next request. Policies that would query each other (students ↔ student_guardians) use small SECURITY DEFINER lookups instead (`org.my_student_ids()`), since policies that reference each other recurse.
 
-Each request sets the context with `SET LOCAL`: `app.user_id`, `app.roles`, `app.centre_ids` (centres where the user is owner or staff), `app.teacher_id`, `app.guardian_id`. The app connects as `app_user`, which has **no** `BYPASSRLS`. Workers connect as `app_worker`, with policies per job. Ops connect as `app_ops`.
+Each request sets the context with `SET LOCAL`: `app.user_id`, `app.roles`, `app.centre_ids` (centres where the user is owner or staff), `app.teacher_id`, `app.guardian_id`, and **(added)** `app.student_id`. The app connects as `app_user`, which has **no** `BYPASSRLS`. Workers connect as `app_worker`, with policies per job. Ops connect as `app_ops`.
 
 | Code | Policy (read unless stated) |
 |---|---|
@@ -34,6 +34,7 @@ Each request sets the context with `SET LOCAL`: `app.user_id`, `app.roles`, `app
 | `CENTRE` | `centre_id = ANY(app.centre_ids)`. Writes also need the matching permission. |
 | `TEACHER` | `teacher_id = app.teacher_id` |
 | `GUARDIAN` | The row's `student_id` is linked to `app.guardian_id` in `org.student_guardians`, or `guardian_id = app.guardian_id`. |
+| `STUDENT` | **(added, database v2)** `student_id = app.student_id` — set only while the caller's student account is `active` (`identity.load_context()`). `FAMILY` = `GUARDIAN` or `STUDENT`, through `org.family_student_ids()`: a parent sees everything the child sees. |
 | `OPS` | `'link_ops' = ANY(app.roles)`. Every read of personal data is audited. Writes only through ops endpoints. |
 | `SYSTEM` | `app_worker` only. No user access. |
 
@@ -932,7 +933,7 @@ id, user_id, channel (`sms` \| `push` \| `email` \| `whatsapp`), template_code, 
 | focus_plans | id, student_id, group_id, centre_id, week_of, focus_topics jsonb, praise_topic_id, draft, final_text, attachment_key, status (`drafted` \| `approved` \| `skipped` \| `sent`), approved_by, approved_at, message_id | Unique `(student_id, group_id, week_of)` |
 | teacher_tips (added) | id, teacher_id, topic_id NULL, text_ar, text_en, active | The approved home-tip list |
 
-Invariant: `topic_mastery.band = 'not_enough_data' ⇔ evidence_count < 3`; otherwise the band matches `score_display` (≥ 80 / 60–79 / < 60).
+Invariant: `topic_mastery.band = 'not_enough_data' ⇔ evidence_count < 3`; otherwise the band matches `score_display` (≥ 80 / 60–79 / < 60). **Not built yet** (ANL-SCR-01, later). **Now (CF-58):** every role reads `analytics.student_topic_scores` (§13), the simple average from 2 quizzes.
 RLS: `TEACHER` (own groups), `CENTRE` (owner and staff), `GUARDIAN` only through a view that exposes **band only**.
 
 ---
@@ -972,6 +973,8 @@ Indexes: `(centre_id, occurred_at DESC)`, `(object_type, object_ref, occurred_at
 ---
 
 ## 10b. RLS summary (every table)
+
+The database v2 tables are in §13.
 
 Codes are from §0. "via view" = access only through a security-barrier view that exposes limited columns.
 
@@ -1064,3 +1067,35 @@ Codes are from §0. "via view" = access only through a security-barrier view tha
 | `rent_invoices`, `payouts` amounts | Added snapshot, deduction, reserve, fee-base adjustment and calculation fields | Transparency and invariants |
 | `item_topics.weight` | Removed | Not used by the topic-score formula (ANL-SCR-01) |
 | — | Added: `school_years`, `academic_terms`, topic templates, `room_open_slots`, `room_booking_slots`, `group_sessions`, `waitlist_entries`, `review_replies`, `review_reports`, `review_stats`, `consent_events` (keyed on `user_id`), `verification_checks`, `payment_mandates`, `provider_events`, `refunds`, `payout_items`, `provider_settlement_lines`, `reconciliation_issues`, `rule_versions`, `voice_extractions`, `inbound_messages`, `notification_log`, `teacher_tips`, `auth_sessions`, `devices`, `data_subject_requests`, `leads`, platform tables | Required by the rules and the PRDs |
+
+---
+
+## 13. Database v2 (added 2026-10-16, migrations `0020`–`0030`, branch `db/local-v2`)
+
+Column by column, with who reads and writes and how long each is kept: [plan/database-v2.md](plan/database-v2.md) §2 (data dictionary) and §11 (as built). Requirement IDs: [03](03-prd-phase2-followup.md) §10. Every table has RLS and joins the cross-tenant suites; app_user only reads (core-api writes as the system after checking access under RLS), except `in_app_notifications.read_at`.
+
+| Table / view | What | Read |
+|---|---|---|
+| `identity.user_identities` | Sign-in methods (`phone | email | google`), subject = HMAC, contact encrypted; the phone identity mirrors `users.phone_*` (trigger) | SELF through `identity.my_sign_in_methods` (masked); never the subject or contact |
+| `identity.users` (changed) | `phone_*` nullable; `account_type` (`adult | student`, a student has no phone or name); `active_role`, `active_centre_id` | as before |
+| `identity.access_allowlist` | The tester allowlist (HMAC subjects, masked hints) | OPS, SYSTEM |
+| `org.consent_versions` | The register of consent texts and versions (approved or draft, OD-60); kind `student_account` added to `consent_events` | PUBLIC |
+| `identity.student_accounts` | One per child; `awaiting_device | active | paused | locked | closed`; 5 wrong PINs lock it (trigger); only a guardian of the child creates it (trigger) | FAMILY, OPS |
+| `identity.student_access_codes` | The parent's one-time codes (HMAC only, 10 minutes, one live per child) | GUARDIAN (expiry and use only) |
+| `identity.student_devices` | Bound devices (secret hash, PIN scrypt with a server pepper); at most 2 live (trigger) | FAMILY (label, last used) |
+| `market.group_sessions` (changed) | `room_id`: a one-off hall; a move or hall change may not overlap another session in that hall (trigger) | + STUDENT for covered sessions |
+| `market.session_changes` | Append-only log of moves, hall changes and cancellations, written by a trigger with the actor and reason | FAMILY (covered sessions), TEACHER, CENTRE |
+| `messaging.in_app_notifications` | One row per person per event (IDs only, no text); written by the change trigger and by core-api | SELF |
+| `records.session_records` (changed) | `topic_covered`, `homework_set` (locked with the record) | as before |
+| `records.record_corrections` | Append-only record-level corrections | TEACHER, CENTRE |
+| `records.homework_items`, `records.homework_statuses` | Items per session; `set | handed_in | late` per student, marked in a record | TEACHER, CENTRE; FAMILY through `records.student_homework` |
+| `market.makeup_requests` | Student or parent asks; the centre accepts into one session (one seat, counted by `market.seats_committed`, INV-05) or declines | FAMILY, TEACHER, CENTRE |
+| `records.student_notes` | Notes for the student; approved by `messages.approve` (trigger), locked once approved | FAMILY (approved only), TEACHER, CENTRE |
+| `ref.topic_templates`, `ref.topic_template_nodes` | The topic map per subject (as §2) | PUBLIC (published) |
+| `records.session_topics`, `analytics.item_topics` | Topics a record covered; questions tagged to topics | TEACHER, CENTRE |
+| `analytics.student_topic_scores` (view) | **The** topic score (CF-58), per student × group × topic, NULL under 2 quizzes | FAMILY, TEACHER, CENTRE, OPS — the same rows |
+| `analytics.topic_score_snapshots` | Append-only monthly snapshots | as the view |
+| `analytics.focus_plans`, `analytics.focus_plan_items` | Weekly checklists; the student ticks items of an approved plan | FAMILY (approved, with the `focus_plans` consent), TEACHER, CENTRE |
+| `records.student_session_summaries`, `records.student_session_topics` (views) | What a student or parent sees of a confirmed record: their own entry only | FAMILY |
+
+Invariants: INV-05 now also counts accepted make-ups; a student account holds no phone, email or Google identity; an approved student note and an approved focus plan never change; a topic score is never shown under 2 quizzes.

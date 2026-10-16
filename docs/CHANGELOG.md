@@ -2,6 +2,18 @@
 
 One line per change: file, what changed, why. Newest pass first. Review items (A1–C7) refer to the "docs fix-up pass before coding" review; R2-1…R2-12 to the round-2 fix-up.
 
+## 2026-10-16 — Database v2: student accounts, student v1 and v1.5 (branch `db/local-v2`)
+
+| # | File | What changed | Why |
+|---|---|---|---|
+| DB-1 | `docs/plan/database-v2.md` (new), `docs/plan/database-v2-tryit.md` (new) | The D0 plan, Ahmed's answers, and §11 as built (ERD, changes from D0, tests, backup and restore); a step-by-step to try the API | The database brief of 2026-10-16 |
+| DB-2 | `docs/03-prd-phase2-followup.md` §10 | Requirements `STU-ACC-01`, `STU-SCH-01`, `STU-MIS-01`, `STU-HW-01`, `STU-NOTE-01`, `STU-TOP-01`, `STU-FOC-01` and the stars-and-level formula `ANL-STU-01` | D0 decisions |
+| DB-3 | `docs/04-prd-phase3-analytics.md` §3 | The simple score is the one in use for every role now; ANL-SCR-01 later replaces it for everyone at once; the parent sees the number too | CF-58, CF-61 |
+| DB-4 | `docs/06-data-model.md` | Policy code `STUDENT` / `FAMILY`, `app.student_id`; §13 the database v2 tables and views | Migrations 0020–0030 |
+| DB-5 | `docs/07-api.md` §2e | The 53 new endpoints; `Me.activeRole`, `Me.student`; consent kind `student_account` | D1 |
+| DB-6 | `docs/10-security-privacy.md` | The `student` role and its matrix rows; the `student_account` consent; retention of codes, devices and notifications | CF-59, CF-61 |
+| DB-7 | `docs/13-open-decisions.md` | CF-58–CF-61 decided; OD-61 (no Railway backups for now); OD-62–OD-66 open | D0 review, D1 report |
+
 ## 2026-10-16 — Part B: the centre's exact location on a real map
 
 | # | File | What changed | Why |

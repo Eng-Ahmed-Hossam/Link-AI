@@ -11,13 +11,14 @@ Link holds data about children, their guardians and money. We comply with Egypt'
 | Role | Who | Scope |
 |---|---|---|
 | `parent` | Guardian account | Own children, own payments, own reviews |
+| `student` | **(added 2026-10-16, CF-59)** A child's account, made **only by a guardian** with the `student_account` consent. Signs in with the parent's one-time code and a 4-digit PIN bound to the device (at most 2 devices); no phone, email or Google; holds no other role | Their own learning data only: schedule and changes, what they missed, homework, approved teacher notes, topic scores, approved focus checklists, their make-up requests. Never money, other students, records' internal fields or transcripts |
 | `teacher` | Teacher account | Own profile, groups, bookings, enrolments, earnings; Phase 2–3: own groups' records and analytics |
 | `centre_owner` | Centre owner | Everything for their centre(s) |
 | `centre_staff` | Admin / reception | Their centre, limited by permissions: `bookings.manage`, `reviews.reply`, `cases.manage`, `messages.approve`, `records.read` |
 | `link_ops` | Link team | Ops console only, limited by the permissions `ops.verify`, `ops.moderate` and `ops.finance`, granted as bundles: "agent" = `ops.verify` + `ops.moderate`; "finance" = `ops.finance` (OD-37). There are no other ops roles. |
 | `system` | Workers, ai-service (on behalf of a user) | Least privilege per job |
 
-One user can hold several roles (e.g. teacher and parent).
+One user can hold several roles (e.g. teacher and parent). A student account holds only `student`.
 
 ### Matrix
 
@@ -50,6 +51,11 @@ One user can hold several roles (e.g. teacher and parent).
 | **Phase 3:** edit topic map; tag quizzes | — | ✓ (own) | — | — | — |
 | **Phase 3:** see topic score numbers | — | ✓ (own groups) | ✓ | ✓ (perm `records.read`) | — |
 | **Phase 3:** see topic bands | ✓ (own children) | ✓ | ✓ | ✓ | — |
+| **Students (STU, 2026-10-16):** see topic scores and bands | ✓ (own children: **the band and the number — the parent sees everything the child sees**, CF-61) | ✓ (own groups) | ✓ | ✓ (perm `records.read`) | ✓ (audited) |
+| **Students:** create the child's student account; codes, pause, devices | ✓ (own children only) | — | — | — | — |
+| **Students:** approve a teacher note for the student | — | — | ✓ | ✓ (perm `messages.approve`) | — |
+| **Students:** accept or decline a make-up request | — | — | ✓ | ✓ (perm `bookings.manage`) | — |
+| **Students:** move a session · change its hall | — | ✓ (own groups) · — | ✓ · ✓ | ✓ (perm `bookings.manage`) | — |
 | **Phase 3:** approve focus plans | — | ✓ (own) | — | — | — |
 | Verify centres and teachers | — | — | — | — | ✓ (perm `ops.verify`) |
 | Moderate reviews (hide, request edit) | — | — | — | — | ✓ (perm `ops.moderate`) |
@@ -86,7 +92,8 @@ Every consent is a row in `org.consent_events` keyed on the consenting person's 
 | Share guardian phone with teacher and front desk | Guardian | Checkout (P07), unticked by default | `share_phone_with_teacher` |
 | WhatsApp updates (Phase 2) | Guardian | Opt-in screen or first approved message flow | `whatsapp_updates`; "STOP" withdraws at once |
 | SMS fallback (Phase 2) | Guardian | Same | `sms_updates` |
-| Weekly focus plans (Phase 3) | Guardian | Opt-in | `focus_plans` |
+| Weekly focus plans (Phase 3) and the student's focus checklist | Guardian | Opt-in | `focus_plans` (per child; without it the student sees no checklist) |
+| A student account for a child | Guardian | Creating the account | `student_account` (per child; withdrawing it closes the account at once) |
 | Use of corrections and voice notes for AI evaluation and training | Teacher and guardian (per centre agreement) | Opt-in (E15-01 consent pack) | `ai_training_use` |
 
 Rules:
@@ -105,6 +112,9 @@ Rules:
 | Voice audio | **30 days** after upload (fixed rule) | `voice_notes.delete_after`; daily clean-up job deletes the object and sets `audio_deleted` |
 | Transcripts | 90 days (default) | `transcript_delete_after`; same job blanks the column |
 | OTP codes | 5 minutes | Redis TTL |
+| Student access codes | 10 minutes to use; the row (HMAC only) deleted after 24 h | `identity.student_access_codes` clean-up |
+| Student devices | Until removed, then 90 days | `identity.student_devices` clean-up |
+| In-app notifications | 90 days (default, configurable) | `messaging.in_app_notifications` clean-up |
 | Idempotency records | 24 hours | Redis TTL / cleanup |
 | ID documents (eKYC) | TBD with counsel | Retention job per data class |
 | Leads (landing-page form, `org.leads`) | Not converted: deleted 6 months after the last contact. Converted: name and WhatsApp number wiped once the centre or teacher account exists; the row keeps only `status` and `converted_centre_id` (default · OD-28) | Retention job per data class |
