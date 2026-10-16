@@ -3,11 +3,21 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "dist/**", "storybook-static/**", "tokens.css", "theme.css"]
+      "outputs": [".next/**", "dist/**", "storybook-static/**", "tokens.css", "theme.css"],
+      "env": ["CORE_API_URL", "NEXT_OUTPUT", "NEXT_DIST_DIR", "NEXT_PUBLIC_*", "EXPO_PUBLIC_*"]
     },
-    "dev": { "cache": false, "persistent": true },
-    "lint": { "dependsOn": ["^build"] },
-    "typecheck": { "dependsOn": ["^build"] },
-    "test": { "dependsOn": ["^build"] }
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^build"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    }
   }
 }
