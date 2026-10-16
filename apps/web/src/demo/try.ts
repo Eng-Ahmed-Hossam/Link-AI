@@ -14,7 +14,7 @@ import { resetMockDb } from '@link/mocks';
 import { resetFollowupDb, setDemo } from '@link/mocks/followup';
 import type { Locale } from '@link/i18n';
 import type { Session } from '../session';
-import { API_BASE_URL, API_MODE } from '../api-mode';
+import { API_BASE_URL, API_MODE, CORE_API } from '../api-mode';
 
 export type TryRole = 'parent' | 'teacher' | 'owner';
 export interface TrySession {
@@ -62,6 +62,9 @@ const SETTINGS = { phase2: true, marketplace: true, offline: false, realStt: fal
 
 /** Signs in the role's sample user and says where to go. */
 export async function startTry(input: { role: TryRole; lang: Locale }): Promise<string> {
+  // On the real backend (the hosted staging) there is no sample sign-in: each role goes to its
+  // own sign-in page, where testers use the sample numbers (the code is in the private inbox).
+  if (CORE_API) return liveSignIn(input);
   const prior = readTry();
   writeTry({ ...input, startedAt: prior?.startedAt ?? Date.now(), cardDone: prior?.cardDone });
   if (input.role === 'teacher')
@@ -85,6 +88,12 @@ export async function startTry(input: { role: TryRole; lang: Locale }): Promise<
     /* storage blocked: the app asks to sign in */
   }
   return HOME[input.role](input.lang);
+}
+
+/** The real sign-in page for a role (live mode; docs/deploy/environments.md). */
+export function liveSignIn({ role, lang }: { role: TryRole; lang: Locale }): string {
+  if (role === 'teacher') return `${TEACHER_APP}/sign-in`;
+  return role === 'owner' ? `/${lang}/centre` : `/${lang}/welcome`;
 }
 
 /** True while a demo is on in this browser (read synchronously: no flash of flags). */
