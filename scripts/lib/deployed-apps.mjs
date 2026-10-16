@@ -5,7 +5,7 @@
 import { execFileSync } from 'node:child_process';
 
 /** Files every app is built from: the shared packages and the workspace's root config. */
-const SHARED = [
+export const SHARED = [
   'packages/',
   'package.json',
   'pnpm-lock.yaml',
