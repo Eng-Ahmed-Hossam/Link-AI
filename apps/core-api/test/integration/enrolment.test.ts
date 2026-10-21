@@ -352,27 +352,39 @@ describe('Edge cases (docs/08 §4, BR-ENR-05/06, BR-MNY-04/12)', () => {
     );
     // The dates were rewritten under Redis: count the seats again, as if the plan always had them.
     await api.s.jobs.rebuildSeats();
-    const now = new Date();
-    const attempts = async () =>
-      (await paymentsOf(api, id)).filter((p) => p.status === 'failed').length;
-    for (const [day, expected] of [
-      [0, 1],
-      [0, 1],
-      [1, 2],
-      [2, 2],
-      [3, 3],
-      [5, 3],
-    ] as const) {
-      api.fake.controls.nextMandateCharge = 'fail';
-      await api.s.jobs.renew(new Date(now.getTime() + day * 86_400_000));
-      expect(await until(attempts, (n) => n >= expected)).toBe(expected);
+    // The seeded monthly plans renew on their groups' weekdays, so on some days one falls due inside
+    // the simulated days and takes the one-shot `nextMandateCharge` meant for this plan. Set them
+    // aside (the renewal and past-due jobs skip a cancelled plan) and put them back afterwards.
+    const { rows: others } = await sql<{ id: string }>`UPDATE market.enrolments
+      SET plan_cancelled_at = now()
+      WHERE payment_plan = 'monthly_recurring' AND plan_cancelled_at IS NULL AND id <> ${id}
+      RETURNING id`.execute(api.db);
+    try {
+      const now = new Date();
+      const attempts = async () =>
+        (await paymentsOf(api, id)).filter((p) => p.status === 'failed').length;
+      for (const [day, expected] of [
+        [0, 1],
+        [0, 1],
+        [1, 2],
+        [2, 2],
+        [3, 3],
+        [5, 3],
+      ] as const) {
+        api.fake.controls.nextMandateCharge = 'fail';
+        await api.s.jobs.renew(new Date(now.getTime() + day * 86_400_000));
+        expect(await until(attempts, (n) => n >= expected)).toBe(expected);
+      }
+      // The new period's first session starts unpaid → past_due; the seat is kept for 7 days.
+      const at = new Date(now.getTime() + 8 * 86_400_000);
+      await api.s.jobs.pastDue(at);
+      expect((await get(c, id)).body.status).toBe('past_due');
+      await api.s.jobs.pastDue(new Date(at.getTime() + 7 * 86_400_000 + 60_000));
+      expect((await get(c, id)).body.status).toBe('ended');
+    } finally {
+      await sql`UPDATE market.enrolments SET plan_cancelled_at = NULL
+        WHERE id = ANY(${others.map((r) => r.id)}::uuid[])`.execute(api.db);
     }
-    // The new period's first session starts unpaid → past_due; the seat is kept for 7 days.
-    const at = new Date(now.getTime() + 8 * 86_400_000);
-    await api.s.jobs.pastDue(at);
-    expect((await get(c, id)).body.status).toBe('past_due');
-    await api.s.jobs.pastDue(new Date(at.getTime() + 7 * 86_400_000 + 60_000));
-    expect((await get(c, id)).body.status).toBe('ended');
   });
 
   it('08 §5: a renewal that succeeds starts the next period (P1 again)', async () => {
